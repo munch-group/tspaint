@@ -17,7 +17,7 @@ import numpy as np
 from .pruning import prune_tree
 
 __all__ = ["Segment", "INFORMATIVE", "MISSING_INFO", "posterior_table",
-           "missing_info_mask", "posterior_at"]
+           "missing_info_mask", "posterior_at", "hard_segments"]
 
 INFORMATIVE = "informative"
 MISSING_INFO = "missing-info"
@@ -89,3 +89,35 @@ def posterior_at(tracks, sample, position):
         if seg.left <= position < seg.right:
             return seg.posterior
     return None
+
+
+def hard_segments(track, deadband=0.0):
+    """Collapse a soft posterior ``track`` (list of :class:`Segment`) into hard ancestry
+    segments ``[(left, right, state), ...]`` — the object a downstream tract-length /
+    admixture-pulse dating analysis consumes.
+
+    With ``deadband > 0`` a switch to a new ``argmax`` state is accepted only where the call
+    is confident — the top-two posterior **margin** ``max(P) - 2nd-max(P) >= deadband`` —
+    otherwise the previous state is carried forward. This suppresses the low-confidence
+    (~P=0.5) flips that fragment long tracts under naive ``argmax`` (``deadband=0``); because
+    the posterior is calibrated, a modest deadband (≈0.3–0.5) recovers the true switch density
+    and tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9). This
+    is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF) does not
+    expose. ``MISSING_INFO`` spans carry the previous state forward; the first interval takes
+    its ``argmax``.
+    """
+    segs, cur = [], None
+    for seg in track:
+        p = np.asarray(seg.posterior, float)
+        st = int(np.argmax(p))
+        if cur is not None:
+            order = np.sort(p)
+            margin = float(order[-1] - order[-2])
+            if seg.status == MISSING_INFO or margin < deadband:
+                st = cur
+        cur = st
+        if segs and segs[-1][2] == st and segs[-1][1] == seg.left:
+            segs[-1] = (segs[-1][0], seg.right, st)
+        else:
+            segs.append((seg.left, seg.right, st))
+    return segs

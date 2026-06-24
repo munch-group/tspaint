@@ -16,7 +16,8 @@ import numpy as np
 from .output import MISSING_INFO
 
 __all__ = ["map_truth", "per_base_accuracy", "balanced_accuracy", "mean_confidence",
-           "reliability_curve", "breakpoint_flicker", "tract_boundary_error"]
+           "reliability_curve", "breakpoint_flicker", "tract_boundary_error",
+           "breakpoint_precision_recall", "switch_density"]
 
 
 def map_truth(truth, state_of_pop):
@@ -149,3 +150,30 @@ def tract_boundary_error(tracks, truth_states, sample):
     return {"n_true_switches": len(true_sw),
             "median_error": float(np.median(errs)),
             "mean_error": float(np.mean(errs))}
+
+
+def breakpoint_precision_recall(inferred_segs, true_segs, tol):
+    """Precision/recall of inferred ancestry switch points vs. truth, matched within ``tol`` bp.
+
+    Inputs are **hard** segment lists ``[(left, right, state)]`` (e.g. from
+    :func:`tslai.output.hard_segments` and :func:`map_truth`). **Precision** = fraction of
+    inferred switches lying near a true switch — low precision means spurious fragmentation,
+    which biases tract-length / admixture-pulse dating *older*. **Recall** = fraction of true
+    switches recovered — low recall means missed or over-smoothed switches (biases *younger*).
+    The two trade off against the :func:`tslai.output.hard_segments` ``deadband`` (CLAUDE.md §9).
+    """
+    isw = _switch_positions(inferred_segs, lambda s: s[2], lambda s: s[0])
+    tsw = _switch_positions(true_segs, lambda s: s[2], lambda s: s[0])
+    prec = float(np.mean([any(abs(i - t) <= tol for t in tsw) for i in isw])) if isw else float("nan")
+    rec = float(np.mean([any(abs(t - i) <= tol for i in isw) for t in tsw])) if tsw else float("nan")
+    return {"precision": prec, "recall": rec, "n_inferred": len(isw), "n_true": len(tsw)}
+
+
+def switch_density(segs, length):
+    """Ancestry switches per unit length (the quantity admixture-pulse dating reads as time).
+
+    ``segs`` is a hard segment list ``[(left, right, state)]``; over-fragmentation inflates
+    this and biases the inferred pulse older, over-smoothing deflates it and biases younger.
+    """
+    n = len(_switch_positions(segs, lambda s: s[2], lambda s: s[0]))
+    return n / length if length > 0 else float("nan")

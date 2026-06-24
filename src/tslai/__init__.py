@@ -28,11 +28,11 @@ from .diagnostics import persistence_summary, node_persistence, edge_span_summar
 from .pruning import prune_tree, prune_root, PruneResult
 from .accumulate import accumulate_sufficient_statistics, SuffStats
 from .em import m_step_Q, m_step_pi, m_step_w, fit, FitResult
-from .output import (posterior_table, missing_info_mask, posterior_at, Segment,
-                     INFORMATIVE, MISSING_INFO)
+from .output import (posterior_table, missing_info_mask, posterior_at, hard_segments,
+                     Segment, INFORMATIVE, MISSING_INFO)
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
-                       tract_boundary_error)
+                       tract_boundary_error, breakpoint_precision_recall, switch_density)
 from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
                           scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment)
 from .ensemble import merge_posterior_tables, MergedSegment
@@ -80,6 +80,7 @@ __all__ = [
     "posterior_table",
     "missing_info_mask",
     "posterior_at",
+    "hard_segments",
     "Segment",
     "INFORMATIVE",
     "MISSING_INFO",
@@ -90,6 +91,8 @@ __all__ = [
     "reliability_curve",
     "breakpoint_flicker",
     "tract_boundary_error",
+    "breakpoint_precision_recall",
+    "switch_density",
     "admixture_experiment",
     "flicker_vs_true_boundaries",
     "age_sweep",

@@ -513,6 +513,18 @@ is a footnote.
 > deferred.** Metric: `experiments.flicker_vs_true_boundaries`; notebook
 > `02_calibration_flicker`. Caveat: favorable regime; the inferred-ARG / ancient
 > stress test is the outstanding work.
+>
+> **[UPDATE — older-admixture stress, via the §9 fragmentation finding]:** at *older*
+> admixture (T_admix=200, true ARG) the flicker is no longer negligible — it surfaces as
+> ~3× over-fragmentation in the **hard** `argmax` segmentation (the dating-relevant output),
+> because the posterior hovers near 0.5 in places and argmax flips there. This is the first
+> regime where §7.3's criterion is genuinely approached. **It does not yet trigger `bp/`:** the
+> flips are low-confidence, so a post-hoc confidence **deadband** (`output.hard_segments`)
+> recovers the true tract-length distribution (switch-density ratio 1.00) without message
+> passing. `bp/` becomes the principled fix only in the *weak-signal* regime where real
+> short-tract switches also go low-confidence and the deadband can no longer separate them from
+> spurious flips (precision↔recall no longer cleanly splittable) — the outstanding trigger to
+> watch.
 
 ### 7.4 ARG-posterior ensemble merging (SINGER) — the front-line answer to §9
 
@@ -698,6 +710,28 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   baseline, now confirmed against RFMix. (Cost: RFMix ~9–125 s/run; tslai ~7–86 s; nearest_ref
   <1 s.) Outstanding: MOSAIC/FLARE, and the ARG-native ARGMix / Pearson & Durbin (separate
   installs slotting in as painters).
+- **[MEASURED — fragmentation / tract-length distribution] (`output.hard_segments`,
+  `validate.breakpoint_precision_recall`, `validate.switch_density`).** Downstream
+  admixture-pulse dating reads the **segment-length distribution**, so spurious short
+  opposite-ancestry calls (fragmenting a long tract) bias the inferred pulse *older*, and
+  over-smoothing biases it *younger*. Measured on a clean regime (true ARG, strong structure
+  Ne=1e3 / T_split=5e3, T_admix=200, L=5 Mb; true median tract ~1 Mb, 0.66 switches/Mb): **naive
+  `argmax` over-fragments, tslai worst of all** — 1.96 switches/Mb (2.97×), breakpoint precision
+  0.43, median tract 164 kb vs true 1020 kb; nearest_ref 1.91×; **RFMix native (.msp Viterbi)
+  least but still 1.55×** (precision 0.71). *No* method misses real switches (recall 1.0; the true
+  tracts here are all ≥100 kb, and 100–500 kb tracts are recovered 100% by all — short-segment
+  *sensitivity* is fine, the problem is false positives). Mechanism: at older admixture the
+  posterior hovers near 0.5 in places and argmax flips there — the §7.3 breakpoint-flicker
+  surfacing in the *segment* output. **But tslai's flips are exactly the low-confidence ones**, so
+  a confidence **deadband** on the calibrated posterior (`hard_segments(deadband=c)`) removes them:
+  c≈0.3–0.5 recovers the true distribution almost exactly (switch-density ratio **1.00**, precision
+  & recall ~1.0, median tract 1020 kb = truth); c≥0.9 over-smooths. **Takeaway: for dating, do not
+  argmax tslai — threshold its posterior.** Done so, tslai *beats* RFMix on tract-length fidelity
+  (achieves ratio 1.00 vs RFMix's fixed 1.55×): the calibrated soft posterior is a tunable
+  precision/recall dial RFMix's hard CRF does not expose. Caveats: single seed/regime; at weak
+  signal real short-tract switches *also* go low-confidence, so the deadband then genuinely trades
+  precision against recall — that is the regime where §7's uncertainty propagation (not a post-hoc
+  threshold) would be the principled fix.
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
   instance of this scheme. `tslai` with hard clamps should reproduce their

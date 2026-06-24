@@ -220,6 +220,47 @@ def _parse_fb(fb_path, query_inds, K, sequence_length):
     return tracks
 
 
+def _parse_msp(msp_path, query_inds, sequence_length):
+    """Parse RFMix's native ``.msp.tsv`` (CRF/Viterbi **hard** segments) into
+    ``{node: [(left, right, state)]}`` covering [0, L). This is RFMix's own segmentation —
+    the object a tract-length / admixture-dating analysis would consume — distinct from the
+    per-marker ``.fb.tsv`` posteriors. Subpopulation codes are mapped to ancestry states via
+    the header's ``#Subpopulation order/codes`` line.
+    """
+    with open(msp_path) as f:
+        lines = [ln for ln in f.read().splitlines() if ln]
+    code_to_state = {}
+    for ln in lines:
+        if ln.startswith("#Subpopulation"):
+            for tok in ln.split(":", 1)[1].split():
+                if "=" in tok:
+                    code, name = tok.split("=")
+                    code_to_state[int(code)] = int(name)
+    hdr = next(ln for ln in lines if ln.startswith("#chm"))
+    cols = hdr.lstrip("#").split("\t")
+    name_to_node = {}
+    for name, (h0, h1) in query_inds:
+        name_to_node[f"{name}.0"] = h0
+        name_to_node[f"{name}.1"] = h1
+    col_node = {j: name_to_node[c] for j, c in enumerate(cols) if c in name_to_node}
+    data = [ln.split("\t") for ln in lines if not ln.startswith("#")]
+    spos = [float(r[1]) for r in data]
+    epos = [float(r[2]) for r in data]
+    tracks = {}
+    for j, node in col_node.items():
+        segs = []
+        for k, r in enumerate(data):
+            st = code_to_state.get(int(r[j]), int(r[j]))
+            left = 0.0 if k == 0 else spos[k]
+            right = sequence_length if k == len(data) - 1 else epos[k]
+            if segs and segs[-1][2] == st:
+                segs[-1] = (segs[-1][0], right, st)
+            else:
+                segs.append((left, right, st))
+        tracks[node] = segs
+    return tracks
+
+
 def rfmix_paint(ts, labels, queries, K=2, *, recombination_rate=1e-8, generations=30.0,
                 mutation_rate=4e-7, seed=1, rfmix_bin=None, extra_args=None):
     """RFMix painter with the standard ``painter(ts, labels, queries)`` signature.
