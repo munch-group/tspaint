@@ -34,7 +34,8 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
                        tract_boundary_error)
 from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
-                          scaling_sweep)
+                          scaling_sweep, arg_ensemble_experiment)
+from .ensemble import merge_posterior_tables, MergedSegment
 from .io_tsinfer import add_mutations, infer_tree_sequence
 
 try:  # version is best-effort; not required for use
@@ -89,6 +90,9 @@ __all__ = [
     "flicker_vs_true_boundaries",
     "age_sweep",
     "scaling_sweep",
+    "arg_ensemble_experiment",
+    "merge_posterior_tables",
+    "MergedSegment",
     "add_mutations",
     "infer_tree_sequence",
     "SOURCE_A",

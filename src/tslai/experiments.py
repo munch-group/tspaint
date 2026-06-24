@@ -15,12 +15,13 @@ from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, A
 from .em import fit, build_emissions
 from .model import make_generator_2state
 from .output import posterior_table
+from .ensemble import merge_posterior_tables
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
                        tract_boundary_error)
 
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
-           "scaling_sweep"]
+           "scaling_sweep", "arg_ensemble_experiment"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -153,6 +154,77 @@ def scaling_sweep(admix_sizes, infer=False, **kwargs):
             "inferred": infer,
         })
     return out
+
+
+def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
+                            sequence_length=3e5, recombination_rate=1e-8, Ne=1000,
+                            T_split=5000.0, f_A=0.5, mutation_rate=4e-7, seed=1,
+                            max_iter=6, Q0=None):
+    """Merge LAI across an ensemble of inferred ARGs vs. a single inferred ARG.
+
+    Stand-in for SINGER's thinned posterior samples: ``M`` independent mutation
+    overlays of one true genealogy, each inferred with tsinfer (sharing samples and
+    coordinates). ``theta`` is fit pooled across the ensemble (``fit`` over the list);
+    each member is painted (:func:`tslai.output.posterior_table`) and the paintings are
+    averaged (:func:`tslai.ensemble.merge_posterior_tables`). Reports single-member vs.
+    merged vs. true-ARG balanced accuracy and the merged calibration.
+
+    Caveat: a tsinfer ensemble captures data/inference variance but shares tsinfer's
+    bias; true posterior samples (SINGER) additionally marginalise coalescent-time and
+    topology uncertainty, so the realised gain here is a lower bound on the SINGER case.
+    """
+    from .io_tsinfer import add_mutations, infer_tree_sequence
+
+    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed,
+                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    A_id = next(p for p, n in names.items() if n == SOURCE_A)
+    B_id = next(p for p, n in names.items() if n == SOURCE_B)
+    admix_id = next(p for p, n in names.items() if n == ADMIXED)
+    state_of_pop = {A_id: 0, B_id: 1}
+    labels = {int(s): state_of_pop[node_pop[s]]
+              for s in ts.samples() if node_pop[s] in (A_id, B_id)}
+    queries = [int(s) for s in ts.samples() if node_pop[s] == admix_id]
+    truth, _ = local_ancestry_truth(ts)
+    truth_states = map_truth({q: truth[q] for q in queries}, state_of_pop)
+
+    # M inferred ARGs (stand-in posterior samples): independent mutation overlays
+    ensemble = [infer_tree_sequence(add_mutations(ts, rate=mutation_rate,
+                                                  random_seed=seed + 1 + m))
+                for m in range(M)]
+
+    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    res = fit(ensemble, [labels] * M, K=2, Q0=Q0, max_iter=max_iter)   # theta pooled
+
+    tables, single_bal = [], []
+    for g in ensemble:
+        em = build_emissions(g, labels, res.w, res.pi)
+        tab = posterior_table(g, res.Q, res.pi, em, focal=queries)
+        tables.append(tab)
+        single_bal.append(balanced_accuracy(tab, truth_states, samples=queries))
+
+    merged = merge_posterior_tables(tables, samples=queries)
+    merged_bal = balanced_accuracy(merged, truth_states, samples=queries)
+
+    res_true = fit(ts, labels, K=2, Q0=Q0, max_iter=max_iter)          # true-ARG ceiling
+    em_true = build_emissions(ts, labels, res_true.w, res_true.pi)
+    tab_true = posterior_table(ts, res_true.Q, res_true.pi, em_true, focal=queries)
+    true_bal = balanced_accuracy(tab_true, truth_states, samples=queries)
+
+    return {
+        "M": M,
+        "n_haplotypes": int(ts.num_samples),
+        "single_balanced_mean": float(np.mean(single_bal)),
+        "single_balanced_std": float(np.std(single_bal)),
+        "single_balanced_per_member": single_bal,
+        "merged_balanced": merged_bal,
+        "merged_confidence": mean_confidence(merged, samples=queries),
+        "merged_reliability": reliability_curve(merged, truth_states, state=0),
+        "true_balanced": true_bal,
+        "merged_tracks": merged, "truth_states": truth_states, "queries": queries,
+    }
 
 
 def flicker_vs_true_boundaries(tracks, truth_states, sample, state=0, eps=0.0):

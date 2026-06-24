@@ -29,6 +29,7 @@ implemented and validated on simulated truth:
 | Per-haplotype posteriors + missing-info tagging | `output.py` | coverage, prior-fallback |
 | Accuracy / calibration / flicker metrics | `validate.py`, `experiments.py` | end-to-end on admixture sims |
 | tsinfer inferred-ARG front end | `io_tsinfer.py` | inferred-ARG accuracy (bounded by ARG accuracy) |
+| ARG-posterior ensemble merge | `ensemble.py` | average paintings across tree-sequence samples + uncertainty band |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity —
@@ -45,9 +46,12 @@ haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy 
 flicker unaffected by sample size; whole-genome at that size is hours per fit — the
 incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
 
-**Outstanding:** the Relate `--compress` front end (`io_relate.py`), and the
-hard-regime / head-to-head validation — weak structure, ancient admixture, and
-comparison vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours (CLAUDE.md §9, §10).
+**Outstanding:** a **SINGER posterior-ensemble front end** (`io_singer.py`) — the merge
+layer and pooled fit are built, so marginalising the ARG posterior is the highest-value
+next step for the §9 ARG-accuracy bound (CLAUDE.md §7.4); the Relate `--compress` front
+end (`io_relate.py`); and the hard-regime / head-to-head validation — weak structure,
+ancient admixture, and comparison vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours
+(CLAUDE.md §9, §10).
 
 ## Install
 

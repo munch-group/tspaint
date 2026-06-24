@@ -493,6 +493,42 @@ is a footnote.
 > `02_calibration_flicker`. Caveat: favorable regime; the inferred-ARG / ancient
 > stress test is the outstanding work.
 
+### 7.4 ARG-posterior ensemble merging (SINGER) — the front-line answer to §9
+
+§9 shows painting is **bounded by ARG accuracy**, and §7's `bp/` only addresses
+*within-ARG* uncertainty. The larger, binding uncertainty is **which ARG** — the
+topology/time error of a point estimate (tsinfer/Relate). The principled fix is to
+**marginalise the ARG posterior**: given an ensemble of tree sequences sampling
+`P(ARG | genotypes)` — e.g. thinned MCMC samples from **SINGER** (Deng et al., 2024) —
+the deliverable is
+
+```
+P(s_i(x)=A | data) = E_{G~P(G|data)}[ γ_i^G(x,A;θ) ] ≈ (1/M) Σ_m γ_i^{G_m}(x,A;θ)
+```
+
+i.e. paint each member and **average the per-position posteriors**; the spread is an
+ARG-uncertainty band. This is a modular ("cut") model: the ARG posterior comes from the
+genotypes, not the ancestry labels (sparse tip annotations) — a standard, well-justified
+cut that keeps SINGER outside the EM loop. SINGER's coalescent-calibrated times also
+mitigate the §6 time-calibration bias and propagate its uncertainty.
+
+**Implemented (prototype):** `ensemble.merge_posterior_tables` (N-way breakpoint
+refinement → mean + std + status, duck-compatible with `Segment` so `validate` scores it
+directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [labels]*M)`
+(scale-invariant M-step). Driver `experiments.arg_ensemble_experiment`.
+
+> **[MEASURED — prototype].** The merge layer is correct and, on **independent** noisy
+> inputs, averaging clearly improves accuracy (synthetic test: ~0.65 → >0.9). But a
+> **tsinfer point-estimate ensemble does NOT help** (e.g. 0.73 → 0.71 in a noisy regime):
+> its members share tsinfer's bias and the same genealogy, so their errors are
+> *correlated* and averaging dilutes confident-correct calls instead of fixing them.
+> **That is the point** — the benefit needs genuine *posterior* draws (independent-ish
+> errors), which SINGER provides and a point-estimate ensemble does not. Outstanding:
+> `io_singer.py` (run/load thinned SINGER samples → list of tskit ts); the merge + pooled
+> fit are already wired. This **supersedes `bp/`** as the priority (it targets the
+> dominant across-ARG uncertainty, reuses the EM machinery, and fixes a §6 caveat).
+> *Verify SINGER's tskit output, sample-order preservation, and ~500-sample scaling.*
+
 ---
 
 ## 8. Open issues requiring validation (do these early)
