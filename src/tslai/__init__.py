@@ -33,7 +33,8 @@ from .output import (posterior_table, missing_info_mask, posterior_at, Segment,
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
                        tract_boundary_error)
-from .experiments import admixture_experiment, flicker_vs_true_boundaries, age_sweep
+from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
+                          scaling_sweep)
 from .io_tsinfer import add_mutations, infer_tree_sequence
 
 try:  # version is best-effort; not required for use
@@ -87,6 +88,7 @@ __all__ = [
     "admixture_experiment",
     "flicker_vs_true_boundaries",
     "age_sweep",
+    "scaling_sweep",
     "add_mutations",
     "infer_tree_sequence",
     "SOURCE_A",

@@ -10,7 +10,8 @@ regime; the hard-regime head-to-head needs the external comparators.)
 import numpy as np
 import pytest
 
-from tslai.experiments import admixture_experiment, flicker_vs_true_boundaries, age_sweep
+from tslai.experiments import (admixture_experiment, flicker_vs_true_boundaries,
+                               age_sweep, scaling_sweep)
 
 
 @pytest.mark.slow
@@ -41,3 +42,15 @@ def test_signal_lost_at_old_admixture():
     assert recent["balanced_accuracy"] > 0.85 and recent["confidence"] > 0.4
     assert old["balanced_accuracy"] < 0.65                  # ~chance: reference signal lost
     assert old["confidence"] < recent["confidence"]
+
+
+@pytest.mark.slow
+def test_scaling_sweep_structure_and_timing():
+    rows = scaling_sweep([8, 16], infer=False, n_ref=6, sequence_length=5e4,
+                         T_admix=300, Ne=1000, T_split=5000, max_iter=3, seed=1, f_A=0.5)
+    assert len(rows) == 2
+    for r in rows:
+        assert r["n_haplotypes"] == 2 * (r["n_admix"] + 2 * 6)   # ploidy 2 x (admixed + 2 refs)
+        assert r["t_fit"] > 0.0 and r["n_trees"] >= 1
+        assert 0.0 <= r["balanced_accuracy"] <= 1.0
+    assert rows[1]["n_haplotypes"] > rows[0]["n_haplotypes"]     # sweep increases sample size

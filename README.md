@@ -37,6 +37,14 @@ so the blocked-EM approximation is sufficient and the deferred loopy-BP alternat
 bounded by ARG accuracy: ~0.88 with dense variants down toward chance when variants
 are sparse — tree accuracy, not tract length, is the binding constraint (§9).
 
+**Scaling.** The E-step is O(#trees × #nodes) per EM iteration (after exact `expm`
+caching); at a fixed region length #trees is region-bounded, so runtime is roughly
+linear in sample size. Measured (true ARG, 0.1 Mb region): ~480 haplotypes fits in
+~5 s (4 iterations), ~1.2 s/iteration; tsinfer inference adds ~1–3 s. **~500
+haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy and
+flicker unaffected by sample size; whole-genome at that size is hours per fit — the
+incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
+
 **Outstanding:** the Relate `--compress` front end (`io_relate.py`), and the
 hard-regime / head-to-head validation — weak structure, ancient admixture, and
 comparison vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours (CLAUDE.md §9, §10).
@@ -59,5 +67,6 @@ r = tslai.admixture_experiment(T_admix=300, n_admix=6, n_ref=10,
 print("per-base accuracy:", r["accuracy"])
 ```
 
-See `notebooks/` for the persistence go/no-go (00), accuracy & calibration (01),
-and the flicker / `bp/` decision (02).
+See `notebooks/` for the persistence go/no-go (00), accuracy / calibration /
+accuracy-vs-age (01), the flicker / `bp/` decision (02), and haplotype paintings +
+runtime/correctness/flicker scaling across regimes (03).

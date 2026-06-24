@@ -74,8 +74,8 @@ vscodenb = "*"
 r-rsvg = "*"
 tsinfer = ">=0.5.1,<0.6"
 
-# [tool.pixi.pypi-dependencies]
-# tslai = { path = ".", editable = true }
+[tool.pixi.pypi-dependencies]
+tslai = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = {solve-group = "default"}

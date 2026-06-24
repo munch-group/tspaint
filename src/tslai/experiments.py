@@ -7,6 +7,8 @@ needed.
 """
 from __future__ import annotations
 
+import time
+
 import numpy as np
 
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
@@ -17,7 +19,8 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
                        tract_boundary_error)
 
-__all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep"]
+__all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
+           "scaling_sweep"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -29,9 +32,12 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
     Returns a dict with ``accuracy``, calibration ``reliability``, flicker summaries,
     fitted ``Q``/``pi``, and the raw ``tracks``/``truth_states`` for further analysis.
     """
+    clk = time.perf_counter
+    t0 = clk()
     ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
                             recombination_rate=recombination_rate, random_seed=seed,
                             Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    t_sim = clk() - t0
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == SOURCE_A)
@@ -50,38 +56,53 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
     # ids, so labels/truth transfer by id; the inferred path is the §9 binding
     # constraint (does tree-native LAI survive tree-inference error?).
     n_sites = None
+    t_infer = 0.0
     if infer:
         from .io_tsinfer import add_mutations, infer_tree_sequence
+        t0 = clk()
         ts_mut = add_mutations(ts, rate=mutation_rate, random_seed=seed)
         work_ts = infer_tree_sequence(ts_mut)
+        t_infer = clk() - t0
         n_sites = int(ts_mut.num_sites)
     else:
         work_ts = ts
 
+    t0 = clk()
     res = fit(work_ts, labels, K=2,
               Q0=Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3),
               max_iter=max_iter)
+    t_fit = clk() - t0
+
+    t0 = clk()
     emissions = build_emissions(work_ts, labels, res.w, res.pi)
     tracks = posterior_table(work_ts, res.Q, res.pi, emissions, focal=queries)
+    t_paint = clk() - t0
 
     acc = per_base_accuracy(tracks, truth_states, samples=queries)
     bal = balanced_accuracy(tracks, truth_states, samples=queries)
     conf = mean_confidence(tracks, samples=queries)
     rel = reliability_curve(tracks, truth_states, state=0)
     flick = [breakpoint_flicker(tracks, q) for q in queries]
+    off_true = [flicker_vs_true_boundaries(tracks, truth_states, q)["mean_flicker_off_true"]
+                for q in queries]
     boundary = [tract_boundary_error(tracks, truth_states, q) for q in queries]
 
     return {
         "T_admix": T_admix,
         "inferred": infer,
         "n_sites": n_sites,
+        "n_haplotypes": int(work_ts.num_samples),
+        "n_trees": int(work_ts.num_trees),
+        "n_iter": len(res.loglik_history),
         "accuracy": acc,
         "balanced_accuracy": bal,
         "confidence": conf,
         "reliability": rel,
         "mean_flicker": float(np.mean([f["mean_abs_diff"] for f in flick])),
+        "mean_flicker_off_true": float(np.mean(off_true)),
         "mean_flip_rate": float(np.mean([f["flip_rate"] for f in flick])),
         "boundary_error": boundary,
+        "timings": {"sim": t_sim, "infer": t_infer, "fit": t_fit, "paint": t_paint},
         "Q": res.Q, "pi": res.pi, "n_queries": len(queries),
         "tracks": tracks, "truth_states": truth_states, "ts": ts, "work_ts": work_ts,
     }
@@ -103,6 +124,31 @@ def age_sweep(ages, infer=False, **kwargs):
             "balanced_accuracy": r["balanced_accuracy"],
             "confidence": r["confidence"],
             "mean_true_switches": float(np.mean(switches)) if switches else 0.0,
+            "n_sites": r["n_sites"],
+            "inferred": infer,
+        })
+    return out
+
+
+def scaling_sweep(admix_sizes, infer=False, **kwargs):
+    """Runtime + correctness + flicker vs sample size. Sweeps ``n_admix`` (admixed
+    *individuals*; haplotypes = ploidy x (n_admix + 2*n_ref)). Returns per-size dicts
+    with haplotype/tree counts, per-iteration and total fit time, tsinfer time, balanced
+    accuracy, confidence and off-true flicker — the data behind the scaling/regime plots."""
+    out = []
+    for n in admix_sizes:
+        r = admixture_experiment(n_admix=n, infer=infer, **kwargs)
+        out.append({
+            "n_admix": n,
+            "n_haplotypes": r["n_haplotypes"],
+            "n_trees": r["n_trees"],
+            "n_iter": r["n_iter"],
+            "t_fit": r["timings"]["fit"],
+            "t_per_iter": r["timings"]["fit"] / max(1, r["n_iter"]),
+            "t_infer": r["timings"]["infer"],
+            "balanced_accuracy": r["balanced_accuracy"],
+            "confidence": r["confidence"],
+            "mean_flicker_off_true": r["mean_flicker_off_true"],
             "n_sites": r["n_sites"],
             "inferred": infer,
         })
