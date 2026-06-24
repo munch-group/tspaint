@@ -57,7 +57,7 @@ class Painting:
 
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
-          Q0=None, max_iter=50, tol=1e-7, alpha=20.0, beta=1.0, w0=0.9):
+          Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0, w0=0.9):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips

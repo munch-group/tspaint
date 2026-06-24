@@ -83,7 +83,7 @@ import tslai
 
 # 1. Get a tree sequence — here, simulate admixture with known truth
 #    (or build one from genotypes: tslai.io.infer_tree_sequence / singer_tree_sequences).
-ts = tslai.simulate_admixture(n_admix=10, n_ref=10, sequence_length=2e6,
+ts = tslai.simulate_admixture(n_admix=10, n_ref=10, sequence_length=1e6,
                               T_admix=100, T_split=5000, Ne=1000, random_seed=1)
 
 # 2. Label the reference haplotypes (sample-node id -> ancestry state) and paint the rest.
