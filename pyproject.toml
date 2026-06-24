@@ -77,8 +77,22 @@ tsinfer = ">=0.5.1,<0.6"
 [tool.pixi.pypi-dependencies]
 tslai = { path = ".", editable = true }
 
+# External LAI comparators for the head-to-head (CLAUDE.md §9), isolated from the core env.
+# bioconda is scoped to this feature only (not the workspace) so it cannot perturb the
+# default env's resolution — only `compare` sees it.
+[tool.pixi.feature.compare]
+channels = ["conda-forge", { channel = "bioconda", priority = -1 }]
+
+[tool.pixi.feature.compare.dependencies]
+rfmix = "*"
+
 [tool.pixi.environments]
 default = {solve-group = "default"}
+# `compare` carries only the external comparator binaries (rfmix + its gcc/fontconfig
+# toolchain), kept out of the default env so they can't perturb the core scientific stack.
+# The Python painter runs in `default` and shells out to .pixi/envs/compare/bin/rfmix
+# (same pattern as io_singer for SINGER). Own solve-group → independent lock.
+compare = {features = ["compare"], no-default-feature = true, solve-group = "compare"}
 
 [tool.pixi.tasks.init]
 cmd = "python ./scripts/rename.py && gh repo set-default https://github.com/munch-group/$(basename $(git rev-parse --show-toplevel)) && git add src && git add -u"
