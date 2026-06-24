@@ -42,6 +42,7 @@ from .ranked import ranked_tree_sequence
 from .io_tsinfer import add_mutations, infer_tree_sequence
 from .io_singer import singer_tree_sequences, write_haploid_vcf
 from .io_rfmix import rfmix_paint, run_rfmix
+from .bp import bp_paint, bp_smooth, bp_smooth_track
 
 try:  # version is best-effort; not required for use
     from importlib.metadata import version, PackageNotFoundError
@@ -114,6 +115,9 @@ __all__ = [
     "write_haploid_vcf",
     "rfmix_paint",
     "run_rfmix",
+    "bp_paint",
+    "bp_smooth",
+    "bp_smooth_track",
     "SOURCE_A",
     "SOURCE_B",
     "ADMIXED",
