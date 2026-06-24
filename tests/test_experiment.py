@@ -8,10 +8,12 @@ BP/EP (``bp/``) is not needed. (Strong-structure sims on the true ARG — the ea
 regime; the hard-regime head-to-head needs the external comparators.)
 """
 import numpy as np
+import pytest
 
 from tslai.experiments import admixture_experiment, flicker_vs_true_boundaries
 
 
+@pytest.mark.slow
 def test_painting_recovers_local_ancestry_and_blocked_em_suffices():
     r = admixture_experiment(T_admix=300, n_admix=6, n_ref=10, sequence_length=3e5,
                              f_A=0.5, max_iter=7, seed=1)

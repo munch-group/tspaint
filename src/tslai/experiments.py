@@ -21,7 +21,7 @@ __all__ = ["admixture_experiment", "flicker_vs_true_boundaries"]
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
                          recombination_rate=1e-8, Ne=1000, T_split=5000.0, f_A=0.3,
-                         seed=1, max_iter=8, Q0=None):
+                         seed=1, max_iter=8, Q0=None, infer=False, mutation_rate=5e-8):
     """Simulate admixture, fit hard-clamp EM on the references, paint the admixed
     queries, and score against the census ground truth.
 
@@ -42,14 +42,26 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
               for s in ts.samples() if node_pop[s] in (A_id, B_id)}
     queries = [int(s) for s in ts.samples() if node_pop[s] == admix_id]
 
-    res = fit(ts, labels, K=2,
-              Q0=Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3),
-              max_iter=max_iter)
-    emissions = build_emissions(ts, labels, res.w, res.pi)
-    tracks = posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
-
     truth, _ = local_ancestry_truth(ts)
     truth_states = map_truth({q: truth[q] for q in queries}, state_of_pop)
+
+    # Substrate: the true ARG, or a tsinfer-inferred ARG. tsinfer preserves sample
+    # ids, so labels/truth transfer by id; the inferred path is the §9 binding
+    # constraint (does tree-native LAI survive tree-inference error?).
+    n_sites = None
+    if infer:
+        from .io_tsinfer import add_mutations, infer_tree_sequence
+        ts_mut = add_mutations(ts, rate=mutation_rate, random_seed=seed)
+        work_ts = infer_tree_sequence(ts_mut)
+        n_sites = int(ts_mut.num_sites)
+    else:
+        work_ts = ts
+
+    res = fit(work_ts, labels, K=2,
+              Q0=Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3),
+              max_iter=max_iter)
+    emissions = build_emissions(work_ts, labels, res.w, res.pi)
+    tracks = posterior_table(work_ts, res.Q, res.pi, emissions, focal=queries)
 
     acc = per_base_accuracy(tracks, truth_states, samples=queries)
     rel = reliability_curve(tracks, truth_states, state=0)
@@ -58,13 +70,15 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
 
     return {
         "T_admix": T_admix,
+        "inferred": infer,
+        "n_sites": n_sites,
         "accuracy": acc,
         "reliability": rel,
         "mean_flicker": float(np.mean([f["mean_abs_diff"] for f in flick])),
         "mean_flip_rate": float(np.mean([f["flip_rate"] for f in flick])),
         "boundary_error": boundary,
         "Q": res.Q, "pi": res.pi, "n_queries": len(queries),
-        "tracks": tracks, "truth_states": truth_states, "ts": ts,
+        "tracks": tracks, "truth_states": truth_states, "ts": ts, "work_ts": work_ts,
     }
 
 

@@ -555,6 +555,13 @@ is a footnote.
   novelty** (found nowhere else in the LAI/ARG literature). Test directly: accuracy +
   calibration vs. admixture age, `tslai` vs. RFMix/MOSAIC/FLARE **and head-to-head vs.
   ARGMix / Pearson & Durbin**.
+- **[MEASURED — Rung 8] Bounded by ARG accuracy, confirmed.** On strong-structure
+  sims the true ARG paints at accuracy ~1.0; on a **tsinfer-inferred** ARG accuracy
+  is data-density-dependent — ~0.53 at ~650 sites (poor ARG, near chance), ~0.64 at
+  ~2100, ~0.88 at ~5400 (good ARG) — for balanced 50/50 admixture (chance 0.5). Tree
+  accuracy, not tract length, is the binding constraint, exactly as predicted. Front
+  end `io_tsinfer.py`; driver `admixture_experiment(infer=True)`. Outstanding: Relate
+  front end, ancient / weak-structure regimes, and the head-to-head vs. comparators.
 - **Baselines / comparators.** *Segment/copying incumbents:* RFMix, MOSAIC, FLARE.
   *ARG-native LAI (same task, different machinery — the real head-to-head):* ARGMix
   (Shanks et al., 2026; graph transformer on Relate trees), Pearson & Durbin (2023,

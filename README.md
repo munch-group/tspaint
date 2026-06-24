@@ -28,16 +28,18 @@ implemented and validated on simulated truth:
 | Blocked EM `(Q, π, {w_i})` | `em.py` | monotone log-lik; Q recovery; mislabel detection |
 | Per-haplotype posteriors + missing-info tagging | `output.py` | coverage, prior-fallback |
 | Accuracy / calibration / flicker metrics | `validate.py`, `experiments.py` | end-to-end on admixture sims |
+| tsinfer inferred-ARG front end | `io_tsinfer.py` | inferred-ARG accuracy (bounded by ARG accuracy) |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity —
 so the blocked-EM approximation is sufficient and the deferred loopy-BP alternative
-(`bp/`) is not needed (CLAUDE.md §7.3).
+(`bp/`) is not needed (CLAUDE.md §7.3). On a **tsinfer-inferred** ARG, painting is
+bounded by ARG accuracy: ~0.88 with dense variants down toward chance when variants
+are sparse — tree accuracy, not tract length, is the binding constraint (§9).
 
 **Outstanding:** the Relate `--compress` front end (`io_relate.py`), and the
-hard-regime / head-to-head validation — inferred ARGs (Relate/tsinfer), weak
-structure, ancient admixture, and comparison vs. RFMix/MOSAIC/FLARE and the
-ARG-native neighbours (CLAUDE.md §9, §10).
+hard-regime / head-to-head validation — weak structure, ancient admixture, and
+comparison vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours (CLAUDE.md §9, §10).
 
 ## Install
 

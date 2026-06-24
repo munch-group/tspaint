@@ -33,6 +33,7 @@ from .output import (posterior_table, missing_info_mask, posterior_at, Segment,
 from .validate import (map_truth, per_base_accuracy, reliability_curve,
                        breakpoint_flicker, tract_boundary_error)
 from .experiments import admixture_experiment, flicker_vs_true_boundaries
+from .io_tsinfer import add_mutations, infer_tree_sequence
 
 try:  # version is best-effort; not required for use
     from importlib.metadata import version, PackageNotFoundError
@@ -82,6 +83,8 @@ __all__ = [
     "tract_boundary_error",
     "admixture_experiment",
     "flicker_vs_true_boundaries",
+    "add_mutations",
+    "infer_tree_sequence",
     "SOURCE_A",
     "SOURCE_B",
     "ADMIXED",

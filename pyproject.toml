@@ -44,6 +44,7 @@ tslai = ["data/*.txt", "data/*.csv", "data/*.pickle", "data/*.h5"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+markers = ["slow: heavy end-to-end / ARG-inference tests (deselect with -m 'not slow')"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge", "munch-group"]
@@ -71,6 +72,7 @@ seaborn = "*"
 nbdime = ">=4.0.2,<5"
 vscodenb = "*"
 r-rsvg = "*"
+tsinfer = ">=0.5.1,<0.6"
 
 # [tool.pixi.pypi-dependencies]
 # tslai = { path = ".", editable = true }
