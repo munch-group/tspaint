@@ -31,12 +31,16 @@ implemented and validated on simulated truth:
 | tsinfer inferred-ARG front end | `io_tsinfer.py` | inferred-ARG accuracy (bounded by ARG accuracy) |
 | ARG-posterior ensemble merge | `ensemble.py` | average paintings across tree-sequence samples + uncertainty band |
 | SINGER posterior front end | `io_singer.py` | run SINGER MCMC → posterior ARG samples (largely lifts the §9 ARG bound) |
-| Head-to-head harness | `compare.py` | score painters (tslai, ARG-native baseline, external) on one truth |
+| Head-to-head harness + RFMix comparator | `compare.py`, `io_rfmix.py` | score painters (tslai, ARG-native baseline, RFMix) on one truth; tslai matches RFMix accuracy, stays calibrated |
+| Hard segmentation (deadband) + fragmentation metrics | `output.py`, `validate.py` | recovers the true tract-length distribution for dating (CLAUDE.md §9) |
+| High-level `paint()` API | `api.py` | one-call fit + paint → `Painting` |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
-calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity —
-so the blocked-EM approximation is sufficient and the deferred loopy-BP alternative
-(`bp/`) is not needed (CLAUDE.md §7.3). On a **tsinfer-inferred** ARG, painting is
+calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity — so the
+blocked-EM approximation is sufficient on the true ARG, where the `hard_segments` deadband
+recovers the tract-length distribution for dating. On **inferred** ARGs a horizontal BP/EP
+smoother does add value (it suppresses tree-inference-induced spurious switches a per-position
+threshold cannot) — measured on the `loopy-bp-ep` branch (CLAUDE.md §7). On a **tsinfer-inferred** ARG, painting is
 bounded by ARG accuracy: ~0.88 with dense variants down toward chance when variants
 are sparse — tree accuracy, not tract length, is the binding constraint (§9). With
 **SINGER** (Bayesian posterior ARG sampling) that bound largely disappears: single
@@ -52,13 +56,18 @@ haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy 
 flicker unaffected by sample size; whole-genome at that size is hours per fit — the
 incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
 
-**Outstanding:** the **§6 order-only / ranked-topology variant** — the head-to-head shows
-tslai's CTMC is sensitive to branch lengths, which tsinfer resolves poorly on short/sparse
-regions (SINGER's calibrated times avoid it; CLAUDE.md §9); plugging real external
-comparators (RFMix/MOSAIC/FLARE, ARGMix, Pearson & Durbin) into the `compare.py` harness;
-the Relate `--compress` front end (`io_relate.py`); and finding the regime where merging
-SINGER posterior samples improves *accuracy* (it currently adds a calibrated uncertainty
-band only; CLAUDE.md §7.4).
+**Outstanding:** the remaining external comparators (**RFMix is wired** via
+`tslai.compare.rfmix_paint`; MOSAIC/FLARE and the ARG-native ARGMix / Pearson & Durbin need
+separate installs); the Relate `--compress` front end (`io_relate.py`); and the regime where
+merging SINGER posterior samples improves *accuracy* rather than only adding a calibrated band
+(CLAUDE.md §7.4).
+
+*Closed:* the §6 order-only / ranked variant (measured — **not beneficial**; the short-region
+failure was π-identifiability, fixed by holding π uniform, `estimate_pi=False`); the RFMix
+head-to-head (tslai matches RFMix's accuracy while staying calibrated); the segment-fragmentation
+question for dating (the `hard_segments` deadband recovers the true tract-length distribution, and
+on *inferred* ARGs a horizontal BP smoother helps further — explored on the `loopy-bp-ep` branch,
+CLAUDE.md §7, §9).
 
 ## Install
 
@@ -72,11 +81,40 @@ pixi run test         # run the test suite
 ```python
 import tslai
 
-# simulate admixture with known local ancestry, fit, paint, and score
-r = tslai.admixture_experiment(T_admix=300, n_admix=6, n_ref=10,
-                               sequence_length=4e5, f_A=0.5, seed=1)
-print("per-base accuracy:", r["accuracy"])
+# 1. Get a tree sequence — here, simulate admixture with known truth
+#    (or build one from genotypes: tslai.io.infer_tree_sequence / singer_tree_sequences).
+ts = tslai.simulate_admixture(n_admix=10, n_ref=10, sequence_length=2e6,
+                              T_admix=100, T_split=5000, Ne=1000, random_seed=1)
+
+# 2. Label the reference haplotypes (sample-node id -> ancestry state) and paint the rest.
+pop = ts.tables.nodes.population
+name = {p: ts.population(p).metadata["name"] for p in range(ts.num_populations)}
+state = {p: i for i, p in enumerate(p for p, n in name.items() if n in ("A", "B"))}
+labels = {int(s): state[pop[s]] for s in ts.samples() if pop[s] in state}
+
+painting = tslai.paint(ts, labels)          # EM-fit (Q[, π, w]) on references, paint the queries
+painting.posteriors[painting.queries[0]]    # soft per-position posterior over ancestry (Segments)
+painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-length / dating)
 ```
+
+## Public API
+
+**Core** — `tslai.paint(ts, labels, queries=None, *, deadband=…)` returns a `Painting` with
+`.posteriors` (soft `Segment` tracks), `.segments(deadband=…)` (hard tracts), and the fitted
+`.Q / .pi / .w`. Building blocks: `tslai.fit`, `posterior_table`, `hard_segments`, `Segment`,
+`make_generator_2state`. Simulation: `simulate_admixture`, `local_ancestry_truth`.
+
+**Namespaces**
+
+| Namespace | What |
+|---|---|
+| `tslai.metrics` | `balanced_accuracy`, `reliability_curve`, `breakpoint_precision_recall`, `switch_density`, `tract_boundary_error`, … |
+| `tslai.compare` | painters `tslai_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
+| `tslai.io` | input front ends: `infer_tree_sequence`/`add_mutations` (tsinfer), `singer_tree_sequences` (SINGER) |
+| `tslai.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |
+
+Lower-level machinery is in the named submodules (`tslai.model`, `tslai.pruning`,
+`tslai.accumulate`, `tslai.em`, `tslai.output`, `tslai.ensemble`, `tslai.ranked`).
 
 See `notebooks/` for the persistence go/no-go (00), accuracy / calibration /
 accuracy-vs-age (01), the flicker / `bp/` decision (02), and haplotype paintings +

@@ -51,7 +51,7 @@ def test_breakpoint_precision_recall_and_density():
 
 @pytest.mark.slow
 def test_fragmentation_experiment_deadband_not_worse_than_argmax():
-    from tslai import fragmentation_experiment
+    from tslai.experiments import fragmentation_experiment
     r = fragmentation_experiment(n_admix=4, n_ref=4, sequence_length=3e5, T_admix=100,
                                  seed=1, include_rfmix=False)
     m = r["methods"]

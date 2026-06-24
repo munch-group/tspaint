@@ -31,8 +31,10 @@ from .em import fit, build_emissions
 from .model import make_generator_2state
 from .output import Segment, posterior_table, INFORMATIVE, MISSING_INFO
 from .validate import balanced_accuracy, mean_confidence, per_base_accuracy
+from .io_rfmix import rfmix_paint   # genotype-native comparator, scored like the rest
 
-__all__ = ["tslai_paint", "nearest_reference_paint", "score_painter", "head_to_head"]
+__all__ = ["tslai_paint", "nearest_reference_paint", "rfmix_paint", "score_painter",
+           "head_to_head"]
 
 
 def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,

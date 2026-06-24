@@ -1,47 +1,49 @@
 """tslai — Tree-Sequence Local Ancestry Inference.
 
-Soft, calibrated local ancestry along haplotypes from an inferred tree sequence,
-via an ancestry CTMC fit by edge-blocked, span-weighted EM. See CLAUDE.md for the
-authoritative spec.
+Soft, calibrated local ancestry along haplotypes from an inferred tree sequence, via an
+ancestry CTMC fit by edge-blocked, span-weighted EM. See CLAUDE.md for the authoritative spec.
+
+Quick start
+-----------
+>>> import tslai
+>>> ts = tslai.simulate_admixture(n_admix=10, n_ref=10)   # or tslai.io.infer_tree_sequence(...)
+>>> labels = {0: 0, 1: 0, 2: 1, 3: 1}                     # reference sample-node -> ancestry state
+>>> painting = tslai.paint(ts, labels)                    # EM-fit on references, paint the queries
+>>> painting.posteriors[q]                                # soft per-position posterior (Segments)
+>>> painting.segments(deadband=0.4)                       # hard ancestry tracts (for dating)
+
+Public API
+----------
+Core
+    paint, Painting, fit, FitResult, posterior_table, hard_segments, Segment,
+    INFORMATIVE, MISSING_INFO, make_generator_2state
+Simulation (examples / benchmarks)
+    simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+Namespaces
+    tslai.metrics      accuracy, calibration, fragmentation / tract-length metrics
+    tslai.compare      painters (tslai_paint, nearest_reference_paint, rfmix_paint) + head_to_head
+    tslai.io           input front ends (tsinfer, SINGER)
+    tslai.experiments  end-to-end benchmark drivers
+Lower-level machinery lives in the named submodules (``tslai.model``, ``tslai.pruning``,
+``tslai.accumulate``, ``tslai.em``, ``tslai.output``, ``tslai.ensemble``, ``tslai.ranked``,
+``tslai.diagnostics``).
 """
 from __future__ import annotations
 
-from .branch_stats import branch_expected_stats, vanloan_integral
-from .model import (
-    make_generator_2state,
-    validate_generator,
-    transition_matrix,
-    stationary_distribution,
-    tip_emission,
-    query_emission,
+# Core public API ---------------------------------------------------------------------------
+from .api import paint, Painting
+from .em import fit, FitResult
+from .output import posterior_table, hard_segments, Segment, INFORMATIVE, MISSING_INFO
+from .model import make_generator_2state
+from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+
+# Namespaces (grouped functionality; submodules also importable directly) -------------------
+from . import validate as metrics
+from . import (  # noqa: F401  (exposed as tslai.<name>)
+    compare, io, experiments, sim, model, ensemble, ranked, validate,
+    em, output, pruning, accumulate, branch_stats, diagnostics,
+    io_tsinfer, io_singer, io_rfmix,
 )
-from .sim import (
-    simulate_admixture,
-    local_ancestry_truth,
-    admixture_demography,
-    SOURCE_A,
-    SOURCE_B,
-    ADMIXED,
-    ANCESTRAL,
-)
-from .diagnostics import persistence_summary, node_persistence, edge_span_summary
-from .pruning import prune_tree, prune_root, PruneResult
-from .accumulate import accumulate_sufficient_statistics, SuffStats
-from .em import m_step_Q, m_step_pi, m_step_w, fit, FitResult
-from .output import (posterior_table, missing_info_mask, posterior_at, hard_segments,
-                     Segment, INFORMATIVE, MISSING_INFO)
-from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
-                       mean_confidence, reliability_curve, breakpoint_flicker,
-                       tract_boundary_error, breakpoint_precision_recall, switch_density)
-from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
-                          scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment,
-                          fragmentation_experiment)
-from .ensemble import merge_posterior_tables, MergedSegment
-from .compare import tslai_paint, nearest_reference_paint, head_to_head, score_painter
-from .ranked import ranked_tree_sequence
-from .io_tsinfer import add_mutations, infer_tree_sequence
-from .io_singer import singer_tree_sequences, write_haploid_vcf
-from .io_rfmix import rfmix_paint, run_rfmix
 
 try:  # version is best-effort; not required for use
     from importlib.metadata import version, PackageNotFoundError
@@ -54,69 +56,13 @@ except Exception:  # pragma: no cover
     __version__ = "0.0.0+unknown"
 
 __all__ = [
-    "branch_expected_stats",
-    "vanloan_integral",
+    # core
+    "paint", "Painting", "fit", "FitResult",
+    "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO",
     "make_generator_2state",
-    "validate_generator",
-    "transition_matrix",
-    "stationary_distribution",
-    "tip_emission",
-    "query_emission",
-    "simulate_admixture",
-    "local_ancestry_truth",
-    "admixture_demography",
-    "persistence_summary",
-    "node_persistence",
-    "edge_span_summary",
-    "prune_tree",
-    "prune_root",
-    "PruneResult",
-    "accumulate_sufficient_statistics",
-    "SuffStats",
-    "m_step_Q",
-    "m_step_pi",
-    "m_step_w",
-    "fit",
-    "FitResult",
-    "posterior_table",
-    "missing_info_mask",
-    "posterior_at",
-    "hard_segments",
-    "Segment",
-    "INFORMATIVE",
-    "MISSING_INFO",
-    "map_truth",
-    "per_base_accuracy",
-    "balanced_accuracy",
-    "mean_confidence",
-    "reliability_curve",
-    "breakpoint_flicker",
-    "tract_boundary_error",
-    "breakpoint_precision_recall",
-    "switch_density",
-    "admixture_experiment",
-    "flicker_vs_true_boundaries",
-    "age_sweep",
-    "scaling_sweep",
-    "arg_ensemble_experiment",
-    "singer_ensemble_experiment",
-    "fragmentation_experiment",
-    "merge_posterior_tables",
-    "MergedSegment",
-    "tslai_paint",
-    "nearest_reference_paint",
-    "head_to_head",
-    "score_painter",
-    "ranked_tree_sequence",
-    "add_mutations",
-    "infer_tree_sequence",
-    "singer_tree_sequences",
-    "write_haploid_vcf",
-    "rfmix_paint",
-    "run_rfmix",
-    "SOURCE_A",
-    "SOURCE_B",
-    "ADMIXED",
-    "ANCESTRAL",
+    # simulation
+    "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
+    # namespaces
+    "metrics", "compare", "io", "experiments",
     "__version__",
 ]

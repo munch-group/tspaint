@@ -23,7 +23,7 @@ def test_singer_tree_sequences_sample_aligned():
                                   recombination_rate=1e-8, random_seed=1, Ne=1000, T_split=5000)
     tsm = msprime.sim_mutations(ts, rate=2.5e-7, random_seed=1,
                                 model=msprime.BinaryMutationModel())
-    samples = tslai.singer_tree_sequences(tsm, Ne=1000, mutation_rate=2.5e-7,
+    samples = tslai.io.singer_tree_sequences(tsm, Ne=1000, mutation_rate=2.5e-7,
                                           recombination_rate=1e-8, n_samples=6, thin=2,
                                           burn_in=2, seed=7)
     assert len(samples) >= 1
