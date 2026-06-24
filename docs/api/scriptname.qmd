@@ -1,6 +1,6 @@
-# scriptname { #munch_group_library.modulename.scriptname }
+# scriptname { #tslai.modulename.scriptname }
 
 ```python
-munch_group_library.modulename.scriptname()
+tslai.modulename.scriptname()
 ```
 
