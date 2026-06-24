@@ -562,6 +562,19 @@ is a footnote.
   accuracy, not tract length, is the binding constraint, exactly as predicted. Front
   end `io_tsinfer.py`; driver `admixture_experiment(infer=True)`. Outstanding: Relate
   front end, ancient / weak-structure regimes, and the head-to-head vs. comparators.
+- **[MEASURED — Rung 8] Discrimination vs. admixture age (true ARG, deep split so
+  only tract length varies; balanced 50/50).** Balanced accuracy / mean confidence:
+  T_admix=30 → 0.99 / 0.72; 300 → 0.93 / 0.36; 1000 → 0.50 / 0.15; 3000 → 0.50 / 0.18.
+  Discriminates well at recent–moderate admixture; the **reference signal is lost at
+  old admixture** — here *not* from tree-inference error but from coalescent structure:
+  admixed individuals sampled at the present coalesce **among themselves** before the
+  old pulse, severing the query→reference genealogical link. **Refines the headline:**
+  tract length is not the binding constraint, but the query↔reference link is, and it
+  decays with admixture age under present-day admixed sampling. Crossover age is
+  scenario-specific (scales with Ne / sampling); the qualitative loss-at-old is robust.
+  Methodological note: plain accuracy is misleading on a lopsided truth (argmax on
+  P≈0.5) — **report balanced accuracy + confidence** (`validate.balanced_accuracy`,
+  `validate.mean_confidence`).
 - **Baselines / comparators.** *Segment/copying incumbents:* RFMix, MOSAIC, FLARE.
   *ARG-native LAI (same task, different machinery — the real head-to-head):* ARGMix
   (Shanks et al., 2026; graph transformer on Relate trees), Pearson & Durbin (2023,

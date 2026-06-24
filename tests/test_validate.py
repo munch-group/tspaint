@@ -2,8 +2,9 @@
 import numpy as np
 
 from tslai.output import Segment, INFORMATIVE, MISSING_INFO
-from tslai.validate import (map_truth, per_base_accuracy, reliability_curve,
-                            breakpoint_flicker, tract_boundary_error)
+from tslai.validate import (map_truth, per_base_accuracy, balanced_accuracy,
+                            mean_confidence, reliability_curve, breakpoint_flicker,
+                            tract_boundary_error)
 
 
 def seg(left, right, post, status=INFORMATIVE):
@@ -26,6 +27,19 @@ def test_accuracy_excludes_missing_info():
     tracks = {0: [seg(0, 1, [0.9, 0.1]), seg(1, 2, [0.9, 0.1], MISSING_INFO)]}
     # only the informative [0,1) counts, and it is correct
     assert per_base_accuracy(tracks, {0: [(0, 1, 0), (1, 2, 1)]}, exclude_missing=True) == 1.0
+
+
+def test_balanced_accuracy_robust_to_imbalance():
+    tracks = {0: [seg(0, 9, [0.9, 0.1]), seg(9, 10, [0.9, 0.1])]}   # paints all state 0
+    truth = {0: [(0, 9, 0), (9, 10, 1)]}                            # truth 90% state 0
+    assert per_base_accuracy(tracks, truth) == 0.9                  # plain acc is majority-fooled
+    assert np.isclose(balanced_accuracy(tracks, truth), 0.5)        # balanced: chance
+
+
+def test_mean_confidence():
+    tracks = {0: [seg(0, 1, [0.5, 0.5]), seg(1, 2, [1.0, 0.0])]}
+    assert np.isclose(mean_confidence(tracks), 0.5)                 # mean(|0|, |1|)
+    assert mean_confidence({0: [seg(0, 1, [0.5, 0.5])]}) == 0.0     # uninformative
 
 
 def test_reliability_curve_diagonal_when_calibrated():

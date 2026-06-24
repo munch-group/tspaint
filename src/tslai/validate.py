@@ -15,8 +15,8 @@ import numpy as np
 
 from .output import MISSING_INFO
 
-__all__ = ["map_truth", "per_base_accuracy", "reliability_curve",
-           "breakpoint_flicker", "tract_boundary_error"]
+__all__ = ["map_truth", "per_base_accuracy", "balanced_accuracy", "mean_confidence",
+           "reliability_curve", "breakpoint_flicker", "tract_boundary_error"]
 
 
 def map_truth(truth, state_of_pop):
@@ -55,6 +55,38 @@ def per_base_accuracy(tracks, truth_states, samples=None, exclude_missing=True):
             if int(np.argmax(seg.posterior)) == tstate:
                 correct += w
     return correct / total if total > 0 else float("nan")
+
+
+def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, K=2):
+    """Mean of per-true-class accuracies — robust to class imbalance, so an
+    uninformative painter (argmax tie-broken to one class) scores ~0.5, not the
+    majority-class fraction. The honest "does it discriminate?" metric."""
+    correct = np.zeros(K)
+    total = np.zeros(K)
+    for s in (samples if samples is not None else tracks):
+        for lo, hi, seg, tstate in _walk_overlap(tracks[int(s)], truth_states[int(s)]):
+            if exclude_missing and seg.status == MISSING_INFO:
+                continue
+            w = hi - lo
+            total[tstate] += w
+            if int(np.argmax(seg.posterior)) == tstate:
+                correct[tstate] += w
+    present = total > 0
+    return float(np.mean(correct[present] / total[present])) if present.any() else float("nan")
+
+
+def mean_confidence(tracks, samples=None, state=0, exclude_missing=True):
+    """Span-weighted mean ``|2*P(state) - 1|`` — 0 = uninformative (P≈0.5), 1 =
+    confident. Distinguishes "the tree can't tell" from a wrong confident call."""
+    num = den = 0.0
+    for s in (samples if samples is not None else tracks):
+        for seg in tracks[int(s)]:
+            if exclude_missing and seg.status == MISSING_INFO:
+                continue
+            w = seg.right - seg.left
+            den += w
+            num += w * abs(2.0 * float(seg.posterior[state]) - 1.0)
+    return num / den if den > 0 else float("nan")
 
 
 def reliability_curve(tracks, truth_states, state=0, n_bins=10, exclude_missing=True):

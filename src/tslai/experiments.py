@@ -13,10 +13,11 @@ from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, A
 from .em import fit, build_emissions
 from .model import make_generator_2state
 from .output import posterior_table
-from .validate import (map_truth, per_base_accuracy, reliability_curve,
-                       breakpoint_flicker, tract_boundary_error)
+from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
+                       mean_confidence, reliability_curve, breakpoint_flicker,
+                       tract_boundary_error)
 
-__all__ = ["admixture_experiment", "flicker_vs_true_boundaries"]
+__all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -64,6 +65,8 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
     tracks = posterior_table(work_ts, res.Q, res.pi, emissions, focal=queries)
 
     acc = per_base_accuracy(tracks, truth_states, samples=queries)
+    bal = balanced_accuracy(tracks, truth_states, samples=queries)
+    conf = mean_confidence(tracks, samples=queries)
     rel = reliability_curve(tracks, truth_states, state=0)
     flick = [breakpoint_flicker(tracks, q) for q in queries]
     boundary = [tract_boundary_error(tracks, truth_states, q) for q in queries]
@@ -73,6 +76,8 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
         "inferred": infer,
         "n_sites": n_sites,
         "accuracy": acc,
+        "balanced_accuracy": bal,
+        "confidence": conf,
         "reliability": rel,
         "mean_flicker": float(np.mean([f["mean_abs_diff"] for f in flick])),
         "mean_flip_rate": float(np.mean([f["flip_rate"] for f in flick])),
@@ -80,6 +85,28 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
         "Q": res.Q, "pi": res.pi, "n_queries": len(queries),
         "tracks": tracks, "truth_states": truth_states, "ts": ts, "work_ts": work_ts,
     }
+
+
+def age_sweep(ages, infer=False, **kwargs):
+    """Accuracy vs. admixture age — the §9 headline. For each ``T_admix`` returns
+    accuracy plus the mean number of *true* ancestry switches per query (so one can
+    see tracts shortening as admixture ages). ``infer=True`` runs on tsinfer-inferred
+    ARGs (accuracy then bounded by ARG quality)."""
+    out = []
+    for T in ages:
+        r = admixture_experiment(T_admix=T, infer=infer, **kwargs)
+        switches = [sum(1 for a, b in zip(segs, segs[1:]) if a[2] != b[2])
+                    for segs in r["truth_states"].values()]
+        out.append({
+            "T_admix": T,
+            "accuracy": r["accuracy"],
+            "balanced_accuracy": r["balanced_accuracy"],
+            "confidence": r["confidence"],
+            "mean_true_switches": float(np.mean(switches)) if switches else 0.0,
+            "n_sites": r["n_sites"],
+            "inferred": infer,
+        })
+    return out
 
 
 def flicker_vs_true_boundaries(tracks, truth_states, sample, state=0, eps=0.0):

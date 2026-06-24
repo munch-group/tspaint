@@ -10,7 +10,7 @@ regime; the hard-regime head-to-head needs the external comparators.)
 import numpy as np
 import pytest
 
-from tslai.experiments import admixture_experiment, flicker_vs_true_boundaries
+from tslai.experiments import admixture_experiment, flicker_vs_true_boundaries, age_sweep
 
 
 @pytest.mark.slow
@@ -27,3 +27,17 @@ def test_painting_recovers_local_ancestry_and_blocked_em_suffices():
     off = np.mean([flicker_vs_true_boundaries(r["tracks"], r["truth_states"], q)["mean_flicker_off_true"]
                    for q in qs])
     assert off < 0.1            # measured ~0.001 -> blocked EM sufficient, bp/ deferred
+
+
+@pytest.mark.slow
+def test_signal_lost_at_old_admixture():
+    # §9 (refined): discriminates at recent/moderate admixture; the reference signal is
+    # lost at old admixture (admixed lineages coalesce among themselves before the
+    # pulse) -> balanced accuracy -> chance, confidence collapses. Plain accuracy would
+    # be misleading on the lopsided truth, hence balanced accuracy + confidence.
+    common = dict(n_admix=12, n_ref=8, sequence_length=3e5, f_A=0.5, Ne=1000,
+                  T_split=10000, max_iter=5, seed=1)
+    recent, old = age_sweep([30, 3000], infer=False, **common)
+    assert recent["balanced_accuracy"] > 0.85 and recent["confidence"] > 0.4
+    assert old["balanced_accuracy"] < 0.65                  # ~chance: reference signal lost
+    assert old["confidence"] < recent["confidence"]

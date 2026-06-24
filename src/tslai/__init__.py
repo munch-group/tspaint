@@ -30,9 +30,10 @@ from .accumulate import accumulate_sufficient_statistics, SuffStats
 from .em import m_step_Q, m_step_pi, m_step_w, fit, FitResult
 from .output import (posterior_table, missing_info_mask, posterior_at, Segment,
                      INFORMATIVE, MISSING_INFO)
-from .validate import (map_truth, per_base_accuracy, reliability_curve,
-                       breakpoint_flicker, tract_boundary_error)
-from .experiments import admixture_experiment, flicker_vs_true_boundaries
+from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
+                       mean_confidence, reliability_curve, breakpoint_flicker,
+                       tract_boundary_error)
+from .experiments import admixture_experiment, flicker_vs_true_boundaries, age_sweep
 from .io_tsinfer import add_mutations, infer_tree_sequence
 
 try:  # version is best-effort; not required for use
@@ -78,11 +79,14 @@ __all__ = [
     "MISSING_INFO",
     "map_truth",
     "per_base_accuracy",
+    "balanced_accuracy",
+    "mean_confidence",
     "reliability_curve",
     "breakpoint_flicker",
     "tract_boundary_error",
     "admixture_experiment",
     "flicker_vs_true_boundaries",
+    "age_sweep",
     "add_mutations",
     "infer_tree_sequence",
     "SOURCE_A",
