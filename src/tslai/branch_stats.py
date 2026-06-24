@@ -25,7 +25,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.linalg import expm
 
-__all__ = ["branch_expected_stats", "vanloan_integral"]
+__all__ = ["branch_expected_stats", "branch_kernel", "stats_from_kernel", "vanloan_integral"]
 
 
 def vanloan_integral(Q, t, E):
@@ -68,31 +68,54 @@ def branch_expected_stats(Q, t, xi):
         Expected number of ``m -> n`` transitions (``m != n``), under ``xi``.
     """
     Q = np.asarray(Q, float)
-    xi = np.asarray(xi, float)
     K = Q.shape[0]
-    dwell = np.zeros(K)
-    jumps = np.zeros((K, K))
-    if t <= 0:
-        return dwell, jumps
+    kernel = branch_kernel(Q, t)
+    if kernel is None:
+        return np.zeros(K), np.zeros((K, K))
+    return stats_from_kernel(kernel, xi)
 
+
+def branch_kernel(Q, t):
+    """The ``(Q, t)``-dependent part of :func:`branch_expected_stats` — the per-reward
+    conditional-expectation matrices ``E[reward | s_p, s_c]``. **Cacheable by ``t``**
+    (the per-branch posterior ``xi`` is applied separately, cheaply, via
+    :func:`stats_from_kernel`), so a sweep computes the Van Loan ``expm`` once per
+    distinct branch length rather than once per edge (CLAUDE.md §3.3). Returns ``None``
+    for ``t <= 0`` (root branches are skipped by the caller, §3.4)."""
+    Q = np.asarray(Q, float)
+    K = Q.shape[0]
+    if t <= 0:
+        return None
     P = expm(Q * t)
     # Conditioning divides the joint Van Loan integral by the endpoint transition
     # probability. Guard underflowed entries; a consistent xi puts ~0 mass there.
     Psafe = np.where(P > 1e-300, P, 1e-300)
 
+    dwell_cond = []
     for m in range(K):
         E = np.zeros((K, K))
         E[m, m] = 1.0
-        cond = vanloan_integral(Q, t, E) / Psafe   # E[time in m | s_p, s_c]
-        dwell[m] = float(np.sum(xi * cond))
+        dwell_cond.append(vanloan_integral(Q, t, E) / Psafe)   # E[time in m | s_p, s_c]
 
+    jump_cond = {}
     for m in range(K):
         for n in range(K):
             if m == n or Q[m, n] == 0.0:
                 continue
             E = np.zeros((K, K))
             E[m, n] = Q[m, n]
-            cond = vanloan_integral(Q, t, E) / Psafe   # E[# m->n jumps | s_p, s_c]
-            jumps[m, n] = float(np.sum(xi * cond))
+            jump_cond[(m, n)] = vanloan_integral(Q, t, E) / Psafe  # E[# m->n jumps | s_p, s_c]
 
+    return (dwell_cond, jump_cond, K)
+
+
+def stats_from_kernel(kernel, xi):
+    """Apply the endpoint posterior ``xi`` to a cached :func:`branch_kernel` to get
+    expected dwell times and jump counts (cheap; no matrix exponentials)."""
+    dwell_cond, jump_cond, K = kernel
+    xi = np.asarray(xi, float)
+    dwell = np.array([float(np.sum(xi * dwell_cond[m])) for m in range(K)])
+    jumps = np.zeros((K, K))
+    for (m, n), cond in jump_cond.items():
+        jumps[m, n] = float(np.sum(xi * cond))
     return dwell, jumps

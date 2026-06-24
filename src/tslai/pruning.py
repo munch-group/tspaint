@@ -146,10 +146,15 @@ def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
     return PruneResult(gamma, xi, {root: gamma[root]}, missing, dict(U), float(loglik))
 
 
-def prune_tree(tree, emissions, Q, node_time, pi):
+def prune_tree(tree, emissions, Q, node_time, pi, Pget=None):
     """Prune every root of a marginal tree; aggregate γ, ξ, root marginals,
-    missing-info tags and the total log-likelihood (CLAUDE.md §3.1, §4)."""
-    Pget = _transition_cache(Q)
+    missing-info tags and the total log-likelihood (CLAUDE.md §3.1, §4).
+
+    ``Pget`` is an optional transition-matrix cache (:func:`_transition_cache`) shared
+    across trees in a sweep, so ``expm(Q t)`` is computed once per distinct branch
+    length per EM iteration rather than once per tree (CLAUDE.md §3.3)."""
+    if Pget is None:
+        Pget = _transition_cache(Q)
     gamma, xi, root_marginal, missing, loo = {}, {}, {}, set(), {}
     loglik = 0.0
     for r in tree.roots:

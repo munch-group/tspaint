@@ -21,8 +21,8 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-from .branch_stats import branch_expected_stats
-from .pruning import prune_tree
+from .branch_stats import branch_kernel, stats_from_kernel
+from .pruning import prune_tree, _transition_cache
 
 __all__ = ["SuffStats", "accumulate_sufficient_statistics"]
 
@@ -66,11 +66,19 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
     S_root = np.zeros(K)
     S_cred = {}
     loglik = 0.0
+    Pget = _transition_cache(Q)   # shared across all trees: expm(Q t) once per distinct t
+    kernel_cache = {}             # Van Loan branch kernel once per distinct branch length
+
+    def kernel_for(t):
+        key = float(t)
+        if key not in kernel_cache:
+            kernel_cache[key] = branch_kernel(Q, t)
+        return kernel_cache[key]
 
     for (interval, _edges_out, edges_in), tree in zip(ts.edge_diffs(), ts.trees()):
         left, right = interval
         span = right - left
-        res = prune_tree(tree, emissions, Q, node_time, pi)
+        res = prune_tree(tree, emissions, Q, node_time, pi, Pget=Pget)
         loglik += span * res.loglik
 
         # Bank each entering edge's contribution ONCE, weighted by its own span.
@@ -79,9 +87,12 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
             if tree.parent(c) == tskit.NULL:      # defensive: child-edges are never root branches
                 continue
             t = node_time[p] - node_time[c]
+            kern = kernel_for(t)
+            if kern is None:               # root branch (t <= 0); skip (§3.4)
+                continue
             xi = res.xi[(p, c)]
             w_edge = e.right - e.left
-            dwell, jumps = branch_expected_stats(Q, t, xi)
+            dwell, jumps = stats_from_kernel(kern, xi)
             S_dwell += w_edge * dwell
             S_jumps += w_edge * jumps
 
