@@ -21,7 +21,7 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        tract_boundary_error)
 
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
-           "scaling_sweep", "arg_ensemble_experiment"]
+           "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -216,6 +216,69 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     return {
         "M": M,
         "n_haplotypes": int(ts.num_samples),
+        "single_balanced_mean": float(np.mean(single_bal)),
+        "single_balanced_std": float(np.std(single_bal)),
+        "single_balanced_per_member": single_bal,
+        "merged_balanced": merged_bal,
+        "merged_confidence": mean_confidence(merged, samples=queries),
+        "merged_reliability": reliability_curve(merged, truth_states, state=0),
+        "true_balanced": true_bal,
+        "merged_tracks": merged, "truth_states": truth_states, "queries": queries,
+    }
+
+
+def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_length=8e4,
+                               recombination_rate=1e-8, Ne=1000, T_split=5000.0, f_A=0.5,
+                               mutation_rate=2.5e-7, seed=1, max_iter=6, n_singer=20,
+                               thin=8, burn_in=6, singer_seed=42, Q0=None):
+    """Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. the true
+    ARG. The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
+    make merging help, unlike the correlated tsinfer ensemble (arg_ensemble_experiment).
+    Requires the SINGER binary (env TSLAI_SINGER or io_singer's default path)."""
+    import msprime
+    from .io_singer import singer_tree_sequences
+
+    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed,
+                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    A_id = next(p for p, n in names.items() if n == SOURCE_A)
+    B_id = next(p for p, n in names.items() if n == SOURCE_B)
+    admix_id = next(p for p, n in names.items() if n == ADMIXED)
+    state_of_pop = {A_id: 0, B_id: 1}
+    labels = {int(s): state_of_pop[node_pop[s]]
+              for s in ts.samples() if node_pop[s] in (A_id, B_id)}
+    queries = [int(s) for s in ts.samples() if node_pop[s] == admix_id]
+    truth, _ = local_ancestry_truth(ts)
+    truth_states = map_truth({q: truth[q] for q in queries}, state_of_pop)
+
+    tsm = msprime.sim_mutations(ts, rate=mutation_rate, random_seed=seed,
+                                model=msprime.BinaryMutationModel())
+    ensemble = singer_tree_sequences(tsm, Ne=Ne, mutation_rate=mutation_rate,
+                                     recombination_rate=recombination_rate, n_samples=n_singer,
+                                     thin=thin, burn_in=burn_in, seed=singer_seed)
+
+    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    res = fit(ensemble, [labels] * len(ensemble), K=2, Q0=Q0, max_iter=max_iter)
+    tables, single_bal = [], []
+    for g in ensemble:
+        em = build_emissions(g, labels, res.w, res.pi)
+        tab = posterior_table(g, res.Q, res.pi, em, focal=queries)
+        tables.append(tab)
+        single_bal.append(balanced_accuracy(tab, truth_states, samples=queries))
+    merged = merge_posterior_tables(tables, samples=queries)
+    merged_bal = balanced_accuracy(merged, truth_states, samples=queries)
+
+    res_true = fit(ts, labels, K=2, Q0=Q0, max_iter=max_iter)
+    em_true = build_emissions(ts, labels, res_true.w, res_true.pi)
+    tab_true = posterior_table(ts, res_true.Q, res_true.pi, em_true, focal=queries)
+    true_bal = balanced_accuracy(tab_true, truth_states, samples=queries)
+
+    return {
+        "M": len(ensemble),
+        "n_haplotypes": int(ts.num_samples),
+        "n_sites": int(tsm.num_sites),
         "single_balanced_mean": float(np.mean(single_bal)),
         "single_balanced_std": float(np.std(single_bal)),
         "single_balanced_per_member": single_bal,

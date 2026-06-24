@@ -30,13 +30,18 @@ implemented and validated on simulated truth:
 | Accuracy / calibration / flicker metrics | `validate.py`, `experiments.py` | end-to-end on admixture sims |
 | tsinfer inferred-ARG front end | `io_tsinfer.py` | inferred-ARG accuracy (bounded by ARG accuracy) |
 | ARG-posterior ensemble merge | `ensemble.py` | average paintings across tree-sequence samples + uncertainty band |
+| SINGER posterior front end | `io_singer.py` | run SINGER MCMC → posterior ARG samples (largely lifts the §9 ARG bound) |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity —
 so the blocked-EM approximation is sufficient and the deferred loopy-BP alternative
 (`bp/`) is not needed (CLAUDE.md §7.3). On a **tsinfer-inferred** ARG, painting is
 bounded by ARG accuracy: ~0.88 with dense variants down toward chance when variants
-are sparse — tree accuracy, not tract length, is the binding constraint (§9).
+are sparse — tree accuracy, not tract length, is the binding constraint (§9). With
+**SINGER** (Bayesian posterior ARG sampling) that bound largely disappears: single
+posterior samples paint ~0.99 even at sparse data where tsinfer gives chance, and merging
+the posterior ensemble adds a calibrated uncertainty band — the ARG inference method
+matters far more than the merge (§7.4).
 
 **Scaling.** The E-step is O(#trees × #nodes) per EM iteration (after exact `expm`
 caching); at a fixed region length #trees is region-bounded, so runtime is roughly
@@ -46,12 +51,11 @@ haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy 
 flicker unaffected by sample size; whole-genome at that size is hours per fit — the
 incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
 
-**Outstanding:** a **SINGER posterior-ensemble front end** (`io_singer.py`) — the merge
-layer and pooled fit are built, so marginalising the ARG posterior is the highest-value
-next step for the §9 ARG-accuracy bound (CLAUDE.md §7.4); the Relate `--compress` front
-end (`io_relate.py`); and the hard-regime / head-to-head validation — weak structure,
-ancient admixture, and comparison vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours
-(CLAUDE.md §9, §10).
+**Outstanding:** the Relate `--compress` front end (`io_relate.py`); the head-to-head
+validation vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours (CLAUDE.md §9, §10); and
+finding the regime where merging SINGER posterior samples improves *accuracy* (it already
+lifts the §9 bound, so the merge currently adds mainly a calibrated uncertainty band;
+CLAUDE.md §7.4).
 
 ## Install
 

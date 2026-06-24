@@ -523,11 +523,23 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
 > its members share tsinfer's bias and the same genealogy, so their errors are
 > *correlated* and averaging dilutes confident-correct calls instead of fixing them.
 > **That is the point** — the benefit needs genuine *posterior* draws (independent-ish
-> errors), which SINGER provides and a point-estimate ensemble does not. Outstanding:
-> `io_singer.py` (run/load thinned SINGER samples → list of tskit ts); the merge + pooled
-> fit are already wired. This **supersedes `bp/`** as the priority (it targets the
-> dominant across-ARG uncertainty, reuses the EM machinery, and fixes a §6 caveat).
-> *Verify SINGER's tskit output, sample-order preservation, and ~500-sample scaling.*
+> errors), which SINGER provides and a point-estimate ensemble does not.
+
+> **[BUILT + MEASURED — SINGER].** `io_singer.singer_tree_sequences` runs the SINGER
+> binary (haploid VCF → `singer -ploidy 1` with an auto-retry loop → tskit; sample order
+> preserved, order-aligned = 1.000; node times in generations). Driver
+> `experiments.singer_ensemble_experiment`. The headline **flips the §9 story**: SINGER
+> single posterior samples already paint at **~0.99 even at very sparse data (~160–300
+> sites) and older admixture** — where tsinfer gives ~0.58 (chance). SINGER's Bayesian SMC
+> inference **largely lifts the §9 ARG-quality bound by itself**, so merging adds little
+> *accuracy* (single is already near-ceiling) but provides a **calibrated uncertainty
+> band** (merged confidence falls 0.88→0.52 as data thins — correctly widening). Takeaway:
+> **the ARG inference method dominates the merge; tslai + SINGER is the strong
+> combination.** The merge's accuracy benefit should surface where SINGER's posterior is
+> genuinely broad and accuracy-limiting (much larger samples / very low diversity) —
+> outstanding. (SINGER's own `convert_to_tskit` omits `compute_mutation_parents()` and
+> crashes on recurrent mutations; `io_singer` fixes that.) This direction **supersedes
+> `bp/`** for ARG uncertainty and fixes a §6 caveat (calibrated times).
 
 ---
 
