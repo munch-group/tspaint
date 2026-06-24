@@ -34,7 +34,8 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
                        tract_boundary_error, breakpoint_precision_recall, switch_density)
 from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
-                          scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment)
+                          scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment,
+                          fragmentation_experiment)
 from .ensemble import merge_posterior_tables, MergedSegment
 from .compare import tslai_paint, nearest_reference_paint, head_to_head, score_painter
 from .ranked import ranked_tree_sequence
@@ -99,6 +100,7 @@ __all__ = [
     "scaling_sweep",
     "arg_ensemble_experiment",
     "singer_ensemble_experiment",
+    "fragmentation_experiment",
     "merge_posterior_tables",
     "MergedSegment",
     "tslai_paint",

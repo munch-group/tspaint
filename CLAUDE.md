@@ -714,24 +714,25 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   `validate.breakpoint_precision_recall`, `validate.switch_density`).** Downstream
   admixture-pulse dating reads the **segment-length distribution**, so spurious short
   opposite-ancestry calls (fragmenting a long tract) bias the inferred pulse *older*, and
-  over-smoothing biases it *younger*. Measured on a clean regime (true ARG, strong structure
-  Ne=1e3 / T_split=5e3, T_admix=200, L=5 Mb; true median tract ~1 Mb, 0.66 switches/Mb): **naive
-  `argmax` over-fragments, tslai worst of all** — 1.96 switches/Mb (2.97×), breakpoint precision
-  0.43, median tract 164 kb vs true 1020 kb; nearest_ref 1.91×; **RFMix native (.msp Viterbi)
-  least but still 1.55×** (precision 0.71). *No* method misses real switches (recall 1.0; the true
-  tracts here are all ≥100 kb, and 100–500 kb tracts are recovered 100% by all — short-segment
-  *sensitivity* is fine, the problem is false positives). Mechanism: at older admixture the
-  posterior hovers near 0.5 in places and argmax flips there — the §7.3 breakpoint-flicker
-  surfacing in the *segment* output. **But tslai's flips are exactly the low-confidence ones**, so
-  a confidence **deadband** on the calibrated posterior (`hard_segments(deadband=c)`) removes them:
-  c≈0.3–0.5 recovers the true distribution almost exactly (switch-density ratio **1.00**, precision
-  & recall ~1.0, median tract 1020 kb = truth); c≥0.9 over-smooths. **Takeaway: for dating, do not
-  argmax tslai — threshold its posterior.** Done so, tslai *beats* RFMix on tract-length fidelity
-  (achieves ratio 1.00 vs RFMix's fixed 1.55×): the calibrated soft posterior is a tunable
-  precision/recall dial RFMix's hard CRF does not expose. Caveats: single seed/regime; at weak
-  signal real short-tract switches *also* go low-confidence, so the deadband then genuinely trades
-  precision against recall — that is the regime where §7's uncertainty propagation (not a post-hoc
-  threshold) would be the principled fix.
+  over-smoothing biases it *younger*. Measured over **6 seeds** (`experiments.fragmentation_experiment`;
+  true ARG, strong structure Ne=1e3 / T_split=5e3, T_admix=200, L=5 Mb; true 0.83±0.15 switches/Mb,
+  inferred/true switch-density **ratio** as mean±std): **naive `argmax` over-fragments, tslai worst**
+  — ratio **1.95±0.58** (precision 0.66±0.15, median tract 371 kb); nearest_ref **1.53±0.28** (prec
+  0.76); **RFMix native (.msp Viterbi) least but still 1.35±0.22** (prec 0.79). *No* method misses
+  real switches (recall ~1.0; true tracts here all ≥100 kb, and 100–500 kb tracts recovered 100% by
+  all — short-segment *sensitivity* is fine, the problem is false positives). Mechanism: at older
+  admixture the posterior hovers near 0.5 in places and argmax flips there — the §7.3
+  breakpoint-flicker surfacing in the *segment* output. **But tslai's flips are exactly the
+  low-confidence ones**, so a confidence **deadband** on the calibrated posterior
+  (`hard_segments(deadband=c)`) removes them: c≈0.3–0.5 recovers the true distribution almost
+  exactly and **tightly** — ratio **0.99±0.01**, precision **0.99±0.01**, recall **0.99±0.01**
+  across the 6 seeds; c≥0.9 over-smooths. **Takeaway: for dating, do not argmax tslai — threshold its
+  posterior.** Done so, tslai *beats* RFMix native on tract-length fidelity (ratio 0.99 vs 1.35): the
+  calibrated soft posterior is a tunable precision/recall dial RFMix's hard CRF does not expose.
+  Caveat: one regime (6 seeds). At *weak* signal real short-tract switches *also* go low-confidence,
+  so the deadband then genuinely trades precision against recall — the regime where §7's uncertainty
+  propagation (not a post-hoc threshold) would be the principled fix, and the subject of the
+  `loopy-bp-ep` branch.
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
   instance of this scheme. `tslai` with hard clamps should reproduce their

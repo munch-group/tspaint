@@ -4,6 +4,7 @@ The deadband suppresses low-confidence (~P=0.5) argmax flips that fragment long 
 the fix for using tslai's posterior in tract-length / admixture-pulse dating.
 """
 import numpy as np
+import pytest
 
 from tslai.output import Segment, INFORMATIVE, MISSING_INFO, hard_segments
 from tslai.validate import breakpoint_precision_recall, switch_density
@@ -46,3 +47,17 @@ def test_breakpoint_precision_recall_and_density():
     assert np.isclose(pr["recall"], 1.0)           # the one true switch (90) is recovered
     assert np.isclose(switch_density(inferred, 200), 2 / 200)
     assert np.isclose(switch_density(true, 200), 1 / 200)
+
+
+@pytest.mark.slow
+def test_fragmentation_experiment_deadband_not_worse_than_argmax():
+    from tslai import fragmentation_experiment
+    r = fragmentation_experiment(n_admix=4, n_ref=4, sequence_length=3e5, T_admix=100,
+                                 seed=1, include_rfmix=False)
+    m = r["methods"]
+    assert {"tslai_argmax", "nearest_ref"} <= set(m)
+    db = next(k for k in m if k.startswith("tslai_deadband"))
+    # the deadband suppresses spurious flips, so it never fragments MORE than raw argmax
+    assert m[db]["switches_per_mb"] <= m["tslai_argmax"]["switches_per_mb"] + 1e-9
+    for v in m.values():
+        assert 0.0 <= v["precision"] <= 1.0 and 0.0 <= v["recall"] <= 1.0

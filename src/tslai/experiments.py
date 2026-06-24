@@ -14,14 +14,15 @@ import numpy as np
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from .em import fit, build_emissions
 from .model import make_generator_2state
-from .output import posterior_table
+from .output import posterior_table, hard_segments
 from .ensemble import merge_posterior_tables
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
-                       tract_boundary_error)
+                       tract_boundary_error, breakpoint_precision_recall, switch_density)
 
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
-           "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment"]
+           "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment",
+           "fragmentation_experiment"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -107,6 +108,87 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
         "Q": res.Q, "pi": res.pi, "n_queries": len(queries),
         "tracks": tracks, "truth_states": truth_states, "ts": ts, "work_ts": work_ts,
     }
+
+
+def _seg_metrics(seg_by_node, true_by_node, nodes, length, tol):
+    """Aggregate fragmentation metrics over a set of haplotypes (hard segment lists)."""
+    precs, recs, lens, n_sw = [], [], [], 0
+    for q in nodes:
+        pr = breakpoint_precision_recall(seg_by_node[q], true_by_node[q], tol)
+        if not np.isnan(pr["precision"]):
+            precs.append(pr["precision"])
+        if not np.isnan(pr["recall"]):
+            recs.append(pr["recall"])
+        n_sw += pr["n_inferred"]
+        lens += [r - l for (l, r, _s) in seg_by_node[q]]
+    mb = (length / 1e6) * len(nodes)
+    return {"switches_per_mb": n_sw / mb if mb else float("nan"),
+            "precision": float(np.mean(precs)) if precs else float("nan"),
+            "recall": float(np.mean(recs)) if recs else float("nan"),
+            "median_tract": float(np.median(lens)) if lens else float("nan")}
+
+
+def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_admix=200.0,
+                             Ne=1000, T_split=5000.0, f_A=0.5, recombination_rate=1e-8,
+                             mutation_rate=4e-7, deadband=0.4, tol=1e5, seed=1,
+                             include_rfmix=True):
+    """Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts
+    (CLAUDE.md §9). Matters because downstream admixture-pulse dating reads the segment-length
+    distribution: ``ratio`` (inferred / true switch density) ≠ 1 biases the inferred pulse
+    (>1 older from fragmentation, <1 younger from over-smoothing).
+
+    On one simulated admixture (true ARG) compares tslai ``argmax``, tslai with a confidence
+    ``deadband``, ``nearest_reference``, and — if the rfmix binary is present — RFMix native
+    (``.msp`` Viterbi). Returns ``{"seed", "true_switches_per_mb", "methods": {name: metrics}}``.
+    """
+    from .compare import tslai_paint, nearest_reference_paint
+
+    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed,
+                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    A_id = next(p for p, n in names.items() if n == SOURCE_A)
+    B_id = next(p for p, n in names.items() if n == SOURCE_B)
+    admix_id = next(p for p, n in names.items() if n == ADMIXED)
+    state_of_pop = {A_id: 0, B_id: 1}
+    labels = {int(s): state_of_pop[node_pop[s]]
+              for s in ts.samples() if node_pop[s] in (A_id, B_id)}
+    queries = [int(s) for s in ts.samples() if node_pop[s] == admix_id]
+    truth, _ = local_ancestry_truth(ts)
+    true_segs = map_truth({q: truth[q] for q in queries}, state_of_pop)
+    L = ts.sequence_length
+
+    true_sw = sum(sum(1 for k in range(1, len(true_segs[q]))
+                      if true_segs[q][k][2] != true_segs[q][k - 1][2]) for q in queries)
+    true_density = true_sw / ((L / 1e6) * len(queries))
+
+    methods = {}
+    soft = tslai_paint(ts, labels, queries)
+    methods["tslai_argmax"] = _seg_metrics(
+        {q: hard_segments(soft[q], 0.0) for q in queries}, true_segs, queries, L, tol)
+    methods[f"tslai_deadband_{deadband}"] = _seg_metrics(
+        {q: hard_segments(soft[q], deadband) for q in queries}, true_segs, queries, L, tol)
+    nr = nearest_reference_paint(ts, labels, queries)
+    methods["nearest_ref"] = _seg_metrics(
+        {q: hard_segments(nr[q], 0.0) for q in queries}, true_segs, queries, L, tol)
+
+    if include_rfmix:
+        import os
+        from .io_rfmix import (run_rfmix, _parse_msp, _classify_individuals, _ensure_sites,
+                               DEFAULT_RFMIX)
+        if os.path.exists(DEFAULT_RFMIX):
+            ts_mut = _ensure_sites(ts, mutation_rate, seed)
+            qi, _ = _classify_individuals(ts_mut, labels, queries)
+            out = run_rfmix(ts_mut, labels, queries, recombination_rate=recombination_rate,
+                            generations=T_admix)
+            methods["rfmix_msp"] = _seg_metrics(_parse_msp(out + ".msp.tsv", qi, L),
+                                                true_segs, queries, L, tol)
+
+    for m in methods.values():
+        m["ratio"] = m["switches_per_mb"] / true_density if true_density else float("nan")
+    return {"seed": seed, "T_admix": T_admix, "true_switches_per_mb": true_density,
+            "n_queries": len(queries), "methods": methods}
 
 
 def age_sweep(ages, infer=False, **kwargs):
