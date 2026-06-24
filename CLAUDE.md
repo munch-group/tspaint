@@ -653,7 +653,8 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   Methodological note: plain accuracy is misleading on a lopsided truth (argmax on
   P≈0.5) — **report balanced accuracy + confidence** (`validate.balanced_accuracy`,
   `validate.mean_confidence`).
-- **Baselines / comparators.** *Segment/copying incumbents:* RFMix, MOSAIC, FLARE.
+- **Baselines / comparators.** *Segment/copying incumbents:* RFMix (**wired** —
+  `io_rfmix.py`, see the RFMix head-to-head below), MOSAIC, FLARE.
   *ARG-native LAI (same task, different machinery — the real head-to-head):* ARGMix
   (Shanks et al., 2026; graph transformer on Relate trees), Pearson & Durbin (2023,
   "AncestralPaths"; NN on inferred tree sequences). *Nearest ARG-native but different
@@ -678,6 +679,25 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   fix but makes it worse (§6 — it inflates Q and deepens the same π degeneracy). Net: tslai
   now matches the baseline's accuracy on both short and long genomes while staying
   calibrated; the regime is an edge case anyway (real LAI is long-genome, π-identified).
+- **[MEASURED — RFMix head-to-head] (`io_rfmix.py`, `rfmix_paint`).** RFMix v2.03 (Maples
+  et al., 2013), the field-standard segment / random-forest+CRF incumbent, wired as a painter
+  through the same harness. Being **genotype-native** it ignores the ARG: the bridge writes
+  phased query/reference VCFs + a reference sample-map + a linear genetic map from the sim, runs
+  the binary, and parses its `.fb.tsv` per-marker **posteriors** back to per-haplotype Segments
+  (a fair soft-vs-soft comparison). Isolated in the `compare` pixi env (bioconda; binary via
+  `TSLAI_RFMIX` / `.pixi/envs/compare/bin/rfmix`), so the core stack is untouched. Results
+  (balanced / mean-confidence; 6 admixed, 6+6 refs, T_admix=30, f_A=0.5): **strong structure**
+  (Ne=1e3, T_split=5e3, L=1e6) — rfmix 0.99/1.00, tslai 0.99/0.68, nearest_ref 0.99/1.00: all
+  three tie on accuracy, only tslai stays soft (RFMix's posteriors **saturate to 0/1**). **Weak
+  structure** (Ne=1e4, T_split=2e3) — rfmix 0.78–0.85 / conf 0.92–1.00 vs tslai 0.77–0.80 / conf
+  0.10: balanced accuracy comparable (neither consistently ahead), but RFMix is **overconfident**
+  (conf ≫ accuracy) where tslai's posteriors relax toward 0.5 as the query↔reference genealogical
+  signal fades. **Takeaway: against the field standard, tslai matches RFMix's accuracy across
+  regimes and neither dominates on accuracy; tslai's distinguishing value is the calibrated soft
+  posterior + readable Q/credibility** — the same conclusion reached vs. the topology-only
+  baseline, now confirmed against RFMix. (Cost: RFMix ~9–125 s/run; tslai ~7–86 s; nearest_ref
+  <1 s.) Outstanding: MOSAIC/FLARE, and the ARG-native ARGMix / Pearson & Durbin (separate
+  installs slotting in as painters).
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
   instance of this scheme. `tslai` with hard clamps should reproduce their

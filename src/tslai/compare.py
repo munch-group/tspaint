@@ -13,10 +13,12 @@ Provided painters:
   No CTMC, no EM, no credibility — the naive genealogy painter that the generative model
   should beat. A fair stand-in for the lower bound of "ARG-native LAI".
 
-External comparators (RFMix/MOSAIC/FLARE; ARGMix, Pearson & Durbin) are not bundled — they
-need separate installs/trained models. Wire one in by implementing the same painter
-signature (e.g. shelling out to the tool over a VCF and parsing its calls into Segments)
-and passing it to :func:`head_to_head`; it is then scored like the rest.
+**RFMix is wired** as a painter (:func:`tslai.io_rfmix.rfmix_paint`) — the field-standard
+segment incumbent, run from an isolated ``compare`` pixi env. Other external comparators
+(MOSAIC/FLARE; ARGMix, Pearson & Durbin) are not bundled — they need separate installs /
+trained models. Add one by implementing the same painter signature (shell out to the tool
+over a VCF, parse its calls into Segments) and passing it to :func:`head_to_head`; it is
+then scored like the rest.
 """
 from __future__ import annotations
 
