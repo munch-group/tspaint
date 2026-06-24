@@ -37,6 +37,7 @@ from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_
                           scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment)
 from .ensemble import merge_posterior_tables, MergedSegment
 from .compare import tslai_paint, nearest_reference_paint, head_to_head, score_painter
+from .ranked import ranked_tree_sequence
 from .io_tsinfer import add_mutations, infer_tree_sequence
 from .io_singer import singer_tree_sequences, write_haploid_vcf
 
@@ -100,6 +101,7 @@ __all__ = [
     "nearest_reference_paint",
     "head_to_head",
     "score_painter",
+    "ranked_tree_sequence",
     "add_mutations",
     "infer_tree_sequence",
     "singer_tree_sequences",

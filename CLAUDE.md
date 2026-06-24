@@ -416,10 +416,31 @@ off. Guards:
   under a *panmictic* coalescent prior — misspecified precisely in the
   structured/admixed regime of interest (Relate Supp. Fig. 3c: TMRCA bias under
   wrong Ne). If Q depends on calibrated `t`, this bias propagates. **Mitigation /
-  ablation:** define an order-only / ranked-topology variant of the ancestry
-  model (trade calibration for robustness, in the spirit of Relate's selection
-  test which uses coalescence *order* not branch lengths). At minimum run this as
-  an ablation against the time-calibrated version.
+  ablation:** an order-only / ranked-topology variant of the ancestry model
+  (trade calibration for robustness, in the spirit of Relate's order-based
+  selection test) — `tslai.ranked.ranked_tree_sequence`, `tslai_paint(...,
+  ranked=True)`.
+  - **[MEASURED — order-only ablation is NOT beneficial; do not use for inference.]**
+    Dense-ranking node times collapses true-ARG painting ~1.0 → ~0.50. Mechanism:
+    rank compresses the timescale → EM fits a much larger Q (~1e-2 vs ~5e-5) → deep/
+    root branches wash → **π becomes unidentifiable and drifts to a degenerate extreme**
+    (`π≈[0.96,0.04]`) → confident-wrong painting. The §6 worry (mis-calibration hurts)
+    was right; this particular cure is wrong — it discards the coalescence-depth
+    *magnitudes* the CTMC needs, and worsens the π degeneracy below. Kept as a runnable
+    ablation only (`notebooks`/`compare`), not a recommended mode.
+- **π-identifiability (the real failure mode; the order-only ablation surfaced it).**
+  When deep/root branches wash (large `Q·t`, e.g. sparse/short ARGs or the order-only
+  variant), each tree's **root marginal just echoes π**, so π is under-determined and
+  the M-step drifts it to a degenerate extreme → the painting collapses to one colour
+  with high confidence (the head-to-head's confidently-wrong short-genome row, §9).
+  **Fix — hold π fixed (`estimate_pi=False`, the `tslai_paint` default).** π is a prior
+  on the *arbitrary* GMRCA state, so uniform is principled; estimating it from washing
+  roots is what breaks. **[MEASURED]** recovers both failures — true-ARG ranked
+  0.50→0.94, tsinfer L=5e4 0.50→1.00 — and is harmless on good, long data (the regime
+  where π *is* identified: L=2e5 tsinfer 0.984→0.999). The short/sparse regime itself is
+  an edge case (real LAI runs on long genomes with many roots, where π is identified and
+  tslai already paints 0.98–1.0); the fix is a free robustness default, not a fix to a
+  practical limitation. `estimate_pi=True` remains for π-recovery studies (`em.fit`).
 - **Mugration approximation.** Treating ancestry as a trait on a *fixed*
   genealogy ignores that genealogy and ancestry are jointly distributed (lineages
   in different demes cannot coalesce) — the structured-coalescent point.
@@ -647,12 +668,16 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   findings: (i) on **adequate genomes** tslai matches the baseline's accuracy (~0.98–1.0,
   true & tsinfer) but is **honestly calibrated** (confidence ~0.69–0.85) where the baseline
   is blindly overconfident (1.0) — tslai's edge is the calibrated soft posterior +
-  credibility, not raw accuracy; (ii) on **short/sparse regions** tslai can be *confidently
-  wrong* (balanced 0.50 / conf 0.98 at L=5e4; recovers to 0.98 at L=2e5) where the
-  topology-only baseline is robust — because tslai's CTMC rides on **branch lengths**,
-  which tsinfer resolves poorly on sparse data (the §6 time-calibration risk; SINGER's
-  calibrated times avoid it). **Directly motivates the §6 order-only/ranked ablation** as
-  the robustness fix, and is the strongest single argument for SINGER over tsinfer.
+  credibility, not raw accuracy; (ii) on **short/sparse regions** tslai *was* confidently
+  wrong (balanced 0.50 / conf 0.98 at L=5e4) where the topology-only baseline is robust.
+  **Diagnosed and fixed:** the cause is **π-identifiability** (§6), not branch-length
+  magnitudes per se — sparse ARGs wash the deep branches, π drifts to a degenerate extreme,
+  and the painting collapses to one colour. Holding π fixed (`estimate_pi=False`, now the
+  `tslai_paint` default) recovers it: L=5e4 tsinfer **0.50→1.00**, and L=2e5 tsinfer
+  0.984→0.999 (harmless on good data). The order-only/ranked variant was the *hypothesised*
+  fix but makes it worse (§6 — it inflates Q and deepens the same π degeneracy). Net: tslai
+  now matches the baseline's accuracy on both short and long genomes while staying
+  calibrated; the regime is an edge case anyway (real LAI is long-genome, π-identified).
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
   instance of this scheme. `tslai` with hard clamps should reproduce their

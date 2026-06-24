@@ -33,10 +33,21 @@ from .validate import balanced_accuracy, mean_confidence, per_base_accuracy
 __all__ = ["tslai_paint", "nearest_reference_paint", "score_painter", "head_to_head"]
 
 
-def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None):
-    """The tslai painter: EM-fit ``(Q, π[, w])`` on the references, then paint queries."""
+def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
+                ranked=False, estimate_pi=False):
+    """The tslai painter: EM-fit ``(Q[, π, w])`` on the references, then paint queries.
+
+    ``estimate_pi=False`` (default) holds π fixed (uniform) — robust to the
+    π-identifiability degeneracy that makes painting confidently wrong on sparse ARGs
+    (CLAUDE.md §6); set True to also estimate it (fine on good, long data). ``ranked=True``
+    runs the order-only variant, which is *not* recommended — it worsens the π degeneracy.
+    """
+    if ranked:
+        from .ranked import ranked_tree_sequence
+        ts = ranked_tree_sequence(ts)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
-    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, soft_refs=soft_refs)
+    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, soft_refs=soft_refs,
+              estimate_pi=estimate_pi)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     return posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
 

@@ -82,7 +82,7 @@ def build_emissions(ts, labels, w, pi):
 
 
 def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
-        soft_refs=None, alpha=20.0, beta=1.0, w0=0.9):
+        soft_refs=None, alpha=20.0, beta=1.0, w0=0.9, estimate_pi=True):
     """Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
 
     Parameters
@@ -138,7 +138,12 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         history.append(loglik)
 
         Q = m_step_Q(S_dwell, S_jumps)
-        pi = m_step_pi(S_root)
+        # pi is a prior on the (arbitrary) GMRCA state. When deep branches wash it is
+        # unidentifiable from the root marginals (they echo pi) and drifts to a degenerate
+        # extreme -> confident-wrong painting on sparse ARGs / the order-only variant
+        # (CLAUDE.md §6). estimate_pi=False holds it fixed (uniform unless pi0 given).
+        if estimate_pi:
+            pi = m_step_pi(S_root)
         for s in soft:
             if s in S_cred:
                 agree, disagree = S_cred[s]
