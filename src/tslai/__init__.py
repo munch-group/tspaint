@@ -36,6 +36,7 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
 from .experiments import (admixture_experiment, flicker_vs_true_boundaries, age_sweep,
                           scaling_sweep, arg_ensemble_experiment, singer_ensemble_experiment)
 from .ensemble import merge_posterior_tables, MergedSegment
+from .compare import tslai_paint, nearest_reference_paint, head_to_head, score_painter
 from .io_tsinfer import add_mutations, infer_tree_sequence
 from .io_singer import singer_tree_sequences, write_haploid_vcf
 
@@ -95,6 +96,10 @@ __all__ = [
     "singer_ensemble_experiment",
     "merge_posterior_tables",
     "MergedSegment",
+    "tslai_paint",
+    "nearest_reference_paint",
+    "head_to_head",
+    "score_painter",
     "add_mutations",
     "infer_tree_sequence",
     "singer_tree_sequences",

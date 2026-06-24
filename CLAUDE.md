@@ -541,6 +541,15 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
 > crashes on recurrent mutations; `io_singer` fixes that.) This direction **supersedes
 > `bp/`** for ARG uncertainty and fixes a §6 caveat (calibrated times).
 
+> **[MEASURED — merge-helps hunt].** No regime found where merging SINGER samples improves
+> *argmax accuracy* (gain ≤ 0 across weaker structure / more diversity / sparse data;
+> single SINGER stays 0.87–0.99, e.g. single 0.87 / merged 0.85 / true 0.97). Averaging
+> posteriors then taking argmax dilutes confident-correct calls, so the merge's value is
+> the **calibrated uncertainty band**, not accuracy — the **number of samples is a user
+> knob for uncertainty/robustness, spent only when needed** (`singer_ensemble_experiment`,
+> `n_singer`). A genuine accuracy gain awaits an ARG-uncertainty-limited regime (much
+> larger samples / very low diversity / whole-genome) not reached in these sims.
+
 ---
 
 ## 8. Open issues requiring validation (do these early)
@@ -630,6 +639,20 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   objects:* ARGformer (embedding+retrieval, unsupervised), `sticcs`+topology
   weighting (topology frequencies), SCAR (Guo et al., 2022; structured-coalescent
   migration rates on inferred ARGs, not painting). See §10.
+- **[MEASURED — head-to-head harness] (`compare.py`).** A uniform painter-scoring harness
+  (`head_to_head`, `score_painter`); painters = the full method (`tslai_paint`) and a
+  runnable **ARG-native baseline** `nearest_reference_paint` (paint each query by its
+  nearest labelled reference in the local tree — no CTMC/EM). External tools (RFMix/…,
+  ARGMix, Pearson & Durbin) slot in as painters (not bundled — separate installs). Two
+  findings: (i) on **adequate genomes** tslai matches the baseline's accuracy (~0.98–1.0,
+  true & tsinfer) but is **honestly calibrated** (confidence ~0.69–0.85) where the baseline
+  is blindly overconfident (1.0) — tslai's edge is the calibrated soft posterior +
+  credibility, not raw accuracy; (ii) on **short/sparse regions** tslai can be *confidently
+  wrong* (balanced 0.50 / conf 0.98 at L=5e4; recovers to 0.98 at L=2e5) where the
+  topology-only baseline is robust — because tslai's CTMC rides on **branch lengths**,
+  which tsinfer resolves poorly on sparse data (the §6 time-calibration risk; SINGER's
+  calibrated times avoid it). **Directly motivates the §6 order-only/ranked ablation** as
+  the robustness fix, and is the strongest single argument for SINGER over tsinfer.
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
   instance of this scheme. `tslai` with hard clamps should reproduce their

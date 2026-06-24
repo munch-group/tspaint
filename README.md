@@ -31,6 +31,7 @@ implemented and validated on simulated truth:
 | tsinfer inferred-ARG front end | `io_tsinfer.py` | inferred-ARG accuracy (bounded by ARG accuracy) |
 | ARG-posterior ensemble merge | `ensemble.py` | average paintings across tree-sequence samples + uncertainty band |
 | SINGER posterior front end | `io_singer.py` | run SINGER MCMC → posterior ARG samples (largely lifts the §9 ARG bound) |
+| Head-to-head harness | `compare.py` | score painters (tslai, ARG-native baseline, external) on one truth |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity —
@@ -51,11 +52,13 @@ haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy 
 flicker unaffected by sample size; whole-genome at that size is hours per fit — the
 incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
 
-**Outstanding:** the Relate `--compress` front end (`io_relate.py`); the head-to-head
-validation vs. RFMix/MOSAIC/FLARE and the ARG-native neighbours (CLAUDE.md §9, §10); and
-finding the regime where merging SINGER posterior samples improves *accuracy* (it already
-lifts the §9 bound, so the merge currently adds mainly a calibrated uncertainty band;
-CLAUDE.md §7.4).
+**Outstanding:** the **§6 order-only / ranked-topology variant** — the head-to-head shows
+tslai's CTMC is sensitive to branch lengths, which tsinfer resolves poorly on short/sparse
+regions (SINGER's calibrated times avoid it; CLAUDE.md §9); plugging real external
+comparators (RFMix/MOSAIC/FLARE, ARGMix, Pearson & Durbin) into the `compare.py` harness;
+the Relate `--compress` front end (`io_relate.py`); and finding the regime where merging
+SINGER posterior samples improves *accuracy* (it currently adds a calibrated uncertainty
+band only; CLAUDE.md §7.4).
 
 ## Install
 
