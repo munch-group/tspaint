@@ -10,5 +10,6 @@ EP first half of §7.2's schedule. The full-loopy iteration (re-feeding smoothed
 vertical pruning of shared internal nodes) is the remaining extension.
 """
 from .horizontal import bp_smooth, bp_smooth_track, bp_paint
+from .experiments import bp_vs_deadband_experiment
 
-__all__ = ["bp_smooth", "bp_smooth_track", "bp_paint"]
+__all__ = ["bp_smooth", "bp_smooth_track", "bp_paint", "bp_vs_deadband_experiment"]

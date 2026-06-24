@@ -75,3 +75,14 @@ def test_bp_paint_reduces_fragmentation():
     # BP must reduce the over-fragmentation of naive argmax toward the truth
     assert bp_d < argmax_d
     assert abs(bp_d - true_d) <= abs(argmax_d - true_d)
+
+
+@pytest.mark.slow
+def test_bp_vs_deadband_experiment_runs():
+    from tslai.bp import bp_vs_deadband_experiment
+    r = bp_vs_deadband_experiment(T_admix=500, infer=False, seeds=(1, 2), n_admix=6, n_ref=6,
+                                  sequence_length=1e6)
+    assert r["n_seeds"] == 2
+    for key in ("deadband_f1", "bp_f1"):
+        mean, std = r[key]
+        assert 0.0 <= mean <= 1.0 and std >= 0.0

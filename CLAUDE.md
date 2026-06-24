@@ -453,14 +453,37 @@ off. Guards:
 
 Kept for future reference. Build only if §7.3 says blocked EM is insufficient.
 
-> **[DECISION — current, on simulated truth]:** Not needed. On strong-structure
-> msprime sims (true ARG), breakpoint flicker at persist-but-reparent boundaries is
-> ~0.001 vs. ~0.95 discontinuity at true switches (three orders of magnitude
-> smaller), with per-base painting accuracy ~1.0 and good calibration (Rung 8,
-> `notebooks/02`, `src/tslai/experiments.py`). Blocked EM is sufficient; `bp/` stays
-> a footnote. **Revisit on inferred ARGs (Relate/tsinfer) and weak-structure /
-> ancient-admixture regimes** — where the approximation is most stressed — before
-> treating this as final.
+> **[DECISION — superseded; see the loopy-bp-ep update below]:** Not needed *on the true ARG*.
+> On strong-structure msprime sims (true ARG), breakpoint flicker at persist-but-reparent
+> boundaries is ~0.001 vs. ~0.95 discontinuity at true switches, with per-base accuracy ~1.0 and
+> good calibration (Rung 8, `notebooks/02`). Blocked EM is sufficient there. The flagged revisit
+> on **inferred ARGs** has now been done — and there the verdict flips.
+
+> **[MEASURED — `loopy-bp-ep` branch, BUILT].** Implemented the **single-pass horizontal BP/EP
+> smoother** (`tslai.bp` — `bp_smooth`, `bp_smooth_track`, `bp_paint`): a genome-axis
+> forward-backward over each tip's per-tree beliefs with a per-breakpoint switch penalty ``ε``
+> (the EP first half of §7.2's schedule, factorised per tip; full loopy = re-feeding into the
+> vertical pruning of shared internal nodes, the ``n_sweeps>1`` extension, not yet built).
+> Compared head-to-head against the per-position `output.hard_segments` **deadband** for
+> *segmentation* fidelity (breakpoint F1 at the switch-density-matched operating point), over
+> seeds, true vs inferred ARG (`tslai.bp.bp_vs_deadband_experiment`):
+>
+> - **True ARG (4 seeds, T_admix 500/700/900):** the deadband **wins** — F1 0.95–0.99 (±≤0.03)
+>   vs BP 0.89–0.93 (±~0.08), and BP's even-max-F1 is below it. The single-seed hint that BP won
+>   at T=700 was seed noise. On clean per-tree posteriors a per-position confidence threshold is
+>   near-optimal; BP's run-length smoothing trades calibration away and adds variance.
+> - **Inferred ARG (tsinfer, 3 seeds): BP wins decisively** — F1 **0.71→0.98** at T_admix=500 and
+>   **0.74→0.90** at T_admix=700. Tree inference scatters spurious breakpoints whose per-tree
+>   posterior is *not* low-confidence, so the deadband cannot filter them; BP's spatial smoothing
+>   recovers the tract structure. BP also nudges per-base balanced accuracy up (+0.005–0.016)
+>   in every regime.
+>
+> **Verdict: §7's horizontal coupling is needed on inferred ARGs — the realistic input — and
+> redundant on the true ARG.** `bp_paint` is the recommended segmentation path when painting on a
+> tsinfer/Relate ARG; on a true/known ARG, blocked EM + deadband suffices. The single-pass tip
+> smoother already captures a large effect; full-loopy (internal-node coupling) is a further
+> possible gain, now well-motivated but lower priority. Driver: `bp.bp_vs_deadband_experiment`;
+> tests: `tests/test_bp.py`.
 
 ### 7.1 Why it exists
 The inference object is a graph: nodes are (lineage, genomic-span) edges; couplings are
