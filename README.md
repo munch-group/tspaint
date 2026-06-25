@@ -34,13 +34,15 @@ implemented and validated on simulated truth:
 | Head-to-head harness + RFMix comparator | `compare.py`, `io_rfmix.py` | score painters (tslai, ARG-native baseline, RFMix) on one truth; tslai matches RFMix accuracy, stays calibrated |
 | Hard segmentation (deadband) + fragmentation metrics | `output.py`, `validate.py` | recovers the true tract-length distribution for dating (CLAUDE.md §9) |
 | High-level `paint()` API | `api.py` | one-call fit + paint → `Painting` |
+| Horizontal BP/EP smoother | `bp/` | wins on inferred ARGs (breakpoint F1 0.71→0.98), redundant on true ARG (CLAUDE.md §7) |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity — so the
 blocked-EM approximation is sufficient on the true ARG, where the `hard_segments` deadband
 recovers the tract-length distribution for dating. On **inferred** ARGs a horizontal BP/EP
-smoother does add value (it suppresses tree-inference-induced spurious switches a per-position
-threshold cannot) — measured on the `loopy-bp-ep` branch (CLAUDE.md §7). On a **tsinfer-inferred** ARG, painting is
+smoother adds value (it suppresses tree-inference-induced spurious switches a per-position
+threshold cannot — breakpoint F1 0.71→0.98): use `tslai.paint(..., smooth=True)` or `tslai.bp`
+(CLAUDE.md §7). On a **tsinfer-inferred** ARG, painting is
 bounded by ARG accuracy: ~0.88 with dense variants down toward chance when variants
 are sparse — tree accuracy, not tract length, is the binding constraint (§9). With
 **SINGER** (Bayesian posterior ARG sampling) that bound largely disappears: single
@@ -66,8 +68,8 @@ merging SINGER posterior samples improves *accuracy* rather than only adding a c
 failure was π-identifiability, fixed by holding π uniform, `estimate_pi=False`); the RFMix
 head-to-head (tslai matches RFMix's accuracy while staying calibrated); the segment-fragmentation
 question for dating (the `hard_segments` deadband recovers the true tract-length distribution, and
-on *inferred* ARGs a horizontal BP smoother helps further — explored on the `loopy-bp-ep` branch,
-CLAUDE.md §7, §9).
+on *inferred* ARGs the horizontal BP smoother — now in `tslai.bp` / `paint(smooth=True)` — helps
+further, CLAUDE.md §7, §9).
 
 ## Install
 
@@ -111,6 +113,7 @@ painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-le
 | `tslai.metrics` | `balanced_accuracy`, `reliability_curve`, `breakpoint_precision_recall`, `switch_density`, `tract_boundary_error`, … |
 | `tslai.compare` | painters `tslai_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
 | `tslai.io` | input front ends: `infer_tree_sequence`/`add_mutations` (tsinfer), `singer_tree_sequences` (SINGER) |
+| `tslai.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
 | `tslai.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |
 
 Lower-level machinery is in the named submodules (`tslai.model`, `tslai.pruning`,
