@@ -1,0 +1,66 @@
+# fit_rate_through_time { #tslai.fit_rate_through_time }
+
+```python
+tslai.fit_rate_through_time(
+    ts,
+    labels,
+    edges=None,
+    *,
+    n_cells=40,
+    n_iter=15,
+    em_init=8,
+    Q0=None,
+    estimate_pi=False,
+    soft_refs=None,
+    n_knots=20,
+    tol=0.0001,
+    floor=1e-09,
+    fit_result=None,
+)
+```
+
+Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample-node id -> ancestry state (0/1).
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Fine log-time grid edges (:func:`tslai.dating.log_time_grid`). If ``None`` (default), a grid of ``n_cells`` log-spaced cells is built automatically from the node ages.
+
+<code>[**n_cells**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [40]{.parameter-default}</code>
+
+:   Number of log-time cells when ``edges`` is auto-constructed (ignored if ``edges`` given).
+
+<code>[**n_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [15]{.parameter-default}</code>
+
+:   Maximum EM iterations.
+
+<code>[**em_init**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   Iterations of the homogeneous :func:`tslai.fit` used to initialise (ignored when ``fit_result`` is supplied).
+
+<code>[**n_knots**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   Spline knots for the M-step.
+
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0001]{.parameter-default}</code>
+
+:   Relative log-likelihood change for convergence.
+
+<code>[**fit_result**]{.parameter-name} [:]{.parameter-annotation-sep} [[tslai](`tslai`).[em](`tslai.em`).[FitResult](`tslai.em.FitResult`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous :func:`tslai.fit` is skipped — used by :meth:`tslai.Painting.rate_through_time` to reuse the painting's fit rather than refitting.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tslai.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
+
+:   

@@ -1,0 +1,27 @@
+# dating.split_branch { #tslai.dating.split_branch }
+
+```python
+tslai.dating.split_branch(t_c, t_p, edges)
+```
+
+Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**t_c**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child (younger) and parent (older) node ages.
+
+<code>[**t_p**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child (younger) and parent (older) node ages.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Grid cell edges (ascending).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[int](`int`), [float](`float`)\]\]]{.parameter-annotation}</code>
+
+:   ``(cell_index, duration)`` sub-intervals **ordered parent → child** (descending time), matching the ``xi[s_p, s_c]`` / ``expm`` convention of :func:`tslai.branch_stats.vanloan_integral`. Portions of the branch outside ``[edges[0], edges[-1]]`` are assigned to the nearest boundary cell so the whole branch is covered (so per-cell totals sum to the whole-branch statistics).

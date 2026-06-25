@@ -106,6 +106,12 @@ painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-le
 `.Q / .pi / .w`. Building blocks: `tslai.fit`, `posterior_table`, `hard_segments`, `Segment`,
 `make_generator_2state`. Simulation: `simulate_admixture`, `local_ancestry_truth`.
 
+**Dating (optional)** — `tslai.fit_rate_through_time(ts, labels)` estimates the directional
+cross-ancestry rate through time (`RateThroughTime` with `.q_AB / .q_BA / .plot()`) — *when* the
+labelled ancestries diverged / exchanged genes. `Painting.rate_through_time()` reuses a painting's
+fit; it returns a new profile and does **not** change the painting (Q(t) gives no painting-accuracy
+gain — the paths stay side by side).
+
 **Namespaces**
 
 | Namespace | What |
@@ -114,6 +120,7 @@ painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-le
 | `tslai.compare` | painters `tslai_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
 | `tslai.io` | input front ends: `infer_tree_sequence`/`add_mutations` (tsinfer), `singer_tree_sequences` (SINGER) |
 | `tslai.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
+| `tslai.dating` | admixture rate through time (time-inhomogeneous directional mugration EM): `fit_rate_through_time`, `RateThroughTime`, `paint_qt` |
 | `tslai.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |
 
 Lower-level machinery is in the named submodules (`tslai.model`, `tslai.pruning`,

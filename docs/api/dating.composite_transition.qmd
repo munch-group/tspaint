@@ -1,0 +1,8 @@
+# dating.composite_transition { #tslai.dating.composite_transition }
+
+```python
+tslai.dating.composite_transition(Q_of_cell, t_c, t_p, edges)
+```
+
+Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a
+time-inhomogeneous generator (indexed ``[s_p, s_c]``, the pruning convention).

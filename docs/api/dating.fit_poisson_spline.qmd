@@ -1,0 +1,33 @@
+# dating.fit_poisson_spline { #tslai.dating.fit_poisson_spline }
+
+```python
+tslai.dating.fit_poisson_spline(
+    centers,
+    events,
+    exposure,
+    lam,
+    n_knots=25,
+    degree=3,
+    order=2,
+    max_iter=60,
+    tol=1e-07,
+)
+```
+
+Penalised Poisson log-spline via penalised IRLS.
+
+Model ``events ~ Poisson(exposure · exp(B β))`` with 2nd-difference penalty ``λ βᵀPβ``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**rate**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) ndarray]{.parameter-annotation}</code>
+
+:   Fitted rate ``exp(Bβ)`` at the cell centres.
+
+<code>[**edf**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Effective degrees of freedom (trace of the smoother hat matrix) — for GCV.
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [(ncoef,) ndarray]{.parameter-annotation}</code>
+
+:   

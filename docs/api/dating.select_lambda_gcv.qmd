@@ -1,0 +1,7 @@
+# dating.select_lambda_gcv { #tslai.dating.select_lambda_gcv }
+
+```python
+tslai.dating.select_lambda_gcv(centers, events, exposure, lams=None, **kw)
+```
+
+Fit at a grid of smoothing parameters; pick the one minimising GCV.
