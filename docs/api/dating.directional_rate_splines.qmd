@@ -1,0 +1,27 @@
+# dating.directional_rate_splines { #tslai.dating.directional_rate_splines }
+
+```python
+tslai.dating.directional_rate_splines(D, J, centers, **kw)
+```
+
+Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) array — per-cell occupation (exposure: ``D\[:,0\]`` for A→B, ``D\[:,1\]`` for B→A).]{.parameter-annotation}</code>
+
+:   
+
+<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) array — per-cell directional jumps.]{.parameter-annotation}</code>
+
+:   
+
+<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) cell centres.]{.parameter-annotation}</code>
+
+:   
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [dict with ``q_AB``, ``q_BA`` (rates at the centres) and the selected ``lambda_*``/``edf_*``.]{.parameter-annotation}</code>
+
+:   

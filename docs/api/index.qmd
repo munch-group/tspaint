@@ -85,6 +85,29 @@ also `paint(smooth=True)`).
 | [bp.bp_smooth_track](bp.bp_smooth_track.qmd#tslai.bp.bp_smooth_track) | Smooth one tip's :class:`~tslai.output.Segment` track along the genome. |
 | [bp.bp_vs_deadband_experiment](bp.bp_vs_deadband_experiment.qmd#tslai.bp.bp_vs_deadband_experiment) | Compare BP smoothing vs the deadband for segmentation, over ``seeds``. |
 
+## Admixture dating (rate through time)
+
+An optional, separate deliverable from painting: a time-inhomogeneous directional
+mugration EM that estimates the cross-ancestry transition rates `q_AB(t)`, `q_BA(t)` as
+functions of (backward) time — locating divergence / gene-flow epochs and their direction
+(the `tslai.dating` namespace; also `Painting.rate_through_time()`).
+
+
+| | |
+| --- | --- |
+| [fit_rate_through_time](fit_rate_through_time.qmd#tslai.fit_rate_through_time) | Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM. |
+| [RateThroughTime](RateThroughTime.qmd#tslai.RateThroughTime) | Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile. |
+| [dating.paint_qt](dating.paint_qt.qmd#tslai.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same |
+| [dating.rate_through_time_binned](dating.rate_through_time_binned.qmd#tslai.dating.rate_through_time_binned) | Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the |
+| [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tslai.dating.make_Q_of_cell) | Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates. |
+| [dating.directional_rate_splines](dating.directional_rate_splines.qmd#tslai.dating.directional_rate_splines) | Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines. |
+| [dating.fit_poisson_spline](dating.fit_poisson_spline.qmd#tslai.dating.fit_poisson_spline) | Penalised Poisson log-spline via penalised IRLS. |
+| [dating.select_lambda_gcv](dating.select_lambda_gcv.qmd#tslai.dating.select_lambda_gcv) | Fit at a grid of smoothing parameters; pick the one minimising GCV. |
+| [dating.log_time_grid](dating.log_time_grid.qmd#tslai.dating.log_time_grid) | Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``. |
+| [dating.split_branch](dating.split_branch.qmd#tslai.dating.split_branch) | Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals. |
+| [dating.branch_cell_stats](dating.branch_cell_stats.qmd#tslai.dating.branch_cell_stats) | Per-cell endpoint-conditioned expected dwell and directional jumps for one branch. |
+| [dating.composite_transition](dating.composite_transition.qmd#tslai.dating.composite_transition) | Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a |
+
 ## Simulation (known truth)
 
 msprime admixture scenarios with census-event ground truth — the primary validation

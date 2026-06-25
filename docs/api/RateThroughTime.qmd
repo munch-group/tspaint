@@ -1,0 +1,45 @@
+# RateThroughTime { #tslai.RateThroughTime }
+
+```python
+tslai.RateThroughTime(centers, q_AB, q_BA, D, J, loglik_history)
+```
+
+Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) ndarray]{.parameter-annotation}</code>
+
+:   Cell centres (generations ago).
+
+<code>[**q_AB, q_BA**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) ndarray]{.parameter-annotation}</code>
+
+:   Directional transition rates per cell (forward in time: parent→child = old→young; a *backward*-time admixture A→B shows up in ``q_BA``).
+
+<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) ndarray]{.parameter-annotation}</code>
+
+:   Per-cell occupation (the exposure / informative window).
+
+<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) ndarray]{.parameter-annotation}</code>
+
+:   Per-cell directional expected jumps.
+
+<code>[**loglik_history**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   Span-integrated log-likelihood per EM iteration (non-decreasing).
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [plot](#tslai.RateThroughTime.plot) | Plot the directional rate-through-time profile (log-time x-axis). |
+
+### plot { #tslai.RateThroughTime.plot }
+
+```python
+tslai.RateThroughTime.plot(ax=None, scale=1.0)
+```
+
+Plot the directional rate-through-time profile (log-time x-axis).
+
+``scale`` multiplies the rates (e.g. pass ``Ne`` to show ``rate × N``). Returns the axes.

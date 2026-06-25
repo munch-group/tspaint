@@ -46,6 +46,20 @@ website:
       - api/bp.bp_vs_deadband_experiment.qmd
       section: Horizontal BP/EP smoother
     - contents:
+      - api/fit_rate_through_time.qmd
+      - api/RateThroughTime.qmd
+      - api/dating.paint_qt.qmd
+      - api/dating.rate_through_time_binned.qmd
+      - api/dating.make_Q_of_cell.qmd
+      - api/dating.directional_rate_splines.qmd
+      - api/dating.fit_poisson_spline.qmd
+      - api/dating.select_lambda_gcv.qmd
+      - api/dating.log_time_grid.qmd
+      - api/dating.split_branch.qmd
+      - api/dating.branch_cell_stats.qmd
+      - api/dating.composite_transition.qmd
+      section: Admixture dating (rate through time)
+    - contents:
       - api/simulate_admixture.qmd
       - api/local_ancestry_truth.qmd
       - api/sim.admixture_demography.qmd

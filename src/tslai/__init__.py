@@ -22,11 +22,14 @@ Core
     INFORMATIVE, MISSING_INFO, make_generator_2state
 Simulation (examples / benchmarks)
     simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+Dating (admixture rate through time — an optional, separate deliverable)
+    fit_rate_through_time, RateThroughTime; also ``Painting.rate_through_time()``
 Namespaces
     tslai.metrics      accuracy, calibration, fragmentation / tract-length metrics
     tslai.compare      painters (tslai_paint, nearest_reference_paint, rfmix_paint) + head_to_head
     tslai.io           input front ends (tsinfer, SINGER)
     tslai.bp           horizontal BP/EP smoother (helps on inferred ARGs; CLAUDE.md §7)
+    tslai.dating       time-inhomogeneous directional mugration EM (admixture dating)
     tslai.experiments  end-to-end benchmark drivers
 Lower-level machinery lives in the named submodules (``tslai.model``, ``tslai.pruning``,
 ``tslai.accumulate``, ``tslai.em``, ``tslai.output``, ``tslai.ensemble``, ``tslai.ranked``,
@@ -40,10 +43,11 @@ from .em import fit, FitResult
 from .output import posterior_table, hard_segments, Segment, INFORMATIVE, MISSING_INFO
 from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+from .dating import fit_rate_through_time, RateThroughTime
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import (  # noqa: F401  (exposed as tslai.<name>)
-    metrics, compare, io, experiments, bp, sim, model, ensemble, ranked, validate,
+    metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics,
     io_tsinfer, io_singer, io_rfmix,
 )
@@ -65,7 +69,9 @@ __all__ = [
     "make_generator_2state",
     # simulation
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
+    # dating (admixture rate through time)
+    "fit_rate_through_time", "RateThroughTime",
     # namespaces
-    "metrics", "compare", "io", "bp", "experiments",
+    "metrics", "compare", "io", "bp", "dating", "experiments",
     "__version__",
 ]

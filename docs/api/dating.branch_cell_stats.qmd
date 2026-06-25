@@ -1,0 +1,39 @@
+# dating.branch_cell_stats { #tslai.dating.branch_cell_stats }
+
+```python
+tslai.dating.branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges)
+```
+
+Per-cell endpoint-conditioned expected dwell and directional jumps for one branch.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q_of_cell**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   ``Q_of_cell(cell_index) -> (K, K)`` generator for that time cell (homogeneous case returns the same ``Q`` for every cell).
+
+<code>[**t_c**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child and parent node ages (``t_p > t_c``).
+
+<code>[**t_p**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child and parent node ages (``t_p > t_c``).
+
+<code>[**xi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Endpoint joint posterior ``xi[s_p, s_c]`` for the branch.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Grid cell edges.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**dwell**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [ndarray](`ndarray`)\]]{.parameter-annotation}</code>
+
+:   ``cell_index -> (K,)`` expected dwell per state, conditioned on ``xi``.
+
+<code>[**jumps**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [ndarray](`ndarray`)\]]{.parameter-annotation}</code>
+
+:   ``cell_index -> (K, K)`` expected ``m -> n`` jumps, conditioned on ``xi``.

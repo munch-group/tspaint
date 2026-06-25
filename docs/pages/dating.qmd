@@ -1,0 +1,169 @@
+---
+title: "Admixture dating: rate through time"
+---
+
+Painting answers *what* ancestry a haplotype carries at a locus. A different question is
+*when* the labelled ancestries diverged or exchanged genes. `tslai` answers it with a
+**separate, optional estimator** that rides the same engine: make the ancestry CTMC
+**time-inhomogeneous** and fit the two directional cross-ancestry transition rates
+$q_{AB}(t)$, $q_{BA}(t)$ as smooth functions of (backward) time. The result — a
+[`RateThroughTime`](../api/RateThroughTime.qmd) profile — locates divergence and gene-flow
+epochs, their direction and asymmetry, and ongoing flow.
+
+This path lives **side by side** with painting. It does not change how
+[`paint`](../api/paint.qmd) works, and Q(t) is deliberately *not* fed back into the default
+painting (see [Why not `paint(dating=True)`](#why-not-paintdatingtrue) below). The design and its
+rung-by-rung validation are in `notes/admix_dating_design.md`.
+
+---
+
+## The model
+
+The homogeneous painter uses one generator $Q$ for the whole genealogy. Here $Q$ becomes a
+**piecewise-constant function of time** on a fine logarithmic grid (logarithmic so each cell
+carries comparable coalescent power):
+
+$$
+Q(t) \;=\; Q_k \;=\;
+\begin{pmatrix} -q_{AB}^{(k)} & q_{AB}^{(k)} \\[2pt] q_{BA}^{(k)} & -q_{BA}^{(k)} \end{pmatrix}
+\qquad \text{for } t \in [\tau_k,\, \tau_{k+1}),
+$$
+
+with grid edges $\tau_0 < \tau_1 < \dots$ from [`dating.log_time_grid`](../api/dating.log_time_grid.qmd).
+A branch running from child time $t_c$ to parent time $t_p$ is split at the cell boundaries it
+crosses ([`dating.split_branch`](../api/dating.split_branch.qmd)), so its transition matrix is a
+time-ordered product over the cells it spans:
+
+$$
+P_{\text{branch}}(t_c, t_p) \;=\; \prod_{k} \exp\!\big(Q_k\, d_k\big),
+\qquad d_k = \text{duration of the branch inside cell } k,
+$$
+
+([`dating.composite_transition`](../api/dating.composite_transition.qmd)). Recombination /
+tract structure is still carried entirely by edge span, exactly as in the homogeneous model —
+only the vertical generator gains time-dependence.
+
+## Per-cell sufficient statistics
+
+The E-step needs, for each cell, the **expected dwell time per state** and **expected
+directional jump counts**, conditioned on the branch-endpoint posterior $\xi$ (the $K\times K$
+joint over parent/child states from the down-pass). For a single cell $j$ this is the
+[Van Loan](https://doi.org/10.1109/TAC.1978.1101743) reward integral for that cell's generator,
+**sandwiched** between the transition products below and above it on the branch:
+
+$$
+M_j \;=\; \underbrace{\Big(\textstyle\prod_{k<j}\! e^{Q_k d_k}\Big)}_{\text{below cell } j}
+\;\cdot\;
+\underbrace{\int_0^{d_j}\! e^{Q_j u}\, E\, e^{Q_j (d_j-u)}\,du}_{\text{reward inside cell } j}
+\;\cdot\;
+\underbrace{\Big(\textstyle\prod_{k>j}\! e^{Q_k d_k}\Big)}_{\text{above cell } j},
+$$
+
+where $E = e_m e_m^\top$ for dwell in state $m$ and $E = q_{mn}\,e_m e_n^\top$ for $m\!\to\!n$
+jumps. Conditioning on the endpoints divides by the full-branch transition,
+$P_{\text{branch}}$, and contracts against $\xi$:
+
+$$
+\text{reward}_j \;=\; \sum_{s_p, s_c} \xi[s_p, s_c]\;
+\frac{M_j[s_p, s_c]}{P_{\text{branch}}[s_p, s_c]} .
+$$
+
+This is [`dating.branch_cell_stats`](../api/dating.branch_cell_stats.qmd). Summed over cells it
+collapses to the ordinary single-branch [`branch_expected_stats`](../api/branch_stats.branch_expected_stats.qmd)
+(a tested invariant), so the time-binning adds resolution without changing the totals.
+Accumulated **per edge, span-weighted** across the genome (the same blocking as the painter),
+these give per-cell occupation $D[k]$ and directional jumps $J[k]$.
+
+## Directional smooth M-step
+
+Given $D$ and $J$, each direction's rate is a **penalised-Poisson log-spline**: the per-cell
+jump count $J[k, m, n]$ is Poisson with mean $q_{mn}(t_k)\,D[k, m]$ (occupation in the *source*
+state is the exposure), and $\log q_{mn}$ is a B-spline with a second-difference roughness
+penalty whose smoothing $\lambda$ is chosen by **GCV**
+([`dating.fit_poisson_spline`](../api/dating.fit_poisson_spline.qmd),
+[`dating.select_lambda_gcv`](../api/dating.select_lambda_gcv.qmd)). Fitting $q_{AB}$ and
+$q_{BA}$ separately is what makes the estimator **directional** — it can see an asymmetric pulse.
+
+The fit is restricted to the **informative window** (cells whose occupation exceeds a small
+fraction of the maximum); data-poor deep cells are flat-clamped rather than allowed to diverge
+([`dating.directional_rate_splines`](../api/dating.directional_rate_splines.qmd)). A smooth spline
+(rather than independent per-cell rates) is the natural fit because there is only power to resolve
+changes on a coalescent timescale — and it is flexible enough to capture genuinely abrupt
+cross-coalescence-rate changes where that power exists (verified before building; the
+"spline-resolution" exploration).
+
+### Direction convention
+
+A jump is recorded **parent → child = old → young = forward in time**. So a *backward*-time
+admixture pulse of $A$ into $B$ appears as mass in $q_{BA}(t)$, not $q_{AB}(t)$ — worth keeping
+straight when reading a profile.
+
+## The EM loop
+
+[`fit_rate_through_time`](../api/fit_rate_through_time.qmd) alternates the two:
+
+```
+init   q_AB(t) = q_BA(t) = const          # from one homogeneous tslai.fit
+E-step accumulate per-cell D, J under the current Q(t)   (decoupled fine-grid accumulation)
+M-step refit q_AB(t), q_BA(t) as directional penalised-Poisson splines  ->  new Q(t)
+repeat until the span-integrated log-likelihood converges
+```
+
+The log-likelihood is monotone (an EM correctness check, asserted in the tests). The payoff over
+a single global $Q$ is a **sharp** rate-through-time: the per-cell rate is no longer smeared by
+one genome-wide constant.
+
+## Using it
+
+The headline entry point needs only a tree sequence and reference labels — the log-time grid is
+built automatically from the node ages:
+
+```python
+import tslai
+rtt = tslai.fit_rate_through_time(ts, labels)   # -> RateThroughTime
+rtt.plot()                                       # q_AB(t), q_BA(t) on a log-time axis
+```
+
+Or reuse a painting's fit (no second homogeneous fit; the painting is untouched):
+
+```python
+painting = tslai.paint(ts, labels)
+rtt = painting.rate_through_time()               # warm-started from painting's (Q, π, w)
+```
+
+## What it recovers
+
+On a clean two-population split the cross-ancestry rate is ~0 more recently than the split (the
+two ancestries cannot share ancestry yet) and rises once $t$ exceeds it — the dashed line is the
+true split time:
+
+{{< embed ../notebooks/dating.ipynb#fig-dating-profile >}}
+
+Across the validation rungs (true ARG, strong structure) the estimator: has a sum-invariant
+E-step and a monotone EM loop; **sharpens the onset toward the true split** as it iterates;
+resolves demographic structure (a pulse, an asymmetric pulse, ongoing migration); and survives on
+an **inferred** ARG — SINGER samples reproduce the true-ARG profile (onset and median
+cross-coalescence time within ~1 % of truth), the binding axis there being calibration rather than
+point accuracy.
+
+## Why not `paint(dating=True)`
+
+Feeding the fitted $Q(t)$ back into the painting (`paint_qt`) gives **no measurable
+local-ancestry accuracy gain** (~1.0 either way) — only *sharper confidence*, at roughly **4–5×**
+the cost. That sharpening was measured only where accuracy is already ~1.0, so "sharper" there
+means "better calibrated." But `tslai`'s distinguishing value is **honest calibration** — its
+posteriors correctly relax toward 0.5 where the query↔reference signal is weak (see
+[Results](results.qmd)), and whether $Q(t)$ preserves that relaxation in weak-signal regimes is
+**unmeasured**. A discoverable flag that quietly re-paints under $Q(t)$ could trade away the very
+property that makes the painter worth using. So the paths stay separate: painting uses the
+homogeneous, calibrated $Q$; dating is its own deliverable. The $Q(t)$ re-paint remains available,
+opt-in, via [`dating.paint_qt`](../api/dating.paint_qt.qmd).
+
+## Caveats
+
+- **Bounded by ARG quality**, like painting — the profile is only as good as the genealogy and its
+  node ages. SINGER's coalescent-calibrated times help here and propagate uncertainty.
+- **$\pi$ held fixed** (uniform), as everywhere in `tslai`, to avoid the root-frequency degeneracy
+  (see [Assumptions](assumptions.qmd)).
+- The absolute rate scale depends on the time calibration of the input; the **shape** of the
+  profile (where rates rise, their direction and relative magnitude) is the robust read.

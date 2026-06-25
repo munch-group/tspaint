@@ -65,6 +65,7 @@ website:
           contents:
             - pages/model.qmd
             - pages/inference.qmd
+            - pages/dating.qmd
             - pages/assumptions.qmd
             - pages/code_paths.qmd
         - section: "Notebooks"
@@ -73,6 +74,7 @@ website:
             - notebooks/calibration.ipynb
             - notebooks/fragmentation.ipynb
             - notebooks/bp_smoother.ipynb
+            - notebooks/dating.ipynb
         - pages/results.qmd
 
 lightbox: true
@@ -166,6 +168,25 @@ quartodoc:
         - bp.bp_smooth
         - bp.bp_smooth_track
         - bp.bp_vs_deadband_experiment
+    - title: Admixture dating (rate through time)
+      desc: |
+        An optional, separate deliverable from painting: a time-inhomogeneous directional
+        mugration EM that estimates the cross-ancestry transition rates `q_AB(t)`, `q_BA(t)` as
+        functions of (backward) time — locating divergence / gene-flow epochs and their direction
+        (the `tslai.dating` namespace; also `Painting.rate_through_time()`).
+      contents:
+        - fit_rate_through_time
+        - RateThroughTime
+        - dating.paint_qt
+        - dating.rate_through_time_binned
+        - dating.make_Q_of_cell
+        - dating.directional_rate_splines
+        - dating.fit_poisson_spline
+        - dating.select_lambda_gcv
+        - dating.log_time_grid
+        - dating.split_branch
+        - dating.branch_cell_stats
+        - dating.composite_transition
     - title: Simulation (known truth)
       desc: |
         msprime admixture scenarios with census-event ground truth — the primary validation

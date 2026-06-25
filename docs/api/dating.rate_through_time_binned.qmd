@@ -1,0 +1,23 @@
+# dating.rate_through_time_binned { #tslai.dating.rate_through_time_binned }
+
+```python
+tslai.dating.rate_through_time_binned(
+    ts,
+    labels,
+    edges,
+    *,
+    max_iter=8,
+    Q0=None,
+    estimate_pi=False,
+    soft_refs=None,
+)
+```
+
+Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the
+per-branch sufficient statistics by time.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``centers`` (cell centres), ``q_AB``/``q_BA`` (directional rate per cell = ``jumps/dwell``), ``D``/``J`` (raw per-cell dwell/jumps), and the fitted ``Q``.

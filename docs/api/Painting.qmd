@@ -8,6 +8,8 @@ tslai.Painting(
     w,
     loglik_history,
     queries,
+    ts=None,
+    labels=None,
     default_deadband=0.0,
 )
 ```
@@ -40,6 +42,14 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 :   The painted sample-node ids.
 
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The tree sequence painted (retained so :meth:`rate_through_time` can reuse the fit; already in memory, so no extra cost).
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   The reference labels used for the fit (retained for :meth:`rate_through_time`).
+
 <code>[**default_deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
 
 :   Default dead-band passed to :meth:`segments`. Default ``0.0``.
@@ -49,6 +59,7 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 | Name | Description |
 | --- | --- |
 | [posterior_at](#tslai.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [rate_through_time](#tslai.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
 | [segments](#tslai.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
 
 ### posterior_at { #tslai.Painting.posterior_at }
@@ -74,6 +85,39 @@ Posterior vector for ``sample`` at a genomic ``position``.
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
 
 :   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
+
+### rate_through_time { #tslai.Painting.rate_through_time }
+
+```python
+tslai.Painting.rate_through_time(edges=None, **kwargs)
+```
+
+Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
+
+Fits the time-inhomogeneous directional mugration EM
+(:func:`tslai.fit_rate_through_time`) **warm-started from this painting's fitted
+``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
+deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
+``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
+their direction. It returns a **new** :class:`~tslai.dating.RateThroughTime` and does
+**not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
+paths stay side by side).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Log-time grid edges; an auto grid is built from the node ages when ``None``.
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded to :func:`tslai.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tslai](`tslai`).[dating](`tslai.dating`).[RateThroughTime](`tslai.dating.RateThroughTime`)]{.parameter-annotation}</code>
+
+:   The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``, ``.plot()``).
 
 ### segments { #tslai.Painting.segments }
 

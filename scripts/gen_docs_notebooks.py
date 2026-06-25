@@ -26,7 +26,7 @@ def code(src, label=None, cap=None, fig=True):
 
 def notebook(title, cells):
     nb = nbf.v4.new_notebook()
-    nb.cells = [nbf.v4.new_raw_cell(f"---\ntitle: {title}\n---")] + cells
+    nb.cells = [nbf.v4.new_raw_cell(f'---\ntitle: "{title}"\n---')] + cells   # quote: titles may contain ':'
     nb.metadata = {"kernelspec": {"display_name": "Python 3", "language": "python",
                                   "name": "python3"}}
     return nb
@@ -284,8 +284,62 @@ fig.tight_layout(); fig.show()
        "ARGs: BP is redundant on the true ARG but wins on inferred ARGs."),
 ])
 
+# ------------------------------------------------------------------------------ dating
+dating_nb = notebook("Admixture dating: cross-ancestry rate through time", [
+    md("""
+# Admixture dating: cross-ancestry rate through time
+
+A **separate, optional deliverable** from painting. Making the ancestry CTMC
+*time-inhomogeneous* and fitting the cross-ancestry transition rate as a function of (backward)
+time gives a profile `q_AB(t)`, `q_BA(t)` that locates **when** the two labelled ancestries
+diverged or exchanged genes — directionally. It rides the same EM engine
+([`fit_rate_through_time`](../api/fit_rate_through_time.html)) and can reuse a `paint` fit via
+`Painting.rate_through_time()`, leaving the painting itself untouched.
+"""),
+    code(VIZ, fig=False),
+    md("## Paint, then date — reusing the fit\n\nA clean split at `T_split`: the cross-ancestry "
+       "rate must be ~0 more recently than the split (the two ancestries cannot share ancestry "
+       "yet) and rise once `t` exceeds it. `Painting.rate_through_time()` warm-starts from the "
+       "painting's fitted `(Q, π, w)` and returns a **new** profile — `painting.posteriors` is "
+       "not modified."),
+    code('''
+T_split = 3000
+ts, labels, queries, truth = admixture(n_admix=6, n_ref=8, L=5e5, T_admix=200, T_split=T_split,
+                                       Ne=1000, seed=1)
+painting = tslai.paint(ts, labels)
+rtt = painting.rate_through_time(n_iter=10)     # reuses the painting's fit; posteriors untouched
+rtt
+'''),
+    md("## The profile\n\n`q_AB(t)` and `q_BA(t)` vs (backward) time on a log axis. The rise marks "
+       "the divergence epoch; recent time carries ~no cross-ancestry rate. (Convention: a jump is "
+       "parent→child = old→young = forward in time, so a *backward*-time A→B admixture shows in "
+       "`q_BA`.)"),
+    code('''
+fig, ax = plt.subplots(figsize=(6.2, 4))
+rtt.plot(ax=ax)
+ax.axvline(T_split, color="k", ls="--", lw=1, label=f"true split ({T_split})")
+ax.set_title("Cross-ancestry rate through time"); ax.legend(fontsize=8); fig.tight_layout()
+fig.show()
+''', label="fig-dating-profile", cap="Directional cross-ancestry transition rates q_AB(t), q_BA(t) "
+       "vs backward time: ~0 more recent than the population split, rising once cross-ancestry "
+       "sharing becomes possible. The dashed line is the true split time."),
+    md("## Reading off the onset\n\nThe standalone entry point `tslai.fit_rate_through_time(ts, "
+       "labels)` does the same fit without a painting."),
+    code('''
+import numpy as np
+onset = rtt.centers[np.argmax(rtt.q_AB > 0.5 * np.nanmax(rtt.q_AB))]
+print(f"inferred onset ~ {onset:.0f} generations   (true split {T_split})")
+'''),
+])
+
+import sys
+
+_selected = set(sys.argv[1:])   # optional: regenerate only the named notebooks (default: all)
 for fname, nb in [("painting", painting_nb), ("calibration", calibration_nb),
-                  ("fragmentation", fragmentation_nb), ("bp_smoother", bp_nb)]:
+                  ("fragmentation", fragmentation_nb), ("bp_smoother", bp_nb),
+                  ("dating", dating_nb)]:
+    if _selected and fname not in _selected:
+        continue
     path = os.path.join(OUT, f"{fname}.ipynb")
     nbf.write(nb, path)
     print("wrote", path)
