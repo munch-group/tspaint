@@ -82,7 +82,7 @@ def make_Q_of_cell(q_AB, q_BA):
 
 def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_init=8, Q0=None,
                           estimate_pi=False, soft_refs=None, n_knots=20, tol=1e-4,
-                          floor=1e-9):
+                          floor=1e-9, fit_result=None):
     """Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM.
 
     Parameters
@@ -98,11 +98,17 @@ def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_i
     n_iter : int
         Maximum EM iterations.
     em_init : int
-        Iterations of the homogeneous :func:`tslai.fit` used to initialise.
+        Iterations of the homogeneous :func:`tslai.fit` used to initialise (ignored when
+        ``fit_result`` is supplied).
     n_knots : int
         Spline knots for the M-step.
     tol : float
         Relative log-likelihood change for convergence.
+    fit_result : tslai.em.FitResult, optional
+        A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and
+        its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous
+        :func:`tslai.fit` is skipped — used by :meth:`tslai.Painting.rate_through_time` to reuse
+        the painting's fit rather than refitting.
 
     Returns
     -------
@@ -115,8 +121,11 @@ def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_i
         nt = np.asarray(ts.tables.nodes.time, float)
         pos = nt[nt > 0]
         edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
-    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
-    res = fit(ts, labels, Q0=Q0, max_iter=em_init, estimate_pi=estimate_pi, soft_refs=soft_refs)
+    if fit_result is not None:                         # warm-start: reuse a precomputed fit
+        res = fit_result
+    else:
+        Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+        res = fit(ts, labels, Q0=Q0, max_iter=em_init, estimate_pi=estimate_pi, soft_refs=soft_refs)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     pi = res.pi
     centers = cell_centers(edges)

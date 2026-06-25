@@ -97,3 +97,75 @@ def test_fit_rate_through_time_recovers_split():
     recent = np.nanmean(rtt.q_AB[c < 0.5 * T_split])
     deep = np.nanmean(rtt.q_AB[(c > T_split) & (c < 4 * T_split)])
     assert deep > 3 * recent + 1e-9                                         # onset recovered
+
+
+def test_top_level_dating_exports():
+    """The dating path is surfaced in the public API (top-level fn, class, and namespace)."""
+    import tslai
+    assert hasattr(tslai, "fit_rate_through_time")
+    assert hasattr(tslai, "RateThroughTime")
+    assert hasattr(tslai, "dating")
+    assert "fit_rate_through_time" in tslai.__all__
+    assert "RateThroughTime" in tslai.__all__
+    assert "dating" in tslai.__all__
+    assert hasattr(tslai.Painting, "rate_through_time")
+
+
+def _admix_labels(ts):
+    import tslai
+    pop = ts.tables.nodes.population
+    name = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    A = next(p for p, n in name.items() if n == tslai.SOURCE_A)
+    B = next(p for p, n in name.items() if n == tslai.SOURCE_B)
+    return {int(s): (0 if pop[s] == A else 1) for s in ts.samples() if pop[s] in (A, B)}
+
+
+@pytest.mark.slow
+def test_painting_rate_through_time_no_mutation():
+    """Painting.rate_through_time() returns a separate RateThroughTime and leaves the painting's
+    posteriors byte-for-byte unchanged (the dating path lives side by side with painting)."""
+    import copy
+    import tslai
+    ts = tslai.simulate_admixture(n_admix=4, n_ref=4, sequence_length=2e5, random_seed=1,
+                                  T_admix=100, Ne=1000, T_split=5000)
+    labels = _admix_labels(ts)
+    p = tslai.paint(ts, labels)
+    before = copy.deepcopy(p.posteriors)
+    rtt = p.rate_through_time(n_iter=3, n_cells=20)
+
+    assert type(rtt).__name__ == "RateThroughTime"
+    assert rtt.q_AB.shape == rtt.q_BA.shape == rtt.centers.shape
+    for q in before:                                                        # posteriors untouched
+        assert len(before[q]) == len(p.posteriors[q])
+        for s0, s1 in zip(before[q], p.posteriors[q]):
+            assert s0.left == s1.left and s0.right == s1.right
+            assert np.allclose(s0.posterior, s1.posterior)
+
+
+@pytest.mark.slow
+def test_fit_rate_through_time_warmstart_matches_cold():
+    """Warm-starting from a precomputed FitResult reproduces the cold-start fit (the internal
+    homogeneous fit is the only thing skipped), when seeded identically."""
+    import msprime
+    import tslai
+    from tslai.model import make_generator_2state
+
+    N, T_split = 1000, 2000.0
+    d = msprime.Demography()
+    d.add_population(name="A", initial_size=N)
+    d.add_population(name="B", initial_size=N)
+    d.add_population(name="ANC", initial_size=N)
+    d.add_population_split(time=T_split, derived=["A", "B"], ancestral="ANC")
+    ts = msprime.sim_ancestry(samples={"A": 6, "B": 6}, demography=d, sequence_length=3e5,
+                              recombination_rate=1e-8, random_seed=2, ploidy=1)
+    pop = ts.tables.nodes.population
+    labels = {int(s): (0 if pop[s] == 0 else 1) for s in ts.samples()}
+
+    # Cold start does fit(..., Q0=default, max_iter=em_init=8) internally; reproduce that fit.
+    warm = tslai.fit(ts, labels, Q0=make_generator_2state(1e-3, 1e-3), max_iter=8,
+                     estimate_pi=False)
+    rtt_cold = tslai.fit_rate_through_time(ts, labels, n_iter=5)
+    rtt_warm = tslai.fit_rate_through_time(ts, labels, n_iter=5, fit_result=warm)
+
+    assert np.allclose(rtt_warm.q_AB, rtt_cold.q_AB, rtol=1e-6, atol=1e-12)
+    assert np.allclose(rtt_warm.q_BA, rtt_cold.q_BA, rtol=1e-6, atol=1e-12)

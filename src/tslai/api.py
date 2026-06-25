@@ -38,6 +38,11 @@ class Painting:
         Observed-data log-likelihood per EM step (non-decreasing).
     queries : list
         The painted sample-node ids.
+    ts : tskit.TreeSequence
+        The tree sequence painted (retained so :meth:`rate_through_time` can reuse the fit;
+        already in memory, so no extra cost).
+    labels : dict[int, int]
+        The reference labels used for the fit (retained for :meth:`rate_through_time`).
     default_deadband : float
         Default dead-band passed to :meth:`segments`. Default ``0.0``.
     """
@@ -47,6 +52,8 @@ class Painting:
     w: dict
     loglik_history: list
     queries: list
+    ts: object = None
+    labels: dict = None
     default_deadband: float = 0.0
 
     def segments(self, deadband=None):
@@ -83,6 +90,40 @@ class Painting:
             The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
         """
         return posterior_at(self.posteriors, sample, position)
+
+    def rate_through_time(self, edges=None, **kwargs):
+        """Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
+
+        Fits the time-inhomogeneous directional mugration EM
+        (:func:`tslai.fit_rate_through_time`) **warm-started from this painting's fitted
+        ``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
+        deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
+        ``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
+        their direction. It returns a **new** :class:`~tslai.dating.RateThroughTime` and does
+        **not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
+        paths stay side by side).
+
+        Parameters
+        ----------
+        edges : array_like, optional
+            Log-time grid edges; an auto grid is built from the node ages when ``None``.
+        **kwargs
+            Forwarded to :func:`tslai.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``,
+            ``n_knots``).
+
+        Returns
+        -------
+        tslai.dating.RateThroughTime
+            The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``,
+            ``.plot()``).
+        """
+        if self.ts is None or self.labels is None:
+            raise ValueError("Painting was constructed without ts/labels; cannot date. Use "
+                             "tslai.fit_rate_through_time(ts, labels) directly.")
+        from .em import FitResult
+        from .dating import fit_rate_through_time
+        warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
+        return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, **kwargs)
 
     def __repr__(self):
         return (f"Painting(queries={len(self.queries)}, K={self.pi.shape[0]}, "
@@ -164,4 +205,4 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         posteriors = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in posteriors.items()}
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
-                    default_deadband=deadband)
+                    ts=ts, labels=labels, default_deadband=deadband)
