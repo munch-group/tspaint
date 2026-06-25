@@ -1,7 +1,7 @@
-# dating.rate_through_time_binned { #tslai.dating.rate_through_time_binned }
+# dating.rate_through_time_binned { #tspaint.dating.rate_through_time_binned }
 
 ```python
-tslai.dating.rate_through_time_binned(
+tspaint.dating.rate_through_time_binned(
     ts,
     labels,
     edges,

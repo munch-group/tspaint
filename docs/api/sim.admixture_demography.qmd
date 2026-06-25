@@ -1,7 +1,7 @@
-# sim.admixture_demography { #tslai.sim.admixture_demography }
+# sim.admixture_demography { #tspaint.sim.admixture_demography }
 
 ```python
-tslai.sim.admixture_demography(
+tspaint.sim.admixture_demography(
     Ne=10000,
     T_admix=30.0,
     census_offset=1.0,

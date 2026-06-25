@@ -27,7 +27,7 @@ website:
       - api/validate.map_truth.qmd
       section: Validation metrics
     - contents:
-      - api/compare.tslai_paint.qmd
+      - api/compare.tspaint_paint.qmd
       - api/compare.nearest_reference_paint.qmd
       - api/compare.rfmix_paint.qmd
       - api/compare.head_to_head.qmd

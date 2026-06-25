@@ -1,7 +1,7 @@
-# em.m_step_pi { #tslai.em.m_step_pi }
+# em.m_step_pi { #tspaint.em.m_step_pi }
 
 ```python
-tslai.em.m_step_pi(S_root)
+tspaint.em.m_step_pi(S_root)
 ```
 
 Closed-form root-frequency MLE: ``π = S_root / Σ S_root`` (CLAUDE.md §3.4).

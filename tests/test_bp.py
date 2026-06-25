@@ -7,8 +7,8 @@ integration test (slow) checks that bp_paint reduces fragmentation on a real sim
 import numpy as np
 import pytest
 
-from tslai.bp import bp_smooth, bp_smooth_track, bp_paint
-from tslai.output import Segment, INFORMATIVE, hard_segments
+from tspaint.bp import bp_smooth, bp_smooth_track, bp_paint
+from tspaint.output import Segment, INFORMATIVE, hard_segments
 
 PI = np.array([0.5, 0.5])
 
@@ -49,12 +49,12 @@ def test_bp_smooth_track_preserves_intervals_and_status():
 
 @pytest.mark.slow
 def test_bp_paint_reduces_fragmentation():
-    import tslai
-    from tslai.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
-    from tslai.compare import tslai_paint
-    from tslai.validate import map_truth, switch_density
+    import tspaint
+    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+    from tspaint.compare import tspaint_paint
+    from tspaint.validate import map_truth, switch_density
 
-    ts = tslai.simulate_admixture(n_admix=6, n_ref=6, sequence_length=2e6, recombination_rate=1e-8,
+    ts = tspaint.simulate_admixture(n_admix=6, n_ref=6, sequence_length=2e6, recombination_rate=1e-8,
                                   random_seed=1, Ne=1000, T_admix=200, T_split=5000, f_A=0.5)
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
@@ -67,7 +67,7 @@ def test_bp_paint_reduces_fragmentation():
     true_segs = map_truth({q: local_ancestry_truth(ts)[0][q] for q in queries}, sop)
     L = ts.sequence_length
 
-    argmax = tslai_paint(ts, labels, queries)
+    argmax = tspaint_paint(ts, labels, queries)
     bp = bp_paint(ts, labels, queries, epsilon=1e-2)
     true_d = np.mean([switch_density(true_segs[q], L) for q in queries])
     argmax_d = np.mean([switch_density(hard_segments(argmax[q]), L) for q in queries])
@@ -79,7 +79,7 @@ def test_bp_paint_reduces_fragmentation():
 
 @pytest.mark.slow
 def test_bp_vs_deadband_experiment_runs():
-    from tslai.bp import bp_vs_deadband_experiment
+    from tspaint.bp import bp_vs_deadband_experiment
     r = bp_vs_deadband_experiment(T_admix=500, infer=False, seeds=(1, 2), n_admix=6, n_ref=6,
                                   sequence_length=1e6)
     assert r["n_seeds"] == 2

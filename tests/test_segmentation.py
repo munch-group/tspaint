@@ -1,13 +1,13 @@
 """Hard segmentation (deadband) and breakpoint precision/recall (CLAUDE.md §9).
 
 The deadband suppresses low-confidence (~P=0.5) argmax flips that fragment long tracts —
-the fix for using tslai's posterior in tract-length / admixture-pulse dating.
+the fix for using tspaint's posterior in tract-length / admixture-pulse dating.
 """
 import numpy as np
 import pytest
 
-from tslai.output import Segment, INFORMATIVE, MISSING_INFO, hard_segments
-from tslai.validate import breakpoint_precision_recall, switch_density
+from tspaint.output import Segment, INFORMATIVE, MISSING_INFO, hard_segments
+from tspaint.validate import breakpoint_precision_recall, switch_density
 
 
 def _track(rows):
@@ -51,13 +51,13 @@ def test_breakpoint_precision_recall_and_density():
 
 @pytest.mark.slow
 def test_fragmentation_experiment_deadband_not_worse_than_argmax():
-    from tslai.experiments import fragmentation_experiment
+    from tspaint.experiments import fragmentation_experiment
     r = fragmentation_experiment(n_admix=4, n_ref=4, sequence_length=3e5, T_admix=100,
                                  seed=1, include_rfmix=False)
     m = r["methods"]
-    assert {"tslai_argmax", "nearest_ref"} <= set(m)
-    db = next(k for k in m if k.startswith("tslai_deadband"))
+    assert {"tspaint_argmax", "nearest_ref"} <= set(m)
+    db = next(k for k in m if k.startswith("tspaint_deadband"))
     # the deadband suppresses spurious flips, so it never fragments MORE than raw argmax
-    assert m[db]["switches_per_mb"] <= m["tslai_argmax"]["switches_per_mb"] + 1e-9
+    assert m[db]["switches_per_mb"] <= m["tspaint_argmax"]["switches_per_mb"] + 1e-9
     for v in m.values():
         assert 0.0 <= v["precision"] <= 1.0 and 0.0 <= v["recall"] <= 1.0

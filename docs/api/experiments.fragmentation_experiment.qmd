@@ -1,7 +1,7 @@
-# experiments.fragmentation_experiment { #tslai.experiments.fragmentation_experiment }
+# experiments.fragmentation_experiment { #tspaint.experiments.fragmentation_experiment }
 
 ```python
-tslai.experiments.fragmentation_experiment(
+tspaint.experiments.fragmentation_experiment(
     n_admix=10,
     n_ref=10,
     sequence_length=5000000.0,
@@ -23,7 +23,7 @@ Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts.
 Matters because downstream admixture-pulse dating reads the segment-length
 distribution: ``ratio`` (inferred / true switch density) ≠ 1 biases the inferred
 pulse (>1 older from fragmentation, <1 younger from over-smoothing; CLAUDE.md §9).
-On one simulated admixture (true ARG) compares tslai ``argmax``, tslai with a
+On one simulated admixture (true ARG) compares tspaint ``argmax``, tspaint with a
 confidence ``deadband``, ``nearest_reference``, and — if the rfmix binary is present
 — RFMix native (``.msp`` Viterbi).
 
@@ -67,7 +67,7 @@ confidence ``deadband``, ``nearest_reference``, and — if the rfmix binary is p
 
 <code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.4]{.parameter-default}</code>
 
-:   Confidence deadband for the ``tslai_deadband`` segmentation.
+:   Confidence deadband for the ``tspaint_deadband`` segmentation.
 
 <code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [100000.0]{.parameter-default}</code>
 

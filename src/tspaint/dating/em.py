@@ -1,9 +1,9 @@
 """EM loop for admixture rate through time (admix-dating design §4, rung 4).
 
-Iterate the time-inhomogeneous E-step (:func:`tslai.dating.estep.accumulate_time_binned_tv`) and
-the directional penalised-spline M-step (:func:`tslai.dating.mstep.directional_rate_splines`):
+Iterate the time-inhomogeneous E-step (:func:`tspaint.dating.estep.accumulate_time_binned_tv`) and
+the directional penalised-spline M-step (:func:`tspaint.dating.mstep.directional_rate_splines`):
 
-    init  q_AB(t)=q_BA(t)=const  (from the homogeneous tslai.fit)
+    init  q_AB(t)=q_BA(t)=const  (from the homogeneous tspaint.fit)
     E     accumulate per-cell occupation D and directional jumps J under the current Q(t)
     M     refit q_AB(t), q_BA(t) as penalised-Poisson splines -> new Q(t)
 
@@ -91,23 +91,23 @@ def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_i
     labels : dict[int, int]
         Reference sample-node id -> ancestry state (0/1).
     edges : array_like, optional
-        Fine log-time grid edges (:func:`tslai.dating.log_time_grid`). If ``None`` (default), a
+        Fine log-time grid edges (:func:`tspaint.dating.log_time_grid`). If ``None`` (default), a
         grid of ``n_cells`` log-spaced cells is built automatically from the node ages.
     n_cells : int
         Number of log-time cells when ``edges`` is auto-constructed (ignored if ``edges`` given).
     n_iter : int
         Maximum EM iterations.
     em_init : int
-        Iterations of the homogeneous :func:`tslai.fit` used to initialise (ignored when
+        Iterations of the homogeneous :func:`tspaint.fit` used to initialise (ignored when
         ``fit_result`` is supplied).
     n_knots : int
         Spline knots for the M-step.
     tol : float
         Relative log-likelihood change for convergence.
-    fit_result : tslai.em.FitResult, optional
+    fit_result : tspaint.em.FitResult, optional
         A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and
         its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous
-        :func:`tslai.fit` is skipped — used by :meth:`tslai.Painting.rate_through_time` to reuse
+        :func:`tspaint.fit` is skipped — used by :meth:`tspaint.Painting.rate_through_time` to reuse
         the painting's fit rather than refitting.
 
     Returns

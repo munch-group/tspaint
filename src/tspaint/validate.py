@@ -1,7 +1,7 @@
 """Validation metrics for simulated-truth experiments (CLAUDE.md §7.3, §9) — Rung 8.
 
-Operates on the segment tracks from :func:`tslai.output.posterior_table` and the
-true local-ancestry tracts from :func:`tslai.sim.local_ancestry_truth` (mapped from
+Operates on the segment tracks from :func:`tspaint.output.posterior_table` and the
+true local-ancestry tracts from :func:`tspaint.sim.local_ancestry_truth` (mapped from
 population ids to ancestry-state indices via :func:`map_truth`).
 
 * :func:`per_base_accuracy` — span-weighted fraction correctly painted.
@@ -27,7 +27,7 @@ def map_truth(truth, state_of_pop):
     ----------
     truth : dict[int, list[tuple[float, float, int]]]
         Truth tracts ``{sample: [(left, right, pop_id)]}`` (e.g. from
-        :func:`tslai.sim.local_ancestry_truth`).
+        :func:`tspaint.sim.local_ancestry_truth`).
     state_of_pop : dict[int, int]
         Mapping from population id to ancestry-state index.
 
@@ -81,13 +81,13 @@ def per_base_accuracy(tracks, truth_states, samples=None, exclude_missing=True):
     ----------
     tracks : dict[int, list[Segment]]
         Posterior segment tracks per sample (e.g. from
-        :func:`tslai.output.posterior_table`).
+        :func:`tspaint.output.posterior_table`).
     truth_states : dict[int, list[tuple[float, float, int]]]
         True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
     samples : iterable[int], optional
         Samples to score; defaults to all keys of ``tracks``.
     exclude_missing : bool, optional
-        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+        If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
     Returns
     -------
@@ -123,7 +123,7 @@ def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, 
     samples : iterable[int], optional
         Samples to score; defaults to all keys of ``tracks``.
     exclude_missing : bool, optional
-        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+        If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
     K : int, optional
         Number of ancestry states.
 
@@ -135,7 +135,7 @@ def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, 
 
     Examples
     --------
-    >>> from tslai.output import Segment, INFORMATIVE
+    >>> from tspaint.output import Segment, INFORMATIVE
     >>> import numpy as np
     >>> tracks = {0: [Segment(0, 10, np.array([0.9, 0.1]), INFORMATIVE),
     ...               Segment(10, 20, np.array([0.2, 0.8]), INFORMATIVE)]}
@@ -172,7 +172,7 @@ def mean_confidence(tracks, samples=None, state=0, exclude_missing=True):
     state : int, optional
         Ancestry-state index whose posterior probability is read.
     exclude_missing : bool, optional
-        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+        If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
     Returns
     -------
@@ -206,7 +206,7 @@ def reliability_curve(tracks, truth_states, state=0, n_bins=10, exclude_missing=
     n_bins : int, optional
         Number of equal-width probability bins on ``[0, 1]``.
     exclude_missing : bool, optional
-        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+        If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
     Returns
     -------
@@ -334,13 +334,13 @@ def breakpoint_precision_recall(inferred_segs, true_segs, tol):
     fragmentation, which biases tract-length / admixture-pulse dating *older*.
     **Recall** is the fraction of true switches recovered — low recall means
     missed or over-smoothed switches (biases *younger*). The two trade off
-    against the :func:`tslai.output.hard_segments` ``deadband`` (CLAUDE.md §9).
+    against the :func:`tspaint.output.hard_segments` ``deadband`` (CLAUDE.md §9).
 
     Parameters
     ----------
     inferred_segs : list[tuple[float, float, int]]
         Inferred **hard** segments ``[(left, right, state)]`` (e.g. from
-        :func:`tslai.output.hard_segments`).
+        :func:`tspaint.output.hard_segments`).
     true_segs : list[tuple[float, float, int]]
         True hard segments ``[(left, right, state)]`` (e.g. from
         :func:`map_truth`).

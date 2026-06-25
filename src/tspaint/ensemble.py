@@ -9,11 +9,11 @@ same samples and coordinates — the principled deliverable marginalises the ARG
     P(s_i(x)=A | data) = E_{G ~ P(G|data)}[ gamma_i^G(x, A; theta) ]
                        ~= (1/M) sum_m gamma_i^{G_m}(x, A; theta)
 
-i.e. paint each member with :func:`tslai.output.posterior_table` and **average the
+i.e. paint each member with :func:`tspaint.output.posterior_table` and **average the
 per-position posteriors** here. The spread across members is an ARG-uncertainty band.
 
 The ancestry-CTMC parameters ``theta`` are fit once, pooled across the ensemble, by
-:func:`tslai.em.fit` with a list of tree sequences (its M-step is scale-invariant, so
+:func:`tspaint.em.fit` with a list of tree sequences (its M-step is scale-invariant, so
 summing sufficient statistics over the ensemble == averaging). This is a modular
 ("cut") model: the ARG posterior comes from the genotypes alone, not refined by the
 ancestry labels — justified because the labels are sparse tip annotations.
@@ -33,8 +33,8 @@ __all__ = ["MergedSegment", "merge_posterior_tables"]
 class MergedSegment:
     """One span of an ensemble-merged painting.
 
-    Duck-compatible with :class:`tslai.output.Segment` (shares ``left``/``right``/
-    ``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.
+    Duck-compatible with :class:`tspaint.output.Segment` (shares ``left``/``right``/
+    ``posterior``/``status``), so :mod:`tspaint.validate` metrics score it directly.
 
     Attributes
     ----------
@@ -60,7 +60,7 @@ class MergedSegment:
 def _refine_tracks(track_list):
     """Iterate the common breakpoint refinement of M piecewise-constant tracks.
 
-    Generalises the 2-way :func:`tslai.validate._walk_overlap` to M tracks: advance
+    Generalises the 2-way :func:`tspaint.validate._walk_overlap` to M tracks: advance
     every member whose current segment ends at the current right breakpoint.
 
     Parameters
@@ -92,7 +92,7 @@ def merge_posterior_tables(tables, samples=None):
     Parameters
     ----------
     tables : list[dict[int, list[Segment]]]
-        One :func:`tslai.output.posterior_table` per ensemble member; all over the same
+        One :func:`tspaint.output.posterior_table` per ensemble member; all over the same
         samples and genome coordinates (sample ids preserved across members).
     samples : iterable[int], optional
         Restrict to these sample ids (default: those in the first table).
@@ -102,7 +102,7 @@ def merge_posterior_tables(tables, samples=None):
     dict[int, list[MergedSegment]]
         Per sample, the ensemble-mean posterior with an uncertainty band, on the common
         breakpoint refinement. Duck-compatible with ``Segment`` (``left``/``right``/
-        ``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.
+        ``posterior``/``status``), so :mod:`tspaint.validate` metrics score it directly.
     """
     if not tables:
         raise ValueError("need at least one posterior table to merge")

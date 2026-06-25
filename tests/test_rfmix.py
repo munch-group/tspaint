@@ -9,9 +9,9 @@ import os
 import numpy as np
 import pytest
 
-import tslai
-from tslai.io_rfmix import DEFAULT_RFMIX, _parse_fb, rfmix_paint
-from tslai.output import INFORMATIVE
+import tspaint
+from tspaint.io_rfmix import DEFAULT_RFMIX, _parse_fb, rfmix_paint
+from tspaint.output import INFORMATIVE
 
 rfmix_missing = not os.path.exists(DEFAULT_RFMIX)
 needs_rfmix = pytest.mark.skipif(rfmix_missing, reason="rfmix binary not available")
@@ -46,10 +46,10 @@ def test_parse_fb_maps_haplotypes_and_pops(tmp_path):
 @pytest.mark.slow
 @needs_rfmix
 def test_rfmix_paint_runs_and_scores():
-    from tslai.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
-    from tslai.validate import balanced_accuracy, map_truth
+    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+    from tspaint.validate import balanced_accuracy, map_truth
 
-    ts = tslai.simulate_admixture(n_admix=4, n_ref=6, sequence_length=5e5,
+    ts = tspaint.simulate_admixture(n_admix=4, n_ref=6, sequence_length=5e5,
                                   recombination_rate=1e-8, random_seed=1, Ne=1000,
                                   T_admix=30, T_split=5000, f_A=0.5)
     np_ = ts.tables.nodes.population

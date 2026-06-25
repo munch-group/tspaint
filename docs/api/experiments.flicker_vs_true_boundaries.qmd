@@ -1,7 +1,7 @@
-# experiments.flicker_vs_true_boundaries { #tslai.experiments.flicker_vs_true_boundaries }
+# experiments.flicker_vs_true_boundaries { #tspaint.experiments.flicker_vs_true_boundaries }
 
 ```python
-tslai.experiments.flicker_vs_true_boundaries(
+tspaint.experiments.flicker_vs_true_boundaries(
     tracks,
     truth_states,
     sample,

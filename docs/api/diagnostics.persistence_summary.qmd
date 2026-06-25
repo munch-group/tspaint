@@ -1,7 +1,7 @@
-# diagnostics.persistence_summary { #tslai.diagnostics.persistence_summary }
+# diagnostics.persistence_summary { #tspaint.diagnostics.persistence_summary }
 
 ```python
-tslai.diagnostics.persistence_summary(ts)
+tspaint.diagnostics.persistence_summary(ts)
 ```
 
 Summary of internal-node persistence (the go/no-go on the method's premise).

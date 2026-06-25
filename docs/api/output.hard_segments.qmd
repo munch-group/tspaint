@@ -1,7 +1,7 @@
-# output.hard_segments { #tslai.output.hard_segments }
+# output.hard_segments { #tspaint.output.hard_segments }
 
 ```python
-tslai.output.hard_segments(track, deadband=0.0)
+tspaint.output.hard_segments(track, deadband=0.0)
 ```
 
 Collapse a soft posterior ``track`` into hard ancestry segments.
@@ -11,7 +11,7 @@ admixture-pulse dating analysis consumes.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
 
 :   Soft posterior segments for one sample (e.g. from :func:`posterior_table`).
 

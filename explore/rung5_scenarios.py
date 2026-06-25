@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from tslai.dating import log_time_grid, cell_centers, fit_rate_through_time
+from tspaint.dating import log_time_grid, cell_centers, fit_rate_through_time
 
 N = 1000
 

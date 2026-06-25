@@ -1,7 +1,7 @@
-# bp.bp_smooth { #tslai.bp.bp_smooth }
+# bp.bp_smooth { #tspaint.bp.bp_smooth }
 
 ```python
-tslai.bp.bp_smooth(emissions, pi, epsilon)
+tspaint.bp.bp_smooth(emissions, pi, epsilon)
 ```
 
 Forward-backward over per-segment beliefs along the genome.

@@ -1,7 +1,7 @@
-# bp.bp_paint { #tslai.bp.bp_paint }
+# bp.bp_paint { #tspaint.bp.bp_paint }
 
 ```python
-tslai.bp.bp_paint(
+tspaint.bp.bp_paint(
     ts,
     labels,
     queries,
@@ -16,7 +16,7 @@ tslai.bp.bp_paint(
 )
 ```
 
-tslai painter with horizontal BP smoothing.
+tspaint painter with horizontal BP smoothing.
 
 EM-fits ``(Q[, pi, w])``, paints the queries, then smooths each tip's track
 along the genome (switch penalty ``epsilon``) — adding the propagation of
@@ -66,9 +66,9 @@ uncertainty across persist-but-reparent breakpoints that blocked EM omits (§7).
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible with the :mod:`tslai.validate` metrics and :func:`tslai.output.hard_segments`.
+:   ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible with the :mod:`tspaint.validate` metrics and :func:`tspaint.output.hard_segments`.
 
 ## Raises {.doc-section .doc-section-raises}
 

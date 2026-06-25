@@ -1,7 +1,7 @@
-# pruning.prune_root { #tslai.pruning.prune_root }
+# pruning.prune_root { #tspaint.pruning.prune_root }
 
 ```python
-tslai.pruning.prune_root(tree, root, emissions, Q, node_time, pi, Pget=None)
+tspaint.pruning.prune_root(tree, root, emissions, Q, node_time, pi, Pget=None)
 ```
 
 Up/down sum-product pass for a single root of a marginal tree.
@@ -42,6 +42,6 @@ tagged missing-info and set to the prior (CLAUDE.md §4).
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tslai.pruning.PruneResult`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tspaint.pruning.PruneResult`)]{.parameter-annotation}</code>
 
 :   Posteriors for this single root only (``gamma``, ``xi``, ``root_marginal``, ``missing_info``, ``loo``, ``loglik``).

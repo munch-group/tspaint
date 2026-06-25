@@ -1,7 +1,7 @@
-# RateThroughTime { #tslai.RateThroughTime }
+# RateThroughTime { #tspaint.RateThroughTime }
 
 ```python
-tslai.RateThroughTime(centers, q_AB, q_BA, D, J, loglik_history)
+tspaint.RateThroughTime(centers, q_AB, q_BA, D, J, loglik_history)
 ```
 
 Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile.
@@ -32,12 +32,12 @@ Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate 
 
 | Name | Description |
 | --- | --- |
-| [plot](#tslai.RateThroughTime.plot) | Plot the directional rate-through-time profile (log-time x-axis). |
+| [plot](#tspaint.RateThroughTime.plot) | Plot the directional rate-through-time profile (log-time x-axis). |
 
-### plot { #tslai.RateThroughTime.plot }
+### plot { #tspaint.RateThroughTime.plot }
 
 ```python
-tslai.RateThroughTime.plot(ax=None, scale=1.0)
+tspaint.RateThroughTime.plot(ax=None, scale=1.0)
 ```
 
 Plot the directional rate-through-time profile (log-time x-axis).

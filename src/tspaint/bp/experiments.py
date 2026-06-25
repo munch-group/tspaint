@@ -1,7 +1,7 @@
 """Reproducible BP-vs-deadband comparison (CLAUDE.md §7).
 
 Quantifies how much the horizontal BP smoother adds over the per-position
-:func:`tslai.output.hard_segments` deadband for *segmentation* fidelity (the admixture-dating
+:func:`tspaint.output.hard_segments` deadband for *segmentation* fidelity (the admixture-dating
 object), on the true vs the inferred (tsinfer) ARG. The headline finding:
 
 * **true ARG** — the per-tree posteriors are clean, the deadband is near-optimal, BP adds
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..compare import tslai_paint
+from ..compare import tspaint_paint
 from ..output import hard_segments
 from ..sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from ..validate import map_truth, breakpoint_precision_recall, balanced_accuracy
@@ -38,7 +38,7 @@ def _setup(T_admix, seed, infer, mutation_rate, **sim_kw):
     mutation_rate : float
         Mutation rate used when ``infer=True``.
     **sim_kw
-        Forwarded to :func:`tslai.sim.simulate_admixture`.
+        Forwarded to :func:`tspaint.sim.simulate_admixture`.
 
     Returns
     -------
@@ -107,7 +107,7 @@ def bp_vs_deadband_experiment(*, T_admix=500.0, infer=False, seeds=(1, 2, 3), n_
     """Compare BP smoothing vs the deadband for segmentation, over ``seeds``.
 
     Quantifies how much the horizontal BP smoother adds over the per-position
-    :func:`tslai.output.hard_segments` deadband for segmentation fidelity (the
+    :func:`tspaint.output.hard_segments` deadband for segmentation fidelity (the
     admixture-dating object), on the true vs the inferred (tsinfer) ARG.
 
     Parameters
@@ -165,7 +165,7 @@ def bp_vs_deadband_experiment(*, T_admix=500.0, infer=False, seeds=(1, 2, 3), n_
         td = np.mean([sum(1 for k in range(1, len(true_segs[q]))
                           if true_segs[q][k][2] != true_segs[q][k - 1][2])
                       / (sequence_length / 1e6) for q in queries])
-        soft = tslai_paint(work, labels, queries)
+        soft = tspaint_paint(work, labels, queries)
         raw_acc.append(balanced_accuracy(soft, true_segs, samples=queries))
         db = [_ratio_f1({q: hard_segments(soft[q], c) for q in queries}, true_segs, queries,
                         sequence_length, td, tol) for c in deadbands]

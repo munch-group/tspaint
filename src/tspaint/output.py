@@ -59,7 +59,7 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
     pi : (K,) array_like
         Root frequencies ``π`` (the prior fallback on uninformative spans).
     emissions : dict[int, numpy.ndarray]
-        Per-sample emission vector (see :func:`tslai.em.build_emissions`).
+        Per-sample emission vector (see :func:`tspaint.em.build_emissions`).
     focal : iterable[int], optional
         Samples to record; defaults to every sample in ``ts``.
     merge_tol : float, optional

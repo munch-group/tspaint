@@ -1,7 +1,7 @@
-# compare.rfmix_paint { #tslai.compare.rfmix_paint }
+# compare.rfmix_paint { #tspaint.compare.rfmix_paint }
 
 ```python
-tslai.compare.rfmix_paint(
+tspaint.compare.rfmix_paint(
     ts,
     labels,
     queries,
@@ -20,7 +20,7 @@ RFMix painter with the standard ``painter(ts, labels, queries)`` signature.
 
 Adds mutations if ``ts`` has none (the true-ARG substrate), runs RFMix, and
 returns the ``.fb.tsv`` posteriors as per-haplotype Segment tracks — so RFMix
-scores through the same :func:`tslai.compare.score_painter` harness.
+scores through the same :func:`tspaint.compare.score_painter` harness.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
@@ -58,7 +58,7 @@ scores through the same :func:`tslai.compare.score_painter` harness.
 
 <code>[**rfmix_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+:   Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSPAINT_RFMIX``).
 
 <code>[**extra_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -66,6 +66,6 @@ scores through the same :func:`tslai.compare.score_painter` harness.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   ``{query_node: [Segment]}`` from the ``.fb.tsv`` per-marker posteriors.

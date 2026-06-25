@@ -10,7 +10,7 @@ regime; the hard-regime head-to-head needs the external comparators.)
 import numpy as np
 import pytest
 
-from tslai.experiments import (admixture_experiment, flicker_vs_true_boundaries,
+from tspaint.experiments import (admixture_experiment, flicker_vs_true_boundaries,
                                age_sweep, scaling_sweep)
 
 

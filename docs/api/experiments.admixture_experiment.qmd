@@ -1,7 +1,7 @@
-# experiments.admixture_experiment { #tslai.experiments.admixture_experiment }
+# experiments.admixture_experiment { #tspaint.experiments.admixture_experiment }
 
 ```python
-tslai.experiments.admixture_experiment(
+tspaint.experiments.admixture_experiment(
     T_admix=30.0,
     n_admix=6,
     n_ref=8,

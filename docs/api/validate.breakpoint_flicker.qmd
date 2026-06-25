@@ -1,14 +1,14 @@
-# validate.breakpoint_flicker { #tslai.validate.breakpoint_flicker }
+# validate.breakpoint_flicker { #tspaint.validate.breakpoint_flicker }
 
 ```python
-tslai.validate.breakpoint_flicker(tracks, sample, state=0)
+tspaint.validate.breakpoint_flicker(tracks, sample, state=0)
 ```
 
 Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Posterior segment tracks per sample.
 

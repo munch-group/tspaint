@@ -8,7 +8,7 @@ the rate-through-time dating reads.
 """
 import numpy as np
 import msprime
-import tslai
+import tspaint
 
 N, T_SPLIT, MU = 1000, 2000.0, 1e-6
 
@@ -48,7 +48,7 @@ B = [int(s) for s in ts.samples() if pop[s] == 1]
 true_med = median_cross_coal(ts, A, B)
 print(f"sites={ts.num_sites};  A={A}  B={B}")
 print(f"TRUE   median A-B coal time = {true_med:.0f}   (T_split={T_SPLIT:.0f}; expect > T_split)")
-samples = tslai.io_singer.singer_tree_sequences(ts, Ne=N, mutation_rate=MU,
+samples = tspaint.io_singer.singer_tree_sequences(ts, Ne=N, mutation_rate=MU,
                                                 recombination_rate=1e-8, n_samples=12,
                                                 thin=5, burn_in=5, seed=3)
 print(f"SINGER returned {len(samples)} post-burn-in samples")

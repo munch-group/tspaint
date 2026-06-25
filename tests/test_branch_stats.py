@@ -9,7 +9,7 @@ import pytest
 from scipy.linalg import expm
 from scipy.integrate import simpson
 
-from tslai.branch_stats import branch_expected_stats, vanloan_integral
+from tspaint.branch_stats import branch_expected_stats, vanloan_integral
 
 
 def gen(a, b):

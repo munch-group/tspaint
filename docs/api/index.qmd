@@ -8,10 +8,10 @@ query haplotypes. `paint` returns a `Painting`; `fit` exposes the EM directly.
 
 | | |
 | --- | --- |
-| [paint](paint.qmd#tslai.paint) | Infer soft local ancestry along query haplotypes from a tree sequence. |
-| [Painting](Painting.qmd#tslai.Painting) | Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted model. |
-| [fit](fit.qmd#tslai.fit) | Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6). |
-| [FitResult](FitResult.qmd#tslai.FitResult) | Fitted parameters returned by :func:`fit`. |
+| [paint](paint.qmd#tspaint.paint) | Infer soft local ancestry along query haplotypes from a tree sequence. |
+| [Painting](Painting.qmd#tspaint.Painting) | Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted model. |
+| [fit](fit.qmd#tspaint.fit) | Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6). |
+| [FitResult](FitResult.qmd#tspaint.FitResult) | Fitted parameters returned by :func:`fit`. |
 
 ## Output & segmentation
 
@@ -21,92 +21,92 @@ tracts for downstream tract-length / admixture-dating analysis.
 
 | | |
 | --- | --- |
-| [output.posterior_table](output.posterior_table.qmd#tslai.output.posterior_table) | Per-sample ancestry posterior as contiguous segments covering ``[0, L)``. |
-| [output.hard_segments](output.hard_segments.qmd#tslai.output.hard_segments) | Collapse a soft posterior ``track`` into hard ancestry segments. |
-| [output.Segment](output.Segment.qmd#tslai.output.Segment) | A contiguous span carrying one soft ancestry posterior. |
-| [output.missing_info_mask](output.missing_info_mask.qmd#tslai.output.missing_info_mask) | Per-sample spans where the tree is uninformative (isolated sample). |
-| [output.posterior_at](output.posterior_at.qmd#tslai.output.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [output.posterior_table](output.posterior_table.qmd#tspaint.output.posterior_table) | Per-sample ancestry posterior as contiguous segments covering ``[0, L)``. |
+| [output.hard_segments](output.hard_segments.qmd#tspaint.output.hard_segments) | Collapse a soft posterior ``track`` into hard ancestry segments. |
+| [output.Segment](output.Segment.qmd#tspaint.output.Segment) | A contiguous span carrying one soft ancestry posterior. |
+| [output.missing_info_mask](output.missing_info_mask.qmd#tspaint.output.missing_info_mask) | Per-sample spans where the tree is uninformative (isolated sample). |
+| [output.posterior_at](output.posterior_at.qmd#tspaint.output.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
 
 ## Validation metrics
 
 Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
-experiments (the `tslai.metrics` namespace).
+experiments (the `tspaint.metrics` namespace).
 
 
 | | |
 | --- | --- |
-| [validate.balanced_accuracy](validate.balanced_accuracy.qmd#tslai.validate.balanced_accuracy) | Mean of per-true-class painting accuracies. |
-| [validate.per_base_accuracy](validate.per_base_accuracy.qmd#tslai.validate.per_base_accuracy) | Span-weighted per-base painting accuracy. |
-| [validate.mean_confidence](validate.mean_confidence.qmd#tslai.validate.mean_confidence) | Span-weighted mean painter confidence ``\|2*P(state) - 1\|``. |
-| [validate.reliability_curve](validate.reliability_curve.qmd#tslai.validate.reliability_curve) | Calibration curve of ``P(state)``: predicted vs. empirical per bin. |
-| [validate.breakpoint_precision_recall](validate.breakpoint_precision_recall.qmd#tslai.validate.breakpoint_precision_recall) | Precision/recall of inferred ancestry switch points vs. truth. |
-| [validate.switch_density](validate.switch_density.qmd#tslai.validate.switch_density) | Ancestry switches per unit length. |
-| [validate.tract_boundary_error](validate.tract_boundary_error.qmd#tslai.validate.tract_boundary_error) | Tract-boundary localization error against the truth. |
-| [validate.breakpoint_flicker](validate.breakpoint_flicker.qmd#tslai.validate.breakpoint_flicker) | Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3). |
-| [validate.map_truth](validate.map_truth.qmd#tslai.validate.map_truth) | Remap truth tracts from population ids to ancestry-state indices. |
+| [validate.balanced_accuracy](validate.balanced_accuracy.qmd#tspaint.validate.balanced_accuracy) | Mean of per-true-class painting accuracies. |
+| [validate.per_base_accuracy](validate.per_base_accuracy.qmd#tspaint.validate.per_base_accuracy) | Span-weighted per-base painting accuracy. |
+| [validate.mean_confidence](validate.mean_confidence.qmd#tspaint.validate.mean_confidence) | Span-weighted mean painter confidence ``\|2*P(state) - 1\|``. |
+| [validate.reliability_curve](validate.reliability_curve.qmd#tspaint.validate.reliability_curve) | Calibration curve of ``P(state)``: predicted vs. empirical per bin. |
+| [validate.breakpoint_precision_recall](validate.breakpoint_precision_recall.qmd#tspaint.validate.breakpoint_precision_recall) | Precision/recall of inferred ancestry switch points vs. truth. |
+| [validate.switch_density](validate.switch_density.qmd#tspaint.validate.switch_density) | Ancestry switches per unit length. |
+| [validate.tract_boundary_error](validate.tract_boundary_error.qmd#tspaint.validate.tract_boundary_error) | Tract-boundary localization error against the truth. |
+| [validate.breakpoint_flicker](validate.breakpoint_flicker.qmd#tspaint.validate.breakpoint_flicker) | Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3). |
+| [validate.map_truth](validate.map_truth.qmd#tspaint.validate.map_truth) | Remap truth tracts from population ids to ancestry-state indices. |
 
 ## Comparators (head-to-head)
 
 Painters scored on equal footing by a uniform harness — the full method, a runnable
-ARG-native baseline, and the RFMix incumbent (the `tslai.compare` namespace).
+ARG-native baseline, and the RFMix incumbent (the `tspaint.compare` namespace).
 
 
 | | |
 | --- | --- |
-| [compare.tslai_paint](compare.tslai_paint.qmd#tslai.compare.tslai_paint) | Paint queries with the full tslai method (EM fit + down-pass posterior). |
-| [compare.nearest_reference_paint](compare.nearest_reference_paint.qmd#tslai.compare.nearest_reference_paint) | Paint queries by their nearest labelled reference (ARG-native baseline). |
-| [compare.rfmix_paint](compare.rfmix_paint.qmd#tslai.compare.rfmix_paint) | RFMix painter with the standard ``painter(ts, labels, queries)`` signature. |
-| [compare.head_to_head](compare.head_to_head.qmd#tslai.compare.head_to_head) | Score a panel of painters on one admixture scenario across ARG substrates. |
-| [compare.score_painter](compare.score_painter.qmd#tslai.compare.score_painter) | Run a painter on ``ts`` and score it against the truth. |
+| [compare.tspaint_paint](compare.tspaint_paint.qmd#tspaint.compare.tspaint_paint) | Paint queries with the full tspaint method (EM fit + down-pass posterior). |
+| [compare.nearest_reference_paint](compare.nearest_reference_paint.qmd#tspaint.compare.nearest_reference_paint) | Paint queries by their nearest labelled reference (ARG-native baseline). |
+| [compare.rfmix_paint](compare.rfmix_paint.qmd#tspaint.compare.rfmix_paint) | RFMix painter with the standard ``painter(ts, labels, queries)`` signature. |
+| [compare.head_to_head](compare.head_to_head.qmd#tspaint.compare.head_to_head) | Score a panel of painters on one admixture scenario across ARG substrates. |
+| [compare.score_painter](compare.score_painter.qmd#tspaint.compare.score_painter) | Run a painter on ``ts`` and score it against the truth. |
 
 ## Input front ends
 
-Obtain a tslai-ready tree sequence from genotypes (the `tslai.io` namespace).
+Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace).
 
 
 | | |
 | --- | --- |
-| [io.infer_tree_sequence](io.infer_tree_sequence.qmd#tslai.io.infer_tree_sequence) | Infer a tree sequence from the genotypes of ``ts_with_mutations`` via tsinfer. |
-| [io.add_mutations](io.add_mutations.qmd#tslai.io.add_mutations) | Overlay biallelic mutations on a tree sequence so tsinfer has variant data. |
-| [io.singer_tree_sequences](io.singer_tree_sequences.qmd#tslai.io.singer_tree_sequences) | Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER. |
-| [io.write_haploid_vcf](io.write_haploid_vcf.qmd#tslai.io.write_haploid_vcf) | Write one haploid VCF column per sample node. |
+| [io.infer_tree_sequence](io.infer_tree_sequence.qmd#tspaint.io.infer_tree_sequence) | Infer a tree sequence from the genotypes of ``ts_with_mutations`` via tsinfer. |
+| [io.add_mutations](io.add_mutations.qmd#tspaint.io.add_mutations) | Overlay biallelic mutations on a tree sequence so tsinfer has variant data. |
+| [io.singer_tree_sequences](io.singer_tree_sequences.qmd#tspaint.io.singer_tree_sequences) | Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER. |
+| [io.write_haploid_vcf](io.write_haploid_vcf.qmd#tspaint.io.write_haploid_vcf) | Write one haploid VCF column per sample node. |
 
 ## Horizontal BP/EP smoother
 
 The §7 horizontal coupling — a genome-axis forward-backward over each tip's per-tree
-beliefs that suppresses spurious switches on inferred ARGs (the `tslai.bp` namespace;
+beliefs that suppresses spurious switches on inferred ARGs (the `tspaint.bp` namespace;
 also `paint(smooth=True)`).
 
 
 | | |
 | --- | --- |
-| [bp.bp_paint](bp.bp_paint.qmd#tslai.bp.bp_paint) | tslai painter with horizontal BP smoothing. |
-| [bp.bp_smooth](bp.bp_smooth.qmd#tslai.bp.bp_smooth) | Forward-backward over per-segment beliefs along the genome. |
-| [bp.bp_smooth_track](bp.bp_smooth_track.qmd#tslai.bp.bp_smooth_track) | Smooth one tip's :class:`~tslai.output.Segment` track along the genome. |
-| [bp.bp_vs_deadband_experiment](bp.bp_vs_deadband_experiment.qmd#tslai.bp.bp_vs_deadband_experiment) | Compare BP smoothing vs the deadband for segmentation, over ``seeds``. |
+| [bp.bp_paint](bp.bp_paint.qmd#tspaint.bp.bp_paint) | tspaint painter with horizontal BP smoothing. |
+| [bp.bp_smooth](bp.bp_smooth.qmd#tspaint.bp.bp_smooth) | Forward-backward over per-segment beliefs along the genome. |
+| [bp.bp_smooth_track](bp.bp_smooth_track.qmd#tspaint.bp.bp_smooth_track) | Smooth one tip's :class:`~tspaint.output.Segment` track along the genome. |
+| [bp.bp_vs_deadband_experiment](bp.bp_vs_deadband_experiment.qmd#tspaint.bp.bp_vs_deadband_experiment) | Compare BP smoothing vs the deadband for segmentation, over ``seeds``. |
 
 ## Admixture dating (rate through time)
 
 An optional, separate deliverable from painting: a time-inhomogeneous directional
 mugration EM that estimates the cross-ancestry transition rates `q_AB(t)`, `q_BA(t)` as
 functions of (backward) time — locating divergence / gene-flow epochs and their direction
-(the `tslai.dating` namespace; also `Painting.rate_through_time()`).
+(the `tspaint.dating` namespace; also `Painting.rate_through_time()`).
 
 
 | | |
 | --- | --- |
-| [fit_rate_through_time](fit_rate_through_time.qmd#tslai.fit_rate_through_time) | Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM. |
-| [RateThroughTime](RateThroughTime.qmd#tslai.RateThroughTime) | Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile. |
-| [dating.paint_qt](dating.paint_qt.qmd#tslai.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same |
-| [dating.rate_through_time_binned](dating.rate_through_time_binned.qmd#tslai.dating.rate_through_time_binned) | Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the |
-| [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tslai.dating.make_Q_of_cell) | Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates. |
-| [dating.directional_rate_splines](dating.directional_rate_splines.qmd#tslai.dating.directional_rate_splines) | Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines. |
-| [dating.fit_poisson_spline](dating.fit_poisson_spline.qmd#tslai.dating.fit_poisson_spline) | Penalised Poisson log-spline via penalised IRLS. |
-| [dating.select_lambda_gcv](dating.select_lambda_gcv.qmd#tslai.dating.select_lambda_gcv) | Fit at a grid of smoothing parameters; pick the one minimising GCV. |
-| [dating.log_time_grid](dating.log_time_grid.qmd#tslai.dating.log_time_grid) | Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``. |
-| [dating.split_branch](dating.split_branch.qmd#tslai.dating.split_branch) | Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals. |
-| [dating.branch_cell_stats](dating.branch_cell_stats.qmd#tslai.dating.branch_cell_stats) | Per-cell endpoint-conditioned expected dwell and directional jumps for one branch. |
-| [dating.composite_transition](dating.composite_transition.qmd#tslai.dating.composite_transition) | Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a |
+| [fit_rate_through_time](fit_rate_through_time.qmd#tspaint.fit_rate_through_time) | Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM. |
+| [RateThroughTime](RateThroughTime.qmd#tspaint.RateThroughTime) | Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile. |
+| [dating.paint_qt](dating.paint_qt.qmd#tspaint.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same |
+| [dating.rate_through_time_binned](dating.rate_through_time_binned.qmd#tspaint.dating.rate_through_time_binned) | Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the |
+| [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tspaint.dating.make_Q_of_cell) | Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates. |
+| [dating.directional_rate_splines](dating.directional_rate_splines.qmd#tspaint.dating.directional_rate_splines) | Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines. |
+| [dating.fit_poisson_spline](dating.fit_poisson_spline.qmd#tspaint.dating.fit_poisson_spline) | Penalised Poisson log-spline via penalised IRLS. |
+| [dating.select_lambda_gcv](dating.select_lambda_gcv.qmd#tspaint.dating.select_lambda_gcv) | Fit at a grid of smoothing parameters; pick the one minimising GCV. |
+| [dating.log_time_grid](dating.log_time_grid.qmd#tspaint.dating.log_time_grid) | Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``. |
+| [dating.split_branch](dating.split_branch.qmd#tspaint.dating.split_branch) | Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals. |
+| [dating.branch_cell_stats](dating.branch_cell_stats.qmd#tspaint.dating.branch_cell_stats) | Per-cell endpoint-conditioned expected dwell and directional jumps for one branch. |
+| [dating.composite_transition](dating.composite_transition.qmd#tspaint.dating.composite_transition) | Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a |
 
 ## Simulation (known truth)
 
@@ -116,9 +116,9 @@ track and the source of examples.
 
 | | |
 | --- | --- |
-| [simulate_admixture](simulate_admixture.qmd#tslai.simulate_admixture) | Simulate an admixed sample plus two reference panels. |
-| [local_ancestry_truth](local_ancestry_truth.qmd#tslai.local_ancestry_truth) | True local ancestry per sample as source-population tracts. |
-| [sim.admixture_demography](sim.admixture_demography.qmd#tslai.sim.admixture_demography) | Build a two-source admixture demography with a post-pulse census. |
+| [simulate_admixture](simulate_admixture.qmd#tspaint.simulate_admixture) | Simulate an admixed sample plus two reference panels. |
+| [local_ancestry_truth](local_ancestry_truth.qmd#tspaint.local_ancestry_truth) | True local ancestry per sample as source-population tracts. |
+| [sim.admixture_demography](sim.admixture_demography.qmd#tspaint.sim.admixture_demography) | Build a two-source admixture demography with a post-pulse census. |
 
 ## Generators & model
 
@@ -128,28 +128,28 @@ emission model.
 
 | | |
 | --- | --- |
-| [make_generator_2state](make_generator_2state.qmd#tslai.make_generator_2state) | Build the 2-state ancestry CTMC generator (CLAUDE.md §2.1). |
-| [model.transition_matrix](model.transition_matrix.qmd#tslai.model.transition_matrix) | Branch transition probabilities ``P(t) = expm(Q t)`` (CLAUDE.md §2.1). |
-| [model.stationary_distribution](model.stationary_distribution.qmd#tslai.model.stationary_distribution) | Stationary distribution ``π`` of a CTMC generator. |
-| [model.tip_emission](model.tip_emission.qmd#tslai.model.tip_emission) | Soft-clamp emission for a labelled tip (CLAUDE.md §2.2). |
-| [model.query_emission](model.query_emission.qmd#tslai.model.query_emission) | Flat / root-frequency emission for an unlabelled query tip (CLAUDE.md §2.2). |
-| [model.validate_generator](model.validate_generator.qmd#tslai.model.validate_generator) | Check that ``Q`` is a valid CTMC generator. |
+| [make_generator_2state](make_generator_2state.qmd#tspaint.make_generator_2state) | Build the 2-state ancestry CTMC generator (CLAUDE.md §2.1). |
+| [model.transition_matrix](model.transition_matrix.qmd#tspaint.model.transition_matrix) | Branch transition probabilities ``P(t) = expm(Q t)`` (CLAUDE.md §2.1). |
+| [model.stationary_distribution](model.stationary_distribution.qmd#tspaint.model.stationary_distribution) | Stationary distribution ``π`` of a CTMC generator. |
+| [model.tip_emission](model.tip_emission.qmd#tspaint.model.tip_emission) | Soft-clamp emission for a labelled tip (CLAUDE.md §2.2). |
+| [model.query_emission](model.query_emission.qmd#tspaint.model.query_emission) | Flat / root-frequency emission for an unlabelled query tip (CLAUDE.md §2.2). |
+| [model.validate_generator](model.validate_generator.qmd#tspaint.model.validate_generator) | Check that ``Q`` is a valid CTMC generator. |
 
 ## Experiment drivers
 
-End-to-end drivers used to produce the validation results (the `tslai.experiments`
+End-to-end drivers used to produce the validation results (the `tspaint.experiments`
 namespace).
 
 
 | | |
 | --- | --- |
-| [experiments.admixture_experiment](experiments.admixture_experiment.qmd#tslai.experiments.admixture_experiment) | Simulate admixture, fit hard-clamp EM on the references, paint the queries, score. |
-| [experiments.age_sweep](experiments.age_sweep.qmd#tslai.experiments.age_sweep) | Accuracy vs. admixture age — the §9 headline. |
-| [experiments.scaling_sweep](experiments.scaling_sweep.qmd#tslai.experiments.scaling_sweep) | Runtime + correctness + flicker vs. sample size. |
-| [experiments.fragmentation_experiment](experiments.fragmentation_experiment.qmd#tslai.experiments.fragmentation_experiment) | Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts. |
-| [experiments.arg_ensemble_experiment](experiments.arg_ensemble_experiment.qmd#tslai.experiments.arg_ensemble_experiment) | Merge LAI across an ensemble of inferred ARGs vs. a single inferred ARG. |
-| [experiments.singer_ensemble_experiment](experiments.singer_ensemble_experiment.qmd#tslai.experiments.singer_ensemble_experiment) | Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth. |
-| [experiments.flicker_vs_true_boundaries](experiments.flicker_vs_true_boundaries.qmd#tslai.experiments.flicker_vs_true_boundaries) | Split a sample's segment-boundary flicker into at-true vs. off-true boundaries. |
+| [experiments.admixture_experiment](experiments.admixture_experiment.qmd#tspaint.experiments.admixture_experiment) | Simulate admixture, fit hard-clamp EM on the references, paint the queries, score. |
+| [experiments.age_sweep](experiments.age_sweep.qmd#tspaint.experiments.age_sweep) | Accuracy vs. admixture age — the §9 headline. |
+| [experiments.scaling_sweep](experiments.scaling_sweep.qmd#tspaint.experiments.scaling_sweep) | Runtime + correctness + flicker vs. sample size. |
+| [experiments.fragmentation_experiment](experiments.fragmentation_experiment.qmd#tspaint.experiments.fragmentation_experiment) | Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts. |
+| [experiments.arg_ensemble_experiment](experiments.arg_ensemble_experiment.qmd#tspaint.experiments.arg_ensemble_experiment) | Merge LAI across an ensemble of inferred ARGs vs. a single inferred ARG. |
+| [experiments.singer_ensemble_experiment](experiments.singer_ensemble_experiment.qmd#tspaint.experiments.singer_ensemble_experiment) | Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth. |
+| [experiments.flicker_vs_true_boundaries](experiments.flicker_vs_true_boundaries.qmd#tspaint.experiments.flicker_vs_true_boundaries) | Split a sample's segment-boundary flicker into at-true vs. off-true boundaries. |
 
 ## ARG-posterior ensemble merge
 
@@ -159,8 +159,8 @@ ensemble (e.g. SINGER samples).
 
 | | |
 | --- | --- |
-| [ensemble.merge_posterior_tables](ensemble.merge_posterior_tables.qmd#tslai.ensemble.merge_posterior_tables) | Average per-haplotype posteriors across an ensemble of paintings. |
-| [ensemble.MergedSegment](ensemble.MergedSegment.qmd#tslai.ensemble.MergedSegment) | One span of an ensemble-merged painting. |
+| [ensemble.merge_posterior_tables](ensemble.merge_posterior_tables.qmd#tspaint.ensemble.merge_posterior_tables) | Average per-haplotype posteriors across an ensemble of paintings. |
+| [ensemble.MergedSegment](ensemble.MergedSegment.qmd#tspaint.ensemble.MergedSegment) | One span of an ensemble-merged painting. |
 
 ## Lower-level machinery
 
@@ -171,15 +171,15 @@ diagnostics.
 
 | | |
 | --- | --- |
-| [pruning.prune_tree](pruning.prune_tree.qmd#tslai.pruning.prune_tree) | Prune every root of a marginal tree and aggregate the results. |
-| [pruning.prune_root](pruning.prune_root.qmd#tslai.pruning.prune_root) | Up/down sum-product pass for a single root of a marginal tree. |
-| [accumulate.accumulate_sufficient_statistics](accumulate.accumulate_sufficient_statistics.qmd#tslai.accumulate.accumulate_sufficient_statistics) | Single E-step sweep over the tree sequence (CLAUDE.md §3.3). |
-| [branch_stats.branch_expected_stats](branch_stats.branch_expected_stats.qmd#tslai.branch_stats.branch_expected_stats) | Endpoint-conditioned expected dwell times and jump counts on one branch. |
-| [em.build_emissions](em.build_emissions.qmd#tslai.em.build_emissions) | Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2). |
-| [em.m_step_Q](em.m_step_Q.qmd#tslai.em.m_step_Q) | Closed-form generator MLE from expected dwell times and jump counts. |
-| [em.m_step_pi](em.m_step_pi.qmd#tslai.em.m_step_pi) | Closed-form root-frequency MLE: ``π = S_root / Σ S_root`` (CLAUDE.md §3.4). |
-| [em.m_step_w](em.m_step_w.qmd#tslai.em.m_step_w) | Per-tip credibility MAP under a ``Beta(alpha, beta)`` prior (CLAUDE.md §3.4). |
-| [ranked.ranked_tree_sequence](ranked.ranked_tree_sequence.qmd#tslai.ranked.ranked_tree_sequence) | Copy of ``ts`` with node times replaced by the dense rank of each time. |
-| [diagnostics.persistence_summary](diagnostics.persistence_summary.qmd#tslai.diagnostics.persistence_summary) | Summary of internal-node persistence (the go/no-go on the method's premise). |
-| [diagnostics.node_persistence](diagnostics.node_persistence.qmd#tslai.diagnostics.node_persistence) | Number of distinct marginal trees in which each (internal) node appears. |
-| [diagnostics.edge_span_summary](diagnostics.edge_span_summary.qmd#tslai.diagnostics.edge_span_summary) | Summary of the tree-sequence edge-span distribution. |
+| [pruning.prune_tree](pruning.prune_tree.qmd#tspaint.pruning.prune_tree) | Prune every root of a marginal tree and aggregate the results. |
+| [pruning.prune_root](pruning.prune_root.qmd#tspaint.pruning.prune_root) | Up/down sum-product pass for a single root of a marginal tree. |
+| [accumulate.accumulate_sufficient_statistics](accumulate.accumulate_sufficient_statistics.qmd#tspaint.accumulate.accumulate_sufficient_statistics) | Single E-step sweep over the tree sequence (CLAUDE.md §3.3). |
+| [branch_stats.branch_expected_stats](branch_stats.branch_expected_stats.qmd#tspaint.branch_stats.branch_expected_stats) | Endpoint-conditioned expected dwell times and jump counts on one branch. |
+| [em.build_emissions](em.build_emissions.qmd#tspaint.em.build_emissions) | Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2). |
+| [em.m_step_Q](em.m_step_Q.qmd#tspaint.em.m_step_Q) | Closed-form generator MLE from expected dwell times and jump counts. |
+| [em.m_step_pi](em.m_step_pi.qmd#tspaint.em.m_step_pi) | Closed-form root-frequency MLE: ``π = S_root / Σ S_root`` (CLAUDE.md §3.4). |
+| [em.m_step_w](em.m_step_w.qmd#tspaint.em.m_step_w) | Per-tip credibility MAP under a ``Beta(alpha, beta)`` prior (CLAUDE.md §3.4). |
+| [ranked.ranked_tree_sequence](ranked.ranked_tree_sequence.qmd#tspaint.ranked.ranked_tree_sequence) | Copy of ``ts`` with node times replaced by the dense rank of each time. |
+| [diagnostics.persistence_summary](diagnostics.persistence_summary.qmd#tspaint.diagnostics.persistence_summary) | Summary of internal-node persistence (the go/no-go on the method's premise). |
+| [diagnostics.node_persistence](diagnostics.node_persistence.qmd#tspaint.diagnostics.node_persistence) | Number of distinct marginal trees in which each (internal) node appears. |
+| [diagnostics.edge_span_summary](diagnostics.edge_span_summary.qmd#tspaint.diagnostics.edge_span_summary) | Summary of the tree-sequence edge-span distribution. |

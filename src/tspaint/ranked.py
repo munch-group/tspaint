@@ -1,6 +1,6 @@
 """Order-only (ranked-topology) ancestry-model variant — the CLAUDE.md §6 / §8.4 ablation.
 
-tslai's CTMC rides on branch lengths via ``P(t) = expm(Q t)``. §6 worried that mis-calibrated
+tspaint's CTMC rides on branch lengths via ``P(t) = expm(Q t)``. §6 worried that mis-calibrated
 inferred branch lengths (Relate's panmictic prior; tsinfer's frequency-scale times) could bias
 the fit, and proposed an order-only variant — replace each node's absolute time with the **dense
 rank** of that time (coalescence ORDER only, magnitudes discarded) — as a robustness ablation,
@@ -12,8 +12,8 @@ On a true ARG it collapses painting from ~1.0 to ~0.5. Dense-rank compresses the
 compensates with a much larger Q, the deep/root branches then wash out, and π becomes
 unidentifiable — it drifts to a degenerate extreme and the painting goes confidently wrong (the
 diagnosis that mis-calibration would hurt was right; this cure is wrong). It is kept as the
-runnable ablation behind ``tslai_paint(..., ranked=True)``; the actual robustness fix for the
-same π failure is ``estimate_pi=False`` (hold π fixed — see :func:`tslai.em.fit`).
+runnable ablation behind ``tspaint_paint(..., ranked=True)``; the actual robustness fix for the
+same π failure is ``estimate_pi=False`` (hold π fixed — see :func:`tspaint.em.fit`).
 """
 from __future__ import annotations
 
@@ -46,8 +46,8 @@ def ranked_tree_sequence(ts):
     Measured to be **not beneficial** for inference (collapses true-ARG painting from
     ~1.0 to ~0.5): dense-rank compresses the timescale, EM compensates with a much
     larger Q, deep/root branches wash out, and ``pi`` becomes unidentifiable. Kept as
-    a runnable ablation behind ``tslai_paint(..., ranked=True)``; the actual fix for
-    the same ``pi`` failure is ``estimate_pi=False`` (see :func:`tslai.em.fit`).
+    a runnable ablation behind ``tspaint_paint(..., ranked=True)``; the actual fix for
+    the same ``pi`` failure is ``estimate_pi=False`` (see :func:`tspaint.em.fit`).
     """
     tables = ts.dump_tables()
     nodes = tables.nodes

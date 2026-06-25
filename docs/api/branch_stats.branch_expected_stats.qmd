@@ -1,7 +1,7 @@
-# branch_stats.branch_expected_stats { #tslai.branch_stats.branch_expected_stats }
+# branch_stats.branch_expected_stats { #tspaint.branch_stats.branch_expected_stats }
 
 ```python
-tslai.branch_stats.branch_expected_stats(Q, t, xi)
+tspaint.branch_stats.branch_expected_stats(Q, t, xi)
 ```
 
 Endpoint-conditioned expected dwell times and jump counts on one branch.

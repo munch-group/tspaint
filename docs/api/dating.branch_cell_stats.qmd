@@ -1,7 +1,7 @@
-# dating.branch_cell_stats { #tslai.dating.branch_cell_stats }
+# dating.branch_cell_stats { #tspaint.dating.branch_cell_stats }
 
 ```python
-tslai.dating.branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges)
+tspaint.dating.branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges)
 ```
 
 Per-cell endpoint-conditioned expected dwell and directional jumps for one branch.

@@ -1,7 +1,7 @@
 """Rung 2 go/no-go: does the Stage-1 binned rate-through-time profile show the T_split feature?
 
 Clean A/B split at T_split=2000 (true cross-coalescence onset is a step there). Fit a homogeneous
-Q with tslai, bin the per-branch jumps/dwell by time (tslai.dating.rate_through_time_binned), and
+Q with tspaint, bin the per-branch jumps/dwell by time (tspaint.dating.rate_through_time_binned), and
 overlay the model-free oracle cross-coalescence hazard. If the directional rate rises around
 T_split, the vertical mugration signal carries the divergence timing -> proceed to the full
 time-inhomogeneous E-step (which should sharpen it).
@@ -12,8 +12,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import tslai
-from tslai.dating import log_time_grid, rate_through_time_binned
+import tspaint
+from tspaint.dating import log_time_grid, rate_through_time_binned
 
 N, T_SPLIT = 1000, 2000.0
 
@@ -60,8 +60,8 @@ haz = oracle_hazard(ts, edges)
 c = prof["centers"]
 
 fig, ax = plt.subplots(figsize=(7.2, 4.6))
-ax.plot(c, prof["q_AB"] * N, "o-", ms=3, label="q_AB(t)·N  (tslai dating)")
-ax.plot(c, prof["q_BA"] * N, "s-", ms=3, label="q_BA(t)·N  (tslai dating)")
+ax.plot(c, prof["q_AB"] * N, "o-", ms=3, label="q_AB(t)·N  (tspaint dating)")
+ax.plot(c, prof["q_BA"] * N, "s-", ms=3, label="q_BA(t)·N  (tspaint dating)")
 ax.plot(c, haz * N, "--", color="0.5", lw=1.5, label="oracle cross-coal. hazard·N")
 ax.axvline(T_SPLIT, color="k", ls=":", lw=1, label="T_split")
 ax.set_xscale("log")

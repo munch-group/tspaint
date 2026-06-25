@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tslai"
+name = "tspaint"
 version = "0.1.16"
 description = "Project description"
 authors = [
@@ -24,12 +24,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/munch-group/tslai"
-Repository = "https://github.com/munch-group/tslai"
-Documentation = "https://munch-group.org/tslai"
+Homepage = "https://github.com/munch-group/tspaint"
+Repository = "https://github.com/munch-group/tspaint"
+Documentation = "https://munch-group.org/tspaint"
 
 # [project.scripts]
-# tslai = "tslai:cli"  # TODO: console entry point once a CLI exists
+# tspaint = "tspaint:cli"  # TODO: console entry point once a CLI exists
 
 [tool.setuptools]
 include-package-data = true
@@ -39,7 +39,7 @@ where = ["src"]
 exclude = ["test*"]
 
 [tool.setuptools.package-data]
-tslai = ["data/*.txt", "data/*.csv", "data/*.pickle", "data/*.h5"]
+tspaint = ["data/*.txt", "data/*.csv", "data/*.pickle", "data/*.h5"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -75,7 +75,7 @@ r-rsvg = "*"
 tsinfer = ">=0.5.1,<0.6"
 
 [tool.pixi.pypi-dependencies]
-tslai = { path = ".", editable = true }
+tspaint = { path = ".", editable = true }
 
 # External LAI comparators for the head-to-head (CLAUDE.md §9), isolated from the core env.
 # bioconda is scoped to this feature only (not the workspace) so it cannot perturb the

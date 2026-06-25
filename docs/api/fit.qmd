@@ -1,7 +1,7 @@
-# fit { #tslai.fit }
+# fit { #tspaint.fit }
 
 ```python
-tslai.fit(
+tspaint.fit(
     ts,
     labels,
     *,
@@ -77,7 +77,7 @@ tolerance or ``max_iter``.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[FitResult](`tslai.em.FitResult`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[FitResult](`tspaint.em.FitResult`)]{.parameter-annotation}</code>
 
 :   The fitted ``(Q, π, {w_i})`` and the log-likelihood history.
 

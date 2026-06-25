@@ -2,7 +2,7 @@
 title: Assumptions, identifiability & limitations
 ---
 
-This page is the honest accounting of what `tslai` assumes, where its parameters
+This page is the honest accounting of what `tspaint` assumes, where its parameters
 can fail to be identified, and the regimes in which it stops working. It is the
 companion to the [Overview](overview.qmd): the Overview tells you how to run
 the method; this page tells you when to trust the result and when not to. None of
@@ -10,7 +10,7 @@ the caveats below are hypothetical hedges — each is either forced by the model
 has been measured directly. The MEASURED numbers are quoted verbatim from the
 project's validation runs.
 
-The short version: `tslai` is a *generative* model — a continuous-time Markov
+The short version: `tspaint` is a *generative* model — a continuous-time Markov
 chain (CTMC) for an ancestry character riding up the branches of an inferred tree
 sequence, fitted by EM. Generative models give you calibrated soft posteriors and
 an interpretable, readable `Q`, but they also have identifiability structure that
@@ -22,7 +22,7 @@ interpretability.
 ::: {.callout-warning}
 ## The premise is delivered by the *input*, not the method
 
-`tslai` accumulates its sufficient statistics **per tree-sequence edge,
+`tspaint` accumulates its sufficient statistics **per tree-sequence edge,
 span-weighted** (the lead novelty, CLAUDE.md §3.3). This is what removes
 double-counting and is the channel through which genome-scale autocorrelation
 enters: a clade that persists across many marginal trees must be **one set of
@@ -150,7 +150,7 @@ the prior, every query relaxes toward that state, and the painting **collapses t
 one colour with high confidence** — confidently wrong.
 
 **The fix: hold $\pi$ fixed** (`estimate_pi=False`, the
-[`tslai_paint`](../api/compare.tslai_paint.html) default). Uniform $\pi$ is
+[`tspaint_paint`](../api/compare.tspaint_paint.html) default). Uniform $\pi$ is
 *principled*, not a kludge: $\pi$ is a prior on the **arbitrary** GMRCA state, so
 uniform is the right non-informative choice. It is estimating $\pi$ from washing
 roots that breaks. The lower-level [`fit`](../api/fit.html) exposes
@@ -168,7 +168,7 @@ MEASURED recovery numbers (CLAUDE.md §6, §9):
 The fix recovers both failures and is **harmless on good, long data** (the
 $L=2\times10^5$ row, where $\pi$ *is* identified). The short/sparse regime is
 itself an edge case — real LAI runs on long genomes with many roots, where $\pi$
-is identified and `tslai` already paints 0.98–1.0 — so holding $\pi$ fixed is a
+is identified and `tspaint` already paints 0.98–1.0 — so holding $\pi$ fixed is a
 free robustness default, not a patch over a practical limitation.
 
 ## 4. Branch-length / time-calibration risk {#sec-calibration}
@@ -212,9 +212,9 @@ the same $\pi$ failure is `estimate_pi=False` ([§3](#sec-pi)), not order-only.
 ## 5. The mugration approximation {#sec-mugration}
 
 ::: {.callout-warning}
-## Genealogy and ancestry are *jointly* distributed; `tslai` treats the genealogy as fixed
+## Genealogy and ancestry are *jointly* distributed; `tspaint` treats the genealogy as fixed
 
-`tslai` models ancestry as a discrete character evolving on a **fixed**
+`tspaint` models ancestry as a discrete character evolving on a **fixed**
 genealogy (the "mugration" / discrete-phylogeography construction,
 [Lemey et al., 2009](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000520)).
 This ignores that the genealogy and the ancestry are not independent: under the
@@ -266,7 +266,7 @@ confidence; CLAUDE.md §9):
 | 1000 | 0.50 | 0.15 |
 | 3000 | 0.50 | 0.18 |
 
-`tslai` discriminates well at recent-to-moderate admixture and **loses the
+`tspaint` discriminates well at recent-to-moderate admixture and **loses the
 reference signal at old admixture**. Crucially, at $T_{\text{admix}} = 1000$ this
 is *not* tree-inference error (the ARG is true) but **coalescent structure**:
 admixed individuals sampled at the present coalesce **among themselves** before the
@@ -293,7 +293,7 @@ is bounded by the ARG's quality. MEASURED on a `tsinfer`-inferred ARG (balanced
 50/50, chance 0.5; CLAUDE.md §9): per-base accuracy ~0.53 at ~650 sites (poor ARG,
 near chance), ~0.64 at ~2100 sites, ~0.88 at ~5400 sites (good ARG). Tree accuracy,
 not tract length, is the binding constraint — exactly as predicted. The practical
-implication: feed `tslai` the best ARG you can. A Bayesian SMC sampler such as
+implication: feed `tspaint` the best ARG you can. A Bayesian SMC sampler such as
 SINGER ([`io.singer_tree_sequences`](../api/io.singer_tree_sequences.html)) largely
 lifts this bound, and averaging across a *posterior* ensemble
 ([`ensemble.merge_posterior_tables`](../api/ensemble.merge_posterior_tables.html))
@@ -312,7 +312,7 @@ error.
 | Old admixture under present sampling | Coalescent limit | None — report balanced accuracy + confidence honestly |
 | Inferred-ARG quality | Binding constraint | Best available ARG; SINGER posterior + ensemble merge |
 
-The throughline: `tslai`'s honesty *is* its selling point relative to black-box
+The throughline: `tspaint`'s honesty *is* its selling point relative to black-box
 ARG-native classifiers. It produces a calibrated soft posterior, a readable $Q$,
 and explicit per-tip credibility — and, in the regimes where the signal is gone, it
 relaxes toward $\pi$ rather than making a confident wrong call.

@@ -1,7 +1,7 @@
-# accumulate.accumulate_sufficient_statistics { #tslai.accumulate.accumulate_sufficient_statistics }
+# accumulate.accumulate_sufficient_statistics { #tspaint.accumulate.accumulate_sufficient_statistics }
 
 ```python
-tslai.accumulate.accumulate_sufficient_statistics(
+tspaint.accumulate.accumulate_sufficient_statistics(
     ts,
     Q,
     pi,
@@ -37,7 +37,7 @@ reused across edges. Root-state mass is accumulated per interval, not per edge.
 
 <code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [array](`array`)\]]{.parameter-annotation}</code>
 
-:   Per-tip emission vectors (labelled refs and queries), as built by :mod:`tslai.model`.
+:   Per-tip emission vectors (labelled refs and queries), as built by :mod:`tspaint.model`.
 
 <code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -49,6 +49,6 @@ reused across edges. Root-state mass is accumulated per interval, not per edge.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[SuffStats](`tslai.accumulate.SuffStats`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[SuffStats](`tspaint.accumulate.SuffStats`)]{.parameter-annotation}</code>
 
 :   Span-weighted ``S_dwell``, ``S_jumps``, ``S_root``, per-tip credibility ``S_cred`` and the span-integrated ``loglik``.

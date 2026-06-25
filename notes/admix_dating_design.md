@@ -1,6 +1,6 @@
 # Design — admixture rate through time (time-inhomogeneous directional mugration EM)
 
-Status: design / plan (admix-dating branch). Builds on the tslai engine (§1–§4 of CLAUDE.md).
+Status: design / plan (admix-dating branch). Builds on the tspaint engine (§1–§4 of CLAUDE.md).
 
 ## 0. Goal
 
@@ -74,7 +74,7 @@ exposure-weighted data term dominates where events are dense; REML handles the s
 
 ## 4. EM loop
 
-- Init `q_AB(t)=q_BA(t)=const` from the homogeneous `tslai.fit`.
+- Init `q_AB(t)=q_BA(t)=const` from the homogeneous `tspaint.fit`.
 - Iterate: E-step (fine-grid stats under current `Q(t)`) → M-step (refit the two splines) until the
   rate profile / observed-data log-likelihood converges.
 - `π` held uniform (`estimate_pi=False`, §6 — avoids the π degeneracy); credibility `w` as in the
@@ -107,7 +107,7 @@ exposure-weighted data term dominates where events are dense; REML handles the s
 ## 7. Module layout (admix-dating branch)
 
 ```
-src/tslai/dating/
+src/tspaint/dating/
   __init__.py        # public: fit_rate_through_time, RateThroughTime
   grid.py            # log-time fine grid + cell/branch-split helpers
   estep.py           # time-inhomogeneous pruning + per-cell endpoint-conditioned dwell/jumps
@@ -122,8 +122,8 @@ tests/test_dating_*  # unit + integration
 
 1. `grid` + the **per-branch per-cell endpoint-conditioned stats** (`estep` core) + the §2
    sum-invariant unit test (per-cell totals = homogeneous whole-branch totals).
-2. **Stage-1 shortcut for a fast first signal:** homogeneous E-step (reuse `tslai` pruning ξ) but
-   *bin the per-branch rewards by time* → a first rate-through-time profile from one `tslai.fit`.
+2. **Stage-1 shortcut for a fast first signal:** homogeneous E-step (reuse `tspaint` pruning ξ) but
+   *bin the per-branch rewards by time* → a first rate-through-time profile from one `tspaint.fit`.
    Validate it shows the `T_split` feature. (No new pruning yet — quickest go/no-go.)
 3. `mstep` directional penalised spline + test (recovers a known rate from synthetic events/exposure
    — the exploration's machinery, promoted).
@@ -140,7 +140,7 @@ tests/test_dating_*  # unit + integration
 - **EM × smoothing-parameter** interaction (re-select λ each step vs fix) — watch convergence.
 - **Interpretation** — keep the "relative cross-coalescence rate, not pulse time" framing honest.
 - **Scope creep** — this is a *new estimator* riding the same engine; keep it a separate subpackage
-  (`tslai.dating`), not entangled with the LAI painter.
+  (`tspaint.dating`), not entangled with the LAI painter.
 ```
 
 ---
@@ -161,7 +161,7 @@ tests/test_dating_*  # unit + integration
 
 ### Direction convention (important)
 
-tslai's jumps are **parent→child = old→young = forward in time**, so a *backward-time* A→B
+tspaint's jumps are **parent→child = old→young = forward in time**, so a *backward-time* A→B
 mass-migration registers as **forward-time B→A** — i.e. it shows up in `q_BA`, not `q_AB`. State
 the profile's directionality in forward time, or flip when reporting admixture (backward-time)
 direction.

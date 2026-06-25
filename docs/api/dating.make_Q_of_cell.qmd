@@ -1,7 +1,7 @@
-# dating.make_Q_of_cell { #tslai.dating.make_Q_of_cell }
+# dating.make_Q_of_cell { #tspaint.dating.make_Q_of_cell }
 
 ```python
-tslai.dating.make_Q_of_cell(q_AB, q_BA)
+tspaint.dating.make_Q_of_cell(q_AB, q_BA)
 ```
 
 Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates.

@@ -1,7 +1,7 @@
-# dating.log_time_grid { #tslai.dating.log_time_grid }
+# dating.log_time_grid { #tspaint.dating.log_time_grid }
 
 ```python
-tslai.dating.log_time_grid(t_min, t_max, n_cells)
+tspaint.dating.log_time_grid(t_min, t_max, n_cells)
 ```
 
 Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``.

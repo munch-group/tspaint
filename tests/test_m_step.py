@@ -2,7 +2,7 @@
 ahead of the E-step orchestration (Rungs 4-5)."""
 import numpy as np
 
-from tslai.em import m_step_Q, m_step_pi, m_step_w
+from tspaint.em import m_step_Q, m_step_pi, m_step_w
 
 
 def test_m_step_Q_basic():

@@ -2,18 +2,18 @@
 
 A uniform way to score local-ancestry **painters** against the same simulated truth.
 A painter is any ``f(ts, labels, queries) -> {sample: [Segment]}``; everything here
-(and the :mod:`tslai.validate` metrics) then scores it identically, so tslai, simple
+(and the :mod:`tspaint.validate` metrics) then scores it identically, so tspaint, simple
 baselines, and external tools are compared on equal footing.
 
 Provided painters:
 
-* :func:`tslai_paint` — the full method (EM fit + down-pass posterior).
+* :func:`tspaint_paint` — the full method (EM fit + down-pass posterior).
 * :func:`nearest_reference_paint` — a runnable **ARG-native baseline**: paint each query
   by the label of its nearest labelled reference (smallest TMRCA) in each marginal tree.
   No CTMC, no EM, no credibility — the naive genealogy painter that the generative model
   should beat. A fair stand-in for the lower bound of "ARG-native LAI".
 
-**RFMix is wired** as a painter (:func:`tslai.io_rfmix.rfmix_paint`) — the field-standard
+**RFMix is wired** as a painter (:func:`tspaint.io_rfmix.rfmix_paint`) — the field-standard
 segment incumbent, run from an isolated ``compare`` pixi env. Other external comparators
 (MOSAIC/FLARE; ARGMix, Pearson & Durbin) are not bundled — they need separate installs /
 trained models. Add one by implementing the same painter signature (shell out to the tool
@@ -33,13 +33,13 @@ from .output import Segment, posterior_table, INFORMATIVE, MISSING_INFO
 from .validate import balanced_accuracy, mean_confidence, per_base_accuracy
 from .io_rfmix import rfmix_paint   # genotype-native comparator, scored like the rest
 
-__all__ = ["tslai_paint", "nearest_reference_paint", "rfmix_paint", "score_painter",
+__all__ = ["tspaint_paint", "nearest_reference_paint", "rfmix_paint", "score_painter",
            "head_to_head"]
 
 
-def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
+def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
                 ranked=False, estimate_pi=False):
-    """Paint queries with the full tslai method (EM fit + down-pass posterior).
+    """Paint queries with the full tspaint method (EM fit + down-pass posterior).
 
     EM-fits ``(Q[, π, w])`` on the labelled references, then paints the queries
     with the down-pass posterior.
@@ -60,7 +60,7 @@ def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
         Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
     soft_refs : iterable[int], optional
         References whose credibility ``w`` is learned (the rest stay hard-clamped);
-        passed through to :func:`tslai.em.fit`.
+        passed through to :func:`tspaint.em.fit`.
     ranked : bool, optional
         If True, run the order-only variant on a dense-ranked tree sequence.
         **Not recommended** — it worsens the π degeneracy (CLAUDE.md §6).
@@ -74,7 +74,7 @@ def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
     -------
     dict[int, list[Segment]]
         Per-query posterior segment tracks (from
-        :func:`tslai.output.posterior_table`).
+        :func:`tspaint.output.posterior_table`).
     """
     if ranked:
         from .ranked import ranked_tree_sequence
@@ -109,7 +109,7 @@ def nearest_reference_paint(ts, labels, queries, K=2):
     -------
     dict[int, list[Segment]]
         Per-query segment tracks with one-hot posteriors;
-        :data:`tslai.output.MISSING_INFO` marks spans with no reachable reference.
+        :data:`tspaint.output.MISSING_INFO` marks spans with no reachable reference.
     """
     node_time = ts.tables.nodes.time
     ref_ids = [int(s) for s in labels]
@@ -157,7 +157,7 @@ def score_painter(painter, ts, labels, queries, truth_states, **kwargs):
         Sample ids to paint and score.
     truth_states : dict[int, list[tuple[float, float, int]]]
         True ancestry-state tracts per sample (e.g. from
-        :func:`tslai.validate.map_truth`).
+        :func:`tspaint.validate.map_truth`).
     **kwargs
         Forwarded to ``painter``.
 
@@ -165,7 +165,7 @@ def score_painter(painter, ts, labels, queries, truth_states, **kwargs):
     -------
     dict
         Keys ``"balanced_accuracy"``, ``"accuracy"`` and ``"confidence"`` from
-        the :mod:`tslai.validate` metrics, scored over ``queries``.
+        the :mod:`tspaint.validate` metrics, scored over ``queries``.
     """
     tracks = painter(ts, labels, queries, **kwargs)
     return {
@@ -184,7 +184,7 @@ def head_to_head(painters, *, T_admix=300.0, n_admix=12, n_ref=12, sequence_leng
     requested ARG substrate.
 
     SINGER is intentionally left to
-    :func:`tslai.experiments.singer_ensemble_experiment` (it samples an ensemble
+    :func:`tspaint.experiments.singer_ensemble_experiment` (it samples an ensemble
     rather than a single ts); external tools slot in as painters.
 
     Parameters

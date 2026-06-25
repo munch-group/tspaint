@@ -1,7 +1,7 @@
-# experiments.arg_ensemble_experiment { #tslai.experiments.arg_ensemble_experiment }
+# experiments.arg_ensemble_experiment { #tspaint.experiments.arg_ensemble_experiment }
 
 ```python
-tslai.experiments.arg_ensemble_experiment(
+tspaint.experiments.arg_ensemble_experiment(
     M=8,
     T_admix=300.0,
     n_admix=20,
@@ -23,8 +23,8 @@ Merge LAI across an ensemble of inferred ARGs vs. a single inferred ARG.
 Stand-in for SINGER's thinned posterior samples: ``M`` independent mutation
 overlays of one true genealogy, each inferred with tsinfer (sharing samples and
 coordinates). ``theta`` is fit pooled across the ensemble (``fit`` over the list);
-each member is painted (:func:`tslai.output.posterior_table`) and the paintings are
-averaged (:func:`tslai.ensemble.merge_posterior_tables`).
+each member is painted (:func:`tspaint.output.posterior_table`) and the paintings are
+averaged (:func:`tspaint.ensemble.merge_posterior_tables`).
 
 ## Parameters {.doc-section .doc-section-parameters}
 

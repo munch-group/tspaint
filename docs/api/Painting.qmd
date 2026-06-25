@@ -1,7 +1,7 @@
-# Painting { #tslai.Painting }
+# Painting { #tspaint.Painting }
 
 ```python
-tslai.Painting(
+tspaint.Painting(
     posteriors,
     Q,
     pi,
@@ -18,9 +18,9 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 ## Attributes {.doc-section .doc-section-attributes}
 
-<code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:`~tslai.output.Segment`\ s covering ``[0, L)`` (the soft, calibrated deliverable).
+:   Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:`~tspaint.output.Segment`\ s covering ``[0, L)`` (the soft, calibrated deliverable).
 
 <code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
 
@@ -58,14 +58,14 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 | Name | Description |
 | --- | --- |
-| [posterior_at](#tslai.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
-| [rate_through_time](#tslai.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
-| [segments](#tslai.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
+| [posterior_at](#tspaint.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [rate_through_time](#tspaint.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
+| [segments](#tspaint.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
 
-### posterior_at { #tslai.Painting.posterior_at }
+### posterior_at { #tspaint.Painting.posterior_at }
 
 ```python
-tslai.Painting.posterior_at(sample, position)
+tspaint.Painting.posterior_at(sample, position)
 ```
 
 Posterior vector for ``sample`` at a genomic ``position``.
@@ -86,20 +86,20 @@ Posterior vector for ``sample`` at a genomic ``position``.
 
 :   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
 
-### rate_through_time { #tslai.Painting.rate_through_time }
+### rate_through_time { #tspaint.Painting.rate_through_time }
 
 ```python
-tslai.Painting.rate_through_time(edges=None, **kwargs)
+tspaint.Painting.rate_through_time(edges=None, **kwargs)
 ```
 
 Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
 
 Fits the time-inhomogeneous directional mugration EM
-(:func:`tslai.fit_rate_through_time`) **warm-started from this painting's fitted
+(:func:`tspaint.fit_rate_through_time`) **warm-started from this painting's fitted
 ``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
 deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
 ``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
-their direction. It returns a **new** :class:`~tslai.dating.RateThroughTime` and does
+their direction. It returns a **new** :class:`~tspaint.dating.RateThroughTime` and does
 **not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
 paths stay side by side).
 
@@ -111,18 +111,18 @@ paths stay side by side).
 
 <code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
 
-:   Forwarded to :func:`tslai.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``).
+:   Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``).
 
 #### Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tslai](`tslai`).[dating](`tslai.dating`).[RateThroughTime](`tslai.dating.RateThroughTime`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[dating](`tspaint.dating`).[RateThroughTime](`tspaint.dating.RateThroughTime`)]{.parameter-annotation}</code>
 
 :   The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``, ``.plot()``).
 
-### segments { #tslai.Painting.segments }
+### segments { #tspaint.Painting.segments }
 
 ```python
-tslai.Painting.segments(deadband=None)
+tspaint.Painting.segments(deadband=None)
 ```
 
 Hard ancestry segments for downstream tract-length / dating analysis.
@@ -131,7 +131,7 @@ Hard ancestry segments for downstream tract-length / dating analysis.
 
 <code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Confidence dead-band suppressing low-confidence flips that fragment long tracts. Defaults to :attr:`default_deadband`. See :func:`tslai.output.hard_segments`.
+:   Confidence dead-band suppressing low-confidence flips that fragment long tracts. Defaults to :attr:`default_deadband`. See :func:`tspaint.output.hard_segments`.
 
 #### Returns {.doc-section .doc-section-returns}
 

@@ -10,7 +10,7 @@ constraint, not tract length.
 """
 import pytest
 
-from tslai.experiments import admixture_experiment
+from tspaint.experiments import admixture_experiment
 
 
 @pytest.mark.slow

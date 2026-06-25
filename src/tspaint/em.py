@@ -1,7 +1,7 @@
 """Structured / blocked EM (CLAUDE.md §3).
 
-E-step = exact Felsenstein pruning per marginal tree, per root (:mod:`tslai.pruning`);
-sufficient statistics accumulated per edge, span-weighted (:mod:`tslai.accumulate`);
+E-step = exact Felsenstein pruning per marginal tree, per root (:mod:`tspaint.pruning`);
+sufficient statistics accumulated per edge, span-weighted (:mod:`tspaint.accumulate`);
 M-step = the closed forms below (CLAUDE.md §3.4).
 
 The closed-form M-step is implemented now (it is pure and unit-testable); the

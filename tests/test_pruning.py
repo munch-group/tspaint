@@ -9,7 +9,7 @@ import pytest
 import tskit
 from scipy.linalg import expm
 
-from tslai.pruning import prune_tree
+from tspaint.pruning import prune_tree
 
 
 # --- helpers -------------------------------------------------------------------

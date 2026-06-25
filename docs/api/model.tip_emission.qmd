@@ -1,7 +1,7 @@
-# model.tip_emission { #tslai.model.tip_emission }
+# model.tip_emission { #tspaint.model.tip_emission }
 
 ```python
-tslai.model.tip_emission(label, w, pi)
+tspaint.model.tip_emission(label, w, pi)
 ```
 
 Soft-clamp emission for a labelled tip (CLAUDE.md §2.2).

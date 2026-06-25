@@ -1,7 +1,7 @@
 """Does painting with the time-inhomogeneous Q(t) help or hurt LAI accuracy? And how much slower?
 
 Admixture sim with known local ancestry. Paint the admixed queries two ways:
-  * homogeneous Q  (the current tslai painter), and
+  * homogeneous Q  (the current tspaint painter), and
   * the time-inhomogeneous Q(t) from the admixture-rate-through-time fit,
 and compare balanced accuracy / mean confidence + wall-clock. (The cross-coalescence path is a
 separate subpackage; this only asks whether feeding its Q(t) back into the painter changes LAI.)
@@ -9,14 +9,14 @@ separate subpackage; this only asks whether feeding its Q(t) back into the paint
 import time
 import numpy as np
 
-import tslai
-from tslai.em import fit, build_emissions
-from tslai.model import make_generator_2state
-from tslai.output import posterior_table
-from tslai.sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
-from tslai.validate import map_truth, balanced_accuracy, mean_confidence
-from tslai.dating import log_time_grid, fit_rate_through_time, make_Q_of_cell
-from tslai.dating.estep import paint_qt
+import tspaint
+from tspaint.em import fit, build_emissions
+from tspaint.model import make_generator_2state
+from tspaint.output import posterior_table
+from tspaint.sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+from tspaint.validate import map_truth, balanced_accuracy, mean_confidence
+from tspaint.dating import log_time_grid, fit_rate_through_time, make_Q_of_cell
+from tspaint.dating.estep import paint_qt
 
 
 def setup(seed=1, L=1e6, T_admix=100, Ne=1000, T_split=5000):

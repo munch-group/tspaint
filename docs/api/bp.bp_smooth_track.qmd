@@ -1,17 +1,17 @@
-# bp.bp_smooth_track { #tslai.bp.bp_smooth_track }
+# bp.bp_smooth_track { #tspaint.bp.bp_smooth_track }
 
 ```python
-tslai.bp.bp_smooth_track(track, pi, epsilon)
+tspaint.bp.bp_smooth_track(track, pi, epsilon)
 ```
 
-Smooth one tip's :class:`~tslai.output.Segment` track along the genome.
+Smooth one tip's :class:`~tspaint.output.Segment` track along the genome.
 
 Intervals and status are preserved; posteriors are replaced by the
 horizontally-smoothed ones.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
 
 :   One tip's piecewise-constant painting.
 
@@ -25,6 +25,6 @@ horizontally-smoothed ones.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
 
 :   The track with smoothed posteriors (a copy of ``track`` if it has < 2 segments).

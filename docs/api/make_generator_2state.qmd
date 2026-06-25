@@ -1,7 +1,7 @@
-# make_generator_2state { #tslai.make_generator_2state }
+# make_generator_2state { #tspaint.make_generator_2state }
 
 ```python
-tslai.make_generator_2state(q_AB, q_BA)
+tspaint.make_generator_2state(q_AB, q_BA)
 ```
 
 Build the 2-state ancestry CTMC generator (CLAUDE.md §2.1).

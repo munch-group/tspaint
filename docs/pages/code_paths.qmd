@@ -3,13 +3,13 @@ title: "Code organization and data flow"
 toc: true
 ---
 
-This page is the map a reader or contributor needs to navigate the `tslai`
+This page is the map a reader or contributor needs to navigate the `tspaint`
 source: how the modules fit together, what flows between them, and which
 invariants keep the result correct. It documents the *code paths*, not the
 science — the authoritative model and its justification live in
-[`CLAUDE.md`](https://github.com/munch-group/tslai/blob/main/CLAUDE.md) (referenced
+[`CLAUDE.md`](https://github.com/munch-group/tspaint/blob/main/CLAUDE.md) (referenced
 below as §N). Names here are verified against
-[`src/tslai/__init__.py`](https://github.com/munch-group/tslai/blob/main/src/tslai/__init__.py);
+[`src/tspaint/__init__.py`](https://github.com/munch-group/tspaint/blob/main/src/tspaint/__init__.py);
 links go to the [API reference](../api/index.qmd) where one exists.
 
 ## The one call
@@ -17,11 +17,11 @@ links go to the [API reference](../api/index.qmd) where one exists.
 The whole library funnels through a single high-level entry point:
 
 ```python
-import tslai
+import tspaint
 
-ts     = tslai.simulate_admixture(n_admix=10, n_ref=10)   # or tslai.io.infer_tree_sequence(...)
+ts     = tspaint.simulate_admixture(n_admix=10, n_ref=10)   # or tspaint.io.infer_tree_sequence(...)
 labels = {0: 0, 1: 0, 2: 1, 3: 1}                         # reference sample-node -> ancestry state
-painting = tslai.paint(ts, labels)                        # EM-fit on references, paint the queries
+painting = tspaint.paint(ts, labels)                        # EM-fit on references, paint the queries
 
 painting.posteriors[q]            # soft per-position posterior for query q (list[Segment])
 painting.segments(deadband=0.4)   # hard ancestry tracts for downstream dating
@@ -36,7 +36,7 @@ the package is either machinery underneath those stages or tooling around them
 
 ```{mermaid}
 flowchart LR
-  subgraph IN["Input front ends — tslai.io"]
+  subgraph IN["Input front ends — tspaint.io"]
     TSI["io_tsinfer<br/>infer_tree_sequence"]
     SNG["io_singer<br/>singer_tree_sequences"]
     REL["Relate --compress<br/>(external)"]
@@ -79,14 +79,14 @@ flowchart LR
 
   PAINT --> PAINTING["Painting<br/>.posteriors (soft)"]
   PAINTING --> SEG[".segments(deadband)<br/>output.hard_segments<br/>(hard tracts)"]
-  PAINTING --> METRICS["tslai.metrics / tslai.compare<br/>(scoring vs. truth)"]
+  PAINTING --> METRICS["tspaint.metrics / tspaint.compare<br/>(scoring vs. truth)"]
 ```
 
 ### Walkthrough
 
-**0. Get a tree sequence.** `tslai` paints *any* `tskit.TreeSequence` whose nodes
+**0. Get a tree sequence.** `tspaint` paints *any* `tskit.TreeSequence` whose nodes
 keep stable IDs across marginal trees (§5). The
-[`tslai.io`](../api/io.infer_tree_sequence.qmd) namespace gathers the supported
+[`tspaint.io`](../api/io.infer_tree_sequence.qmd) namespace gathers the supported
 ways to obtain one from genotypes; a true/simulated ARG works directly.
 
 **1. Emissions (§2.2).**
@@ -163,7 +163,7 @@ low-confidence `argmax` flips that fragment long tracts — a precision/recall d
 fixed hard segmenter does not expose. This is the object a downstream tract-length /
 admixture-pulse dating analysis consumes.
 
-## A parallel path: admixture dating (`tslai.dating`)
+## A parallel path: admixture dating (`tspaint.dating`)
 
 Dating is **not** part of the `paint` pipeline — it is a separate estimator that *reuses the
 same engine* (pruning + Van Loan rewards + edge-blocked accumulation) with one change: the
@@ -194,7 +194,7 @@ no painting-accuracy gain, only sharper confidence at ~4–5× cost, so the path
 ## Public API map
 
 The top-level package re-exports a curated surface and a set of grouped namespaces.
-The submodules are all importable directly too (e.g. `tslai.pruning`), but the table
+The submodules are all importable directly too (e.g. `tspaint.pruning`), but the table
 below is the intended entry map.
 
 ### Curated top-level
@@ -218,19 +218,19 @@ below is the intended entry map.
 
 | Namespace | Backing module(s) | Key members |
 |:--|:--|:--|
-| `tslai.metrics` | `validate` | [`balanced_accuracy`](../api/validate.balanced_accuracy.qmd), [`per_base_accuracy`](../api/validate.per_base_accuracy.qmd), [`mean_confidence`](../api/validate.mean_confidence.qmd), [`reliability_curve`](../api/validate.reliability_curve.qmd), [`breakpoint_flicker`](../api/validate.breakpoint_flicker.qmd), [`tract_boundary_error`](../api/validate.tract_boundary_error.qmd), [`map_truth`](../api/validate.map_truth.qmd) |
-| `tslai.compare` | `compare`, `io_rfmix` | [`tslai_paint`](../api/compare.tslai_paint.qmd), [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd), [`rfmix_paint`](../api/compare.rfmix_paint.qmd), [`head_to_head`](../api/compare.head_to_head.qmd), [`score_painter`](../api/compare.score_painter.qmd) |
-| `tslai.io` | `io_tsinfer`, `io_singer` | [`infer_tree_sequence`](../api/io.infer_tree_sequence.qmd), [`add_mutations`](../api/io.add_mutations.qmd), [`singer_tree_sequences`](../api/io.singer_tree_sequences.qmd), [`write_haploid_vcf`](../api/io.write_haploid_vcf.qmd) |
-| `tslai.bp` | `bp.horizontal` | [`bp_paint`](../api/bp.bp_paint.qmd), [`bp_smooth`](../api/bp.bp_smooth.qmd), [`bp_smooth_track`](../api/bp.bp_smooth_track.qmd) |
-| `tslai.dating` | `dating.{em,estep,mstep,grid}` | [`fit_rate_through_time`](../api/fit_rate_through_time.qmd), [`RateThroughTime`](../api/RateThroughTime.qmd), [`paint_qt`](../api/dating.paint_qt.qmd), [`rate_through_time_binned`](../api/dating.rate_through_time_binned.qmd), [`directional_rate_splines`](../api/dating.directional_rate_splines.qmd) (also `Painting.rate_through_time()`) |
-| `tslai.experiments` | `experiments` | [`admixture_experiment`](../api/experiments.admixture_experiment.qmd), [`age_sweep`](../api/experiments.age_sweep.qmd), [`scaling_sweep`](../api/experiments.scaling_sweep.qmd), [`fragmentation_experiment`](../api/experiments.fragmentation_experiment.qmd), [`arg_ensemble_experiment`](../api/experiments.arg_ensemble_experiment.qmd), [`singer_ensemble_experiment`](../api/experiments.singer_ensemble_experiment.qmd), [`flicker_vs_true_boundaries`](../api/experiments.flicker_vs_true_boundaries.qmd) |
+| `tspaint.metrics` | `validate` | [`balanced_accuracy`](../api/validate.balanced_accuracy.qmd), [`per_base_accuracy`](../api/validate.per_base_accuracy.qmd), [`mean_confidence`](../api/validate.mean_confidence.qmd), [`reliability_curve`](../api/validate.reliability_curve.qmd), [`breakpoint_flicker`](../api/validate.breakpoint_flicker.qmd), [`tract_boundary_error`](../api/validate.tract_boundary_error.qmd), [`map_truth`](../api/validate.map_truth.qmd) |
+| `tspaint.compare` | `compare`, `io_rfmix` | [`tspaint_paint`](../api/compare.tspaint_paint.qmd), [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd), [`rfmix_paint`](../api/compare.rfmix_paint.qmd), [`head_to_head`](../api/compare.head_to_head.qmd), [`score_painter`](../api/compare.score_painter.qmd) |
+| `tspaint.io` | `io_tsinfer`, `io_singer` | [`infer_tree_sequence`](../api/io.infer_tree_sequence.qmd), [`add_mutations`](../api/io.add_mutations.qmd), [`singer_tree_sequences`](../api/io.singer_tree_sequences.qmd), [`write_haploid_vcf`](../api/io.write_haploid_vcf.qmd) |
+| `tspaint.bp` | `bp.horizontal` | [`bp_paint`](../api/bp.bp_paint.qmd), [`bp_smooth`](../api/bp.bp_smooth.qmd), [`bp_smooth_track`](../api/bp.bp_smooth_track.qmd) |
+| `tspaint.dating` | `dating.{em,estep,mstep,grid}` | [`fit_rate_through_time`](../api/fit_rate_through_time.qmd), [`RateThroughTime`](../api/RateThroughTime.qmd), [`paint_qt`](../api/dating.paint_qt.qmd), [`rate_through_time_binned`](../api/dating.rate_through_time_binned.qmd), [`directional_rate_splines`](../api/dating.directional_rate_splines.qmd) (also `Painting.rate_through_time()`) |
+| `tspaint.experiments` | `experiments` | [`admixture_experiment`](../api/experiments.admixture_experiment.qmd), [`age_sweep`](../api/experiments.age_sweep.qmd), [`scaling_sweep`](../api/experiments.scaling_sweep.qmd), [`fragmentation_experiment`](../api/experiments.fragmentation_experiment.qmd), [`arg_ensemble_experiment`](../api/experiments.arg_ensemble_experiment.qmd), [`singer_ensemble_experiment`](../api/experiments.singer_ensemble_experiment.qmd), [`flicker_vs_true_boundaries`](../api/experiments.flicker_vs_true_boundaries.qmd) |
 
-`tslai.metrics` is an alias for the `validate` module (`from . import validate as
-metrics`); `tslai.validate` works too.
+`tspaint.metrics` is an alias for the `validate` module (`from . import validate as
+metrics`); `tspaint.validate` works too.
 
-## Front ends (`tslai.io`)
+## Front ends (`tspaint.io`)
 
-`tslai` is **front-end agnostic**: it paints any tree sequence with cross-tree
+`tspaint` is **front-end agnostic**: it paints any tree sequence with cross-tree
 node-ID stability (§5). The supported routes to one:
 
 | Front end | Module | What it does |
@@ -242,15 +242,15 @@ node-ID stability (§5). The supported routes to one:
 RFMix is **not** a front end — it is genotype-native and appears as a *comparator*
 (below).
 
-## Comparators (`tslai.compare`)
+## Comparators (`tspaint.compare`)
 
 A **painter** is any `f(ts, labels, queries) -> {sample: [Segment]}`. The harness
-scores every painter against the same simulated truth on equal footing, so `tslai`,
+scores every painter against the same simulated truth on equal footing, so `tspaint`,
 simple baselines, and external tools compare directly.
 
 | Painter | Module | What it is |
 |:--|:--|:--|
-| [`tslai_paint`](../api/compare.tslai_paint.qmd) | `compare` | The full method (EM fit + down-pass posterior) in painter form. |
+| [`tspaint_paint`](../api/compare.tspaint_paint.qmd) | `compare` | The full method (EM fit + down-pass posterior) in painter form. |
 | [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd) | `compare` | ARG-native **baseline**: paint each query by its nearest labelled reference (smallest TMRCA) per tree. No CTMC, no EM — the genealogy painter the generative model should beat. |
 | [`rfmix_paint`](../api/compare.rfmix_paint.qmd) | `io_rfmix` | The field-standard **segment incumbent** (RFMix v2): writes phased VCFs, shells out to `rfmix` (isolated `compare` pixi env), parses the `.fb.tsv` posteriors back to `Segment` tracks. |
 | [`head_to_head`](../api/compare.head_to_head.qmd) | `compare` | Driver: simulate one admixture scenario, score a panel of painters across ARG substrates (`"true"`, `"tsinfer"`). |
@@ -274,7 +274,7 @@ the painting — they are the load-bearing rules, not optional polish.
 | **Polytomy-safe traversal** | `pruning.py` (`tree.children(u)` / sib pointers; product over all children) | Internal nodes with >2 children are real and first-class; never assume binarity. |
 | **Isolated span = missing-info ≠ uncertain** | `pruning.py` (tags `missing_info`), `output.py` (`MISSING_INFO` status, `missing_info_mask`) | An isolated sample's posterior falls back to the prior and is tagged distinctly; conflating "no information" with "50–50" is a real interpretive error for introgression mapping. |
 | **Keep a hard-clamped anchor set** | `em.fit` (raises `ValueError` if `soft_refs` covers every labelled tip) | Never let the whole panel float — that reintroduces unsupervised degeneracy (label switching, Q/`w` trade-off, collapse). |
-| **Input must have cross-tree node-ID stability** | front ends (`tslai.io`); diagnostics (`diagnostics.node_persistence`) | The edge-blocking and horizontal coupling depend on a persistent clade being *one* node ID across trees. Delivered natively by msprime/tsinfer/SINGER, or by Relate `--compress`. Verify with the persistence histogram before trusting results. |
+| **Input must have cross-tree node-ID stability** | front ends (`tspaint.io`); diagnostics (`diagnostics.node_persistence`) | The edge-blocking and horizontal coupling depend on a persistent clade being *one* node ID across trees. Delivered natively by msprime/tsinfer/SINGER, or by Relate `--compress`. Verify with the persistence histogram before trusting results. |
 | **Leave-one-out for credibility** | `pruning.py` (`loo`), `accumulate.py` (`S_cred`) | Judge a tip's label against what the *rest* of the tree says, not its own self-confirming posterior. |
 
 ## Module reference
@@ -292,23 +292,23 @@ the painting — they are the load-bearing rules, not optional polish.
 | `dating/grid.py` | Log-time grid for the time-inhomogeneous estimator: `log_time_grid`, `cell_centers`, `split_branch` (cut a branch at cell boundaries). |
 | `dating/estep.py` | Per-cell endpoint-conditioned stats (`branch_cell_stats`, Van Loan sandwiched by composite transitions), time-binned accumulation, and the `Q(t)` painter `paint_qt`. |
 | `dating/mstep.py` | Directional penalised-Poisson **log-spline** rate fit with GCV smoothing: `fit_poisson_spline`, `select_lambda_gcv`, `directional_rate_splines`. |
-| `dating/em.py` | The time-inhomogeneous EM (`fit_rate_through_time`) → `RateThroughTime`; `make_Q_of_cell`. The `tslai.dating` headline — a parallel path to `paint`, not part of it. |
+| `dating/em.py` | The time-inhomogeneous EM (`fit_rate_through_time`) → `RateThroughTime`; `make_Q_of_cell`. The `tspaint.dating` headline — a parallel path to `paint`, not part of it. |
 | `ensemble.py` | Marginalise ARG uncertainty: average per-position paintings across a posterior ensemble (e.g. SINGER) → `MergedSegment`s with a spread band. |
 | `io_tsinfer.py` | tsinfer front end: `add_mutations`, `infer_tree_sequence`. |
 | `io_singer.py` | SINGER front end: haploid VCF → posterior ARG samples; `write_haploid_vcf`, `singer_tree_sequences`. |
 | `io_rfmix.py` | RFMix comparator (genotype-native): VCF/map writers, `run_rfmix`, `.fb.tsv`/`.msp.tsv` parsers, `rfmix_paint`. |
 | `io_relate.py` | Relate `--compress` → tskit wrappers/checks (external C++ toolchain). |
-| `io.py` | The `tslai.io` namespace — gathers the front ends. |
-| `compare.py` | Head-to-head harness: painters (`tslai_paint`, `nearest_reference_paint`, `rfmix_paint`), `score_painter`, `head_to_head`. |
-| `validate.py` | Metrics (exposed as `tslai.metrics`): accuracy, calibration, flicker, tract-boundary error, fragmentation, `map_truth`. |
+| `io.py` | The `tspaint.io` namespace — gathers the front ends. |
+| `compare.py` | Head-to-head harness: painters (`tspaint_paint`, `nearest_reference_paint`, `rfmix_paint`), `score_painter`, `head_to_head`. |
+| `validate.py` | Metrics (exposed as `tspaint.metrics`): accuracy, calibration, flicker, tract-boundary error, fragmentation, `map_truth`. |
 | `sim.py` | msprime admixture sims with **census-event** ground truth; `simulate_admixture`, `local_ancestry_truth`, `admixture_demography`. |
-| `ranked.py` | Order-only (dense-ranked) ablation (`ranked_tree_sequence`). **Measured not beneficial** (§6); kept runnable behind `tslai_paint(..., ranked=True)`. |
+| `ranked.py` | Order-only (dense-ranked) ablation (`ranked_tree_sequence`). **Measured not beneficial** (§6); kept runnable behind `tspaint_paint(..., ranked=True)`. |
 | `diagnostics.py` | Front-end-agnostic premise checks: node-persistence histogram and edge-span summary — the **go/no-go** on the central premise (§5.1). |
-| `experiments.py` | End-to-end benchmark drivers (`tslai.experiments`): sim → fit → paint → score, age/scaling sweeps, ensemble and SINGER drivers, the flicker metric. |
+| `experiments.py` | End-to-end benchmark drivers (`tspaint.experiments`): sim → fit → paint → score, age/scaling sweeps, ensemble and SINGER drivers, the flicker metric. |
 
 ## See also
 
 - [API reference](../api/index.qmd) — full signatures and parameter docs.
-- [`CLAUDE.md`](https://github.com/munch-group/tslai/blob/main/CLAUDE.md) — the
+- [`CLAUDE.md`](https://github.com/munch-group/tspaint/blob/main/CLAUDE.md) — the
   authoritative spec (model, math, tree-sequence accounting, validation plan), with
   the §N anchors referenced throughout this page.

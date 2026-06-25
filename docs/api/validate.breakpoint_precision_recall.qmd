@@ -1,7 +1,7 @@
-# validate.breakpoint_precision_recall { #tslai.validate.breakpoint_precision_recall }
+# validate.breakpoint_precision_recall { #tspaint.validate.breakpoint_precision_recall }
 
 ```python
-tslai.validate.breakpoint_precision_recall(inferred_segs, true_segs, tol)
+tspaint.validate.breakpoint_precision_recall(inferred_segs, true_segs, tol)
 ```
 
 Precision/recall of inferred ancestry switch points vs. truth.
@@ -11,13 +11,13 @@ inferred switches lying near a true switch — low precision means spurious
 fragmentation, which biases tract-length / admixture-pulse dating *older*.
 **Recall** is the fraction of true switches recovered — low recall means
 missed or over-smoothed switches (biases *younger*). The two trade off
-against the :func:`tslai.output.hard_segments` ``deadband`` (CLAUDE.md §9).
+against the :func:`tspaint.output.hard_segments` ``deadband`` (CLAUDE.md §9).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
 <code>[**inferred_segs**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]]{.parameter-annotation}</code>
 
-:   Inferred **hard** segments ``[(left, right, state)]`` (e.g. from :func:`tslai.output.hard_segments`).
+:   Inferred **hard** segments ``[(left, right, state)]`` (e.g. from :func:`tspaint.output.hard_segments`).
 
 <code>[**true_segs**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]]{.parameter-annotation}</code>
 

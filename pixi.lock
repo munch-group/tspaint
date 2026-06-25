@@ -7054,9 +7054,9 @@ packages:
   size: 650349
   timestamp: 1778795831561
 - pypi: ./
-  name: tslai
+  name: tspaint
   version: 0.1.16
-  sha256: 80155ca1a75fcd1697d448dde454d85214acab3f4f95496ebe40b1811c2bcfbd
+  sha256: 08378096843d6a4e670e25d83b334ef5cab7f4f43a2233d828f0c2287c6cb4b6
   requires_dist:
   - tskit>=0.5
   - msprime>=1.3

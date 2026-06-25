@@ -1,10 +1,10 @@
-"""Tests for the ARG-ensemble merge layer (tslai.ensemble)."""
+"""Tests for the ARG-ensemble merge layer (tspaint.ensemble)."""
 import numpy as np
 import pytest
 
-from tslai.output import Segment, INFORMATIVE, MISSING_INFO
-from tslai.ensemble import merge_posterior_tables
-from tslai.validate import per_base_accuracy
+from tspaint.output import Segment, INFORMATIVE, MISSING_INFO
+from tspaint.ensemble import merge_posterior_tables
+from tspaint.validate import per_base_accuracy
 
 
 def seg(left, right, post, status=INFORMATIVE):
@@ -72,7 +72,7 @@ def test_merge_reduces_independent_noise():
 
 @pytest.mark.slow
 def test_arg_ensemble_experiment_runs():
-    from tslai.experiments import arg_ensemble_experiment
+    from tspaint.experiments import arg_ensemble_experiment
     r = arg_ensemble_experiment(M=4, n_admix=12, n_ref=12, sequence_length=1.5e5,
                                 mutation_rate=1e-7, max_iter=4, seed=1)
     assert r["M"] == 4 and len(r["single_balanced_per_member"]) == 4

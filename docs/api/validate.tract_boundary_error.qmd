@@ -1,7 +1,7 @@
-# validate.tract_boundary_error { #tslai.validate.tract_boundary_error }
+# validate.tract_boundary_error { #tspaint.validate.tract_boundary_error }
 
 ```python
-tslai.validate.tract_boundary_error(tracks, truth_states, sample)
+tspaint.validate.tract_boundary_error(tracks, truth_states, sample)
 ```
 
 Tract-boundary localization error against the truth.
@@ -11,7 +11,7 @@ switch (from the posterior ``argmax``).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Posterior segment tracks per sample.
 

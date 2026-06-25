@@ -1,7 +1,7 @@
-# compare.tslai_paint { #tslai.compare.tslai_paint }
+# compare.tspaint_paint { #tspaint.compare.tspaint_paint }
 
 ```python
-tslai.compare.tslai_paint(
+tspaint.compare.tspaint_paint(
     ts,
     labels,
     queries,
@@ -14,7 +14,7 @@ tslai.compare.tslai_paint(
 )
 ```
 
-Paint queries with the full tslai method (EM fit + down-pass posterior).
+Paint queries with the full tspaint method (EM fit + down-pass posterior).
 
 EM-fits ``(Q[, π, w])`` on the labelled references, then paints the queries
 with the down-pass posterior.
@@ -47,7 +47,7 @@ with the down-pass posterior.
 
 <code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   References whose credibility ``w`` is learned (the rest stay hard-clamped); passed through to :func:`tslai.em.fit`.
+:   References whose credibility ``w`` is learned (the rest stay hard-clamped); passed through to :func:`tspaint.em.fit`.
 
 <code>[**ranked**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
@@ -59,6 +59,6 @@ with the down-pass posterior.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   Per-query posterior segment tracks (from :func:`tslai.output.posterior_table`).
+:   Per-query posterior segment tracks (from :func:`tspaint.output.posterior_table`).

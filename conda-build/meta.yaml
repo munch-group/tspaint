@@ -1,18 +1,18 @@
 {% set pyproject = load_file_data("../pyproject.toml", from_recipe_dir=True) %}
 
 package:
-  name: tslai
+  name: tspaint
   version: {{ pyproject.get("project").get("version") }}
 
 source:
-  git_url: https://github.com/munch-group/tslai.git
+  git_url: https://github.com/munch-group/tspaint.git
 
 build:
   number: 0
   script: {{ PYTHON }} -m pip install . -vv
   python_version_independent: true
   # entry_points:
-  #  - tslai = tslai:tslai
+  #  - tspaint = tspaint:tspaint
 
 requirements:
   host:
@@ -36,10 +36,10 @@ dependencies:   # keep this block with only these packages
 
 test:
   imports:
-    - tslai
+    - tspaint
 
 about:
-  home: https://github.com/munch-group/tslai.git
+  home: https://github.com/munch-group/tspaint.git
   license: MIT
-  dev_url: https://github.com/munch-group/tslai.git
-  doc_url: https://munch-group.org/tslai
+  dev_url: https://github.com/munch-group/tspaint.git
+  doc_url: https://munch-group.org/tspaint

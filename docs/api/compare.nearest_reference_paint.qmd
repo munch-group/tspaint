@@ -1,7 +1,7 @@
-# compare.nearest_reference_paint { #tslai.compare.nearest_reference_paint }
+# compare.nearest_reference_paint { #tspaint.compare.nearest_reference_paint }
 
 ```python
-tslai.compare.nearest_reference_paint(ts, labels, queries, K=2)
+tspaint.compare.nearest_reference_paint(ts, labels, queries, K=2)
 ```
 
 Paint queries by their nearest labelled reference (ARG-native baseline).
@@ -31,6 +31,6 @@ the naive genealogy painter the generative model should beat.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   Per-query segment tracks with one-hot posteriors; :data:`tslai.output.MISSING_INFO` marks spans with no reachable reference.
+:   Per-query segment tracks with one-hot posteriors; :data:`tspaint.output.MISSING_INFO` marks spans with no reachable reference.

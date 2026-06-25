@@ -1,7 +1,7 @@
-# em.build_emissions { #tslai.em.build_emissions }
+# em.build_emissions { #tspaint.em.build_emissions }
 
 ```python
-tslai.em.build_emissions(ts, labels, w, pi)
+tspaint.em.build_emissions(ts, labels, w, pi)
 ```
 
 Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2).

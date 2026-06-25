@@ -1,7 +1,7 @@
-# io.write_haploid_vcf { #tslai.io.write_haploid_vcf }
+# io.write_haploid_vcf { #tspaint.io.write_haploid_vcf }
 
 ```python
-tslai.io.write_haploid_vcf(ts, path)
+tspaint.io.write_haploid_vcf(ts, path)
 ```
 
 Write one haploid VCF column per sample node.

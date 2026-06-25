@@ -1,10 +1,10 @@
-# dating.paint_qt { #tslai.dating.paint_qt }
+# dating.paint_qt { #tspaint.dating.paint_qt }
 
 ```python
-tslai.dating.paint_qt(ts, emissions, Q_of_cell, pi, edges, focal)
+tspaint.dating.paint_qt(ts, emissions, Q_of_cell, pi, edges, focal)
 ```
 
 Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same
-deliverable as :func:`tslai.output.posterior_table` but using the per-cell rates from the
+deliverable as :func:`tspaint.output.posterior_table` but using the per-cell rates from the
 admixture-rate-through-time fit (so recent branches with a low rate wash less). Returns
 ``{sample: [Segment]}``; isolated spans are tagged ``MISSING_INFO``.

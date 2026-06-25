@@ -1,7 +1,7 @@
-# FitResult { #tslai.FitResult }
+# FitResult { #tspaint.FitResult }
 
 ```python
-tslai.FitResult(Q, pi, w, loglik_history)
+tspaint.FitResult(Q, pi, w, loglik_history)
 ```
 
 Fitted parameters returned by :func:`fit`.

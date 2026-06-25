@@ -1,10 +1,10 @@
-"""Tests for the head-to-head comparison harness (tslai.compare)."""
+"""Tests for the head-to-head comparison harness (tspaint.compare)."""
 import numpy as np
 import pytest
 import tskit
 
-from tslai.compare import nearest_reference_paint, head_to_head, tslai_paint
-from tslai.output import INFORMATIVE
+from tspaint.compare import nearest_reference_paint, head_to_head, tspaint_paint
+from tspaint.output import INFORMATIVE
 
 
 def _build_ts(parents, times, samples, L=10.0):
@@ -30,10 +30,10 @@ def test_nearest_reference_paint_picks_closest_label():
 
 @pytest.mark.slow
 def test_head_to_head_runs_and_scores():
-    res = head_to_head({"tslai": tslai_paint, "nearest_ref": nearest_reference_paint},
+    res = head_to_head({"tspaint": tspaint_paint, "nearest_ref": nearest_reference_paint},
                        T_admix=300, n_admix=8, n_ref=8, sequence_length=5e4, Ne=1000,
                        T_split=5000, seed=1, substrates=("true",))
     assert set(res) == {"true"}
-    for name in ("tslai", "nearest_ref"):
+    for name in ("tspaint", "nearest_ref"):
         s = res["true"][name]
         assert 0.0 <= s["balanced_accuracy"] <= 1.0 and 0.0 <= s["confidence"] <= 1.0

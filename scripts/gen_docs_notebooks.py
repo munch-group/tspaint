@@ -1,6 +1,6 @@
 """Generate the docs/notebooks/*.ipynb showcase notebooks (CLAUDE.md docs task).
 
-Each notebook computes against the real tslai API and labels its figure cells
+Each notebook computes against the real tspaint API and labels its figure cells
 (#| label: fig-...) so the docs pages can embed them with {{< embed >}}.
 """
 import os
@@ -37,8 +37,8 @@ VIZ = '''
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm, colors
-import tslai
-from tslai.sim import SOURCE_A, SOURCE_B, ADMIXED
+import tspaint
+from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED
 
 plt.rcParams.update({"figure.dpi": 110, "font.size": 10, "axes.spines.top": False,
                      "axes.spines.right": False})
@@ -46,7 +46,7 @@ plt.rcParams.update({"figure.dpi": 110, "font.size": 10, "axes.spines.top": Fals
 def admixture(n_admix=8, n_ref=8, L=2e6, T_admix=100, Ne=1000, T_split=5000, f_A=0.5,
               seed=1, infer=False, mutation_rate=4e-7):
     """Simulate admixture with known truth; return (ts, labels, queries, truth_states)."""
-    ts = tslai.simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=L,
+    ts = tspaint.simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=L,
                                   recombination_rate=1e-8, random_seed=seed, Ne=Ne,
                                   T_admix=T_admix, T_split=T_split, f_A=f_A)
     pop = ts.tables.nodes.population
@@ -57,10 +57,10 @@ def admixture(n_admix=8, n_ref=8, L=2e6, T_admix=100, Ne=1000, T_split=5000, f_A
     sop = {A: 0, B: 1}
     labels = {int(s): sop[pop[s]] for s in ts.samples() if pop[s] in (A, B)}
     queries = [int(s) for s in ts.samples() if pop[s] == admix]
-    truth = tslai.metrics.map_truth({q: tslai.local_ancestry_truth(ts)[0][q] for q in queries}, sop)
+    truth = tspaint.metrics.map_truth({q: tspaint.local_ancestry_truth(ts)[0][q] for q in queries}, sop)
     work = ts
     if infer:
-        work = tslai.io.infer_tree_sequence(tslai.io.add_mutations(ts, rate=mutation_rate,
+        work = tspaint.io.infer_tree_sequence(tspaint.io.add_mutations(ts, rate=mutation_rate,
                                                                    random_seed=seed))
     return work, labels, queries, truth
 
@@ -102,20 +102,20 @@ painting_nb = notebook("Haplotype painting", [
 
 The signature deliverable: a **soft, calibrated** posterior over ancestry at every position of
 every query haplotype. We simulate an admixed sample with known local ancestry, paint it with
-[`tslai.paint`](../api/paint.html), and visualise the result against the truth.
+[`tspaint.paint`](../api/paint.html), and visualise the result against the truth.
 """),
     code(VIZ, fig=False),
     md("## Simulate and paint\n\nRecent admixture (long tracts), strong structure so the "
        "genealogy discriminates sharply."),
     code('''
 ts, labels, queries, truth = admixture(n_admix=8, n_ref=8, L=2e6, T_admix=60, seed=1)
-painting = tslai.paint(ts, labels)
+painting = tspaint.paint(ts, labels)
 painting
 '''),
     md("## The painting\n\nEach row is a query haplotype; colour is the posterior probability of "
        "ancestry **A** (red) vs **B** (blue), white where the tree cannot tell. The thin strip "
        "beneath each row is the true ancestry."),
-    code('fig = plot_painting(painting, truth, ts, "Soft posterior (tslai.paint)")\nfig.show()',
+    code('fig = plot_painting(painting, truth, ts, "Soft posterior (tspaint.paint)")\nfig.show()',
          label="fig-painting", cap="Soft local-ancestry posterior along each query haplotype "
          "(red = ancestry A, blue = B), with true ancestry as the thin strip beneath each row."),
     md("## Hard tracts for downstream analysis\n\nCollapse the soft posterior to hard ancestry "
@@ -127,8 +127,8 @@ painting
          "(deadband 0.4), matching the true tract structure."),
     md("## Accuracy\n\nBalanced accuracy and mean confidence of the soft painting."),
     code('''
-ba = tslai.metrics.balanced_accuracy(painting.posteriors, truth, samples=queries)
-conf = tslai.metrics.mean_confidence(painting.posteriors, samples=queries)
+ba = tspaint.metrics.balanced_accuracy(painting.posteriors, truth, samples=queries)
+conf = tspaint.metrics.mean_confidence(painting.posteriors, samples=queries)
 print(f"balanced accuracy = {ba:.3f}   mean confidence = {conf:.3f}")
 '''),
 ])
@@ -138,7 +138,7 @@ calibration_nb = notebook("Calibration & accuracy vs admixture age", [
     md("""
 # Calibration & accuracy vs admixture age
 
-tslai's edge is a **calibrated** soft posterior. Here we show the reliability of `P(A)` and how
+tspaint's edge is a **calibrated** soft posterior. Here we show the reliability of `P(A)` and how
 discrimination decays as admixture ages (the reference signal is lost when admixed lineages
 coalesce among themselves before an old pulse — a coalescent limit, not tree-inference error).
 """),
@@ -150,8 +150,8 @@ import numpy as np
 pred, emp, wt = [], [], []
 for seed in range(1, 7):
     ts, labels, queries, truth = admixture(n_admix=8, n_ref=8, L=1e6, T_admix=200, seed=seed)
-    p = tslai.paint(ts, labels)
-    rc = tslai.metrics.reliability_curve(p.posteriors, truth, state=0, n_bins=10)
+    p = tspaint.paint(ts, labels)
+    rc = tspaint.metrics.reliability_curve(p.posteriors, truth, state=0, n_bins=10)
     pred.append(rc["pred"]); emp.append(rc["emp"]); wt.append(rc["weight"])
 # weighted average across seeds, per bin
 pred = np.concatenate(pred); emp = np.concatenate(emp); wt = np.concatenate(wt)
@@ -168,7 +168,7 @@ fig.show()
        "pulse ages (deep split, so only the query↔reference link — not tract length — varies)."),
     code('''
 ages = [30, 100, 300, 1000, 3000]
-rows = tslai.experiments.age_sweep(ages, n_admix=8, n_ref=8, sequence_length=1e6,
+rows = tspaint.experiments.age_sweep(ages, n_admix=8, n_ref=8, sequence_length=1e6,
                                    Ne=1000, T_split=8000, f_A=0.5, seed=1, max_iter=8)
 ba = [r["balanced_accuracy"] for r in rows]; cf = [r["confidence"] for r in rows]
 fig, ax = plt.subplots(figsize=(5.2, 3.8))
@@ -178,7 +178,7 @@ ax.axhline(0.5, color="0.6", lw=0.8, ls=":")
 ax.set_xscale("log"); ax.set_xlabel("admixture age (generations)"); ax.set_ylim(0, 1.02)
 ax.set_title("Discrimination vs admixture age"); ax.legend(fontsize=8); fig.tight_layout()
 fig.show()
-''', label="fig-accuracy-age", cap="Balanced accuracy and confidence vs admixture age: tslai "
+''', label="fig-accuracy-age", cap="Balanced accuracy and confidence vs admixture age: tspaint "
        "discriminates well at recent–moderate admixture; the reference signal is lost at old "
        "admixture under present-day sampling."),
 ])
@@ -198,11 +198,11 @@ opposite-ancestry calls (fragmenting a long tract) bias the inferred pulse *olde
        "(inferred / true) is the dating-relevant quantity: >1 fragments (biases older)."),
     code('''
 import numpy as np
-from tslai.output import hard_segments
-from tslai.metrics import switch_density
+from tspaint.output import hard_segments
+from tspaint.metrics import switch_density
 
 ts, labels, queries, truth = admixture(n_admix=10, n_ref=10, L=5e6, T_admix=200, seed=1)
-p = tslai.paint(ts, labels)
+p = tspaint.paint(ts, labels)
 L = ts.sequence_length
 true_d = np.mean([switch_density(truth[q], L) for q in queries]) * 1e6
 def density(db):
@@ -252,8 +252,8 @@ and without smoothing.
     md("## Paint a tsinfer ARG, with and without smoothing"),
     code('''
 ts, labels, queries, truth = admixture(n_admix=8, n_ref=8, L=2e6, T_admix=200, seed=1, infer=True)
-plain = tslai.paint(ts, labels)
-smooth = tslai.paint(ts, labels, smooth=True)
+plain = tspaint.paint(ts, labels)
+smooth = tspaint.paint(ts, labels, smooth=True)
 fig = plot_painting(plain, truth, ts, "tsinfer ARG — no smoothing (argmax tracts)",
                     segments=plain.segments())
 fig.show()
@@ -268,7 +268,7 @@ fig.show()
     code('''
 res = {}
 for infer in (False, True):
-    r = tslai.bp.bp_vs_deadband_experiment(T_admix=500, infer=infer, seeds=(1, 2, 3),
+    r = tspaint.bp.bp_vs_deadband_experiment(T_admix=500, infer=infer, seeds=(1, 2, 3),
                                            n_admix=8, n_ref=8, sequence_length=2e6)
     res[("inferred" if infer else "true") + " ARG"] = r
 fig, ax = plt.subplots(figsize=(5.2, 3.8))
@@ -306,7 +306,7 @@ diverged or exchanged genes — directionally. It rides the same EM engine
 T_split = 3000
 ts, labels, queries, truth = admixture(n_admix=6, n_ref=8, L=5e5, T_admix=200, T_split=T_split,
                                        Ne=1000, seed=1)
-painting = tslai.paint(ts, labels)
+painting = tspaint.paint(ts, labels)
 rtt = painting.rate_through_time(n_iter=10)     # reuses the painting's fit; posteriors untouched
 rtt
 '''),
@@ -323,7 +323,7 @@ fig.show()
 ''', label="fig-dating-profile", cap="Directional cross-ancestry transition rates q_AB(t), q_BA(t) "
        "vs backward time: ~0 more recent than the population split, rising once cross-ancestry "
        "sharing becomes possible. The dashed line is the true split time."),
-    md("## Reading off the onset\n\nThe standalone entry point `tslai.fit_rate_through_time(ts, "
+    md("## Reading off the onset\n\nThe standalone entry point `tspaint.fit_rate_through_time(ts, "
        "labels)` does the same fit without a painting."),
     code('''
 import numpy as np

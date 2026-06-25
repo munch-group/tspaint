@@ -3,7 +3,7 @@ title: "Admixture dating: rate through time"
 ---
 
 Painting answers *what* ancestry a haplotype carries at a locus. A different question is
-*when* the labelled ancestries diverged or exchanged genes. `tslai` answers it with a
+*when* the labelled ancestries diverged or exchanged genes. `tspaint` answers it with a
 **separate, optional estimator** that rides the same engine: make the ancestry CTMC
 **time-inhomogeneous** and fit the two directional cross-ancestry transition rates
 $q_{AB}(t)$, $q_{BA}(t)$ as smooth functions of (backward) time. The result — a
@@ -103,7 +103,7 @@ straight when reading a profile.
 [`fit_rate_through_time`](../api/fit_rate_through_time.qmd) alternates the two:
 
 ```
-init   q_AB(t) = q_BA(t) = const          # from one homogeneous tslai.fit
+init   q_AB(t) = q_BA(t) = const          # from one homogeneous tspaint.fit
 E-step accumulate per-cell D, J under the current Q(t)   (decoupled fine-grid accumulation)
 M-step refit q_AB(t), q_BA(t) as directional penalised-Poisson splines  ->  new Q(t)
 repeat until the span-integrated log-likelihood converges
@@ -119,15 +119,15 @@ The headline entry point needs only a tree sequence and reference labels — the
 built automatically from the node ages:
 
 ```python
-import tslai
-rtt = tslai.fit_rate_through_time(ts, labels)   # -> RateThroughTime
+import tspaint
+rtt = tspaint.fit_rate_through_time(ts, labels)   # -> RateThroughTime
 rtt.plot()                                       # q_AB(t), q_BA(t) on a log-time axis
 ```
 
 Or reuse a painting's fit (no second homogeneous fit; the painting is untouched):
 
 ```python
-painting = tslai.paint(ts, labels)
+painting = tspaint.paint(ts, labels)
 rtt = painting.rate_through_time()               # warm-started from painting's (Q, π, w)
 ```
 
@@ -151,7 +151,7 @@ point accuracy.
 Feeding the fitted $Q(t)$ back into the painting (`paint_qt`) gives **no measurable
 local-ancestry accuracy gain** (~1.0 either way) — only *sharper confidence*, at roughly **4–5×**
 the cost. That sharpening was measured only where accuracy is already ~1.0, so "sharper" there
-means "better calibrated." But `tslai`'s distinguishing value is **honest calibration** — its
+means "better calibrated." But `tspaint`'s distinguishing value is **honest calibration** — its
 posteriors correctly relax toward 0.5 where the query↔reference signal is weak (see
 [Results](results.qmd)), and whether $Q(t)$ preserves that relaxation in weak-signal regimes is
 **unmeasured**. A discoverable flag that quietly re-paints under $Q(t)$ could trade away the very
@@ -163,7 +163,7 @@ opt-in, via [`dating.paint_qt`](../api/dating.paint_qt.qmd).
 
 - **Bounded by ARG quality**, like painting — the profile is only as good as the genealogy and its
   node ages. SINGER's coalescent-calibrated times help here and propagate uncertainty.
-- **$\pi$ held fixed** (uniform), as everywhere in `tslai`, to avoid the root-frequency degeneracy
+- **$\pi$ held fixed** (uniform), as everywhere in `tspaint`, to avoid the root-frequency degeneracy
   (see [Assumptions](assumptions.qmd)).
 - The absolute rate scale depends on the time calibration of the input; the **shape** of the
   profile (where rates rise, their direction and relative magnitude) is the robust read.

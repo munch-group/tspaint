@@ -1,7 +1,7 @@
-# output.Segment { #tslai.output.Segment }
+# output.Segment { #tspaint.output.Segment }
 
 ```python
-tslai.output.Segment(left, right, posterior, status)
+tspaint.output.Segment(left, right, posterior, status)
 ```
 
 A contiguous span carrying one soft ancestry posterior.

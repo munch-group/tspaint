@@ -1,7 +1,7 @@
-# em.m_step_Q { #tslai.em.m_step_Q }
+# em.m_step_Q { #tspaint.em.m_step_Q }
 
 ```python
-tslai.em.m_step_Q(S_dwell, S_jumps)
+tspaint.em.m_step_Q(S_dwell, S_jumps)
 ```
 
 Closed-form generator MLE from expected dwell times and jump counts.

@@ -1,7 +1,7 @@
-# local_ancestry_truth { #tslai.local_ancestry_truth }
+# local_ancestry_truth { #tspaint.local_ancestry_truth }
 
 ```python
-tslai.local_ancestry_truth(ts)
+tspaint.local_ancestry_truth(ts)
 ```
 
 True local ancestry per sample as source-population tracts.

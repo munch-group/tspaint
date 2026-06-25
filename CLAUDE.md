@@ -1,4 +1,4 @@
-# CLAUDE.md — Tree-Sequence Local Ancestry Inference (working name: `tslai`)
+# CLAUDE.md — Tree-Sequence Local Ancestry Inference (working name: `tspaint`)
 
 > Project memory for Claude Code. This file is the authoritative spec. Read it
 > fully before writing code. It encodes design decisions, the math, the
@@ -418,7 +418,7 @@ off. Guards:
   wrong Ne). If Q depends on calibrated `t`, this bias propagates. **Mitigation /
   ablation:** an order-only / ranked-topology variant of the ancestry model
   (trade calibration for robustness, in the spirit of Relate's order-based
-  selection test) — `tslai.ranked.ranked_tree_sequence`, `tslai_paint(...,
+  selection test) — `tspaint.ranked.ranked_tree_sequence`, `tspaint_paint(...,
   ranked=True)`.
   - **[MEASURED — order-only ablation is NOT beneficial; do not use for inference.]**
     Dense-ranking node times collapses true-ARG painting ~1.0 → ~0.50. Mechanism:
@@ -433,13 +433,13 @@ off. Guards:
   variant), each tree's **root marginal just echoes π**, so π is under-determined and
   the M-step drifts it to a degenerate extreme → the painting collapses to one colour
   with high confidence (the head-to-head's confidently-wrong short-genome row, §9).
-  **Fix — hold π fixed (`estimate_pi=False`, the `tslai_paint` default).** π is a prior
+  **Fix — hold π fixed (`estimate_pi=False`, the `tspaint_paint` default).** π is a prior
   on the *arbitrary* GMRCA state, so uniform is principled; estimating it from washing
   roots is what breaks. **[MEASURED]** recovers both failures — true-ARG ranked
   0.50→0.94, tsinfer L=5e4 0.50→1.00 — and is harmless on good, long data (the regime
   where π *is* identified: L=2e5 tsinfer 0.984→0.999). The short/sparse regime itself is
   an edge case (real LAI runs on long genomes with many roots, where π is identified and
-  tslai already paints 0.98–1.0); the fix is a free robustness default, not a fix to a
+  tspaint already paints 0.98–1.0); the fix is a free robustness default, not a fix to a
   practical limitation. `estimate_pi=True` remains for π-recovery studies (`em.fit`).
 - **Mugration approximation.** Treating ancestry as a trait on a *fixed*
   genealogy ignores that genealogy and ancestry are jointly distributed (lineages
@@ -460,13 +460,13 @@ Kept for future reference. Build only if §7.3 says blocked EM is insufficient.
 > on **inferred ARGs** has now been done — and there the verdict flips.
 
 > **[MEASURED — `loopy-bp-ep` branch, BUILT].** Implemented the **single-pass horizontal BP/EP
-> smoother** (`tslai.bp` — `bp_smooth`, `bp_smooth_track`, `bp_paint`): a genome-axis
+> smoother** (`tspaint.bp` — `bp_smooth`, `bp_smooth_track`, `bp_paint`): a genome-axis
 > forward-backward over each tip's per-tree beliefs with a per-breakpoint switch penalty ``ε``
 > (the EP first half of §7.2's schedule, factorised per tip; full loopy = re-feeding into the
 > vertical pruning of shared internal nodes, the ``n_sweeps>1`` extension, not yet built).
 > Compared head-to-head against the per-position `output.hard_segments` **deadband** for
 > *segmentation* fidelity (breakpoint F1 at the switch-density-matched operating point), over
-> seeds, true vs inferred ARG (`tslai.bp.bp_vs_deadband_experiment`):
+> seeds, true vs inferred ARG (`tspaint.bp.bp_vs_deadband_experiment`):
 >
 > - **True ARG (4 seeds, T_admix 500/700/900):** the deadband **wins** — F1 0.95–0.99 (±≤0.03)
 >   vs BP 0.89–0.93 (±~0.08), and BP's even-max-F1 is below it. The single-seed hint that BP won
@@ -590,7 +590,7 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
 > inference **largely lifts the §9 ARG-quality bound by itself**, so merging adds little
 > *accuracy* (single is already near-ceiling) but provides a **calibrated uncertainty
 > band** (merged confidence falls 0.88→0.52 as data thins — correctly widening). Takeaway:
-> **the ARG inference method dominates the merge; tslai + SINGER is the strong
+> **the ARG inference method dominates the merge; tspaint + SINGER is the strong
 > combination.** The merge's accuracy benefit should surface where SINGER's posterior is
 > genuinely broad and accuracy-limiting (much larger samples / very low diversity) —
 > outstanding. (SINGER's own `convert_to_tskit` omits `compute_mutation_parents()` and
@@ -650,7 +650,7 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
 - **Simulated truth (primary).** `msprime` admixture scenarios with **known local
   ancestry** (record true ancestry along each haplotype). Vary: admixture age
   (recent → ancient), admixture fraction, reference panel purity, sample size.
-  Infer ARG with Relate (`--compress`) and with tsinfer; run `tslai`.
+  Infer ARG with Relate (`--compress`) and with tsinfer; run `tspaint`.
   - Metrics: per-base ancestry accuracy; calibration (reliability diagram);
     tract-boundary localization error; behaviour vs. admixture age.
 - **Headline hypothesis (now a head-to-head, not a novelty claim).** Tract-/
@@ -661,12 +661,12 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   tree accuracy**, which becomes the binding constraint rather than tract length.
   **Caveat (prior art, §10):** this older-admixture thesis is no longer unoccupied —
   ARGMix (Shanks et al., 2026) and Pearson & Durbin (2023) stake it with ML/
-  transformer machinery. So pitch `tslai` not on *category* ("first tree-native
+  transformer machinery. So pitch `tspaint` not on *category* ("first tree-native
   LAI") but on what those competitors structurally lack: **generative, calibrated,
   interpretable (an explicit Q + readable per-tip credibility), label-noise-robust**,
   with the **edge-blocked span-weighted sufficient statistics (§3.3) as the lead
   novelty** (found nowhere else in the LAI/ARG literature). Test directly: accuracy +
-  calibration vs. admixture age, `tslai` vs. RFMix/MOSAIC/FLARE **and head-to-head vs.
+  calibration vs. admixture age, `tspaint` vs. RFMix/MOSAIC/FLARE **and head-to-head vs.
   ARGMix / Pearson & Durbin**.
 - **[MEASURED — Rung 8] Bounded by ARG accuracy, confirmed.** On strong-structure
   sims the true ARG paints at accuracy ~1.0; on a **tsinfer-inferred** ARG accuracy
@@ -697,21 +697,21 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   weighting (topology frequencies), SCAR (Guo et al., 2022; structured-coalescent
   migration rates on inferred ARGs, not painting). See §10.
 - **[MEASURED — head-to-head harness] (`compare.py`).** A uniform painter-scoring harness
-  (`head_to_head`, `score_painter`); painters = the full method (`tslai_paint`) and a
+  (`head_to_head`, `score_painter`); painters = the full method (`tspaint_paint`) and a
   runnable **ARG-native baseline** `nearest_reference_paint` (paint each query by its
   nearest labelled reference in the local tree — no CTMC/EM). External tools (RFMix/…,
   ARGMix, Pearson & Durbin) slot in as painters (not bundled — separate installs). Two
-  findings: (i) on **adequate genomes** tslai matches the baseline's accuracy (~0.98–1.0,
+  findings: (i) on **adequate genomes** tspaint matches the baseline's accuracy (~0.98–1.0,
   true & tsinfer) but is **honestly calibrated** (confidence ~0.69–0.85) where the baseline
-  is blindly overconfident (1.0) — tslai's edge is the calibrated soft posterior +
-  credibility, not raw accuracy; (ii) on **short/sparse regions** tslai *was* confidently
+  is blindly overconfident (1.0) — tspaint's edge is the calibrated soft posterior +
+  credibility, not raw accuracy; (ii) on **short/sparse regions** tspaint *was* confidently
   wrong (balanced 0.50 / conf 0.98 at L=5e4) where the topology-only baseline is robust.
   **Diagnosed and fixed:** the cause is **π-identifiability** (§6), not branch-length
   magnitudes per se — sparse ARGs wash the deep branches, π drifts to a degenerate extreme,
   and the painting collapses to one colour. Holding π fixed (`estimate_pi=False`, now the
-  `tslai_paint` default) recovers it: L=5e4 tsinfer **0.50→1.00**, and L=2e5 tsinfer
+  `tspaint_paint` default) recovers it: L=5e4 tsinfer **0.50→1.00**, and L=2e5 tsinfer
   0.984→0.999 (harmless on good data). The order-only/ranked variant was the *hypothesised*
-  fix but makes it worse (§6 — it inflates Q and deepens the same π degeneracy). Net: tslai
+  fix but makes it worse (§6 — it inflates Q and deepens the same π degeneracy). Net: tspaint
   now matches the baseline's accuracy on both short and long genomes while staying
   calibrated; the regime is an edge case anyway (real LAI is long-genome, π-identified).
 - **[MEASURED — RFMix head-to-head] (`io_rfmix.py`, `rfmix_paint`).** RFMix v2.03 (Maples
@@ -720,17 +720,17 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   phased query/reference VCFs + a reference sample-map + a linear genetic map from the sim, runs
   the binary, and parses its `.fb.tsv` per-marker **posteriors** back to per-haplotype Segments
   (a fair soft-vs-soft comparison). Isolated in the `compare` pixi env (bioconda; binary via
-  `TSLAI_RFMIX` / `.pixi/envs/compare/bin/rfmix`), so the core stack is untouched. Results
+  `TSPAINT_RFMIX` / `.pixi/envs/compare/bin/rfmix`), so the core stack is untouched. Results
   (balanced / mean-confidence; 6 admixed, 6+6 refs, T_admix=30, f_A=0.5): **strong structure**
-  (Ne=1e3, T_split=5e3, L=1e6) — rfmix 0.99/1.00, tslai 0.99/0.68, nearest_ref 0.99/1.00: all
-  three tie on accuracy, only tslai stays soft (RFMix's posteriors **saturate to 0/1**). **Weak
-  structure** (Ne=1e4, T_split=2e3) — rfmix 0.78–0.85 / conf 0.92–1.00 vs tslai 0.77–0.80 / conf
+  (Ne=1e3, T_split=5e3, L=1e6) — rfmix 0.99/1.00, tspaint 0.99/0.68, nearest_ref 0.99/1.00: all
+  three tie on accuracy, only tspaint stays soft (RFMix's posteriors **saturate to 0/1**). **Weak
+  structure** (Ne=1e4, T_split=2e3) — rfmix 0.78–0.85 / conf 0.92–1.00 vs tspaint 0.77–0.80 / conf
   0.10: balanced accuracy comparable (neither consistently ahead), but RFMix is **overconfident**
-  (conf ≫ accuracy) where tslai's posteriors relax toward 0.5 as the query↔reference genealogical
-  signal fades. **Takeaway: against the field standard, tslai matches RFMix's accuracy across
-  regimes and neither dominates on accuracy; tslai's distinguishing value is the calibrated soft
+  (conf ≫ accuracy) where tspaint's posteriors relax toward 0.5 as the query↔reference genealogical
+  signal fades. **Takeaway: against the field standard, tspaint matches RFMix's accuracy across
+  regimes and neither dominates on accuracy; tspaint's distinguishing value is the calibrated soft
   posterior + readable Q/credibility** — the same conclusion reached vs. the topology-only
-  baseline, now confirmed against RFMix. (Cost: RFMix ~9–125 s/run; tslai ~7–86 s; nearest_ref
+  baseline, now confirmed against RFMix. (Cost: RFMix ~9–125 s/run; tspaint ~7–86 s; nearest_ref
   <1 s.) Outstanding: MOSAIC/FLARE, and the ARG-native ARGMix / Pearson & Durbin (separate
   installs slotting in as painters).
 - **[MEASURED — fragmentation / tract-length distribution] (`output.hard_segments`,
@@ -739,18 +739,18 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   opposite-ancestry calls (fragmenting a long tract) bias the inferred pulse *older*, and
   over-smoothing biases it *younger*. Measured over **6 seeds** (`experiments.fragmentation_experiment`;
   true ARG, strong structure Ne=1e3 / T_split=5e3, T_admix=200, L=5 Mb; true 0.83±0.15 switches/Mb,
-  inferred/true switch-density **ratio** as mean±std): **naive `argmax` over-fragments, tslai worst**
+  inferred/true switch-density **ratio** as mean±std): **naive `argmax` over-fragments, tspaint worst**
   — ratio **1.95±0.58** (precision 0.66±0.15, median tract 371 kb); nearest_ref **1.53±0.28** (prec
   0.76); **RFMix native (.msp Viterbi) least but still 1.35±0.22** (prec 0.79). *No* method misses
   real switches (recall ~1.0; true tracts here all ≥100 kb, and 100–500 kb tracts recovered 100% by
   all — short-segment *sensitivity* is fine, the problem is false positives). Mechanism: at older
   admixture the posterior hovers near 0.5 in places and argmax flips there — the §7.3
-  breakpoint-flicker surfacing in the *segment* output. **But tslai's flips are exactly the
+  breakpoint-flicker surfacing in the *segment* output. **But tspaint's flips are exactly the
   low-confidence ones**, so a confidence **deadband** on the calibrated posterior
   (`hard_segments(deadband=c)`) removes them: c≈0.3–0.5 recovers the true distribution almost
   exactly and **tightly** — ratio **0.99±0.01**, precision **0.99±0.01**, recall **0.99±0.01**
-  across the 6 seeds; c≥0.9 over-smooths. **Takeaway: for dating, do not argmax tslai — threshold its
-  posterior.** Done so, tslai *beats* RFMix native on tract-length fidelity (ratio 0.99 vs 1.35): the
+  across the 6 seeds; c≥0.9 over-smooths. **Takeaway: for dating, do not argmax tspaint — threshold its
+  posterior.** Done so, tspaint *beats* RFMix native on tract-length fidelity (ratio 0.99 vs 1.35): the
   calibrated soft posterior is a tunable precision/recall dial RFMix's hard CRF does not expose.
   Caveat: one regime (6 seeds). At *weak* signal real short-tract switches *also* go low-confidence,
   so the deadband then genuinely trades precision against recall — the regime where §7's uncertainty
@@ -758,7 +758,7 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   `loopy-bp-ep` branch.
 - **Sanity baseline (free).** Relate's own Neanderthal/Denisovan deep-branch
   labelling (Speidel et al. 2019, Fig. 4b–c) is a hand-rolled 2-color tip-down
-  instance of this scheme. `tslai` with hard clamps should reproduce their
+  instance of this scheme. `tspaint` with hard clamps should reproduce their
   archaic-tract calls.
 - **Leave-one-out / introgression detection.** On reference tips, the learned
   `w_i < 1` (global) and locally-dissenting posterior (per-locus) flag mislabels
@@ -789,7 +789,7 @@ head-to-head, the rest as distinct objects.
   — graph transformer doing LAI on the marginal coalescent trees of a Relate ARG,
   using ancient samples as references, **explicitly motivated by reaching older
   admixture where segments are too short** for RFMix/MOSAIC/FLARE. Same task and the
-  same headline thesis as `tslai`, but a black-box transformer — **no generative
+  same headline thesis as `tspaint`, but a black-box transformer — **no generative
   CTMC, no Felsenstein pruning, no EM-learned Q, no per-tip credibility, no
   calibrated posterior**. Chief threat to the novelty *framing*; primary head-to-head
   comparator.
@@ -839,11 +839,11 @@ head-to-head, the rest as distinct objects.
 ## 11. Repository layout (proposed)
 
 ```
-tslai/
+tspaint/
   CLAUDE.md                      # this file (authoritative spec)
   README.md                      # short public-facing summary
   pyproject.toml                 # pixi/conda; deps: tskit, numpy, scipy, msprime, (phasic)
-  src/tslai/
+  src/tspaint/
     __init__.py
     model.py                     # Q, pi, emission, K-way generator-agnostic
     branch_stats.py              # branch_expected_stats (Van Loan; Phasic seam)

@@ -1,7 +1,7 @@
-# diagnostics.node_persistence { #tslai.diagnostics.node_persistence }
+# diagnostics.node_persistence { #tspaint.diagnostics.node_persistence }
 
 ```python
-tslai.diagnostics.node_persistence(ts, include_samples=False)
+tspaint.diagnostics.node_persistence(ts, include_samples=False)
 ```
 
 Number of distinct marginal trees in which each (internal) node appears.

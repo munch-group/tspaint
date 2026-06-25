@@ -3,7 +3,7 @@ front-end-agnostic persistence premise."""
 import numpy as np
 import pytest
 
-from tslai.sim import (
+from tspaint.sim import (
     simulate_admixture,
     local_ancestry_truth,
     _census_mask,
@@ -11,7 +11,7 @@ from tslai.sim import (
     SOURCE_B,
     ADMIXED,
 )
-from tslai.diagnostics import persistence_summary, edge_span_summary
+from tspaint.diagnostics import persistence_summary, edge_span_summary
 
 
 @pytest.fixture(scope="module")

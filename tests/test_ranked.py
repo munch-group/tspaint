@@ -1,10 +1,10 @@
-"""Order-only / ranked-topology variant (tslai.ranked) and the estimate_pi=False
+"""Order-only / ranked-topology variant (tspaint.ranked) and the estimate_pi=False
 robustness fix it surfaced (CLAUDE.md §6)."""
 import numpy as np
 import tskit
 
-from tslai.em import fit
-from tslai.ranked import ranked_tree_sequence
+from tspaint.em import fit
+from tspaint.ranked import ranked_tree_sequence
 
 
 def _build_ts(parents, times, samples, L=10.0):

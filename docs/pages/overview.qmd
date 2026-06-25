@@ -4,7 +4,7 @@ aliases:
   - ../index.html
 ---
 
-**tslai** infers soft, calibrated **local ancestry** along individual haplotypes from an
+**tspaint** infers soft, calibrated **local ancestry** along individual haplotypes from an
 inferred **tree sequence** (Relate → tskit, or tsinfer/SINGER). Ancestry is modelled as a
 discrete character evolving up the branches of each marginal tree under a continuous-time
 Markov chain (a CTMC "mugration" model); reference haplotypes label tips through a soft noise
@@ -32,22 +32,22 @@ pixi run test         # run the test suite
 ## Quickstart
 
 ```python
-import tslai
+import tspaint
 
 # 1. Get a tree sequence — simulate admixture with known truth,
-#    or build one from genotypes: tslai.io.infer_tree_sequence / singer_tree_sequences.
-ts = tslai.simulate_admixture(n_admix=10, n_ref=10, sequence_length=2e6,
+#    or build one from genotypes: tspaint.io.infer_tree_sequence / singer_tree_sequences.
+ts = tspaint.simulate_admixture(n_admix=10, n_ref=10, sequence_length=2e6,
                               T_admix=100, T_split=5000, Ne=1000, random_seed=1)
 
 # 2. Label the reference haplotypes (sample-node id -> ancestry state); paint the rest.
 labels = {...}                              # source-A tips -> 0, source-B tips -> 1
-painting = tslai.paint(ts, labels)          # EM-fit on references, paint the queries
+painting = tspaint.paint(ts, labels)          # EM-fit on references, paint the queries
 
 painting.posteriors[q]                      # soft per-position posterior (Segments)
 painting.segments(deadband=0.4)             # hard ancestry tracts (tract-length distribution)
 
 # 3. Optional: admixture dating — a separate deliverable, reusing the painting's fit.
-rtt = painting.rate_through_time()          # or tslai.fit_rate_through_time(ts, labels)
+rtt = painting.rate_through_time()          # or tspaint.fit_rate_through_time(ts, labels)
 rtt.plot()                                  # q_AB(t), q_BA(t): when the ancestries diverged / mixed
 ```
 

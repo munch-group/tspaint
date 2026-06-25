@@ -41,7 +41,7 @@ interlinks:
     #   inv: objects-test.txt
 
 website:
-  title: "tslai"
+  title: "tspaint"
   page-navigation: true
   navbar:
     left:
@@ -53,7 +53,7 @@ website:
         text: API reference
     right:
       - icon: github
-        href: https://github.com/munch-group/tslai/
+        href: https://github.com/munch-group/tspaint/
   sidebar:
     - id: pages
       title: Guide
@@ -94,7 +94,7 @@ format:
       theme: neutral 
 
 quartodoc:
-  package: tslai
+  package: tspaint
   style: pkgdown
   dir: api
   render_interlinks: true
@@ -129,7 +129,7 @@ quartodoc:
     - title: Validation metrics
       desc: |
         Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
-        experiments (the `tslai.metrics` namespace).
+        experiments (the `tspaint.metrics` namespace).
       contents:
         - validate.balanced_accuracy
         - validate.per_base_accuracy
@@ -143,16 +143,16 @@ quartodoc:
     - title: Comparators (head-to-head)
       desc: |
         Painters scored on equal footing by a uniform harness — the full method, a runnable
-        ARG-native baseline, and the RFMix incumbent (the `tslai.compare` namespace).
+        ARG-native baseline, and the RFMix incumbent (the `tspaint.compare` namespace).
       contents:
-        - compare.tslai_paint
+        - compare.tspaint_paint
         - compare.nearest_reference_paint
         - compare.rfmix_paint
         - compare.head_to_head
         - compare.score_painter
     - title: Input front ends
       desc: |
-        Obtain a tslai-ready tree sequence from genotypes (the `tslai.io` namespace).
+        Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace).
       contents:
         - io.infer_tree_sequence
         - io.add_mutations
@@ -161,7 +161,7 @@ quartodoc:
     - title: Horizontal BP/EP smoother
       desc: |
         The §7 horizontal coupling — a genome-axis forward-backward over each tip's per-tree
-        beliefs that suppresses spurious switches on inferred ARGs (the `tslai.bp` namespace;
+        beliefs that suppresses spurious switches on inferred ARGs (the `tspaint.bp` namespace;
         also `paint(smooth=True)`).
       contents:
         - bp.bp_paint
@@ -173,7 +173,7 @@ quartodoc:
         An optional, separate deliverable from painting: a time-inhomogeneous directional
         mugration EM that estimates the cross-ancestry transition rates `q_AB(t)`, `q_BA(t)` as
         functions of (backward) time — locating divergence / gene-flow epochs and their direction
-        (the `tslai.dating` namespace; also `Painting.rate_through_time()`).
+        (the `tspaint.dating` namespace; also `Painting.rate_through_time()`).
       contents:
         - fit_rate_through_time
         - RateThroughTime
@@ -208,7 +208,7 @@ quartodoc:
         - model.validate_generator
     - title: Experiment drivers
       desc: |
-        End-to-end drivers used to produce the validation results (the `tslai.experiments`
+        End-to-end drivers used to produce the validation results (the `tspaint.experiments`
         namespace).
       contents:
         - experiments.admixture_experiment

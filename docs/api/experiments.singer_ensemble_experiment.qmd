@@ -1,7 +1,7 @@
-# experiments.singer_ensemble_experiment { #tslai.experiments.singer_ensemble_experiment }
+# experiments.singer_ensemble_experiment { #tspaint.experiments.singer_ensemble_experiment }
 
 ```python
-tslai.experiments.singer_ensemble_experiment(
+tspaint.experiments.singer_ensemble_experiment(
     T_admix=300.0,
     n_admix=12,
     n_ref=12,
@@ -25,8 +25,8 @@ Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth.
 
 The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
 make merging help, unlike the correlated tsinfer ensemble
-(:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSLAI_SINGER``
-or :mod:`tslai.io_singer`'s default path).
+(:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSPAINT_SINGER``
+or :mod:`tspaint.io_singer`'s default path).
 
 ## Parameters {.doc-section .doc-section-parameters}
 

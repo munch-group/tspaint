@@ -14,8 +14,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import tslai
-from tslai.dating import log_time_grid, cell_centers, fit_rate_through_time
+import tspaint
+from tspaint.dating import log_time_grid, cell_centers, fit_rate_through_time
 
 N, T_SPLIT, MU = 1000, 2000.0, 1e-6
 
@@ -67,7 +67,7 @@ r_mis = profile(miscalibrate(ts), edges, LABELS)
 singer_ok = False
 try:
     print(f"SINGER ({ts.num_sites} sites) ...")
-    samples = tslai.io_singer.singer_tree_sequences(
+    samples = tspaint.io_singer.singer_tree_sequences(
         ts, Ne=N, mutation_rate=MU, recombination_rate=1e-8,
         n_samples=8, thin=5, burn_in=3, seed=7)
     r_singer = profile(samples[-1], edges, LABELS)

@@ -2,12 +2,12 @@
 import numpy as np
 import pytest
 
-import tslai
-from tslai.sim import SOURCE_A, SOURCE_B, ADMIXED
+import tspaint
+from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED
 
 
 def _admixture(L=5e5):
-    ts = tslai.simulate_admixture(n_admix=6, n_ref=6, sequence_length=L, recombination_rate=1e-8,
+    ts = tspaint.simulate_admixture(n_admix=6, n_ref=6, sequence_length=L, recombination_rate=1e-8,
                                   random_seed=1, Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
@@ -17,23 +17,23 @@ def _admixture(L=5e5):
     sop = {A: 0, B: 1}
     labels = {int(s): sop[npop[s]] for s in ts.samples() if npop[s] in (A, B)}
     queries = [int(s) for s in ts.samples() if npop[s] == admix]
-    truth = tslai.metrics.map_truth({q: tslai.local_ancestry_truth(ts)[0][q] for q in queries}, sop)
+    truth = tspaint.metrics.map_truth({q: tspaint.local_ancestry_truth(ts)[0][q] for q in queries}, sop)
     return ts, labels, queries, truth
 
 
 def test_tidy_namespaces_exposed():
     for ns in ("metrics", "compare", "io", "experiments"):
-        assert hasattr(tslai, ns)
-    assert callable(tslai.paint) and tslai.Painting is not None
-    assert callable(tslai.metrics.balanced_accuracy)
-    assert callable(tslai.compare.head_to_head)
+        assert hasattr(tspaint, ns)
+    assert callable(tspaint.paint) and tspaint.Painting is not None
+    assert callable(tspaint.metrics.balanced_accuracy)
+    assert callable(tspaint.compare.head_to_head)
 
 
 @pytest.mark.slow
 def test_paint_returns_painting_over_default_queries():
     ts, labels, queries, _ = _admixture()
-    p = tslai.paint(ts, labels)                 # queries default to the non-labelled samples
-    assert isinstance(p, tslai.Painting)
+    p = tspaint.paint(ts, labels)                 # queries default to the non-labelled samples
+    assert isinstance(p, tspaint.Painting)
     assert set(p.posteriors) == set(queries)
     assert p.Q.shape == (2, 2) and p.pi.shape == (2,)
     for q in queries:
@@ -45,7 +45,7 @@ def test_paint_returns_painting_over_default_queries():
 @pytest.mark.slow
 def test_painting_segments_deadband_and_accuracy():
     ts, labels, queries, truth = _admixture()
-    p = tslai.paint(ts, labels, deadband=0.4)
+    p = tspaint.paint(ts, labels, deadband=0.4)
     raw, db = p.segments(deadband=0.0), p.segments()     # default uses deadband=0.4
 
     def nsw(d):
@@ -54,14 +54,14 @@ def test_painting_segments_deadband_and_accuracy():
     for q in queries:
         assert db[q][0][0] == 0.0 and db[q][-1][1] == ts.sequence_length
     # strong structure + recent admixture -> accurate painting
-    assert tslai.metrics.balanced_accuracy(p.posteriors, truth, samples=queries) > 0.9
+    assert tspaint.metrics.balanced_accuracy(p.posteriors, truth, samples=queries) > 0.9
 
 
 @pytest.mark.slow
 def test_paint_smooth_option_reduces_switches():
     ts, labels, queries, _ = _admixture()
-    plain = tslai.paint(ts, labels)
-    smoothed = tslai.paint(ts, labels, smooth=True)         # horizontal BP smoother (CLAUDE.md §7)
+    plain = tspaint.paint(ts, labels)
+    smoothed = tspaint.paint(ts, labels, smooth=True)         # horizontal BP smoother (CLAUDE.md §7)
     assert set(smoothed.posteriors) == set(queries)
 
     def nsw(P):

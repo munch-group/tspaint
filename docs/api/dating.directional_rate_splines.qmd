@@ -1,7 +1,7 @@
-# dating.directional_rate_splines { #tslai.dating.directional_rate_splines }
+# dating.directional_rate_splines { #tspaint.dating.directional_rate_splines }
 
 ```python
-tslai.dating.directional_rate_splines(D, J, centers, **kw)
+tspaint.dating.directional_rate_splines(D, J, centers, **kw)
 ```
 
 Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines.

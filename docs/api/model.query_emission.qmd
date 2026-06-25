@@ -1,7 +1,7 @@
-# model.query_emission { #tslai.model.query_emission }
+# model.query_emission { #tspaint.model.query_emission }
 
 ```python
-tslai.model.query_emission(pi)
+tspaint.model.query_emission(pi)
 ```
 
 Flat / root-frequency emission for an unlabelled query tip (CLAUDE.md §2.2).

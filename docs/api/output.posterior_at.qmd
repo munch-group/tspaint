@@ -1,14 +1,14 @@
-# output.posterior_at { #tslai.output.posterior_at }
+# output.posterior_at { #tspaint.output.posterior_at }
 
 ```python
-tslai.output.posterior_at(tracks, sample, position)
+tspaint.output.posterior_at(tracks, sample, position)
 ```
 
 Posterior vector for ``sample`` at a genomic ``position``.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Per-sample segment tracks (e.g. from :func:`posterior_table`).
 

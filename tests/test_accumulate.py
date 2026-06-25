@@ -10,10 +10,10 @@ import numpy as np
 import pytest
 import tskit
 
-from tslai.accumulate import accumulate_sufficient_statistics
-from tslai.branch_stats import branch_expected_stats
-from tslai.pruning import prune_tree
-from tslai.sim import simulate_admixture
+from tspaint.accumulate import accumulate_sufficient_statistics
+from tspaint.branch_stats import branch_expected_stats
+from tspaint.pruning import prune_tree
+from tspaint.sim import simulate_admixture
 
 
 def random_Q(K, rng):

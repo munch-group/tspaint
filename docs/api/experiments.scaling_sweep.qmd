@@ -1,7 +1,7 @@
-# experiments.scaling_sweep { #tslai.experiments.scaling_sweep }
+# experiments.scaling_sweep { #tspaint.experiments.scaling_sweep }
 
 ```python
-tslai.experiments.scaling_sweep(admix_sizes, infer=False, **kwargs)
+tspaint.experiments.scaling_sweep(admix_sizes, infer=False, **kwargs)
 ```
 
 Runtime + correctness + flicker vs. sample size.

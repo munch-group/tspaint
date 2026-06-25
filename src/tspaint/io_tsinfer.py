@@ -1,7 +1,7 @@
 """tsinfer front end (CLAUDE.md §5).
 
 tsinfer tree sequences carry native cross-tree node-ID stability, so they are a
-first-class front end for tslai — no Relate C++ toolchain required, and the spec
+first-class front end for tspaint — no Relate C++ toolchain required, and the spec
 notes tsinfer is an alternative or even preferable front end. This module turns a
 ts-with-mutations into an *inferred* tree sequence: the realistic substrate where
 tree accuracy becomes the binding constraint (§9), as opposed to the true ARG.

@@ -1,7 +1,7 @@
-# validate.balanced_accuracy { #tslai.validate.balanced_accuracy }
+# validate.balanced_accuracy { #tspaint.validate.balanced_accuracy }
 
 ```python
-tslai.validate.balanced_accuracy(
+tspaint.validate.balanced_accuracy(
     tracks,
     truth_states,
     samples=None,
@@ -18,7 +18,7 @@ it discriminate?" metric.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Posterior segment tracks per sample.
 
@@ -32,7 +32,7 @@ it discriminate?" metric.
 
 <code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 
-:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+:   If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
 <code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
 
@@ -47,7 +47,7 @@ it discriminate?" metric.
 ## Examples {.doc-section .doc-section-examples}
 
 ```python
->>> from tslai.output import Segment, INFORMATIVE
+>>> from tspaint.output import Segment, INFORMATIVE
 >>> import numpy as np
 >>> tracks = {0: [Segment(0, 10, np.array([0.9, 0.1]), INFORMATIVE),
 ...               Segment(10, 20, np.array([0.2, 0.8]), INFORMATIVE)]}

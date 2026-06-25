@@ -1,7 +1,7 @@
-# bp.bp_vs_deadband_experiment { #tslai.bp.bp_vs_deadband_experiment }
+# bp.bp_vs_deadband_experiment { #tspaint.bp.bp_vs_deadband_experiment }
 
 ```python
-tslai.bp.bp_vs_deadband_experiment(
+tspaint.bp.bp_vs_deadband_experiment(
     T_admix=500.0,
     infer=False,
     seeds=(1, 2, 3),
@@ -22,7 +22,7 @@ tslai.bp.bp_vs_deadband_experiment(
 Compare BP smoothing vs the deadband for segmentation, over ``seeds``.
 
 Quantifies how much the horizontal BP smoother adds over the per-position
-:func:`tslai.output.hard_segments` deadband for segmentation fidelity (the
+:func:`tspaint.output.hard_segments` deadband for segmentation fidelity (the
 admixture-dating object), on the true vs the inferred (tsinfer) ARG.
 
 ## Parameters {.doc-section .doc-section-parameters}

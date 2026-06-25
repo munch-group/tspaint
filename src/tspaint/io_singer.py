@@ -3,12 +3,12 @@
 SINGER (Deng et al., 2024; bioRxiv 10.1101/2024.03.16.585351) is a Bayesian MCMC method
 that **samples ARGs from the posterior** under the SMC, as tskit tree sequences. Those
 thinned posterior samples are the ideal input to the ensemble merge layer
-(:func:`tslai.ensemble.merge_posterior_tables`): unlike a point estimate (tsinfer/Relate)
+(:func:`tspaint.ensemble.merge_posterior_tables`): unlike a point estimate (tsinfer/Relate)
 they represent ARG *uncertainty*, so averaging the per-member paintings genuinely
 marginalises it (the §9 binding constraint).
 
 SINGER is an external binary (built per platform). The path defaults to the env var
-``TSLAI_SINGER`` or a known location; override via ``singer_bin``. This module imports
+``TSPAINT_SINGER`` or a known location; override via ``singer_bin``. This module imports
 nothing heavy at load time, so the core package never requires SINGER.
 
 Pipeline (validated): haploid VCF (one column per sample node) -> ``singer -ploidy 1``
@@ -31,7 +31,7 @@ import numpy as np
 
 __all__ = ["write_haploid_vcf", "singer_tree_sequences"]
 
-DEFAULT_SINGER = os.environ.get("TSLAI_SINGER", "/Users/kmt/SINGER/SINGER/SINGER/singer")
+DEFAULT_SINGER = os.environ.get("TSPAINT_SINGER", "/Users/kmt/SINGER/SINGER/SINGER/singer")
 
 
 def write_haploid_vcf(ts, path):
@@ -118,7 +118,7 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
     """Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
 
     SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
-    samples are the ideal input to :func:`tslai.ensemble.merge_posterior_tables`,
+    samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
     since they represent genuine ARG uncertainty (§7.4).
 
     Parameters
@@ -144,7 +144,7 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
     workdir : str, optional
         Working directory for VCF and ARG text tables (default: a fresh tempdir).
     singer_bin : str, optional
-        Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSLAI_SINGER``).
+        Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSPAINT_SINGER``).
     with_mutations : bool, optional
         Whether to read mutations into the returned tree sequences (default True).
     max_retries : int, optional
@@ -171,9 +171,9 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
     singer_bin = singer_bin or DEFAULT_SINGER
     if not os.path.exists(singer_bin):
         raise FileNotFoundError(
-            f"SINGER binary not found at {singer_bin}; set TSLAI_SINGER or pass singer_bin")
+            f"SINGER binary not found at {singer_bin}; set TSPAINT_SINGER or pass singer_bin")
 
-    tmp = workdir or tempfile.mkdtemp(prefix="tslai_singer_")
+    tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
     write_haploid_vcf(ts, prefix + ".vcf")

@@ -3,9 +3,9 @@
 RFMix (Maples et al., 2013, *Am. J. Hum. Genet.* 93, 278-288) is the canonical
 discriminative LAI method: a random-forest classifier over haplotype windows with a
 conditional-random-field smoother. It is **genotype-native**, not ARG-native, so unlike
-``tslai_paint``/``nearest_reference_paint`` it does not read the tree sequence — it reads
+``tspaint_paint``/``nearest_reference_paint`` it does not read the tree sequence — it reads
 phased VCFs. This module bridges the two so RFMix scores through the same
-:func:`tslai.compare.score_painter` harness:
+:func:`tspaint.compare.score_painter` harness:
 
 1. ensure the tree sequence carries mutations (the "true" ARG substrate has none) — RFMix
    needs genotypes, so we drop ``sim_mutations`` on if the ARG is bare;
@@ -13,13 +13,13 @@ phased VCFs. This module bridges the two so RFMix scores through the same
    individuals), a reference sample-map, and a linear genetic map from the sim's
    recombination rate;
 3. shell out to the ``rfmix`` binary (isolated ``compare`` pixi env; path via the
-   ``TSLAI_RFMIX`` env var or ``.pixi/envs/compare/bin/rfmix``);
+   ``TSPAINT_RFMIX`` env var or ``.pixi/envs/compare/bin/rfmix``);
 4. parse the ``.fb.tsv`` per-marker **posteriors** (RFMix's calibrated soft output, the
-   fair comparison against tslai's soft calls) back to per-haplotype
-   :class:`tslai.output.Segment` tracks keyed by the original sample-node ids.
+   fair comparison against tspaint's soft calls) back to per-haplotype
+   :class:`tspaint.output.Segment` tracks keyed by the original sample-node ids.
 
 Reference populations are named by the integer ancestry **state** (``"0"``, ``"1"``) in the
-sample map, so RFMix's population indices line up with tslai's; the ``.fb.tsv`` header is
+sample map, so RFMix's population indices line up with tspaint's; the ``.fb.tsv`` header is
 parsed to recover the exact column order regardless.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ __all__ = ["rfmix_paint", "run_rfmix", "DEFAULT_RFMIX"]
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_RFMIX = os.environ.get(
-    "TSLAI_RFMIX", os.path.join(_REPO_ROOT, ".pixi", "envs", "compare", "bin", "rfmix"))
+    "TSPAINT_RFMIX", os.path.join(_REPO_ROOT, ".pixi", "envs", "compare", "bin", "rfmix"))
 
 CONTIG = "1"
 
@@ -180,7 +180,7 @@ def run_rfmix(ts, labels, queries, *, recombination_rate, generations,
     generations : float
         Generations since admixture (RFMix's ``-G``).
     rfmix_bin : str, optional
-        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSPAINT_RFMIX``).
     workdir : str, optional
         Working directory for the inputs/outputs (default: a fresh tempdir).
     extra_args : iterable[str], optional
@@ -204,14 +204,14 @@ def run_rfmix(ts, labels, queries, *, recombination_rate, generations,
     rfmix_bin = rfmix_bin or DEFAULT_RFMIX
     if not os.path.exists(rfmix_bin):
         raise FileNotFoundError(
-            f"rfmix binary not found at {rfmix_bin}; set TSLAI_RFMIX or pass rfmix_bin "
+            f"rfmix binary not found at {rfmix_bin}; set TSPAINT_RFMIX or pass rfmix_bin "
             "(install via the `compare` pixi env: pixi install -e compare)")
 
     query_inds, ref_inds = _classify_individuals(ts, labels, queries)
     if not query_inds or not ref_inds:
         raise ValueError("need both query and reference diploid individuals")
 
-    tmp = workdir or tempfile.mkdtemp(prefix="tslai_rfmix_")
+    tmp = workdir or tempfile.mkdtemp(prefix="tspaint_rfmix_")
     os.makedirs(tmp, exist_ok=True)
     positions = _transformed_positions(ts)
     geno = ts.genotype_matrix()
@@ -382,7 +382,7 @@ def rfmix_paint(ts, labels, queries, K=2, *, recombination_rate=1e-8, generation
 
     Adds mutations if ``ts`` has none (the true-ARG substrate), runs RFMix, and
     returns the ``.fb.tsv`` posteriors as per-haplotype Segment tracks — so RFMix
-    scores through the same :func:`tslai.compare.score_painter` harness.
+    scores through the same :func:`tspaint.compare.score_painter` harness.
 
     Parameters
     ----------
@@ -404,7 +404,7 @@ def rfmix_paint(ts, labels, queries, K=2, *, recombination_rate=1e-8, generation
     seed : int, optional
         Random seed for the mutation simulation (default 1).
     rfmix_bin : str, optional
-        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSPAINT_RFMIX``).
     extra_args : iterable[str], optional
         Additional command-line arguments appended to the RFMix invocation.
 

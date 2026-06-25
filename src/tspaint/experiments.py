@@ -168,7 +168,7 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
     Matters because downstream admixture-pulse dating reads the segment-length
     distribution: ``ratio`` (inferred / true switch density) ≠ 1 biases the inferred
     pulse (>1 older from fragmentation, <1 younger from over-smoothing; CLAUDE.md §9).
-    On one simulated admixture (true ARG) compares tslai ``argmax``, tslai with a
+    On one simulated admixture (true ARG) compares tspaint ``argmax``, tspaint with a
     confidence ``deadband``, ``nearest_reference``, and — if the rfmix binary is present
     — RFMix native (``.msp`` Viterbi).
 
@@ -181,7 +181,7 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
     mutation_rate : float, optional
         Mutation rate for the sites RFMix needs.
     deadband : float, optional
-        Confidence deadband for the ``tslai_deadband`` segmentation.
+        Confidence deadband for the ``tspaint_deadband`` segmentation.
     tol : float, optional
         Breakpoint-matching tolerance (bp) for precision/recall.
     seed : int, optional
@@ -196,7 +196,7 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
         ``methods`` maps each method name to its ``_seg_metrics`` dict augmented with a
         ``ratio`` (inferred / true switch density).
     """
-    from .compare import tslai_paint, nearest_reference_paint
+    from .compare import tspaint_paint, nearest_reference_paint
 
     ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
                             recombination_rate=recombination_rate, random_seed=seed,
@@ -219,10 +219,10 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
     true_density = true_sw / ((L / 1e6) * len(queries))
 
     methods = {}
-    soft = tslai_paint(ts, labels, queries)
-    methods["tslai_argmax"] = _seg_metrics(
+    soft = tspaint_paint(ts, labels, queries)
+    methods["tspaint_argmax"] = _seg_metrics(
         {q: hard_segments(soft[q], 0.0) for q in queries}, true_segs, queries, L, tol)
-    methods[f"tslai_deadband_{deadband}"] = _seg_metrics(
+    methods[f"tspaint_deadband_{deadband}"] = _seg_metrics(
         {q: hard_segments(soft[q], deadband) for q in queries}, true_segs, queries, L, tol)
     nr = nearest_reference_paint(ts, labels, queries)
     methods["nearest_ref"] = _seg_metrics(
@@ -336,8 +336,8 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     Stand-in for SINGER's thinned posterior samples: ``M`` independent mutation
     overlays of one true genealogy, each inferred with tsinfer (sharing samples and
     coordinates). ``theta`` is fit pooled across the ensemble (``fit`` over the list);
-    each member is painted (:func:`tslai.output.posterior_table`) and the paintings are
-    averaged (:func:`tslai.ensemble.merge_posterior_tables`).
+    each member is painted (:func:`tspaint.output.posterior_table`) and the paintings are
+    averaged (:func:`tspaint.ensemble.merge_posterior_tables`).
 
     Parameters
     ----------
@@ -430,8 +430,8 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
 
     The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
     make merging help, unlike the correlated tsinfer ensemble
-    (:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSLAI_SINGER``
-    or :mod:`tslai.io_singer`'s default path).
+    (:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSPAINT_SINGER``
+    or :mod:`tspaint.io_singer`'s default path).
 
     Parameters
     ----------

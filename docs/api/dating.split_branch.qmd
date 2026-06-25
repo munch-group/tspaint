@@ -1,7 +1,7 @@
-# dating.split_branch { #tslai.dating.split_branch }
+# dating.split_branch { #tspaint.dating.split_branch }
 
 ```python
-tslai.dating.split_branch(t_c, t_p, edges)
+tspaint.dating.split_branch(t_c, t_p, edges)
 ```
 
 Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals.
@@ -24,4 +24,4 @@ Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals.
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[int](`int`), [float](`float`)\]\]]{.parameter-annotation}</code>
 
-:   ``(cell_index, duration)`` sub-intervals **ordered parent → child** (descending time), matching the ``xi[s_p, s_c]`` / ``expm`` convention of :func:`tslai.branch_stats.vanloan_integral`. Portions of the branch outside ``[edges[0], edges[-1]]`` are assigned to the nearest boundary cell so the whole branch is covered (so per-cell totals sum to the whole-branch statistics).
+:   ``(cell_index, duration)`` sub-intervals **ordered parent → child** (descending time), matching the ``xi[s_p, s_c]`` / ``expm`` convention of :func:`tspaint.branch_stats.vanloan_integral`. Portions of the branch outside ``[edges[0], edges[-1]]`` are assigned to the nearest boundary cell so the whole branch is covered (so per-cell totals sum to the whole-branch statistics).

@@ -1,8 +1,8 @@
 """Rung 8a gate (CLAUDE.md §7.3, §9): validation metrics on synthetic inputs."""
 import numpy as np
 
-from tslai.output import Segment, INFORMATIVE, MISSING_INFO
-from tslai.validate import (map_truth, per_base_accuracy, balanced_accuracy,
+from tspaint.output import Segment, INFORMATIVE, MISSING_INFO
+from tspaint.validate import (map_truth, per_base_accuracy, balanced_accuracy,
                             mean_confidence, reliability_curve, breakpoint_flicker,
                             tract_boundary_error)
 

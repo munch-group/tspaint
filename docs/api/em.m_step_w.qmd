@@ -1,7 +1,7 @@
-# em.m_step_w { #tslai.em.m_step_w }
+# em.m_step_w { #tspaint.em.m_step_w }
 
 ```python
-tslai.em.m_step_w(agree, disagree, alpha, beta)
+tspaint.em.m_step_w(agree, disagree, alpha, beta)
 ```
 
 Per-tip credibility MAP under a ``Beta(alpha, beta)`` prior (CLAUDE.md §3.4).

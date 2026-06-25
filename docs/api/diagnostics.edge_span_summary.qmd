@@ -1,7 +1,7 @@
-# diagnostics.edge_span_summary { #tslai.diagnostics.edge_span_summary }
+# diagnostics.edge_span_summary { #tspaint.diagnostics.edge_span_summary }
 
 ```python
-tslai.diagnostics.edge_span_summary(ts)
+tspaint.diagnostics.edge_span_summary(ts)
 ```
 
 Summary of the tree-sequence edge-span distribution.

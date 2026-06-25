@@ -1,7 +1,7 @@
-# compare.head_to_head { #tslai.compare.head_to_head }
+# compare.head_to_head { #tspaint.compare.head_to_head }
 
 ```python
-tslai.compare.head_to_head(
+tspaint.compare.head_to_head(
     painters,
     *,
     T_admix=300.0,
@@ -24,7 +24,7 @@ Simulates a single admixture scenario, then scores every painter on each
 requested ARG substrate.
 
 SINGER is intentionally left to
-:func:`tslai.experiments.singer_ensemble_experiment` (it samples an ensemble
+:func:`tspaint.experiments.singer_ensemble_experiment` (it samples an ensemble
 rather than a single ts); external tools slot in as painters.
 
 ## Parameters {.doc-section .doc-section-parameters}

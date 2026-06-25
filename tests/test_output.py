@@ -2,9 +2,9 @@
 import numpy as np
 import tskit
 
-import tslai
-from tslai.model import make_generator_2state, query_emission
-from tslai.output import (posterior_table, missing_info_mask, posterior_at,
+import tspaint
+from tspaint.model import make_generator_2state, query_emission
+from tspaint.output import (posterior_table, missing_info_mask, posterior_at,
                           INFORMATIVE, MISSING_INFO)
 
 
@@ -40,7 +40,7 @@ def test_missing_info_tagged_and_prior_fallback():
 
 
 def test_coverage_and_valid_probabilities_on_sim():
-    ts = tslai.simulate_admixture(n_admix=3, n_ref=4, sequence_length=2e5,
+    ts = tspaint.simulate_admixture(n_admix=3, n_ref=4, sequence_length=2e5,
                                   recombination_rate=1e-8, random_seed=5)
     Q = make_generator_2state(1e-3, 1e-3)
     pi = np.array([0.55, 0.45])

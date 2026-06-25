@@ -2,9 +2,9 @@
 import numpy as np
 import pytest
 
-from tslai.model import make_generator_2state
-from tslai.branch_stats import branch_expected_stats
-from tslai.dating import log_time_grid, split_branch, branch_cell_stats
+from tspaint.model import make_generator_2state
+from tspaint.branch_stats import branch_expected_stats
+from tspaint.dating import log_time_grid, split_branch, branch_cell_stats
 
 
 def test_split_branch_covers_and_orders():
@@ -53,7 +53,7 @@ def test_branch_cell_stats_localises_in_time():
 def test_poisson_spline_recovers_known_step_rate():
     """The M-step penalised spline recovers a (smooth) step rate from Poisson data with a
     coalescent-shaped exposure (admix-dating rung 3)."""
-    from tslai.dating.mstep import select_lambda_gcv
+    from tspaint.dating.mstep import select_lambda_gcv
     rng = np.random.default_rng(1)
     centers = np.geomspace(20.0, 20000.0, 60)
     true = 1e-3 / (1.0 + np.exp(-(np.log(centers) - np.log(2000.0)) * 3.0))  # onset ~2000
@@ -76,7 +76,7 @@ def test_fit_rate_through_time_recovers_split():
     fitted cross-rate q_AB(t) must be ~0 for t < T_split and rise once t exceeds it. Also checks
     the EM log-likelihood is (weakly) monotone. Uses the auto log-time grid (edges=None)."""
     import msprime
-    from tslai.dating import fit_rate_through_time
+    from tspaint.dating import fit_rate_through_time
 
     N, T_split = 1000, 2000.0
     d = msprime.Demography()
@@ -101,22 +101,22 @@ def test_fit_rate_through_time_recovers_split():
 
 def test_top_level_dating_exports():
     """The dating path is surfaced in the public API (top-level fn, class, and namespace)."""
-    import tslai
-    assert hasattr(tslai, "fit_rate_through_time")
-    assert hasattr(tslai, "RateThroughTime")
-    assert hasattr(tslai, "dating")
-    assert "fit_rate_through_time" in tslai.__all__
-    assert "RateThroughTime" in tslai.__all__
-    assert "dating" in tslai.__all__
-    assert hasattr(tslai.Painting, "rate_through_time")
+    import tspaint
+    assert hasattr(tspaint, "fit_rate_through_time")
+    assert hasattr(tspaint, "RateThroughTime")
+    assert hasattr(tspaint, "dating")
+    assert "fit_rate_through_time" in tspaint.__all__
+    assert "RateThroughTime" in tspaint.__all__
+    assert "dating" in tspaint.__all__
+    assert hasattr(tspaint.Painting, "rate_through_time")
 
 
 def _admix_labels(ts):
-    import tslai
+    import tspaint
     pop = ts.tables.nodes.population
     name = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
-    A = next(p for p, n in name.items() if n == tslai.SOURCE_A)
-    B = next(p for p, n in name.items() if n == tslai.SOURCE_B)
+    A = next(p for p, n in name.items() if n == tspaint.SOURCE_A)
+    B = next(p for p, n in name.items() if n == tspaint.SOURCE_B)
     return {int(s): (0 if pop[s] == A else 1) for s in ts.samples() if pop[s] in (A, B)}
 
 
@@ -125,11 +125,11 @@ def test_painting_rate_through_time_no_mutation():
     """Painting.rate_through_time() returns a separate RateThroughTime and leaves the painting's
     posteriors byte-for-byte unchanged (the dating path lives side by side with painting)."""
     import copy
-    import tslai
-    ts = tslai.simulate_admixture(n_admix=4, n_ref=4, sequence_length=2e5, random_seed=1,
+    import tspaint
+    ts = tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=2e5, random_seed=1,
                                   T_admix=100, Ne=1000, T_split=5000)
     labels = _admix_labels(ts)
-    p = tslai.paint(ts, labels)
+    p = tspaint.paint(ts, labels)
     before = copy.deepcopy(p.posteriors)
     rtt = p.rate_through_time(n_iter=3, n_cells=20)
 
@@ -147,8 +147,8 @@ def test_fit_rate_through_time_warmstart_matches_cold():
     """Warm-starting from a precomputed FitResult reproduces the cold-start fit (the internal
     homogeneous fit is the only thing skipped), when seeded identically."""
     import msprime
-    import tslai
-    from tslai.model import make_generator_2state
+    import tspaint
+    from tspaint.model import make_generator_2state
 
     N, T_split = 1000, 2000.0
     d = msprime.Demography()
@@ -162,10 +162,10 @@ def test_fit_rate_through_time_warmstart_matches_cold():
     labels = {int(s): (0 if pop[s] == 0 else 1) for s in ts.samples()}
 
     # Cold start does fit(..., Q0=default, max_iter=em_init=8) internally; reproduce that fit.
-    warm = tslai.fit(ts, labels, Q0=make_generator_2state(1e-3, 1e-3), max_iter=8,
+    warm = tspaint.fit(ts, labels, Q0=make_generator_2state(1e-3, 1e-3), max_iter=8,
                      estimate_pi=False)
-    rtt_cold = tslai.fit_rate_through_time(ts, labels, n_iter=5)
-    rtt_warm = tslai.fit_rate_through_time(ts, labels, n_iter=5, fit_result=warm)
+    rtt_cold = tspaint.fit_rate_through_time(ts, labels, n_iter=5)
+    rtt_warm = tspaint.fit_rate_through_time(ts, labels, n_iter=5, fit_result=warm)
 
     assert np.allclose(rtt_warm.q_AB, rtt_cold.q_AB, rtol=1e-6, atol=1e-12)
     assert np.allclose(rtt_warm.q_BA, rtt_cold.q_BA, rtol=1e-6, atol=1e-12)

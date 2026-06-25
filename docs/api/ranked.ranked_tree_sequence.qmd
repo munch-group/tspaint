@@ -1,7 +1,7 @@
-# ranked.ranked_tree_sequence { #tslai.ranked.ranked_tree_sequence }
+# ranked.ranked_tree_sequence { #tspaint.ranked.ranked_tree_sequence }
 
 ```python
-tslai.ranked.ranked_tree_sequence(ts)
+tspaint.ranked.ranked_tree_sequence(ts)
 ```
 
 Copy of ``ts`` with node times replaced by the dense rank of each time.
@@ -28,5 +28,5 @@ times), so the result is a valid tree sequence; only the time scale changes.
 Measured to be **not beneficial** for inference (collapses true-ARG painting from
 ~1.0 to ~0.5): dense-rank compresses the timescale, EM compensates with a much
 larger Q, deep/root branches wash out, and ``pi`` becomes unidentifiable. Kept as
-a runnable ablation behind ``tslai_paint(..., ranked=True)``; the actual fix for
-the same ``pi`` failure is ``estimate_pi=False`` (see :func:`tslai.em.fit`).
+a runnable ablation behind ``tspaint_paint(..., ranked=True)``; the actual fix for
+the same ``pi`` failure is ``estimate_pi=False`` (see :func:`tspaint.em.fit`).

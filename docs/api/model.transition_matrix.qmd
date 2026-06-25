@@ -1,7 +1,7 @@
-# model.transition_matrix { #tslai.model.transition_matrix }
+# model.transition_matrix { #tspaint.model.transition_matrix }
 
 ```python
-tslai.model.transition_matrix(Q, t)
+tspaint.model.transition_matrix(Q, t)
 ```
 
 Branch transition probabilities ``P(t) = expm(Q t)`` (CLAUDE.md §2.1).

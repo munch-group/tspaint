@@ -2,7 +2,7 @@
 title: "Inference: structured (blocked) EM"
 ---
 
-`tslai` fits the ancestry CTMC to an inferred tree sequence by
+`tspaint` fits the ancestry CTMC to an inferred tree sequence by
 **expectation–maximization (EM)**. The E-step is *exact* Felsenstein pruning,
 run per marginal tree and per root; the M-step is closed-form CTMC maximum
 likelihood from expected dwell times and jump counts. The distinguishing piece

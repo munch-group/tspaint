@@ -1,7 +1,7 @@
-# experiments.age_sweep { #tslai.experiments.age_sweep }
+# experiments.age_sweep { #tspaint.experiments.age_sweep }
 
 ```python
-tslai.experiments.age_sweep(ages, infer=False, **kwargs)
+tspaint.experiments.age_sweep(ages, infer=False, **kwargs)
 ```
 
 Accuracy vs. admixture age — the §9 headline.

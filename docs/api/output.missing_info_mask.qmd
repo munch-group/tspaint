@@ -1,7 +1,7 @@
-# output.missing_info_mask { #tslai.output.missing_info_mask }
+# output.missing_info_mask { #tspaint.output.missing_info_mask }
 
 ```python
-tslai.output.missing_info_mask(ts, focal=None)
+tspaint.output.missing_info_mask(ts, focal=None)
 ```
 
 Per-sample spans where the tree is uninformative (isolated sample).

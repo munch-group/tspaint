@@ -1,7 +1,7 @@
-# simulate_admixture { #tslai.simulate_admixture }
+# simulate_admixture { #tspaint.simulate_admixture }
 
 ```python
-tslai.simulate_admixture(
+tspaint.simulate_admixture(
     n_admix=10,
     n_ref=10,
     sequence_length=1000000.0,

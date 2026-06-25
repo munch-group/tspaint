@@ -1,7 +1,7 @@
-# fit_rate_through_time { #tslai.fit_rate_through_time }
+# fit_rate_through_time { #tspaint.fit_rate_through_time }
 
 ```python
-tslai.fit_rate_through_time(
+tspaint.fit_rate_through_time(
     ts,
     labels,
     edges=None,
@@ -33,7 +33,7 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 <code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Fine log-time grid edges (:func:`tslai.dating.log_time_grid`). If ``None`` (default), a grid of ``n_cells`` log-spaced cells is built automatically from the node ages.
+:   Fine log-time grid edges (:func:`tspaint.dating.log_time_grid`). If ``None`` (default), a grid of ``n_cells`` log-spaced cells is built automatically from the node ages.
 
 <code>[**n_cells**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [40]{.parameter-default}</code>
 
@@ -45,7 +45,7 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 <code>[**em_init**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
 
-:   Iterations of the homogeneous :func:`tslai.fit` used to initialise (ignored when ``fit_result`` is supplied).
+:   Iterations of the homogeneous :func:`tspaint.fit` used to initialise (ignored when ``fit_result`` is supplied).
 
 <code>[**n_knots**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
 
@@ -55,12 +55,12 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 :   Relative log-likelihood change for convergence.
 
-<code>[**fit_result**]{.parameter-name} [:]{.parameter-annotation-sep} [[tslai](`tslai`).[em](`tslai.em`).[FitResult](`tslai.em.FitResult`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+<code>[**fit_result**]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[em](`tspaint.em`).[FitResult](`tspaint.em.FitResult`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous :func:`tslai.fit` is skipped — used by :meth:`tslai.Painting.rate_through_time` to reuse the painting's fit rather than refitting.
+:   A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous :func:`tspaint.fit` is skipped — used by :meth:`tspaint.Painting.rate_through_time` to reuse the painting's fit rather than refitting.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tslai.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tspaint.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
 
 :   

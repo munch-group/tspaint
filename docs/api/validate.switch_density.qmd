@@ -1,7 +1,7 @@
-# validate.switch_density { #tslai.validate.switch_density }
+# validate.switch_density { #tspaint.validate.switch_density }
 
 ```python
-tslai.validate.switch_density(segs, length)
+tspaint.validate.switch_density(segs, length)
 ```
 
 Ancestry switches per unit length.

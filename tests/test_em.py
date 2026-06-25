@@ -12,8 +12,8 @@ import numpy as np
 import tskit
 from scipy.linalg import expm
 
-from tslai.model import make_generator_2state, stationary_distribution
-from tslai.em import fit
+from tspaint.model import make_generator_2state, stationary_distribution
+from tspaint.em import fit
 
 
 def balanced_binary_ts(depth, bl=0.6):
@@ -101,8 +101,8 @@ def test_em_loglik_monotone_nondecreasing():
 
 def test_em_single_treesequence_runs():
     # production call path: one genome (linked trees), refs labelled, queries free
-    import tslai
-    ts = tslai.simulate_admixture(n_admix=3, n_ref=4, sequence_length=5e4,
+    import tspaint
+    ts = tspaint.simulate_admixture(n_admix=3, n_ref=4, sequence_length=5e4,
                                   recombination_rate=1e-8, random_seed=3)
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}

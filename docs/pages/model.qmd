@@ -2,7 +2,7 @@
 title: The model
 ---
 
-This page is the theoretical reference for the **tslai** generative model: local
+This page is the theoretical reference for the **tspaint** generative model: local
 ancestry as a discrete character evolving up the branches of each marginal tree
 of an inferred tree sequence. It fixes the notation, the state space, the
 generator $Q$, the root frequencies $\pi$, the soft tip-emission noise model, and
@@ -101,7 +101,7 @@ the CTMC equilibrium.
 
 Reference haplotypes carry a sampled population **label** $\ell_i \in \{A, B\}$;
 query haplotypes carry none. Rather than clamp a labelled tip to a one-hot
-indicator, tslai gives each tip a Felsenstein emission *likelihood vector* that is
+indicator, tspaint gives each tip a Felsenstein emission *likelihood vector* that is
 a **noise model** parameterised by a per-tip **credibility** $w_i \in [0, 1]$:
 
 $$
@@ -203,7 +203,7 @@ disappears as a free nuisance parameter.
 ### Why this decomposition is more falsifiable than a generic $\rho$-HMM
 
 A generic ancestry HMM lumps *all* state change into a single switch rate $\rho$
-estimated from the data. tslai instead **decomposes** state change into two
+estimated from the data. tspaint instead **decomposes** state change into two
 mechanisms with separate, identifiable channels:
 
 - **recombination** — horizontal, a *topology* change, handled entirely by edge
@@ -248,7 +248,7 @@ A schematic of the emission likelihood vector and the resulting per-tip posterio
 ```python
 # Illustration only — see the API reference for the real functions.
 import numpy as np
-from tslai.model import tip_emission, query_emission, transition_matrix
+from tspaint.model import tip_emission, query_emission, transition_matrix
 
 pi = np.array([0.5, 0.5])            # uniform root frequencies (A, B)
 

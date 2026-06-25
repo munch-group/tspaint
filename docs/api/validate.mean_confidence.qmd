@@ -1,7 +1,7 @@
-# validate.mean_confidence { #tslai.validate.mean_confidence }
+# validate.mean_confidence { #tspaint.validate.mean_confidence }
 
 ```python
-tslai.validate.mean_confidence(
+tspaint.validate.mean_confidence(
     tracks,
     samples=None,
     state=0,
@@ -16,7 +16,7 @@ distinguishes "the tree can't tell" from a wrong confident call.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Posterior segment tracks per sample.
 
@@ -30,7 +30,7 @@ distinguishes "the tree can't tell" from a wrong confident call.
 
 <code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 
-:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+:   If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
 ## Returns {.doc-section .doc-section-returns}
 

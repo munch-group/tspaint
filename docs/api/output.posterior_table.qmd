@@ -1,7 +1,14 @@
-# output.posterior_table { #tslai.output.posterior_table }
+# output.posterior_table { #tspaint.output.posterior_table }
 
 ```python
-tslai.output.posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12)
+tspaint.output.posterior_table(
+    ts,
+    Q,
+    pi,
+    emissions,
+    focal=None,
+    merge_tol=1e-12,
+)
 ```
 
 Per-sample ancestry posterior as contiguous segments covering ``[0, L)``.
@@ -25,7 +32,7 @@ and info-status; adjacent identical segments are merged.
 
 <code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
 
-:   Per-sample emission vector (see :func:`tslai.em.build_emissions`).
+:   Per-sample emission vector (see :func:`tspaint.em.build_emissions`).
 
 <code>[**focal**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -37,6 +44,6 @@ and info-status; adjacent identical segments are merged.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
 :   Per focal sample, the down-pass posterior as contiguous :class:`Segment`\ s covering ``[0, L)``.

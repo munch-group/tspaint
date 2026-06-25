@@ -1,14 +1,14 @@
 """Edge-blocked, span-weighted sufficient statistics (CLAUDE.md §3.3) — Rung 4.
 
 THE correctness core. Drive the genome with ``ts.edge_diffs()`` zipped with
-``ts.trees()``; run pruning (:mod:`tslai.pruning`) per tree; **bank each edge's
+``ts.trees()``; run pruning (:mod:`tspaint.pruning`) per tree; **bank each edge's
 contribution once, on entry (``edges_in``), weighted by its own span**. A clade
 persisting across many trees is one set of wide-span edges, so summing by span
 partitions the genome without double-counting (the edge-table invariant: the set
 of intervals on which each node is a child is disjoint). Root-state mass is
 accumulated per interval (CLAUDE.md §3.3 sketch).
 
-The expensive Van Loan call (:func:`tslai.branch_stats.branch_expected_stats`) is
+The expensive Van Loan call (:func:`tspaint.branch_stats.branch_expected_stats`) is
 thereby made **once per edge**, not once per (tree x branch). The blocked
 approximation (CLAUDE.md §3.5): an edge's ``ξ`` is taken from the tree at entry and
 held over its whole span — exact when the topology outside the edge does not change
@@ -72,7 +72,7 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
         Root frequencies.
     emissions : dict[int, array]
         Per-tip emission vectors (labelled refs and queries), as built by
-        :mod:`tslai.model`.
+        :mod:`tspaint.model`.
     labels : dict[int, int], optional
         Label index per labelled tip, used to accumulate credibility evidence.
     soft_refs : set[int], optional

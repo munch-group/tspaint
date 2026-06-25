@@ -1,7 +1,7 @@
-# model.validate_generator { #tslai.model.validate_generator }
+# model.validate_generator { #tspaint.model.validate_generator }
 
 ```python
-tslai.model.validate_generator(Q, atol=1e-09)
+tspaint.model.validate_generator(Q, atol=1e-09)
 ```
 
 Check that ``Q`` is a valid CTMC generator.

@@ -1,17 +1,17 @@
 """Admixture rate through time — time-inhomogeneous directional mugration EM.
 
-A separate estimator riding the same tslai engine (Felsenstein pruning + Van Loan
+A separate estimator riding the same tspaint engine (Felsenstein pruning + Van Loan
 endpoint-conditioned statistics): make the ancestry CTMC *time-inhomogeneous*, with a
 piecewise-constant generator on a fine log-time grid, and estimate the two cross-ancestry
 transition rates ``q_AB(t)``, ``q_BA(t)`` as smooth functions of (backward) time. The
 profile locates divergence and gene-flow epochs, their direction/asymmetry, and ongoing
 flow. This lives *side by side* with the paint-only path — it does not change how
-:func:`tslai.paint` works; see ``notes/admix_dating_design.md`` for the full design and the
+:func:`tspaint.paint` works; see ``notes/admix_dating_design.md`` for the full design and the
 rung-by-rung validation.
 
 Typical use::
 
-    from tslai.dating import fit_rate_through_time
+    from tspaint.dating import fit_rate_through_time
     rtt = fit_rate_through_time(ts, labels)   # auto log-time grid from the node ages
     rtt.plot()                                # q_AB(t), q_BA(t) on a log-time axis
 

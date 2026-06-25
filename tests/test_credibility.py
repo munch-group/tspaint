@@ -7,15 +7,15 @@ never let the whole panel float (keep a hard-clamped anchor set).
 import numpy as np
 import pytest
 
-import tslai
-from tslai.model import make_generator_2state
-from tslai.em import fit
+import tspaint
+from tspaint.model import make_generator_2state
+from tspaint.em import fit
 
 
 def _admixture_refs(seed=2, n_ref=8, L=5e4):
     # strong structure (small Ne, deep split) so source-specific coalescence completes
     # well before the split -> pure references cluster cleanly with their source
-    ts = tslai.simulate_admixture(n_admix=2, n_ref=n_ref, sequence_length=L,
+    ts = tspaint.simulate_admixture(n_admix=2, n_ref=n_ref, sequence_length=L,
                                   recombination_rate=1e-8, random_seed=seed,
                                   Ne=1000, T_split=5000)
     node_pop = ts.tables.nodes.population

@@ -1,7 +1,7 @@
-# dating.fit_poisson_spline { #tslai.dating.fit_poisson_spline }
+# dating.fit_poisson_spline { #tspaint.dating.fit_poisson_spline }
 
 ```python
-tslai.dating.fit_poisson_spline(
+tspaint.dating.fit_poisson_spline(
     centers,
     events,
     exposure,

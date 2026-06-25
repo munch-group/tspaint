@@ -1,4 +1,4 @@
-"""High-level entry point for tslai (CLAUDE.md §2.4).
+"""High-level entry point for tspaint (CLAUDE.md §2.4).
 
 :func:`paint` is the one call most users need: fit the ancestry CTMC on the labelled
 references and return per-haplotype, per-position ancestry posteriors as a :class:`Painting`.
@@ -26,7 +26,7 @@ class Painting:
     ----------
     posteriors : dict[int, list[Segment]]
         Per query haplotype, the down-pass posterior over ancestry states as contiguous
-        :class:`~tslai.output.Segment`\\ s covering ``[0, L)`` (the soft, calibrated
+        :class:`~tspaint.output.Segment`\\ s covering ``[0, L)`` (the soft, calibrated
         deliverable).
     Q : numpy.ndarray
         The fitted generator.
@@ -64,7 +64,7 @@ class Painting:
         deadband : float, optional
             Confidence dead-band suppressing low-confidence flips that fragment long
             tracts. Defaults to :attr:`default_deadband`. See
-            :func:`tslai.output.hard_segments`.
+            :func:`tspaint.output.hard_segments`.
 
         Returns
         -------
@@ -95,11 +95,11 @@ class Painting:
         """Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
 
         Fits the time-inhomogeneous directional mugration EM
-        (:func:`tslai.fit_rate_through_time`) **warm-started from this painting's fitted
+        (:func:`tspaint.fit_rate_through_time`) **warm-started from this painting's fitted
         ``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
         deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
         ``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
-        their direction. It returns a **new** :class:`~tslai.dating.RateThroughTime` and does
+        their direction. It returns a **new** :class:`~tspaint.dating.RateThroughTime` and does
         **not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
         paths stay side by side).
 
@@ -108,18 +108,18 @@ class Painting:
         edges : array_like, optional
             Log-time grid edges; an auto grid is built from the node ages when ``None``.
         **kwargs
-            Forwarded to :func:`tslai.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``,
+            Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``,
             ``n_knots``).
 
         Returns
         -------
-        tslai.dating.RateThroughTime
+        tspaint.dating.RateThroughTime
             The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``,
             ``.plot()``).
         """
         if self.ts is None or self.labels is None:
             raise ValueError("Painting was constructed without ts/labels; cannot date. Use "
-                             "tslai.fit_rate_through_time(ts, labels) directly.")
+                             "tspaint.fit_rate_through_time(ts, labels) directly.")
         from .em import FitResult
         from .dating import fit_rate_through_time
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
@@ -137,14 +137,14 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
-    (:func:`tslai.fit`), then returns the per-position posterior over ancestry states for each
+    (:func:`tspaint.fit`), then returns the per-position posterior over ancestry states for each
     query haplotype as a :class:`Painting`.
 
     Parameters
     ----------
     ts : tskit.TreeSequence
         An inferred (tsinfer / Relate ``--compress``) or true tree sequence; sample nodes are
-        haplotypes. Use :mod:`tslai.io` to obtain one from genotypes.
+        haplotypes. Use :mod:`tspaint.io` to obtain one from genotypes.
     labels : dict[int, int]
         Reference sample-node id → ancestry-state index in ``0..K-1``.
     queries : iterable[int], optional
@@ -161,7 +161,7 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     deadband : float
         Stored as :attr:`Painting.default_deadband` for :meth:`Painting.segments`.
     smooth : bool
-        Apply the horizontal BP/EP smoother (:mod:`tslai.bp`) to the posteriors along the
+        Apply the horizontal BP/EP smoother (:mod:`tspaint.bp`) to the posteriors along the
         genome. **Recommended on inferred (tsinfer / Relate) ARGs**, where tree inference
         scatters spurious breakpoints a per-position deadband cannot filter; redundant on a
         true/known ARG (CLAUDE.md §7). Default ``False``.
@@ -169,7 +169,7 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         Per-breakpoint switch penalty for ``smooth`` (smaller ⇒ more smoothing).
     Q0 : (K, K) array, optional
         Initial generator (default a slow symmetric 2-state generator).
-    max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tslai.fit`).
+    max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tspaint.fit`).
 
     Returns
     -------
@@ -179,15 +179,15 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
 
     See Also
     --------
-    tslai.fit : The underlying blocked-EM fit.
-    tslai.output.hard_segments : Collapse the soft posteriors into hard tracts.
+    tspaint.fit : The underlying blocked-EM fit.
+    tspaint.output.hard_segments : Collapse the soft posteriors into hard tracts.
 
     Examples
     --------
-    >>> import tslai
-    >>> ts = tslai.simulate_admixture(n_admix=10, n_ref=10)
+    >>> import tspaint
+    >>> ts = tspaint.simulate_admixture(n_admix=10, n_ref=10)
     >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}   # reference sample-node -> ancestry state
-    >>> painting = tslai.paint(ts, labels)
+    >>> painting = tspaint.paint(ts, labels)
     >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
     """
     labels = {int(k): int(v) for k, v in labels.items()}

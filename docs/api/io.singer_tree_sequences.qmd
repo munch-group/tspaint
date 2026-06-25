@@ -1,7 +1,7 @@
-# io.singer_tree_sequences { #tslai.io.singer_tree_sequences }
+# io.singer_tree_sequences { #tspaint.io.singer_tree_sequences }
 
 ```python
-tslai.io.singer_tree_sequences(
+tspaint.io.singer_tree_sequences(
     ts,
     *,
     Ne,
@@ -22,7 +22,7 @@ tslai.io.singer_tree_sequences(
 Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
 
 SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
-samples are the ideal input to :func:`tslai.ensemble.merge_posterior_tables`,
+samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
 since they represent genuine ARG uncertainty (§7.4).
 
 ## Parameters {.doc-section .doc-section-parameters}
@@ -69,7 +69,7 @@ since they represent genuine ARG uncertainty (§7.4).
 
 <code>[**singer_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSLAI_SINGER``).
+:   Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSPAINT_SINGER``).
 
 <code>[**with_mutations**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 

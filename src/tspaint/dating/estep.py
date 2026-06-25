@@ -6,12 +6,12 @@ sandwiched by the forward/backward transition products and conditioned on the br
 ``xi``), then accumulated edge-blocked and span-weighted (CLAUDE.md §3.3).
 
 Rung-1 invariant: with a homogeneous generator, the per-cell statistics summed over the cells a
-branch spans equal :func:`tslai.branch_stats.branch_expected_stats` for the whole branch — the
+branch spans equal :func:`tspaint.branch_stats.branch_expected_stats` for the whole branch — the
 additive property of ``∫_0^T = Σ_cells ∫_cell``.
 
 ``accumulate_time_binned`` is the **Stage-1 shortcut** (design build-order rung 2): it reuses the
 existing *homogeneous* pruning ``xi`` and merely bins the rewards by time — a first
-rate-through-time profile from one ``tslai.fit``, before the full time-inhomogeneous pruning.
+rate-through-time profile from one ``tspaint.fit``, before the full time-inhomogeneous pruning.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def composite_transition(Q_of_cell, t_c, t_p, edges):
 def _prune_root_tv(tree, root, emissions, node_time, pi, Pbranch, K):
     """Up/down pass for one root under a time-inhomogeneous generator. ``Pbranch(t_c, t_p)``
     gives the composite branch transition. Returns ``(xi, loglik)`` — mirrors
-    :func:`tslai.pruning.prune_root` with the per-branch composite transition."""
+    :func:`tspaint.pruning.prune_root` with the per-branch composite transition."""
     Lnorm, cumscale, msg = {}, {}, {}
     for u in tree.nodes(root, order="postorder"):
         e = emissions.get(u)
@@ -145,7 +145,7 @@ def accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges):
 
 def paint_qt(ts, emissions, Q_of_cell, pi, edges, focal):
     """Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same
-    deliverable as :func:`tslai.output.posterior_table` but using the per-cell rates from the
+    deliverable as :func:`tspaint.output.posterior_table` but using the per-cell rates from the
     admixture-rate-through-time fit (so recent branches with a low rate wash less). Returns
     ``{sample: [Segment]}``; isolated spans are tagged ``MISSING_INFO``."""
     from ..output import Segment, INFORMATIVE, MISSING_INFO
@@ -251,7 +251,7 @@ def branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges):
 def accumulate_time_binned(ts, Q, pi, emissions, edges):
     """Edge-blocked, span-weighted per-cell dwell + directional jumps (Stage-1, homogeneous Q).
 
-    Mirrors :func:`tslai.accumulate.accumulate_sufficient_statistics` (bank each entering edge
+    Mirrors :func:`tspaint.accumulate.accumulate_sufficient_statistics` (bank each entering edge
     once, weighted by its span) but bins each branch's rewards by time cell.
 
     Returns

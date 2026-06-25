@@ -1,7 +1,7 @@
-# ensemble.MergedSegment { #tslai.ensemble.MergedSegment }
+# ensemble.MergedSegment { #tspaint.ensemble.MergedSegment }
 
 ```python
-tslai.ensemble.MergedSegment(
+tspaint.ensemble.MergedSegment(
     left,
     right,
     posterior,
@@ -13,8 +13,8 @@ tslai.ensemble.MergedSegment(
 
 One span of an ensemble-merged painting.
 
-Duck-compatible with :class:`tslai.output.Segment` (shares ``left``/``right``/
-``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.
+Duck-compatible with :class:`tspaint.output.Segment` (shares ``left``/``right``/
+``posterior``/``status``), so :mod:`tspaint.validate` metrics score it directly.
 
 ## Attributes {.doc-section .doc-section-attributes}
 

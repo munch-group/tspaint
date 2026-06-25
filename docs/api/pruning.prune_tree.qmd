@@ -1,7 +1,7 @@
-# pruning.prune_tree { #tslai.pruning.prune_tree }
+# pruning.prune_tree { #tspaint.pruning.prune_tree }
 
 ```python
-tslai.pruning.prune_tree(tree, emissions, Q, node_time, pi, Pget=None)
+tspaint.pruning.prune_tree(tree, emissions, Q, node_time, pi, Pget=None)
 ```
 
 Prune every root of a marginal tree and aggregate the results.
@@ -37,6 +37,6 @@ log-likelihood over all roots (a marginal tree may be a forest; CLAUDE.md §3.1,
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tslai.pruning.PruneResult`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tspaint.pruning.PruneResult`)]{.parameter-annotation}</code>
 
 :   Posteriors aggregated over all roots of the tree.

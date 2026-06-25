@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from tslai.dating import (log_time_grid, cell_centers, rate_through_time_binned,
+from tspaint.dating import (log_time_grid, cell_centers, rate_through_time_binned,
                           fit_rate_through_time)
 
 N, T_SPLIT = 1000, 2000.0

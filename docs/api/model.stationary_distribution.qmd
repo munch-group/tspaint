@@ -1,7 +1,7 @@
-# model.stationary_distribution { #tslai.model.stationary_distribution }
+# model.stationary_distribution { #tspaint.model.stationary_distribution }
 
 ```python
-tslai.model.stationary_distribution(Q)
+tspaint.model.stationary_distribution(Q)
 ```
 
 Stationary distribution ``π`` of a CTMC generator.

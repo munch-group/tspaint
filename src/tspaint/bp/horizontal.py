@@ -72,7 +72,7 @@ def bp_smooth(emissions, pi, epsilon):
 
 
 def bp_smooth_track(track, pi, epsilon):
-    """Smooth one tip's :class:`~tslai.output.Segment` track along the genome.
+    """Smooth one tip's :class:`~tspaint.output.Segment` track along the genome.
 
     Intervals and status are preserved; posteriors are replaced by the
     horizontally-smoothed ones.
@@ -101,7 +101,7 @@ def bp_smooth_track(track, pi, epsilon):
 
 def bp_paint(ts, labels, queries, K=2, *, epsilon=1e-2, max_iter=6, Q0=None,
              soft_refs=None, estimate_pi=False, n_sweeps=1):
-    """tslai painter with horizontal BP smoothing.
+    """tspaint painter with horizontal BP smoothing.
 
     EM-fits ``(Q[, pi, w])``, paints the queries, then smooths each tip's track
     along the genome (switch penalty ``epsilon``) — adding the propagation of
@@ -136,7 +136,7 @@ def bp_paint(ts, labels, queries, K=2, *, epsilon=1e-2, max_iter=6, Q0=None,
     -------
     dict[int, list[Segment]]
         ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible
-        with the :mod:`tslai.validate` metrics and :func:`tslai.output.hard_segments`.
+        with the :mod:`tspaint.validate` metrics and :func:`tspaint.output.hard_segments`.
 
     Raises
     ------

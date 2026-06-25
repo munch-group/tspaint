@@ -1,7 +1,7 @@
-# io.add_mutations { #tslai.io.add_mutations }
+# io.add_mutations { #tspaint.io.add_mutations }
 
 ```python
-tslai.io.add_mutations(ts, rate=1e-08, random_seed=None)
+tspaint.io.add_mutations(ts, rate=1e-08, random_seed=None)
 ```
 
 Overlay biallelic mutations on a tree sequence so tsinfer has variant data.

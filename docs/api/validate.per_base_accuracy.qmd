@@ -1,7 +1,7 @@
-# validate.per_base_accuracy { #tslai.validate.per_base_accuracy }
+# validate.per_base_accuracy { #tspaint.validate.per_base_accuracy }
 
 ```python
-tslai.validate.per_base_accuracy(
+tspaint.validate.per_base_accuracy(
     tracks,
     truth_states,
     samples=None,
@@ -16,9 +16,9 @@ posterior matches the truth.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   Posterior segment tracks per sample (e.g. from :func:`tslai.output.posterior_table`).
+:   Posterior segment tracks per sample (e.g. from :func:`tspaint.output.posterior_table`).
 
 <code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
 
@@ -30,7 +30,7 @@ posterior matches the truth.
 
 <code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 
-:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+:   If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
 
 ## Returns {.doc-section .doc-section-returns}
 

@@ -41,7 +41,7 @@ def split_branch(t_c, t_p, edges):
     list[tuple[int, float]]
         ``(cell_index, duration)`` sub-intervals **ordered parent → child** (descending
         time), matching the ``xi[s_p, s_c]`` / ``expm`` convention of
-        :func:`tslai.branch_stats.vanloan_integral`. Portions of the branch outside
+        :func:`tspaint.branch_stats.vanloan_integral`. Portions of the branch outside
         ``[edges[0], edges[-1]]`` are assigned to the nearest boundary cell so the whole
         branch is covered (so per-cell totals sum to the whole-branch statistics).
     """

@@ -1,7 +1,7 @@
-# io.infer_tree_sequence { #tslai.io.infer_tree_sequence }
+# io.infer_tree_sequence { #tspaint.io.infer_tree_sequence }
 
 ```python
-tslai.io.infer_tree_sequence(ts_with_mutations)
+tspaint.io.infer_tree_sequence(ts_with_mutations)
 ```
 
 Infer a tree sequence from the genotypes of ``ts_with_mutations`` via tsinfer.

@@ -1,7 +1,7 @@
-# validate.map_truth { #tslai.validate.map_truth }
+# validate.map_truth { #tspaint.validate.map_truth }
 
 ```python
-tslai.validate.map_truth(truth, state_of_pop)
+tspaint.validate.map_truth(truth, state_of_pop)
 ```
 
 Remap truth tracts from population ids to ancestry-state indices.
@@ -10,7 +10,7 @@ Remap truth tracts from population ids to ancestry-state indices.
 
 <code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
 
-:   Truth tracts ``{sample: [(left, right, pop_id)]}`` (e.g. from :func:`tslai.sim.local_ancestry_truth`).
+:   Truth tracts ``{sample: [(left, right, pop_id)]}`` (e.g. from :func:`tspaint.sim.local_ancestry_truth`).
 
 <code>[**state_of_pop**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
 
