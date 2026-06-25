@@ -55,3 +55,16 @@ def test_painting_segments_deadband_and_accuracy():
         assert db[q][0][0] == 0.0 and db[q][-1][1] == ts.sequence_length
     # strong structure + recent admixture -> accurate painting
     assert tslai.metrics.balanced_accuracy(p.posteriors, truth, samples=queries) > 0.9
+
+
+@pytest.mark.slow
+def test_paint_smooth_option_reduces_switches():
+    ts, labels, queries, _ = _admixture()
+    plain = tslai.paint(ts, labels)
+    smoothed = tslai.paint(ts, labels, smooth=True)         # horizontal BP smoother (CLAUDE.md §7)
+    assert set(smoothed.posteriors) == set(queries)
+
+    def nsw(P):
+        return sum(sum(1 for k in range(1, len(v)) if v[k][2] != v[k - 1][2])
+                   for v in P.segments().values())
+    assert nsw(smoothed) <= nsw(plain)

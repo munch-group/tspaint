@@ -12,6 +12,9 @@ Quick start
 >>> painting.posteriors[q]                                # soft per-position posterior (Segments)
 >>> painting.segments(deadband=0.4)                       # hard ancestry tracts (for dating)
 
+On an inferred (tsinfer / Relate) ARG, add ``smooth=True`` to suppress tree-inference-induced
+spurious switches with the horizontal BP smoother (CLAUDE.md §7).
+
 Public API
 ----------
 Core
@@ -23,6 +26,7 @@ Namespaces
     tslai.metrics      accuracy, calibration, fragmentation / tract-length metrics
     tslai.compare      painters (tslai_paint, nearest_reference_paint, rfmix_paint) + head_to_head
     tslai.io           input front ends (tsinfer, SINGER)
+    tslai.bp           horizontal BP/EP smoother (helps on inferred ARGs; CLAUDE.md §7)
     tslai.experiments  end-to-end benchmark drivers
 Lower-level machinery lives in the named submodules (``tslai.model``, ``tslai.pruning``,
 ``tslai.accumulate``, ``tslai.em``, ``tslai.output``, ``tslai.ensemble``, ``tslai.ranked``,
@@ -40,7 +44,7 @@ from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, A
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import validate as metrics
 from . import (  # noqa: F401  (exposed as tslai.<name>)
-    compare, io, experiments, sim, model, ensemble, ranked, validate,
+    compare, io, experiments, bp, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics,
     io_tsinfer, io_singer, io_rfmix,
 )
@@ -63,6 +67,6 @@ __all__ = [
     # simulation
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
     # namespaces
-    "metrics", "compare", "io", "experiments",
+    "metrics", "compare", "io", "bp", "experiments",
     "__version__",
 ]

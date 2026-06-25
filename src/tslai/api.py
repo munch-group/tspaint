@@ -57,7 +57,8 @@ class Painting:
 
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
-          Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0, w0=0.9):
+          smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,
+          w0=0.9):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -84,6 +85,13 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         branches is the degeneracy of CLAUDE.md §6; uniform is the robust choice.
     deadband : float
         Stored as :attr:`Painting.default_deadband` for :meth:`Painting.segments`.
+    smooth : bool
+        Apply the horizontal BP/EP smoother (:mod:`tslai.bp`) to the posteriors along the
+        genome. **Recommended on inferred (tsinfer / Relate) ARGs**, where tree inference
+        scatters spurious breakpoints a per-position deadband cannot filter; redundant on a
+        true/known ARG (CLAUDE.md §7). Default ``False``.
+    epsilon : float
+        Per-breakpoint switch penalty for ``smooth`` (smaller ⇒ more smoothing).
     Q0 : (K, K) array, optional
         Initial generator (default a slow symmetric 2-state generator).
     max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tslai.fit`).
@@ -102,6 +110,9 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
               estimate_pi=estimate_pi, alpha=alpha, beta=beta, w0=w0)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     posteriors = posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
+    if smooth:
+        from .bp import bp_smooth_track
+        posteriors = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in posteriors.items()}
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
                     default_deadband=deadband)
