@@ -38,6 +38,26 @@ __all__ = ["PruneResult", "prune_root", "prune_tree"]
 
 @dataclass
 class PruneResult:
+    """Down-pass result of pruning a marginal tree (CLAUDE.md §3.1).
+
+    Attributes
+    ----------
+    gamma : dict
+        ``node -> (K,) posterior marginal P(state | tree)``.
+    xi : dict
+        ``(parent, child) -> (K, K) joint posterior`` over endpoint states.
+    root_marginal : dict
+        ``root -> (K,) posterior`` (also present in ``gamma``).
+    missing_info : set
+        Isolated-sample nodes the tree carries no information about (distinct from a
+        50-50 uncertain call; CLAUDE.md §4.2).
+    loo : dict
+        ``node -> (K,) leave-one-out marginal``: the outside message excluding the
+        node's OWN emission — credibility evidence that avoids a label confirming
+        itself (CLAUDE.md §2.3, §3.3).
+    loglik : float
+        Total log-likelihood, summed over roots.
+    """
     gamma: dict           # node -> (K,) posterior marginal P(state | tree)
     xi: dict              # (parent, child) -> (K, K) joint posterior
     root_marginal: dict   # root -> (K,) posterior (also in gamma)
@@ -49,6 +69,7 @@ class PruneResult:
 
 
 def _transition_cache(Q):
+    """Return a memoising ``t -> expm(Q t)`` getter (shared across a sweep)."""
     cache = {}
 
     def get(t):
@@ -63,7 +84,38 @@ def _transition_cache(Q):
 
 
 def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
-    """Up/down pass for a single root of a marginal tree (see module docstring)."""
+    """Up/down sum-product pass for a single root of a marginal tree.
+
+    See the module docstring for the two-pass scheme. Polytomy-safe (product over all
+    children); skips the root branch (root enters via ``π`` only); isolated samples are
+    tagged missing-info and set to the prior (CLAUDE.md §4).
+
+    Parameters
+    ----------
+    tree : tskit.Tree
+        The marginal tree.
+    root : int
+        Root node to prune (a marginal tree may be a forest; prune per root).
+    emissions : dict[int, array_like]
+        Per-tip emission vectors (labelled refs and queries). Nodes absent from the
+        dict contribute a flat likelihood.
+    Q : (K, K) array_like
+        CTMC generator (rows sum to zero).
+    node_time : array_like
+        Node times, indexed by node id; branch length is
+        ``time[parent] - time[child] > 0``.
+    pi : (K,) array_like
+        Root frequencies.
+    Pget : callable, optional
+        Transition-matrix cache ``t -> expm(Q t)`` (see :func:`_transition_cache`);
+        built fresh if omitted.
+
+    Returns
+    -------
+    PruneResult
+        Posteriors for this single root only (``gamma``, ``xi``, ``root_marginal``,
+        ``missing_info``, ``loo``, ``loglik``).
+    """
     pi = np.asarray(pi, float)
     K = pi.shape[0]
     if Pget is None:
@@ -147,12 +199,33 @@ def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
 
 
 def prune_tree(tree, emissions, Q, node_time, pi, Pget=None):
-    """Prune every root of a marginal tree; aggregate γ, ξ, root marginals,
-    missing-info tags and the total log-likelihood (CLAUDE.md §3.1, §4).
+    """Prune every root of a marginal tree and aggregate the results.
 
-    ``Pget`` is an optional transition-matrix cache (:func:`_transition_cache`) shared
-    across trees in a sweep, so ``expm(Q t)`` is computed once per distinct branch
-    length per EM iteration rather than once per tree (CLAUDE.md §3.3)."""
+    Aggregates ``γ``, ``ξ``, root marginals, missing-info tags and the total
+    log-likelihood over all roots (a marginal tree may be a forest; CLAUDE.md §3.1, §4).
+
+    Parameters
+    ----------
+    tree : tskit.Tree
+        The marginal tree.
+    emissions : dict[int, array_like]
+        Per-tip emission vectors (labelled refs and queries).
+    Q : (K, K) array_like
+        CTMC generator (rows sum to zero).
+    node_time : array_like
+        Node times, indexed by node id.
+    pi : (K,) array_like
+        Root frequencies.
+    Pget : callable, optional
+        Transition-matrix cache (:func:`_transition_cache`) shared across trees in a
+        sweep, so ``expm(Q t)`` is computed once per distinct branch length per EM
+        iteration rather than once per tree (CLAUDE.md §3.3). Built fresh if omitted.
+
+    Returns
+    -------
+    PruneResult
+        Posteriors aggregated over all roots of the tree.
+    """
     if Pget is None:
         Pget = _transition_cache(Q)
     gamma, xi, root_marginal, missing, loo = {}, {}, {}, set(), {}

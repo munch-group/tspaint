@@ -26,10 +26,20 @@ class Painting:
     ----------
     posteriors : dict[int, list[Segment]]
         Per query haplotype, the down-pass posterior over ancestry states as contiguous
-        :class:`~tslai.output.Segment`\\ s covering ``[0, L)`` (the soft, calibrated deliverable).
-    Q, pi, w : the fitted generator, root frequencies, and learned per-tip credibility.
-    loglik_history : observed-data log-likelihood per EM step (non-decreasing).
-    queries : the painted sample-node ids.
+        :class:`~tslai.output.Segment`\\ s covering ``[0, L)`` (the soft, calibrated
+        deliverable).
+    Q : numpy.ndarray
+        The fitted generator.
+    pi : numpy.ndarray
+        The fitted root frequencies.
+    w : dict
+        The learned per-tip credibility.
+    loglik_history : list
+        Observed-data log-likelihood per EM step (non-decreasing).
+    queries : list
+        The painted sample-node ids.
+    default_deadband : float
+        Default dead-band passed to :meth:`segments`. Default ``0.0``.
     """
     posteriors: dict
     Q: np.ndarray
@@ -40,14 +50,38 @@ class Painting:
     default_deadband: float = 0.0
 
     def segments(self, deadband=None):
-        """Hard ancestry segments ``{query: [(left, right, state)]}`` for downstream
-        tract-length / dating analysis. ``deadband`` (default :attr:`default_deadband`) suppresses
-        low-confidence flips that fragment long tracts — see :func:`tslai.output.hard_segments`."""
+        """Hard ancestry segments for downstream tract-length / dating analysis.
+
+        Parameters
+        ----------
+        deadband : float, optional
+            Confidence dead-band suppressing low-confidence flips that fragment long
+            tracts. Defaults to :attr:`default_deadband`. See
+            :func:`tslai.output.hard_segments`.
+
+        Returns
+        -------
+        dict[int, list[tuple[float, float, int]]]
+            Per query, hard ``(left, right, state)`` segments.
+        """
         db = self.default_deadband if deadband is None else deadband
         return {q: hard_segments(t, db) for q, t in self.posteriors.items()}
 
     def posterior_at(self, sample, position):
-        """Posterior vector for ``sample`` at a genomic ``position`` (or ``None``)."""
+        """Posterior vector for ``sample`` at a genomic ``position``.
+
+        Parameters
+        ----------
+        sample : int
+            Sample-node id to look up.
+        position : float
+            Genomic position.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
+        """
         return posterior_at(self.posteriors, sample, position)
 
     def __repr__(self):
@@ -99,6 +133,21 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     Returns
     -------
     Painting
+        The soft per-position ancestry posteriors for each query plus the fitted
+        ``(Q, π, w)`` and EM log-likelihood history.
+
+    See Also
+    --------
+    tslai.fit : The underlying blocked-EM fit.
+    tslai.output.hard_segments : Collapse the soft posteriors into hard tracts.
+
+    Examples
+    --------
+    >>> import tslai
+    >>> ts = tslai.simulate_admixture(n_admix=10, n_ref=10)
+    >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}   # reference sample-node -> ancestry state
+    >>> painting = tslai.paint(ts, labels)
+    >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
     """
     labels = {int(k): int(v) for k, v in labels.items()}
     if queries is None:

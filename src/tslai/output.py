@@ -25,6 +25,19 @@ MISSING_INFO = "missing-info"
 
 @dataclass
 class Segment:
+    """A contiguous span carrying one soft ancestry posterior.
+
+    Attributes
+    ----------
+    left, right : float
+        Half-open genomic interval ``[left, right)`` the segment covers.
+    posterior : numpy.ndarray
+        ``(K,)`` posterior over ancestry states on ``[left, right)``.
+    status : str
+        :data:`INFORMATIVE` or :data:`MISSING_INFO` — the latter tags an isolated
+        span where the tree carries no information and ``posterior`` is the prior
+        ``π`` fallback, distinct from a 50-50 uncertain call (CLAUDE.md §4.2).
+    """
     left: float
     right: float
     posterior: np.ndarray   # (K,) posterior over ancestry states on [left, right)
@@ -37,9 +50,27 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
     Runs the down-pass per marginal tree and records each focal sample's posterior
     and info-status; adjacent identical segments are merged.
 
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence whose marginal trees are pruned.
+    Q : (K, K) numpy.ndarray
+        Ancestry CTMC generator.
+    pi : (K,) array_like
+        Root frequencies ``π`` (the prior fallback on uninformative spans).
+    emissions : dict[int, numpy.ndarray]
+        Per-sample emission vector (see :func:`tslai.em.build_emissions`).
+    focal : iterable[int], optional
+        Samples to record; defaults to every sample in ``ts``.
+    merge_tol : float, optional
+        Absolute tolerance for merging adjacent segments with equal posterior.
+        Default ``1e-12``.
+
     Returns
     -------
     dict[int, list[Segment]]
+        Per focal sample, the down-pass posterior as contiguous
+        :class:`Segment`\\ s covering ``[0, L)``.
     """
     pi = np.asarray(pi, float)
     node_time = ts.tables.nodes.time
@@ -67,6 +98,18 @@ def missing_info_mask(ts, focal=None):
 
     Topology-only (independent of ``Q``/``π``/emissions): an isolated sample is a
     root with no children over that span (CLAUDE.md §4.2).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence to scan.
+    focal : iterable[int], optional
+        Samples to report; defaults to every sample in ``ts``.
+
+    Returns
+    -------
+    dict[int, list[tuple[float, float]]]
+        Per sample, the ``(left, right)`` spans where it is an isolated root.
     """
     samples = [int(s) for s in (ts.samples() if focal is None else focal)]
     mask = {s: [] for s in samples}
@@ -84,7 +127,23 @@ def missing_info_mask(ts, focal=None):
 
 
 def posterior_at(tracks, sample, position):
-    """Posterior vector for ``sample`` at a genomic ``position`` (or ``None``)."""
+    """Posterior vector for ``sample`` at a genomic ``position``.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Per-sample segment tracks (e.g. from :func:`posterior_table`).
+    sample : int
+        Sample-node id to look up.
+    position : float
+        Genomic position.
+
+    Returns
+    -------
+    numpy.ndarray or None
+        The ``(K,)`` posterior on the segment covering ``position``, or ``None``
+        if no segment covers it.
+    """
     for seg in tracks[int(sample)]:
         if seg.left <= position < seg.right:
             return seg.posterior
@@ -92,19 +151,35 @@ def posterior_at(tracks, sample, position):
 
 
 def hard_segments(track, deadband=0.0):
-    """Collapse a soft posterior ``track`` (list of :class:`Segment`) into hard ancestry
-    segments ``[(left, right, state), ...]`` — the object a downstream tract-length /
+    """Collapse a soft posterior ``track`` into hard ancestry segments.
+
+    Produces ``[(left, right, state), ...]`` — the object a downstream tract-length /
     admixture-pulse dating analysis consumes.
 
-    With ``deadband > 0`` a switch to a new ``argmax`` state is accepted only where the call
-    is confident — the top-two posterior **margin** ``max(P) - 2nd-max(P) >= deadband`` —
-    otherwise the previous state is carried forward. This suppresses the low-confidence
-    (~P=0.5) flips that fragment long tracts under naive ``argmax`` (``deadband=0``); because
-    the posterior is calibrated, a modest deadband (≈0.3–0.5) recovers the true switch density
-    and tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9). This
-    is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF) does not
-    expose. ``MISSING_INFO`` spans carry the previous state forward; the first interval takes
-    its ``argmax``.
+    Parameters
+    ----------
+    track : list[Segment]
+        Soft posterior segments for one sample (e.g. from :func:`posterior_table`).
+    deadband : float, optional
+        Confidence dead-band on the top-two posterior **margin**
+        ``max(P) - 2nd-max(P)``. A switch to a new ``argmax`` state is accepted only
+        where ``margin >= deadband``; otherwise the previous state is carried forward.
+        Default ``0.0`` (naive ``argmax``).
+
+    Returns
+    -------
+    list[tuple[float, float, int]]
+        Hard ``(left, right, state)`` ancestry segments.
+
+    Notes
+    -----
+    A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment
+    long tracts under naive ``argmax`` (``deadband=0``). Because the posterior is
+    calibrated, a modest dead-band (≈0.3–0.5) recovers the true switch density and
+    tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9).
+    This is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF)
+    does not expose. ``MISSING_INFO`` spans carry the previous state forward; the first
+    interval takes its ``argmax``.
     """
     segs, cur = [], None
     for seg in track:

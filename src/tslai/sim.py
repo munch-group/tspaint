@@ -39,12 +39,38 @@ _CENSUS_FLAG = getattr(msprime, "NODE_IS_CEN_EVENT", 0)
 
 def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
                          T_split=2000.0, f_A=0.3):
-    """Two sources (A, B) feeding an admixed population, with a census just older
-    than the admixture pulse.
+    """Build a two-source admixture demography with a post-pulse census.
 
-    A and B contribute fractions ``f_A`` and ``1 - f_A`` to ADMIX at ``T_admix``;
-    they merge into a common ancestor at ``T_split``. The census sits at
-    ``T_admix + census_offset`` (strictly between admixture and split).
+    Two sources (A, B) feed an admixed population, with a census placed just
+    older than the admixture pulse. A and B contribute fractions ``f_A`` and
+    ``1 - f_A`` to ADMIX at ``T_admix``; they merge into a common ancestor at
+    ``T_split``. The census sits at ``T_admix + census_offset`` (strictly
+    between admixture and split).
+
+    Parameters
+    ----------
+    Ne : float, optional
+        Diploid effective population size for every population.
+    T_admix : float, optional
+        Time (generations ago) of the admixture pulse forming ADMIX.
+    census_offset : float, optional
+        Offset added to ``T_admix`` to place the census (must keep it strictly
+        between admixture and split).
+    T_split : float, optional
+        Time (generations ago) at which A and B coalesce into ANCESTRAL.
+    f_A : float, optional
+        Fraction of ADMIX contributed by source A (B contributes ``1 - f_A``).
+
+    Returns
+    -------
+    msprime.Demography
+        Demography with populations A, B, ADMIX and ANCESTRAL plus the
+        admixture, census and split events.
+
+    Raises
+    ------
+    ValueError
+        If ``T_admix < T_admix + census_offset < T_split`` is violated.
     """
     census_time = T_admix + census_offset
     if not (T_admix < census_time < T_split):
@@ -72,10 +98,41 @@ def simulate_admixture(n_admix=10, n_ref=10, sequence_length=1e6,
                        **demography_kwargs):
     """Simulate an admixed sample plus two reference panels.
 
-    Returns a :class:`tskit.TreeSequence`. Sample nodes are haplotypes; the first
-    ``2*n_admix`` (for ``ploidy=2``) belong to the admixed population (queries), the
-    rest to the two reference sources. Use :func:`local_ancestry_truth` for ground
-    truth.
+    Parameters
+    ----------
+    n_admix : int, optional
+        Number of admixed individuals (query haplotypes).
+    n_ref : int, optional
+        Number of individuals sampled from each reference source (A and B).
+    sequence_length : float, optional
+        Length of the simulated sequence in base pairs.
+    recombination_rate : float, optional
+        Per-base, per-generation recombination rate.
+    ploidy : int, optional
+        Ploidy; each individual yields ``ploidy`` sample haplotypes.
+    random_seed : int, optional
+        Seed for :func:`msprime.sim_ancestry`.
+    **demography_kwargs
+        Passed to :func:`admixture_demography` (e.g. ``T_admix``, ``T_split``,
+        ``f_A``, ``Ne``).
+
+    Returns
+    -------
+    tskit.TreeSequence
+        Tree sequence whose sample nodes are haplotypes; the first
+        ``ploidy * n_admix`` belong to the admixed population (queries), the
+        rest to the two reference sources.
+
+    See Also
+    --------
+    local_ancestry_truth : Recover the ground-truth ancestry tracts.
+
+    Examples
+    --------
+    >>> ts = simulate_admixture(n_admix=5, n_ref=5, sequence_length=1e5,
+    ...                         random_seed=1)
+    >>> ts.num_samples
+    30
     """
     demography = admixture_demography(**demography_kwargs)
     return msprime.sim_ancestry(
@@ -109,6 +166,11 @@ def local_ancestry_truth(ts):
 
     For each sample and each marginal tree, climb to the sample's census ancestor
     and read its population. Consecutive trees with the same source are merged.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence from :func:`simulate_admixture` (must carry census nodes).
 
     Returns
     -------

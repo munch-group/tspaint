@@ -21,14 +21,42 @@ __all__ = ["map_truth", "per_base_accuracy", "balanced_accuracy", "mean_confiden
 
 
 def map_truth(truth, state_of_pop):
-    """Map truth tracts ``{sample: [(left, right, pop_id)]}`` to ancestry-state indices."""
+    """Remap truth tracts from population ids to ancestry-state indices.
+
+    Parameters
+    ----------
+    truth : dict[int, list[tuple[float, float, int]]]
+        Truth tracts ``{sample: [(left, right, pop_id)]}`` (e.g. from
+        :func:`tslai.sim.local_ancestry_truth`).
+    state_of_pop : dict[int, int]
+        Mapping from population id to ancestry-state index.
+
+    Returns
+    -------
+    dict[int, list[tuple[float, float, int]]]
+        The same tracts with each ``pop_id`` replaced by its ancestry-state
+        index, keyed by integer sample id.
+    """
     return {int(s): [(l, r, state_of_pop[p]) for (l, r, p) in segs]
             for s, segs in truth.items()}
 
 
 def _walk_overlap(post_segs, truth_segs):
-    """Yield ``(lo, hi, Segment, true_state)`` over the common refinement of two
-    piecewise-constant tracks (both sorted, covering the same interval)."""
+    """Walk the common refinement of two piecewise-constant tracks.
+
+    Parameters
+    ----------
+    post_segs : list[Segment]
+        Posterior segments, sorted and covering the interval.
+    truth_segs : list[tuple[float, float, int]]
+        Truth ``(left, right, state)`` tracts, sorted over the same interval.
+
+    Yields
+    ------
+    tuple[float, float, Segment, int]
+        ``(lo, hi, segment, true_state)`` for each overlapping sub-interval of
+        the common refinement.
+    """
     i = j = 0
     while i < len(post_segs) and j < len(truth_segs):
         a = post_segs[i]
@@ -44,7 +72,28 @@ def _walk_overlap(post_segs, truth_segs):
 
 
 def per_base_accuracy(tracks, truth_states, samples=None, exclude_missing=True):
-    """Span-weighted fraction where ``argmax`` of the posterior matches the truth."""
+    """Span-weighted per-base painting accuracy.
+
+    Computes the span-weighted fraction of the genome where the ``argmax`` of the
+    posterior matches the truth.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample (e.g. from
+        :func:`tslai.output.posterior_table`).
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    samples : iterable[int], optional
+        Samples to score; defaults to all keys of ``tracks``.
+    exclude_missing : bool, optional
+        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+    Returns
+    -------
+    float
+        Span-weighted accuracy, or ``nan`` if no span was scored.
+    """
     total = correct = 0.0
     for s in (samples if samples is not None else tracks):
         s = int(s)
@@ -59,9 +108,41 @@ def per_base_accuracy(tracks, truth_states, samples=None, exclude_missing=True):
 
 
 def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, K=2):
-    """Mean of per-true-class accuracies — robust to class imbalance, so an
-    uninformative painter (argmax tie-broken to one class) scores ~0.5, not the
-    majority-class fraction. The honest "does it discriminate?" metric."""
+    """Mean of per-true-class painting accuracies.
+
+    Robust to class imbalance: an uninformative painter (argmax tie-broken to one
+    class) scores ~0.5 rather than the majority-class fraction. The honest "does
+    it discriminate?" metric.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    samples : iterable[int], optional
+        Samples to score; defaults to all keys of ``tracks``.
+    exclude_missing : bool, optional
+        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+    K : int, optional
+        Number of ancestry states.
+
+    Returns
+    -------
+    float
+        Mean over present classes of the span-weighted per-class accuracy, or
+        ``nan`` if no class is present.
+
+    Examples
+    --------
+    >>> from tslai.output import Segment, INFORMATIVE
+    >>> import numpy as np
+    >>> tracks = {0: [Segment(0, 10, np.array([0.9, 0.1]), INFORMATIVE),
+    ...               Segment(10, 20, np.array([0.2, 0.8]), INFORMATIVE)]}
+    >>> truth = {0: [(0, 10, 0), (10, 20, 1)]}
+    >>> balanced_accuracy(tracks, truth)
+    1.0
+    """
     correct = np.zeros(K)
     total = np.zeros(K)
     for s in (samples if samples is not None else tracks):
@@ -77,8 +158,27 @@ def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, 
 
 
 def mean_confidence(tracks, samples=None, state=0, exclude_missing=True):
-    """Span-weighted mean ``|2*P(state) - 1|`` — 0 = uninformative (P≈0.5), 1 =
-    confident. Distinguishes "the tree can't tell" from a wrong confident call."""
+    """Span-weighted mean painter confidence ``|2*P(state) - 1|``.
+
+    A value of 0 is uninformative (``P ≈ 0.5``) and 1 is fully confident. This
+    distinguishes "the tree can't tell" from a wrong confident call.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    samples : iterable[int], optional
+        Samples to score; defaults to all keys of ``tracks``.
+    state : int, optional
+        Ancestry-state index whose posterior probability is read.
+    exclude_missing : bool, optional
+        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+    Returns
+    -------
+    float
+        Span-weighted mean confidence, or ``nan`` if no span was scored.
+    """
     num = den = 0.0
     for s in (samples if samples is not None else tracks):
         for seg in tracks[int(s)]:
@@ -91,9 +191,29 @@ def mean_confidence(tracks, samples=None, state=0, exclude_missing=True):
 
 
 def reliability_curve(tracks, truth_states, state=0, n_bins=10, exclude_missing=True):
-    """Calibration of ``P(state)``: span-weighted predicted vs. empirical per bin.
+    """Calibration curve of ``P(state)``: predicted vs. empirical per bin.
 
     A well-calibrated painter has ``pred ≈ emp`` in every populated bin.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    state : int, optional
+        Ancestry-state index whose posterior probability is binned.
+    n_bins : int, optional
+        Number of equal-width probability bins on ``[0, 1]``.
+    exclude_missing : bool, optional
+        If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+    Returns
+    -------
+    dict
+        Keys ``"pred"``, ``"emp"`` and ``"weight"``, each a 1-D array over the
+        populated bins giving the span-weighted mean predicted probability, the
+        empirical frequency of ``state``, and the total span weight respectively.
     """
     pred = np.zeros(n_bins)
     emp = np.zeros(n_bins)
@@ -113,7 +233,24 @@ def reliability_curve(tracks, truth_states, state=0, n_bins=10, exclude_missing=
 
 
 def breakpoint_flicker(tracks, sample, state=0):
-    """§7.3: posterior discontinuity across a sample's segment boundaries."""
+    """Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3).
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    sample : int
+        Sample id whose consecutive-segment boundaries are examined.
+    state : int, optional
+        Ancestry-state index whose posterior probability is compared.
+
+    Returns
+    -------
+    dict
+        Keys ``"mean_abs_diff"`` (mean ``|P_left(state) - P_right(state)|`` over
+        boundaries), ``"flip_rate"`` (fraction of boundaries where the ``argmax``
+        state changes) and ``"n_boundaries"`` (number of segment boundaries).
+    """
     segs = tracks[int(sample)]
     diffs = []
     flips = 0
@@ -128,6 +265,22 @@ def breakpoint_flicker(tracks, sample, state=0):
 
 
 def _switch_positions(items, state_of, left_of):
+    """Left coordinates of state changes in a sequence of segments.
+
+    Parameters
+    ----------
+    items : iterable
+        Ordered segments / tracts.
+    state_of : callable
+        Maps an item to its (hashable) state.
+    left_of : callable
+        Maps an item to its left coordinate.
+
+    Returns
+    -------
+    list[float]
+        Left coordinates of items whose state differs from the preceding item.
+    """
     pos = []
     prev = None
     for it in items:
@@ -139,7 +292,28 @@ def _switch_positions(items, state_of, left_of):
 
 
 def tract_boundary_error(tracks, truth_states, sample):
-    """Localization error: distance from each true switch to the nearest inferred one."""
+    """Tract-boundary localization error against the truth.
+
+    For each true ancestry switch, measures the distance to the nearest inferred
+    switch (from the posterior ``argmax``).
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    sample : int
+        Sample id to score.
+
+    Returns
+    -------
+    dict
+        Keys ``"n_true_switches"`` (number of true switch points),
+        ``"median_error"`` and ``"mean_error"`` (median/mean distance from each
+        true switch to the nearest inferred switch). The errors are ``nan`` when
+        there are no true switches and ``inf`` when there are no inferred ones.
+    """
     inferred = _switch_positions(tracks[int(sample)],
                                  lambda seg: int(np.argmax(seg.posterior)),
                                  lambda seg: seg.left)
@@ -153,14 +327,32 @@ def tract_boundary_error(tracks, truth_states, sample):
 
 
 def breakpoint_precision_recall(inferred_segs, true_segs, tol):
-    """Precision/recall of inferred ancestry switch points vs. truth, matched within ``tol`` bp.
+    """Precision/recall of inferred ancestry switch points vs. truth.
 
-    Inputs are **hard** segment lists ``[(left, right, state)]`` (e.g. from
-    :func:`tslai.output.hard_segments` and :func:`map_truth`). **Precision** = fraction of
-    inferred switches lying near a true switch — low precision means spurious fragmentation,
-    which biases tract-length / admixture-pulse dating *older*. **Recall** = fraction of true
-    switches recovered — low recall means missed or over-smoothed switches (biases *younger*).
-    The two trade off against the :func:`tslai.output.hard_segments` ``deadband`` (CLAUDE.md §9).
+    Switches are matched within ``tol`` bp. **Precision** is the fraction of
+    inferred switches lying near a true switch — low precision means spurious
+    fragmentation, which biases tract-length / admixture-pulse dating *older*.
+    **Recall** is the fraction of true switches recovered — low recall means
+    missed or over-smoothed switches (biases *younger*). The two trade off
+    against the :func:`tslai.output.hard_segments` ``deadband`` (CLAUDE.md §9).
+
+    Parameters
+    ----------
+    inferred_segs : list[tuple[float, float, int]]
+        Inferred **hard** segments ``[(left, right, state)]`` (e.g. from
+        :func:`tslai.output.hard_segments`).
+    true_segs : list[tuple[float, float, int]]
+        True hard segments ``[(left, right, state)]`` (e.g. from
+        :func:`map_truth`).
+    tol : float
+        Matching tolerance in base pairs between inferred and true switches.
+
+    Returns
+    -------
+    dict
+        Keys ``"precision"``, ``"recall"``, ``"n_inferred"`` and ``"n_true"``.
+        ``"precision"`` is ``nan`` when there are no inferred switches and
+        ``"recall"`` is ``nan`` when there are no true switches.
     """
     isw = _switch_positions(inferred_segs, lambda s: s[2], lambda s: s[0])
     tsw = _switch_positions(true_segs, lambda s: s[2], lambda s: s[0])
@@ -170,10 +362,24 @@ def breakpoint_precision_recall(inferred_segs, true_segs, tol):
 
 
 def switch_density(segs, length):
-    """Ancestry switches per unit length (the quantity admixture-pulse dating reads as time).
+    """Ancestry switches per unit length.
 
-    ``segs`` is a hard segment list ``[(left, right, state)]``; over-fragmentation inflates
-    this and biases the inferred pulse older, over-smoothing deflates it and biases younger.
+    This is the quantity admixture-pulse dating reads as time: over-fragmentation
+    inflates it and biases the inferred pulse older, over-smoothing deflates it
+    and biases younger.
+
+    Parameters
+    ----------
+    segs : list[tuple[float, float, int]]
+        Hard segment list ``[(left, right, state)]``.
+    length : float
+        Sequence length to normalise by.
+
+    Returns
+    -------
+    float
+        Number of ancestry switches divided by ``length``, or ``nan`` if
+        ``length <= 0``.
     """
     n = len(_switch_positions(segs, lambda s: s[2], lambda s: s[0]))
     return n / length if length > 0 else float("nan")

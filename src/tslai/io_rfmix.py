@@ -42,7 +42,22 @@ CONTIG = "1"
 
 
 def _ensure_sites(ts, mutation_rate, seed):
-    """RFMix needs genotypes; if the ARG is bare, drop neutral mutations on it."""
+    """Return ``ts`` with sites; if the ARG is bare, drop neutral mutations on it.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence, possibly without sites.
+    mutation_rate : float
+        Mutation rate used if sites must be simulated.
+    seed : int
+        Random seed for the mutation simulation.
+
+    Returns
+    -------
+    tskit.TreeSequence
+        ``ts`` unchanged if it already has sites, else a mutated copy.
+    """
     if ts.num_sites > 0:
         return ts
     import msprime
@@ -56,8 +71,23 @@ def _sample_index(ts):
 def _classify_individuals(ts, labels, queries):
     """Split diploid individuals into query vs reference by their sample nodes.
 
-    Returns ``(query_inds, ref_inds)`` where each entry is ``(name, (hap0_node, hap1_node))``
-    and ref entries also carry the population state. ``name`` is a stable VCF column id.
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence whose individuals are classified.
+    labels : dict[int, int]
+        Map from reference sample-node id to ancestry state.
+    queries : iterable[int]
+        Sample-node ids of the admixed query haplotypes.
+
+    Returns
+    -------
+    query_inds : list
+        Entries ``(name, (hap0_node, hap1_node))``; ``name`` is a stable VCF
+        column id.
+    ref_inds : list
+        Entries ``(name, (hap0_node, hap1_node), state)`` carrying the population
+        state.
     """
     queries = set(int(q) for q in queries)
     labels = {int(k): int(v) for k, v in labels.items()}
@@ -76,8 +106,21 @@ def _classify_individuals(ts, labels, queries):
 
 
 def _transformed_positions(ts):
-    """Distinct, strictly increasing integer VCF positions (≈ original bp; ±1 bp rounding
-    is far below tract length, so scoring on [0, L) is unaffected)."""
+    """Distinct, strictly increasing integer VCF positions.
+
+    Approximately the original bp; the ±1 bp rounding is far below tract length, so
+    scoring on ``[0, L)`` is unaffected.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence whose site positions are transformed.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer positions, strictly increasing.
+    """
     pos = ts.tables.sites.position
     out = np.empty(pos.shape[0], dtype=np.int64)
     last = 0
@@ -119,10 +162,45 @@ def _write_genetic_map(path, positions, recombination_rate):
 
 def run_rfmix(ts, labels, queries, *, recombination_rate, generations,
               rfmix_bin=None, workdir=None, extra_args=None):
-    """Write inputs, run RFMix, and return the output basename (``.fb.tsv``/``.msp.tsv``).
+    """Write inputs, run RFMix, and return the output basename.
 
-    ``ts`` must carry sites. Raises ``FileNotFoundError`` if the binary is absent and
-    ``RuntimeError`` on a nonzero RFMix exit (stderr tail included)."""
+    Writes a phased query VCF, a phased reference VCF, a reference sample-map, and a
+    linear genetic map, then shells out to the ``rfmix`` binary.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence; must carry sites.
+    labels : dict[int, int]
+        Map from reference sample-node id to ancestry state.
+    queries : iterable[int]
+        Sample-node ids of the admixed query haplotypes.
+    recombination_rate : float
+        Per-base recombination rate, used to build the linear genetic map.
+    generations : float
+        Generations since admixture (RFMix's ``-G``).
+    rfmix_bin : str, optional
+        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+    workdir : str, optional
+        Working directory for the inputs/outputs (default: a fresh tempdir).
+    extra_args : iterable[str], optional
+        Additional command-line arguments appended to the RFMix invocation.
+
+    Returns
+    -------
+    str
+        Output basename; RFMix writes ``<basename>.fb.tsv`` and
+        ``<basename>.msp.tsv``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the ``rfmix`` binary is absent.
+    ValueError
+        If there are not both query and reference diploid individuals.
+    RuntimeError
+        On a nonzero RFMix exit (stderr tail included).
+    """
     rfmix_bin = rfmix_bin or DEFAULT_RFMIX
     if not os.path.exists(rfmix_bin):
         raise FileNotFoundError(
@@ -164,9 +242,28 @@ def run_rfmix(ts, labels, queries, *, recombination_rate, generations,
 def _parse_fb(fb_path, query_inds, K, sequence_length):
     """Parse ``.fb.tsv`` per-marker posteriors into per-node Segment tracks.
 
-    The header columns after the first four are ``<name>:::hap<1|2>:::<pop>``; we recover
-    the (name, hap, pop) → column map, then for each query haplotype build a piecewise-
-    constant painting over [0, L) from the marker posteriors (pop order = state order).
+    Parameters
+    ----------
+    fb_path : str
+        Path to RFMix's ``.fb.tsv`` forward-backward posterior output.
+    query_inds : list
+        ``(name, (hap0_node, hap1_node))`` entries from :func:`_classify_individuals`.
+    K : int
+        Number of ancestry states.
+    sequence_length : float
+        Genome length ``L``; paintings cover ``[0, L)``.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per query-haplotype node, a piecewise-constant painting.
+
+    Notes
+    -----
+    The header columns after the first four are ``<name>:::hap<1|2>:::<pop>``; the
+    ``(name, hap, pop) -> column`` map is recovered from the header, then for each
+    query haplotype a piecewise-constant painting over ``[0, L)`` is built from the
+    marker posteriors (pop order = state order).
     """
     with open(fb_path) as f:
         lines = f.read().splitlines()
@@ -221,11 +318,29 @@ def _parse_fb(fb_path, query_inds, K, sequence_length):
 
 
 def _parse_msp(msp_path, query_inds, sequence_length):
-    """Parse RFMix's native ``.msp.tsv`` (CRF/Viterbi **hard** segments) into
-    ``{node: [(left, right, state)]}`` covering [0, L). This is RFMix's own segmentation —
-    the object a tract-length / admixture-dating analysis would consume — distinct from the
-    per-marker ``.fb.tsv`` posteriors. Subpopulation codes are mapped to ancestry states via
-    the header's ``#Subpopulation order/codes`` line.
+    """Parse RFMix's native ``.msp.tsv`` (CRF/Viterbi **hard** segments).
+
+    This is RFMix's own segmentation — the object a tract-length / admixture-dating
+    analysis would consume — distinct from the per-marker ``.fb.tsv`` posteriors.
+
+    Parameters
+    ----------
+    msp_path : str
+        Path to RFMix's ``.msp.tsv`` Viterbi segmentation output.
+    query_inds : list
+        ``(name, (hap0_node, hap1_node))`` entries from :func:`_classify_individuals`.
+    sequence_length : float
+        Genome length ``L``; segments cover ``[0, L)``.
+
+    Returns
+    -------
+    dict[int, list]
+        ``{node: [(left, right, state)]}`` covering ``[0, L)``.
+
+    Notes
+    -----
+    Subpopulation codes are mapped to ancestry states via the header's
+    ``#Subpopulation order/codes`` line.
     """
     with open(msp_path) as f:
         lines = [ln for ln in f.read().splitlines() if ln]
@@ -265,9 +380,39 @@ def rfmix_paint(ts, labels, queries, K=2, *, recombination_rate=1e-8, generation
                 mutation_rate=4e-7, seed=1, rfmix_bin=None, extra_args=None):
     """RFMix painter with the standard ``painter(ts, labels, queries)`` signature.
 
-    Adds mutations if ``ts`` has none (the true-ARG substrate), runs RFMix, and returns
-    ``{query_node: [Segment]}`` from the ``.fb.tsv`` posteriors. ``generations`` is RFMix's
-    ``-G`` (generations since admixture — known from the sim's ``T_admix``)."""
+    Adds mutations if ``ts`` has none (the true-ARG substrate), runs RFMix, and
+    returns the ``.fb.tsv`` posteriors as per-haplotype Segment tracks — so RFMix
+    scores through the same :func:`tslai.compare.score_painter` harness.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence; mutations are added if it has none.
+    labels : dict[int, int]
+        Map from reference sample-node id to ancestry state.
+    queries : iterable[int]
+        Sample-node ids of the admixed query haplotypes.
+    K : int, optional
+        Number of ancestry states (default 2).
+    recombination_rate : float, optional
+        Per-base recombination rate (default ``1e-8``).
+    generations : float, optional
+        RFMix's ``-G``, generations since admixture — known from the sim's
+        ``T_admix`` (default ``30.0``).
+    mutation_rate : float, optional
+        Mutation rate used if ``ts`` lacks sites (default ``4e-7``).
+    seed : int, optional
+        Random seed for the mutation simulation (default 1).
+    rfmix_bin : str, optional
+        Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+    extra_args : iterable[str], optional
+        Additional command-line arguments appended to the RFMix invocation.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        ``{query_node: [Segment]}`` from the ``.fb.tsv`` per-marker posteriors.
+    """
     ts = _ensure_sites(ts, mutation_rate, seed)
     query_inds, _ref = _classify_individuals(ts, labels, queries)
     out = run_rfmix(ts, labels, queries, recombination_rate=recombination_rate,

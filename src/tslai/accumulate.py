@@ -29,6 +29,21 @@ __all__ = ["SuffStats", "accumulate_sufficient_statistics"]
 
 @dataclass
 class SuffStats:
+    """Pooled, span-weighted sufficient statistics for the M-step (CLAUDE.md §3.3).
+
+    Attributes
+    ----------
+    S_dwell : numpy.ndarray, shape (K,)
+        Expected dwell per state, span-weighted.
+    S_jumps : numpy.ndarray, shape (K, K)
+        Expected jumps per ordered pair, span-weighted.
+    S_root : numpy.ndarray, shape (K,)
+        Expected root-state mass, span-weighted.
+    S_cred : dict
+        ``node -> array([agree, disagree])`` credibility evidence for the Beta update.
+    loglik : float
+        Span-integrated per-locus log-likelihood (diagnostic).
+    """
     S_dwell: np.ndarray      # (K,)   expected dwell per state, span-weighted
     S_jumps: np.ndarray      # (K, K) expected jumps per ordered pair, span-weighted
     S_root: np.ndarray       # (K,)   expected root-state mass, span-weighted
@@ -40,10 +55,21 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
                                      soft_refs=None):
     """Single E-step sweep over the tree sequence (CLAUDE.md §3.3).
 
+    Drives the genome with ``ts.edge_diffs()`` zipped with ``ts.trees()``, prunes each
+    marginal tree, and banks each edge's contribution **once on entry, weighted by its
+    own span** — so a clade persisting across many trees is counted once (the
+    double-counting fix and the channel for genome-scale autocorrelation). The
+    expensive Van Loan branch kernel is computed once per distinct branch length and
+    reused across edges. Root-state mass is accumulated per interval, not per edge.
+
     Parameters
     ----------
     ts : tskit.TreeSequence
-    Q, pi : generator and root frequencies.
+        The (``--compress``ed Relate or tsinfer-native) tree sequence.
+    Q : numpy.ndarray, shape (K, K)
+        CTMC generator (rows sum to zero).
+    pi : numpy.ndarray, shape (K,)
+        Root frequencies.
     emissions : dict[int, array]
         Per-tip emission vectors (labelled refs and queries), as built by
         :mod:`tslai.model`.
@@ -55,6 +81,8 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
     Returns
     -------
     SuffStats
+        Span-weighted ``S_dwell``, ``S_jumps``, ``S_root``, per-tip credibility
+        ``S_cred`` and the span-integrated ``loglik``.
     """
     pi = np.asarray(pi, float)
     K = pi.shape[0]
