@@ -1,0 +1,44 @@
+# experiments.flicker_vs_true_boundaries { #tslai.experiments.flicker_vs_true_boundaries }
+
+```python
+tslai.experiments.flicker_vs_true_boundaries(
+    tracks,
+    truth_states,
+    sample,
+    state=0,
+    eps=0.0,
+)
+```
+
+Split a sample's segment-boundary flicker into at-true vs. off-true boundaries.
+
+The §7.3 decision input: blocked EM is adequate (``bp/`` unnecessary) when flicker
+at non-true boundaries is small relative to the discontinuity at true boundaries.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Per-sample painting (sample id -> list of segments with a ``.posterior``).
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Per-sample census-truth segments (sample id -> list of ``(left, right, state)``).
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample id to score.
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry state whose posterior discontinuity is measured (default 0).
+
+<code>[**eps**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0]{.parameter-default}</code>
+
+:   Tolerance (bp) for matching a segment boundary to a true switch.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``mean_flicker_off_true``, ``mean_flicker_at_true`` (mean ``\|ΔP(state)\|`` at each kind of boundary) and the counts ``n_off_true``, ``n_at_true``.

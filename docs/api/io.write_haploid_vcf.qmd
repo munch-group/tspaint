@@ -1,0 +1,21 @@
+# io.write_haploid_vcf { #tslai.io.write_haploid_vcf }
+
+```python
+tslai.io.write_haploid_vcf(ts, path)
+```
+
+Write one haploid VCF column per sample node.
+
+Drops diploid individuals so SINGER, run with ``-ploidy 1``, sees each
+haplotype as its own sample in node order. Positions are mapped to distinct
+1-based integers.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence with variant sites.
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Destination path for the VCF.

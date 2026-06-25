@@ -30,13 +30,25 @@ __all__ = ["bp_smooth", "bp_smooth_track", "bp_paint"]
 
 
 def bp_smooth(emissions, pi, epsilon):
-    """Forward-backward over per-segment beliefs ``emissions`` (T, K).
+    """Forward-backward over per-segment beliefs along the genome.
 
-    ``epsilon`` is the per-breakpoint switch probability of the near-identity transition
-    ``A = (1-epsilon) I + epsilon/K``: epsilon→0 is maximal smoothing (one tract), epsilon→
-    (K-1)/K is no coupling (recovers the per-segment input). Returns the smoothed (T, K)
-    posterior. ``pi`` divides out the per-tree prior so ``gamma_t`` enters as a likelihood
-    (a no-op constant when ``pi`` is uniform, the painter default).
+    Parameters
+    ----------
+    emissions : array_like, shape (T, K)
+        Per-segment beliefs ``gamma_t`` (the vertical / pruning evidence) for one tip.
+    pi : array_like, shape (K,)
+        Per-tree prior, divided out so ``gamma_t`` enters as a likelihood (a no-op
+        constant when ``pi`` is uniform, the painter default).
+    epsilon : float
+        Per-breakpoint switch probability of the near-identity transition
+        ``A = (1 - epsilon) I + epsilon / K``: ``epsilon -> 0`` is maximal smoothing
+        (one tract), ``epsilon -> (K-1)/K`` is no coupling (recovers the per-segment
+        input).
+
+    Returns
+    -------
+    numpy.ndarray, shape (T, K)
+        The horizontally-smoothed posterior.
     """
     em = np.asarray(emissions, float)
     T, K = em.shape
@@ -60,8 +72,26 @@ def bp_smooth(emissions, pi, epsilon):
 
 
 def bp_smooth_track(track, pi, epsilon):
-    """Smooth one tip's :class:`~tslai.output.Segment` track; intervals and status are
-    preserved, posteriors replaced by the horizontally-smoothed ones."""
+    """Smooth one tip's :class:`~tslai.output.Segment` track along the genome.
+
+    Intervals and status are preserved; posteriors are replaced by the
+    horizontally-smoothed ones.
+
+    Parameters
+    ----------
+    track : list[Segment]
+        One tip's piecewise-constant painting.
+    pi : array_like, shape (K,)
+        Per-tree prior (see :func:`bp_smooth`).
+    epsilon : float
+        Per-breakpoint switch probability (see :func:`bp_smooth`).
+
+    Returns
+    -------
+    list[Segment]
+        The track with smoothed posteriors (a copy of ``track`` if it has < 2
+        segments).
+    """
     if len(track) < 2:
         return list(track)
     em = np.array([seg.posterior for seg in track], float)
@@ -71,13 +101,47 @@ def bp_smooth_track(track, pi, epsilon):
 
 def bp_paint(ts, labels, queries, K=2, *, epsilon=1e-2, max_iter=6, Q0=None,
              soft_refs=None, estimate_pi=False, n_sweeps=1):
-    """tslai painter + horizontal BP smoothing: EM-fit ``(Q[, π, w])``, paint the queries,
-    then smooth each tip's track along the genome (switch penalty ``epsilon``).
+    """tslai painter with horizontal BP smoothing.
 
-    ``n_sweeps`` is reserved for the full-loopy extension (re-feeding smoothed beliefs into the
-    vertical pass); only the single-pass ``n_sweeps=1`` is implemented here. Returns
-    ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible with the
-    `validate` metrics and `output.hard_segments`.
+    EM-fits ``(Q[, pi, w])``, paints the queries, then smooths each tip's track
+    along the genome (switch penalty ``epsilon``) — adding the propagation of
+    uncertainty across persist-but-reparent breakpoints that blocked EM omits (§7).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence to paint.
+    labels : dict[int, int]
+        Map from reference sample-node id to ancestry state.
+    queries : iterable[int]
+        Sample-node ids of the haplotypes to paint.
+    K : int, optional
+        Number of ancestry states (default 2).
+    epsilon : float, optional
+        Per-breakpoint switch penalty for the horizontal smoother (default ``1e-2``).
+    max_iter : int, optional
+        Maximum EM iterations (default 6).
+    Q0 : numpy.ndarray, optional
+        Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+    soft_refs : iterable[int], optional
+        Reference sample ids whose label credibility ``w`` is learned (the rest are
+        hard-clamped anchors).
+    estimate_pi : bool, optional
+        Whether to estimate the root frequencies ``pi`` (default False; see §6).
+    n_sweeps : int, optional
+        Reserved for the full-loopy extension (re-feeding smoothed beliefs into the
+        vertical pass); only the single-pass ``n_sweeps=1`` is implemented (default 1).
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible
+        with the :mod:`tslai.validate` metrics and :func:`tslai.output.hard_segments`.
+
+    Raises
+    ------
+    NotImplementedError
+        If ``n_sweeps != 1`` (the full-loopy extension is deferred).
     """
     if n_sweeps != 1:
         raise NotImplementedError("only the single-pass (n_sweeps=1) EP smoother is implemented")

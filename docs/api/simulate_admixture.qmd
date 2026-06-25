@@ -1,0 +1,64 @@
+# simulate_admixture { #tslai.simulate_admixture }
+
+```python
+tslai.simulate_admixture(
+    n_admix=10,
+    n_ref=10,
+    sequence_length=1000000.0,
+    recombination_rate=1e-08,
+    ploidy=2,
+    random_seed=42,
+    **demography_kwargs,
+)
+```
+
+Simulate an admixed sample plus two reference panels.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of admixed individuals (query haplotypes).
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of individuals sampled from each reference source (A and B).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
+
+:   Length of the simulated sequence in base pairs.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base, per-generation recombination rate.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Ploidy; each individual yields ``ploidy`` sample haplotypes.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+
+:   Seed for :func:`msprime.sim_ancestry`.
+
+<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Passed to :func:`admixture_demography` (e.g. ``T_admix``, ``T_split``, ``f_A``, ``Ne``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence whose sample nodes are haplotypes; the first ``ploidy * n_admix`` belong to the admixed population (queries), the rest to the two reference sources.
+
+## See Also {.doc-section .doc-section-see-also}
+
+local_ancestry_truth : Recover the ground-truth ancestry tracts.
+
+## Examples {.doc-section .doc-section-examples}
+
+```python
+>>> ts = simulate_admixture(n_admix=5, n_ref=5, sequence_length=1e5,
+...                         random_seed=1)
+>>> ts.num_samples
+30
+```

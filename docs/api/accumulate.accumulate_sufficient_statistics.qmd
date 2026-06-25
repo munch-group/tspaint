@@ -1,0 +1,54 @@
+# accumulate.accumulate_sufficient_statistics { #tslai.accumulate.accumulate_sufficient_statistics }
+
+```python
+tslai.accumulate.accumulate_sufficient_statistics(
+    ts,
+    Q,
+    pi,
+    emissions,
+    *,
+    labels=None,
+    soft_refs=None,
+)
+```
+
+Single E-step sweep over the tree sequence (CLAUDE.md §3.3).
+
+Drives the genome with ``ts.edge_diffs()`` zipped with ``ts.trees()``, prunes each
+marginal tree, and banks each edge's contribution **once on entry, weighted by its
+own span** — so a clade persisting across many trees is counted once (the
+double-counting fix and the channel for genome-scale autocorrelation). The
+expensive Van Loan branch kernel is computed once per distinct branch length and
+reused across edges. Root-state mass is accumulated per interval, not per edge.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The (``--compress``ed Relate or tsinfer-native) tree sequence.
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`), [K](`K`)))]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Root frequencies.
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [array](`array`)\]]{.parameter-annotation}</code>
+
+:   Per-tip emission vectors (labelled refs and queries), as built by :mod:`tslai.model`.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Label index per labelled tip, used to accumulate credibility evidence.
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Restrict credibility accumulation to these tips (default: all labelled).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[SuffStats](`tslai.accumulate.SuffStats`)]{.parameter-annotation}</code>
+
+:   Span-weighted ``S_dwell``, ``S_jumps``, ``S_root``, per-tip credibility ``S_cred`` and the span-integrated ``loglik``.

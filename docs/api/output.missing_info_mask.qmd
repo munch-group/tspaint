@@ -1,0 +1,26 @@
+# output.missing_info_mask { #tslai.output.missing_info_mask }
+
+```python
+tslai.output.missing_info_mask(ts, focal=None)
+```
+
+Per-sample spans where the tree is uninformative (isolated sample).
+
+Topology-only (independent of ``Q``/``π``/emissions): an isolated sample is a
+root with no children over that span (CLAUDE.md §4.2).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The tree sequence to scan.
+
+<code>[**focal**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to report; defaults to every sample in ``ts``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per sample, the ``(left, right)`` spans where it is an isolated root.

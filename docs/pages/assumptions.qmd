@@ -1,0 +1,318 @@
+---
+title: Assumptions, identifiability & limitations
+---
+
+This page is the honest accounting of what `tslai` assumes, where its parameters
+can fail to be identified, and the regimes in which it stops working. It is the
+companion to the [Overview](overview.qmd): the Overview tells you how to run
+the method; this page tells you when to trust the result and when not to. None of
+the caveats below are hypothetical hedges — each is either forced by the model or
+has been measured directly. The MEASURED numbers are quoted verbatim from the
+project's validation runs.
+
+The short version: `tslai` is a *generative* model — a continuous-time Markov
+chain (CTMC) for an ancestry character riding up the branches of an inferred tree
+sequence, fitted by EM. Generative models give you calibrated soft posteriors and
+an interpretable, readable `Q`, but they also have identifiability structure that
+a black-box classifier hides. The sharp edges here are the price of that
+interpretability.
+
+## 1. Input requirement: cross-tree node-ID stability {#sec-input}
+
+::: {.callout-warning}
+## The premise is delivered by the *input*, not the method
+
+`tslai` accumulates its sufficient statistics **per tree-sequence edge,
+span-weighted** (the lead novelty, CLAUDE.md §3.3). This is what removes
+double-counting and is the channel through which genome-scale autocorrelation
+enters: a clade that persists across many marginal trees must be **one set of
+edges with a wide span**, identified by a stable node ID across those trees. If
+the input does not deliver that stability, the central premise is not met — the
+method is still *correct*, but it is no better than independent per-tree pruning.
+:::
+
+Two front ends deliver the persistence invariant:
+
+- **Relate → tskit with `--compress`.** The `--compress` flag (Nathaniel S. Pope)
+  assigns the same age to nodes with **identical descendant sets across adjacent
+  trees**, unifying a persistent subclade into a single long-span node. This is
+  not optional. Without it, Relate's conversion can mint fresh node IDs per local
+  tree even for unchanged descendant sets, producing short churning edges that
+  retain the double-counting fix but lose almost all autocorrelation benefit.
+- **`tsinfer` / `tsdate`** tree sequences have native cross-tree node-ID stability
+  by construction and are an equally valid (or preferable) front end.
+
+Two source-confirmed caveats on `--compress` ([Speidel et al., 2019](https://www.nature.com/articles/s41588-019-0484-x);
+`relate_lib`):
+
+1. It unifies on **exact sorted-leaf-set equality, no threshold**
+   (`tree_sequence.hpp::FindIdenticalNodes`) — provably stricter than Relate's own
+   "equivalent branch" notion (Pearson correlation ≥ 0.9). A clade that persists
+   but gains or loses a single tip at a breakpoint is **split** into separate node
+   IDs. Autocorrelation capture is therefore slightly **conservative** (the safe
+   direction: it never falsely merges distinct lineages, only under-links
+   near-equivalent ones).
+2. The global root is deliberately re-IDed whenever either of its children
+   changes (to avoid forcing a genome-wide constant TMRCA), and merged node ages
+   are span-weighted-averaged then monotonicity-constrained. We skip root branches
+   anyway (see [§4](#sec-mugration)), so the first is benign; the second compounds
+   the time-calibration concern of [§3](#sec-calibration).
+
+### 1.1 The persistence go/no-go {#sec-persistence}
+
+Before any inference, run the persistence check (CLAUDE.md §5.1). It is the
+go/no-go test on the method's premise — the histogram of how many distinct
+marginal trees each internal node survives:
+
+```python
+import tskit, numpy as np
+from collections import Counter
+
+ts = tskit.load("example.trees")
+
+# how many distinct trees each internal node survives <-- THE key histogram
+node_tree_count = Counter()
+for (_interval, eout, ein), tree in zip(ts.edge_diffs(), ts.trees()):
+    for u in tree.nodes():
+        if not tree.is_sample(u):
+            node_tree_count[u] += 1
+counts = np.array(list(node_tree_count.values()))
+print("internal-node persistence: median", np.median(counts),
+      "max", counts.max(), "frac==1", np.mean(counts == 1))
+```
+
+- If `frac==1` is near 1 (persistence spiked at a single tree), `--compress`
+  did not take or something upstream is wrong — **the method's premise is not
+  met. Stop and fix the input.**
+- If there is real mass above 1, the horizontal coupling is getting signal.
+  Proceed.
+
+The packaged helper `diagnostics.persistence_summary` computes the same histogram.
+
+## 2. Identifiability & collapse modes {#sec-collapse}
+
+The model is well-pinned with a hard-clamped reference panel. The identifiability
+problems appear only once labels are allowed to move — i.e. once per-tip
+credibility $w_i$ is learned (the soft-reference / introgression-mapping mode,
+CLAUDE.md §2.2). The danger is structural: when a reference's genealogical context
+disagrees with its label, the model has **three ways** to explain the same
+disagreement, and they trade off against each other.
+
+| Collapse mode | What the model does | Why it is degenerate | Guard |
+|:--|:--|:--|:--|
+| **Lower $w_i$** | Declares this haplotype admixed and stops trusting its label | Any disagreement can be absorbed tip-by-tip; the panel dissolves | Hard-clamped anchor set ($w_i \equiv 1$); only the rest float |
+| **Inflate $Q$** | Says *everyone* switches ancestry fast | Large $Q\cdot t$ washes every branch toward $\pi$; tips stop informing their ancestors | Informative $\mathrm{Beta}(\alpha,\beta)$ prior near 1 keeps labels believed |
+| **Relabel a clade** | Flips the ancestry assignment of a whole subtree | Pure label-switching: the likelihood is invariant under a global relabel | Never let the whole panel go soft simultaneously |
+
+The implementation enforces the anchor guard directly: [`fit`](../api/fit.html)
+raises `ValueError` if `soft_refs` covers every labelled tip, with the message
+"keep a hard-clamped anchor set; never let the whole panel float (CLAUDE.md §6)".
+
+::: {.callout-note}
+## Two degenerate fixed points to watch in tests
+
+- $Q \to 0$ **freezes the initialization**: with no migration the up-pass never
+  mixes states, so whatever the tips say propagates unchanged and EM never moves
+  off its starting point.
+- $Q \to \infty$ **washes everything to $\pi$**: every branch becomes the
+  stationary distribution regardless of its tips, so all posteriors relax to the
+  prior and all discriminating signal is lost.
+
+Both are exercised by the degenerate-case tests (`test_em_degenerate.py`). They
+are also the two ends of the $Q$-inflation collapse above.
+:::
+
+## 3. $\pi$-identifiability — the measured real failure mode {#sec-pi}
+
+::: {.callout-warning}
+## When deep branches wash, $\pi$ drifts and the painting collapses to one colour — *confidently*
+
+This is not a hypothetical. It is the failure mode that the order-only ablation
+([§3.1](#sec-calibration)) surfaced and that the head-to-head harness caught on
+short genomes. **Hold $\pi$ fixed.**
+:::
+
+The root frequencies $\pi$ are a prior on the state of the genealogical MRCA. The
+M-step estimate is
+
+$$
+\pi = \frac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]}
+$$ {#eq-pi-mstep}
+
+where $S_{\text{root}}$ is the span-weighted expected root-state mass pooled over
+all roots ([`m_step_pi`](../api/em.m_step_pi.html)). The problem: when the
+deep/root branches **wash** — large $Q\cdot t$, as happens on sparse or short
+ARGs, or under the order-only variant — each tree's root marginal just **echoes
+$\pi$** rather than carrying independent evidence about it. So @eq-pi-mstep feeds
+$\pi$ back onto itself, $\pi$ is under-determined, and the M-step drifts it to a
+degenerate extreme (e.g. $\pi \approx [0.96, 0.04]$). With one state dominating
+the prior, every query relaxes toward that state, and the painting **collapses to
+one colour with high confidence** — confidently wrong.
+
+**The fix: hold $\pi$ fixed** (`estimate_pi=False`, the
+[`tslai_paint`](../api/compare.tslai_paint.html) default). Uniform $\pi$ is
+*principled*, not a kludge: $\pi$ is a prior on the **arbitrary** GMRCA state, so
+uniform is the right non-informative choice. It is estimating $\pi$ from washing
+roots that breaks. The lower-level [`fit`](../api/fit.html) exposes
+`estimate_pi=True` only for deliberate $\pi$-recovery studies, where deep branches
+are well-resolved and $\pi$ *is* identified.
+
+MEASURED recovery numbers (CLAUDE.md §6, §9):
+
+| Regime | `estimate_pi=True` (balanced acc.) | `estimate_pi=False` |
+|:--|:--|:--|
+| true ARG, order-only (ranked) | 0.50 | 0.94 |
+| tsinfer, $L = 5\times10^4$ | 0.50 | **1.00** |
+| tsinfer, $L = 2\times10^5$ (good data) | 0.984 | 0.999 |
+
+The fix recovers both failures and is **harmless on good, long data** (the
+$L=2\times10^5$ row, where $\pi$ *is* identified). The short/sparse regime is
+itself an edge case — real LAI runs on long genomes with many roots, where $\pi$
+is identified and `tslai` already paints 0.98–1.0 — so holding $\pi$ fixed is a
+free robustness default, not a patch over a practical limitation.
+
+## 4. Branch-length / time-calibration risk {#sec-calibration}
+
+The CTMC rides on branch lengths through $P(t) = \exp(Q\,t)$, so $Q$ depends on
+calibrated node times. Relate estimates branch lengths under a **panmictic
+coalescent prior** — misspecified *precisely* in the structured / admixed regime
+that LAI targets ([Speidel et al., 2019](https://www.nature.com/articles/s41588-019-0484-x),
+Supp. Fig. 3c: TMRCA bias under the wrong $N_e$). If $Q$ depends on those biased
+$t$, the bias propagates. `--compress`'s span-weighted-average-then-reconcile age
+smoothing ([§1](#sec-input)) adds a further calibration layer on top.
+
+### 3.1 The order-only ablation — a measured *negative* result {#sec-ranked}
+
+::: {.callout-warning}
+## The hypothesised fix makes things worse. Do not use it for inference.
+
+The order-only / ranked-topology variant ([`ranked_tree_sequence`](../api/ranked.ranked_tree_sequence.html))
+was the natural robustness fix for the calibration risk — discard the (possibly
+biased) time magnitudes, keep only coalescence *order*, in the spirit of Relate's
+order-based selection test. **It does not work.** It is kept as a runnable
+ablation only, never a recommended mode.
+:::
+
+The variant replaces each node's absolute time with the **dense rank** of that
+time (order preserved, magnitudes discarded; topology and sample IDs unchanged, so
+labels and truth transfer). MEASURED: it **collapses true-ARG painting from ~1.0
+to ~0.50** (CLAUDE.md §6). The mechanism is a chain:
+
+1. Dense-ranking **compresses the timescale**.
+2. EM compensates by fitting a much **larger $Q$** (~$10^{-2}$ vs. ~$5\times10^{-5}$).
+3. The large $Q$ **washes the deep/root branches**.
+4. Washed roots make **$\pi$ unidentifiable** — it drifts to a degenerate extreme
+   ([§3](#sec-pi)) → confident-wrong painting.
+
+So the [§4](#sec-calibration) worry (mis-calibration hurts) was correct, but this
+particular cure is wrong: it discards exactly the coalescence-depth **magnitudes**
+the CTMC needs, and it worsens the $\pi$ degeneracy. The actual robustness fix for
+the same $\pi$ failure is `estimate_pi=False` ([§3](#sec-pi)), not order-only.
+
+## 5. The mugration approximation {#sec-mugration}
+
+::: {.callout-warning}
+## Genealogy and ancestry are *jointly* distributed; `tslai` treats the genealogy as fixed
+
+`tslai` models ancestry as a discrete character evolving on a **fixed**
+genealogy (the "mugration" / discrete-phylogeography construction,
+[Lemey et al., 2009](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000520)).
+This ignores that the genealogy and the ancestry are not independent: under the
+structured coalescent, **lineages in different demes cannot coalesce**, so the
+tree shape itself carries ancestry information that the mugration model throws
+away. The consequence is a **bias in the estimated $Q$**.
+:::
+
+This is a deliberate v1 simplification, stated openly. The structured-coalescent
+methods that correct it —
+[BASTA](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005421)
+([De Maio et al., 2015](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005421)),
+[MASCOT](https://academic.oup.com/mbe/article/35/11/2613/5072866)
+([Müller et al., 2018](https://academic.oup.com/mbe/article/35/11/2613/5072866)),
+and, on inferred ARGs specifically,
+[SCAR](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010422)
+([Guo et al., 2022](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010422))
+— solve the joint genealogy↔ancestry problem, but their deliverable is migration
+demography (rates, $N_e$, ancestral lineage locations), **not** per-haplotype
+painting with credibility. For a v1 painting tool the naive mugration version is
+likely fine in practice; the limitation is that the learned $Q$ should be read as
+an effective ancestral-migration timescale, not an unbiased structured-coalescent
+rate.
+
+## 6. Loss of signal at old admixture {#sec-old-admixture}
+
+::: {.callout-note}
+## A coalescent limit, not a tree-inference one
+
+At *old* admixture under present-day sampling, accuracy decays even on the **true
+ARG**. This is not tree-inference error — it is the genealogy itself losing the
+information.
+:::
+
+The headline hypothesis is that a tree-native method can reach **older** admixture
+than tract-/copying-based methods (RFMix, MOSAIC, FLARE), because the genealogical
+relationship of a query to its source references survives even after recombination
+shreds the surrounding haplotype. The binding constraint becomes **tree accuracy**
+rather than tract length. That is largely borne out — but with a measured ceiling.
+
+MEASURED, discrimination vs. admixture age on a **true ARG** (deep split so only
+tract length varies; balanced 50/50 admixture; balanced accuracy / mean
+confidence; CLAUDE.md §9):
+
+| $T_{\text{admix}}$ (generations) | balanced accuracy | mean confidence |
+|:--|:--|:--|
+| 30 | 0.99 | 0.72 |
+| 300 | 0.93 | 0.36 |
+| 1000 | 0.50 | 0.15 |
+| 3000 | 0.50 | 0.18 |
+
+`tslai` discriminates well at recent-to-moderate admixture and **loses the
+reference signal at old admixture**. Crucially, at $T_{\text{admix}} = 1000$ this
+is *not* tree-inference error (the ARG is true) but **coalescent structure**:
+admixed individuals sampled at the present coalesce **among themselves** before the
+old pulse, which severs the query→reference genealogical link the method depends
+on. This refines — does not retract — the headline: tract length is not the binding
+constraint, but the query↔reference link is, and that link decays with admixture
+age under present-day admixed sampling. The crossover age is scenario-specific (it
+scales with $N_e$ and the sampling scheme); the qualitative loss-at-old is robust.
+
+::: {.callout-note}
+## Reporting note: report balanced accuracy + confidence, not plain accuracy
+
+On a lopsided truth, plain accuracy is misleading — taking `argmax` of a posterior
+near $P=0.5$ can score high while carrying no real information. Use
+[`validate.balanced_accuracy`](../api/validate.balanced_accuracy.html) together
+with [`validate.mean_confidence`](../api/validate.mean_confidence.html), as the
+tables above do.
+:::
+
+## 7. Inherited from the front end: ARG accuracy is the binding constraint {#sec-arg-bound}
+
+Even setting aside old-admixture coalescent limits, painting on an **inferred** ARG
+is bounded by the ARG's quality. MEASURED on a `tsinfer`-inferred ARG (balanced
+50/50, chance 0.5; CLAUDE.md §9): per-base accuracy ~0.53 at ~650 sites (poor ARG,
+near chance), ~0.64 at ~2100 sites, ~0.88 at ~5400 sites (good ARG). Tree accuracy,
+not tract length, is the binding constraint — exactly as predicted. The practical
+implication: feed `tslai` the best ARG you can. A Bayesian SMC sampler such as
+SINGER ([`io.singer_tree_sequences`](../api/io.singer_tree_sequences.html)) largely
+lifts this bound, and averaging across a *posterior* ensemble
+([`ensemble.merge_posterior_tables`](../api/ensemble.merge_posterior_tables.html))
+turns the residual ARG uncertainty into a calibrated band rather than a hidden
+error.
+
+## Summary
+
+| Concern | Status | Mitigation / default |
+|:--|:--|:--|
+| Cross-tree node-ID stability | Required premise | `--compress` or tsinfer; run the [persistence check](#sec-persistence) first |
+| Label-switching / $w_i$ / $Q$ collapse | Structural (soft mode) | Hard-clamped anchor set; $\mathrm{Beta}$ prior near 1; never float the whole panel |
+| $\pi$ drift on washed roots | **Measured failure** | `estimate_pi=False` (default); uniform $\pi$ is principled |
+| Panmictic branch-length bias | Real; biases $Q$ | Order-only ablation **does not help** (measured); feed well-calibrated times (SINGER) |
+| Mugration approximation | Deliberate v1 simplification | Read $Q$ as an effective timescale; BASTA/MASCOT/SCAR correct it |
+| Old admixture under present sampling | Coalescent limit | None — report balanced accuracy + confidence honestly |
+| Inferred-ARG quality | Binding constraint | Best available ARG; SINGER posterior + ensemble merge |
+
+The throughline: `tslai`'s honesty *is* its selling point relative to black-box
+ARG-native classifiers. It produces a calibrated soft posterior, a readable $Q$,
+and explicit per-tip credibility — and, in the regimes where the signal is gone, it
+relaxes toward $\pi$ rather than making a confident wrong call.

@@ -1,0 +1,31 @@
+# branch_stats.branch_expected_stats { #tslai.branch_stats.branch_expected_stats }
+
+```python
+tslai.branch_stats.branch_expected_stats(Q, t, xi)
+```
+
+Endpoint-conditioned expected dwell times and jump counts on one branch.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**t**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Branch length (> 0). Root branches (length 0 by tskit convention) must be skipped by the caller (CLAUDE.md §3.4, §4.5); ``t <= 0`` returns zeros.
+
+<code>[**xi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Posterior over ``(parent_state, child_state)`` for this branch, normalised to sum to 1. The branch's span weight is applied separately by the accumulator (CLAUDE.md §3.3).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**dwell**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) ndarray]{.parameter-annotation}</code>
+
+:   Expected time spent in each state along the branch, under ``xi``. Sums to ``t`` for any normalised ``xi`` (a useful invariant).
+
+<code>[**jumps**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) ndarray]{.parameter-annotation}</code>
+
+:   Expected number of ``m -> n`` transitions (``m != n``), under ``xi``.

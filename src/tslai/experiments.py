@@ -28,11 +28,41 @@ __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
                          recombination_rate=1e-8, Ne=1000, T_split=5000.0, f_A=0.3,
                          seed=1, max_iter=8, Q0=None, infer=False, mutation_rate=5e-8):
-    """Simulate admixture, fit hard-clamp EM on the references, paint the admixed
-    queries, and score against the census ground truth.
+    """Simulate admixture, fit hard-clamp EM on the references, paint the queries, score.
 
-    Returns a dict with ``accuracy``, calibration ``reliability``, flicker summaries,
-    fitted ``Q``/``pi``, and the raw ``tracks``/``truth_states`` for further analysis.
+    The headline demonstration (CLAUDE.md §9): sim -> fit -> paint -> score against the
+    census truth. With ``infer=True`` the painting runs on a tsinfer-inferred ARG (the
+    §9 binding constraint: does tree-native LAI survive tree-inference error?), else on
+    the true ARG.
+
+    Parameters
+    ----------
+    T_admix : float, optional
+        Admixture time in generations.
+    n_admix, n_ref : int, optional
+        Number of admixed-query and per-source-reference individuals.
+    sequence_length, recombination_rate, Ne, T_split, f_A : optional
+        msprime admixture-scenario parameters (sequence length, recombination rate,
+        effective size, source-split time, admixture fraction of source A).
+    seed : int, optional
+        Random seed.
+    max_iter : int, optional
+        Maximum EM iterations.
+    Q0 : numpy.ndarray, optional
+        Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+    infer : bool, optional
+        If True paint on a tsinfer-inferred ARG; else on the true ARG.
+    mutation_rate : float, optional
+        Mutation rate used to overlay sites before tsinfer (only when ``infer=True``).
+
+    Returns
+    -------
+    dict
+        Includes ``accuracy``, ``balanced_accuracy``, ``confidence``, calibration
+        ``reliability``, flicker summaries (``mean_flicker``,
+        ``mean_flicker_off_true``, ``mean_flip_rate``), ``boundary_error``, fitted
+        ``Q``/``pi``, ``timings``, and the raw ``tracks``/``truth_states`` (plus ``ts``
+        and ``work_ts``) for further analysis.
     """
     clk = time.perf_counter
     t0 = clk()
@@ -111,7 +141,8 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
 
 
 def _seg_metrics(seg_by_node, true_by_node, nodes, length, tol):
-    """Aggregate fragmentation metrics over a set of haplotypes (hard segment lists)."""
+    """Aggregate fragmentation metrics (switches/Mb, precision, recall, median tract)
+    over a set of haplotypes given hard segment lists."""
     precs, recs, lens, n_sw = [], [], [], 0
     for q in nodes:
         pr = breakpoint_precision_recall(seg_by_node[q], true_by_node[q], tol)
@@ -132,14 +163,38 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
                              Ne=1000, T_split=5000.0, f_A=0.5, recombination_rate=1e-8,
                              mutation_rate=4e-7, deadband=0.4, tol=1e5, seed=1,
                              include_rfmix=True):
-    """Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts
-    (CLAUDE.md §9). Matters because downstream admixture-pulse dating reads the segment-length
-    distribution: ``ratio`` (inferred / true switch density) ≠ 1 biases the inferred pulse
-    (>1 older from fragmentation, <1 younger from over-smoothing).
+    """Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts.
 
-    On one simulated admixture (true ARG) compares tslai ``argmax``, tslai with a confidence
-    ``deadband``, ``nearest_reference``, and — if the rfmix binary is present — RFMix native
-    (``.msp`` Viterbi). Returns ``{"seed", "true_switches_per_mb", "methods": {name: metrics}}``.
+    Matters because downstream admixture-pulse dating reads the segment-length
+    distribution: ``ratio`` (inferred / true switch density) ≠ 1 biases the inferred
+    pulse (>1 older from fragmentation, <1 younger from over-smoothing; CLAUDE.md §9).
+    On one simulated admixture (true ARG) compares tslai ``argmax``, tslai with a
+    confidence ``deadband``, ``nearest_reference``, and — if the rfmix binary is present
+    — RFMix native (``.msp`` Viterbi).
+
+    Parameters
+    ----------
+    n_admix, n_ref : int, optional
+        Number of admixed-query and per-source-reference individuals.
+    sequence_length, T_admix, Ne, T_split, f_A, recombination_rate : optional
+        msprime admixture-scenario parameters.
+    mutation_rate : float, optional
+        Mutation rate for the sites RFMix needs.
+    deadband : float, optional
+        Confidence deadband for the ``tslai_deadband`` segmentation.
+    tol : float, optional
+        Breakpoint-matching tolerance (bp) for precision/recall.
+    seed : int, optional
+        Random seed.
+    include_rfmix : bool, optional
+        If True (and the rfmix binary is present) also score RFMix native ``.msp``.
+
+    Returns
+    -------
+    dict
+        ``{"seed", "T_admix", "true_switches_per_mb", "n_queries", "methods"}`` where
+        ``methods`` maps each method name to its ``_seg_metrics`` dict augmented with a
+        ``ratio`` (inferred / true switch density).
     """
     from .compare import tslai_paint, nearest_reference_paint
 
@@ -192,10 +247,26 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
 
 
 def age_sweep(ages, infer=False, **kwargs):
-    """Accuracy vs. admixture age — the §9 headline. For each ``T_admix`` returns
-    accuracy plus the mean number of *true* ancestry switches per query (so one can
-    see tracts shortening as admixture ages). ``infer=True`` runs on tsinfer-inferred
-    ARGs (accuracy then bounded by ARG quality)."""
+    """Accuracy vs. admixture age — the §9 headline.
+
+    For each ``T_admix`` reports accuracy plus the mean number of *true* ancestry
+    switches per query (so one can see tracts shortening as admixture ages).
+
+    Parameters
+    ----------
+    ages : iterable of float
+        Admixture times (generations) to sweep.
+    infer : bool, optional
+        If True run on tsinfer-inferred ARGs (accuracy then bounded by ARG quality).
+    **kwargs
+        Forwarded to :func:`admixture_experiment`.
+
+    Returns
+    -------
+    list of dict
+        One dict per age with ``T_admix``, ``accuracy``, ``balanced_accuracy``,
+        ``confidence``, ``mean_true_switches``, ``n_sites`` and ``inferred``.
+    """
     out = []
     for T in ages:
         r = admixture_experiment(T_admix=T, infer=infer, **kwargs)
@@ -214,10 +285,28 @@ def age_sweep(ages, infer=False, **kwargs):
 
 
 def scaling_sweep(admix_sizes, infer=False, **kwargs):
-    """Runtime + correctness + flicker vs sample size. Sweeps ``n_admix`` (admixed
-    *individuals*; haplotypes = ploidy x (n_admix + 2*n_ref)). Returns per-size dicts
-    with haplotype/tree counts, per-iteration and total fit time, tsinfer time, balanced
-    accuracy, confidence and off-true flicker — the data behind the scaling/regime plots."""
+    """Runtime + correctness + flicker vs. sample size.
+
+    Sweeps ``n_admix`` (admixed *individuals*; haplotypes = ploidy x
+    (n_admix + 2*n_ref)) — the data behind the scaling/regime plots.
+
+    Parameters
+    ----------
+    admix_sizes : iterable of int
+        Values of ``n_admix`` to sweep.
+    infer : bool, optional
+        If True run on tsinfer-inferred ARGs.
+    **kwargs
+        Forwarded to :func:`admixture_experiment`.
+
+    Returns
+    -------
+    list of dict
+        One dict per size with ``n_admix``, ``n_haplotypes``, ``n_trees``, ``n_iter``,
+        total fit time ``t_fit``, per-iteration ``t_per_iter``, tsinfer time
+        ``t_infer``, ``balanced_accuracy``, ``confidence``, ``mean_flicker_off_true``,
+        ``n_sites`` and ``inferred``.
+    """
     out = []
     for n in admix_sizes:
         r = admixture_experiment(n_admix=n, infer=infer, **kwargs)
@@ -248,12 +337,36 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     overlays of one true genealogy, each inferred with tsinfer (sharing samples and
     coordinates). ``theta`` is fit pooled across the ensemble (``fit`` over the list);
     each member is painted (:func:`tslai.output.posterior_table`) and the paintings are
-    averaged (:func:`tslai.ensemble.merge_posterior_tables`). Reports single-member vs.
-    merged vs. true-ARG balanced accuracy and the merged calibration.
+    averaged (:func:`tslai.ensemble.merge_posterior_tables`).
 
-    Caveat: a tsinfer ensemble captures data/inference variance but shares tsinfer's
-    bias; true posterior samples (SINGER) additionally marginalise coalescent-time and
-    topology uncertainty, so the realised gain here is a lower bound on the SINGER case.
+    Parameters
+    ----------
+    M : int, optional
+        Ensemble size (number of independent mutation overlays / inferred ARGs).
+    T_admix, n_admix, n_ref, sequence_length, recombination_rate, Ne, T_split, f_A : optional
+        msprime admixture-scenario parameters.
+    mutation_rate : float, optional
+        Mutation rate for the per-member site overlays.
+    seed : int, optional
+        Base random seed (members use ``seed + 1 + m``).
+    max_iter : int, optional
+        Maximum EM iterations.
+    Q0 : numpy.ndarray, optional
+        Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+    Returns
+    -------
+    dict
+        ``M``, ``n_haplotypes``, ``single_balanced_mean``/``_std``/``_per_member``,
+        ``merged_balanced``, ``merged_confidence``, ``merged_reliability``,
+        ``true_balanced`` (true-ARG ceiling), and the ``merged_tracks``,
+        ``truth_states``, ``queries``.
+
+    Notes
+    -----
+    A tsinfer ensemble captures data/inference variance but shares tsinfer's bias; true
+    posterior samples (SINGER) additionally marginalise coalescent-time and topology
+    uncertainty, so the realised gain here is a lower bound on the SINGER case.
     """
     from .io_tsinfer import add_mutations, infer_tree_sequence
 
@@ -313,10 +426,40 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
                                recombination_rate=1e-8, Ne=1000, T_split=5000.0, f_A=0.5,
                                mutation_rate=2.5e-7, seed=1, max_iter=6, n_singer=20,
                                thin=8, burn_in=6, singer_seed=42, Q0=None):
-    """Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. the true
-    ARG. The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
-    make merging help, unlike the correlated tsinfer ensemble (arg_ensemble_experiment).
-    Requires the SINGER binary (env TSLAI_SINGER or io_singer's default path)."""
+    """Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth.
+
+    The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
+    make merging help, unlike the correlated tsinfer ensemble
+    (:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSLAI_SINGER``
+    or :mod:`tslai.io_singer`'s default path).
+
+    Parameters
+    ----------
+    T_admix, n_admix, n_ref, sequence_length, recombination_rate, Ne, T_split, f_A : optional
+        msprime admixture-scenario parameters.
+    mutation_rate : float, optional
+        Mutation rate for the sites SINGER consumes.
+    seed : int, optional
+        Random seed for simulation and mutations.
+    max_iter : int, optional
+        Maximum EM iterations.
+    n_singer : int, optional
+        Number of SINGER posterior samples to draw.
+    thin, burn_in : int, optional
+        SINGER MCMC thinning interval and burn-in.
+    singer_seed : int, optional
+        Seed passed to the SINGER binary.
+    Q0 : numpy.ndarray, optional
+        Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+    Returns
+    -------
+    dict
+        ``M`` (realised number of samples), ``n_haplotypes``, ``n_sites``,
+        ``single_balanced_mean``/``_std``/``_per_member``, ``merged_balanced``,
+        ``merged_confidence``, ``merged_reliability``, ``true_balanced``, and the
+        ``merged_tracks``, ``truth_states``, ``queries``.
+    """
     import msprime
     from .io_singer import singer_tree_sequences
 
@@ -373,11 +516,29 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
 
 
 def flicker_vs_true_boundaries(tracks, truth_states, sample, state=0, eps=0.0):
-    """§7.3 decision input: split a sample's segment-boundary flicker into boundaries
-    that coincide with a *true* ancestry switch versus those that do not.
+    """Split a sample's segment-boundary flicker into at-true vs. off-true boundaries.
 
-    Blocked EM is adequate (``bp/`` unnecessary) when flicker at non-true boundaries
-    is small relative to the discontinuity at true boundaries.
+    The §7.3 decision input: blocked EM is adequate (``bp/`` unnecessary) when flicker
+    at non-true boundaries is small relative to the discontinuity at true boundaries.
+
+    Parameters
+    ----------
+    tracks : dict
+        Per-sample painting (sample id -> list of segments with a ``.posterior``).
+    truth_states : dict
+        Per-sample census-truth segments (sample id -> list of ``(left, right, state)``).
+    sample : int
+        Sample id to score.
+    state : int, optional
+        Ancestry state whose posterior discontinuity is measured (default 0).
+    eps : float, optional
+        Tolerance (bp) for matching a segment boundary to a true switch.
+
+    Returns
+    -------
+    dict
+        ``mean_flicker_off_true``, ``mean_flicker_at_true`` (mean ``|ΔP(state)|`` at
+        each kind of boundary) and the counts ``n_off_true``, ``n_at_true``.
     """
     true_switches = []
     prev = None

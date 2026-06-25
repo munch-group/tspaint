@@ -35,8 +35,19 @@ DEFAULT_SINGER = os.environ.get("TSLAI_SINGER", "/Users/kmt/SINGER/SINGER/SINGER
 
 
 def write_haploid_vcf(ts, path):
-    """Write one haploid VCF column per sample node (drops diploid individuals so SINGER,
-    run with ``-ploidy 1``, sees each haplotype as its own sample in node order)."""
+    """Write one haploid VCF column per sample node.
+
+    Drops diploid individuals so SINGER, run with ``-ploidy 1``, sees each
+    haplotype as its own sample in node order. Positions are mapped to distinct
+    1-based integers.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence with variant sites.
+    path : str
+        Destination path for the VCF.
+    """
     tables = ts.dump_tables()
     tables.nodes.set_columns(flags=tables.nodes.flags, time=tables.nodes.time,
                              population=tables.nodes.population)   # individual -> -1
@@ -48,8 +59,25 @@ def write_haploid_vcf(ts, path):
 
 
 def _read_singer_arg(node_file, branch_file, mut_file=None):
-    """Port of SINGER's convert_to_tskit read_ARG, with the missing
-    ``compute_mutation_parents()`` so recurrent mutations don't crash the build."""
+    """Build a tskit tree sequence from SINGER's raw node/branch/mut text tables.
+
+    Port of SINGER's ``convert_to_tskit`` ``read_ARG``, adding the missing
+    ``compute_mutation_parents()`` so recurrent mutations don't crash the build.
+
+    Parameters
+    ----------
+    node_file : str
+        Path to the node-times text table.
+    branch_file : str
+        Path to the branch (edge) text table.
+    mut_file : str, optional
+        Path to the mutations text table; if omitted, no sites are added.
+
+    Returns
+    -------
+    tskit.TreeSequence
+        The reconstructed tree sequence (node times in generations).
+    """
     import tskit
     node_time = np.loadtxt(node_file)
     edge = np.loadtxt(branch_file)
@@ -89,9 +117,56 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
                           singer_bin=None, with_mutations=True, max_retries=50):
     """Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
 
-    Returns a list of post-burn-in tskit tree sequences (one per thinned posterior
-    sample), with sample order preserved. Mirrors SINGER's ``singer_master`` retry loop:
-    on a nonzero exit it re-invokes ``-debug`` with fresh seeds.
+    SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
+    samples are the ideal input to :func:`tslai.ensemble.merge_posterior_tables`,
+    since they represent genuine ARG uncertainty (§7.4).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence carrying mutations; written out as a haploid VCF for SINGER.
+    Ne : float
+        Effective population size passed to SINGER (``-Ne``).
+    mutation_rate : float
+        Per-base mutation rate (``-m``).
+    recombination_rate : float
+        Per-base recombination rate (``-r``).
+    n_samples : int, optional
+        Number of MCMC samples SINGER draws (``-n``, default 20).
+    thin : int, optional
+        MCMC thinning interval (``-thin``, default 10).
+    burn_in : int, optional
+        Number of leading samples to discard as burn-in (default 5).
+    seed : int, optional
+        Base random seed; retries derive fresh seeds from it (default 42).
+    ploidy : int, optional
+        Ploidy passed to SINGER (``-ploidy``, default 1).
+    workdir : str, optional
+        Working directory for VCF and ARG text tables (default: a fresh tempdir).
+    singer_bin : str, optional
+        Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSLAI_SINGER``).
+    with_mutations : bool, optional
+        Whether to read mutations into the returned tree sequences (default True).
+    max_retries : int, optional
+        Maximum ``-debug`` re-invocations with fresh seeds on failure (default 50).
+
+    Returns
+    -------
+    list of tskit.TreeSequence
+        Post-burn-in posterior samples (one per thinned MCMC sample), with sample
+        order preserved (VCF column ``i`` -> sample ``i``).
+
+    Raises
+    ------
+    FileNotFoundError
+        If the SINGER binary is absent at ``singer_bin``.
+    RuntimeError
+        If SINGER still exits nonzero after ``max_retries`` retries.
+
+    Notes
+    -----
+    Mirrors SINGER's ``singer_master`` retry loop: on a nonzero exit it re-invokes
+    ``-debug`` with fresh seeds.
     """
     singer_bin = singer_bin or DEFAULT_SINGER
     if not os.path.exists(singer_bin):

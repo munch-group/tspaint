@@ -1,0 +1,47 @@
+# pruning.prune_root { #tslai.pruning.prune_root }
+
+```python
+tslai.pruning.prune_root(tree, root, emissions, Q, node_time, pi, Pget=None)
+```
+
+Up/down sum-product pass for a single root of a marginal tree.
+
+See the module docstring for the two-pass scheme. Polytomy-safe (product over all
+children); skips the root branch (root enters via ``π`` only); isolated samples are
+tagged missing-info and set to the prior (CLAUDE.md §4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tree**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[Tree](`tskit.Tree`)]{.parameter-annotation}</code>
+
+:   The marginal tree.
+
+<code>[**root**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Root node to prune (a marginal tree may be a forest; prune per root).
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [array_like](`array_like`)\]]{.parameter-annotation}</code>
+
+:   Per-tip emission vectors (labelled refs and queries). Nodes absent from the dict contribute a flat likelihood.
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**node_time**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Node times, indexed by node id; branch length is ``time[parent] - time[child] > 0``.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies.
+
+<code>[**Pget**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Transition-matrix cache ``t -> expm(Q t)`` (see :func:`_transition_cache`); built fresh if omitted.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tslai.pruning.PruneResult`)]{.parameter-annotation}</code>
+
+:   Posteriors for this single root only (``gamma``, ``xi``, ``root_marginal``, ``missing_info``, ``loo``, ``loglik``).

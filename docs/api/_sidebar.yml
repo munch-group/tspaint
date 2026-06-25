@@ -4,6 +4,86 @@ website:
     - api/index.qmd
     - contents:
       - api/paint.qmd
-      section: Some section
+      - api/Painting.qmd
+      - api/fit.qmd
+      - api/FitResult.qmd
+      section: Painting local ancestry
+    - contents:
+      - api/output.posterior_table.qmd
+      - api/output.hard_segments.qmd
+      - api/output.Segment.qmd
+      - api/output.missing_info_mask.qmd
+      - api/output.posterior_at.qmd
+      section: Output & segmentation
+    - contents:
+      - api/validate.balanced_accuracy.qmd
+      - api/validate.per_base_accuracy.qmd
+      - api/validate.mean_confidence.qmd
+      - api/validate.reliability_curve.qmd
+      - api/validate.breakpoint_precision_recall.qmd
+      - api/validate.switch_density.qmd
+      - api/validate.tract_boundary_error.qmd
+      - api/validate.breakpoint_flicker.qmd
+      - api/validate.map_truth.qmd
+      section: Validation metrics
+    - contents:
+      - api/compare.tslai_paint.qmd
+      - api/compare.nearest_reference_paint.qmd
+      - api/compare.rfmix_paint.qmd
+      - api/compare.head_to_head.qmd
+      - api/compare.score_painter.qmd
+      section: Comparators (head-to-head)
+    - contents:
+      - api/io.infer_tree_sequence.qmd
+      - api/io.add_mutations.qmd
+      - api/io.singer_tree_sequences.qmd
+      - api/io.write_haploid_vcf.qmd
+      section: Input front ends
+    - contents:
+      - api/bp.bp_paint.qmd
+      - api/bp.bp_smooth.qmd
+      - api/bp.bp_smooth_track.qmd
+      - api/bp.bp_vs_deadband_experiment.qmd
+      section: Horizontal BP/EP smoother
+    - contents:
+      - api/simulate_admixture.qmd
+      - api/local_ancestry_truth.qmd
+      - api/sim.admixture_demography.qmd
+      section: Simulation (known truth)
+    - contents:
+      - api/make_generator_2state.qmd
+      - api/model.transition_matrix.qmd
+      - api/model.stationary_distribution.qmd
+      - api/model.tip_emission.qmd
+      - api/model.query_emission.qmd
+      - api/model.validate_generator.qmd
+      section: Generators & model
+    - contents:
+      - api/experiments.admixture_experiment.qmd
+      - api/experiments.age_sweep.qmd
+      - api/experiments.scaling_sweep.qmd
+      - api/experiments.fragmentation_experiment.qmd
+      - api/experiments.arg_ensemble_experiment.qmd
+      - api/experiments.singer_ensemble_experiment.qmd
+      - api/experiments.flicker_vs_true_boundaries.qmd
+      section: Experiment drivers
+    - contents:
+      - api/ensemble.merge_posterior_tables.qmd
+      - api/ensemble.MergedSegment.qmd
+      section: ARG-posterior ensemble merge
+    - contents:
+      - api/pruning.prune_tree.qmd
+      - api/pruning.prune_root.qmd
+      - api/accumulate.accumulate_sufficient_statistics.qmd
+      - api/branch_stats.branch_expected_stats.qmd
+      - api/em.build_emissions.qmd
+      - api/em.m_step_Q.qmd
+      - api/em.m_step_pi.qmd
+      - api/em.m_step_w.qmd
+      - api/ranked.ranked_tree_sequence.qmd
+      - api/diagnostics.persistence_summary.qmd
+      - api/diagnostics.node_persistence.qmd
+      - api/diagnostics.edge_span_summary.qmd
+      section: Lower-level machinery
     id: api
   - id: dummy-sidebar

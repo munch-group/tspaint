@@ -1,0 +1,27 @@
+# validate.breakpoint_flicker { #tslai.validate.breakpoint_flicker }
+
+```python
+tslai.validate.breakpoint_flicker(tracks, sample, state=0)
+```
+
+Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample id whose consecutive-segment boundaries are examined.
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry-state index whose posterior probability is compared.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Keys ``"mean_abs_diff"`` (mean ``\|P_left(state) - P_right(state)\|`` over boundaries), ``"flip_rate"`` (fraction of boundaries where the ``argmax`` state changes) and ``"n_boundaries"`` (number of segment boundaries).

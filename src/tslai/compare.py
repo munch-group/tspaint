@@ -39,12 +39,42 @@ __all__ = ["tslai_paint", "nearest_reference_paint", "rfmix_paint", "score_paint
 
 def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
                 ranked=False, estimate_pi=False):
-    """The tslai painter: EM-fit ``(Q[, π, w])`` on the references, then paint queries.
+    """Paint queries with the full tslai method (EM fit + down-pass posterior).
 
-    ``estimate_pi=False`` (default) holds π fixed (uniform) — robust to the
-    π-identifiability degeneracy that makes painting confidently wrong on sparse ARGs
-    (CLAUDE.md §6); set True to also estimate it (fine on good, long data). ``ranked=True``
-    runs the order-only variant, which is *not* recommended — it worsens the π degeneracy.
+    EM-fits ``(Q[, π, w])`` on the labelled references, then paints the queries
+    with the down-pass posterior.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence to paint (true or inferred ARG).
+    labels : dict[int, int]
+        Reference sample id -> ancestry-state index.
+    queries : iterable[int]
+        Sample ids to paint.
+    K : int, optional
+        Number of ancestry states.
+    max_iter : int, optional
+        Maximum number of EM iterations.
+    Q0 : numpy.ndarray, optional
+        Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+    soft_refs : iterable[int], optional
+        References whose credibility ``w`` is learned (the rest stay hard-clamped);
+        passed through to :func:`tslai.em.fit`.
+    ranked : bool, optional
+        If True, run the order-only variant on a dense-ranked tree sequence.
+        **Not recommended** — it worsens the π degeneracy (CLAUDE.md §6).
+    estimate_pi : bool, optional
+        If False (default), hold π fixed (uniform), which is robust to the
+        π-identifiability degeneracy that makes painting confidently wrong on
+        sparse ARGs (CLAUDE.md §6). Set True to also estimate π (fine on good,
+        long data).
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per-query posterior segment tracks (from
+        :func:`tslai.output.posterior_table`).
     """
     if ranked:
         from .ranked import ranked_tree_sequence
@@ -57,9 +87,30 @@ def tslai_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
 
 
 def nearest_reference_paint(ts, labels, queries, K=2):
-    """ARG-native baseline: per marginal tree, paint each query with the label of its
-    nearest labelled reference (minimum TMRCA). One-hot posterior; isolated spans tagged
-    missing-info."""
+    """Paint queries by their nearest labelled reference (ARG-native baseline).
+
+    Per marginal tree, paint each query with the label of its nearest labelled
+    reference (minimum TMRCA). Yields a one-hot posterior; spans where a query has
+    no labelled reference are tagged missing-info. No CTMC, no EM, no credibility —
+    the naive genealogy painter the generative model should beat.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence to paint.
+    labels : dict[int, int]
+        Reference sample id -> ancestry-state index.
+    queries : iterable[int]
+        Sample ids to paint.
+    K : int, optional
+        Number of ancestry states.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per-query segment tracks with one-hot posteriors;
+        :data:`tslai.output.MISSING_INFO` marks spans with no reachable reference.
+    """
     node_time = ts.tables.nodes.time
     ref_ids = [int(s) for s in labels]
     tracks = {int(q): [] for q in queries}
@@ -92,7 +143,30 @@ def nearest_reference_paint(ts, labels, queries, K=2):
 
 
 def score_painter(painter, ts, labels, queries, truth_states, **kwargs):
-    """Run a painter on ``ts`` and score it against the truth."""
+    """Run a painter on ``ts`` and score it against the truth.
+
+    Parameters
+    ----------
+    painter : callable
+        A painter ``f(ts, labels, queries, **kwargs) -> {sample: [Segment]}``.
+    ts : tskit.TreeSequence
+        Tree sequence to paint.
+    labels : dict[int, int]
+        Reference sample id -> ancestry-state index.
+    queries : iterable[int]
+        Sample ids to paint and score.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from
+        :func:`tslai.validate.map_truth`).
+    **kwargs
+        Forwarded to ``painter``.
+
+    Returns
+    -------
+    dict
+        Keys ``"balanced_accuracy"``, ``"accuracy"`` and ``"confidence"`` from
+        the :mod:`tslai.validate` metrics, scored over ``queries``.
+    """
     tracks = painter(ts, labels, queries, **kwargs)
     return {
         "balanced_accuracy": balanced_accuracy(tracks, truth_states, samples=queries),
@@ -104,11 +178,52 @@ def score_painter(painter, ts, labels, queries, truth_states, **kwargs):
 def head_to_head(painters, *, T_admix=300.0, n_admix=12, n_ref=12, sequence_length=1e5,
                  recombination_rate=1e-8, Ne=1000, T_split=5000.0, f_A=0.5, seed=1,
                  substrates=("true",), mutation_rate=4e-7):
-    """Score a panel of ``painters`` (dict name -> painter fn) on one admixture scenario,
-    across ARG ``substrates`` ("true", "tsinfer"). Returns ``{substrate: {name: scores}}``.
+    """Score a panel of painters on one admixture scenario across ARG substrates.
 
-    SINGER is intentionally left to :func:`tslai.experiments.singer_ensemble_experiment`
-    (it samples an ensemble rather than a single ts); external tools slot in as painters.
+    Simulates a single admixture scenario, then scores every painter on each
+    requested ARG substrate.
+
+    SINGER is intentionally left to
+    :func:`tslai.experiments.singer_ensemble_experiment` (it samples an ensemble
+    rather than a single ts); external tools slot in as painters.
+
+    Parameters
+    ----------
+    painters : dict[str, callable]
+        Mapping name -> painter ``f(ts, labels, queries) -> {sample: [Segment]}``.
+    T_admix : float, optional
+        Time (generations ago) of the admixture pulse.
+    n_admix : int, optional
+        Number of admixed individuals (queries).
+    n_ref : int, optional
+        Number of individuals sampled from each reference source.
+    sequence_length : float, optional
+        Simulated sequence length in base pairs.
+    recombination_rate : float, optional
+        Per-base, per-generation recombination rate.
+    Ne : float, optional
+        Diploid effective population size.
+    T_split : float, optional
+        Time (generations ago) at which the two sources coalesce.
+    f_A : float, optional
+        Fraction of the admixed population contributed by source A.
+    seed : int, optional
+        Random seed for the simulation (and tsinfer mutation overlay).
+    substrates : tuple[str, ...], optional
+        ARG substrates to score on; each is ``"true"`` or ``"tsinfer"``.
+    mutation_rate : float, optional
+        Mutation rate used to overlay variants before tsinfer inference.
+
+    Returns
+    -------
+    dict
+        Nested ``{substrate: {painter_name: scores}}``, where ``scores`` is the
+        dict returned by :func:`score_painter`.
+
+    Raises
+    ------
+    ValueError
+        If a substrate other than ``"true"`` or ``"tsinfer"`` is requested.
     """
     from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
     from .validate import map_truth

@@ -1,0 +1,281 @@
+---
+title: "Code organization and data flow"
+toc: true
+---
+
+This page is the map a reader or contributor needs to navigate the `tslai`
+source: how the modules fit together, what flows between them, and which
+invariants keep the result correct. It documents the *code paths*, not the
+science — the authoritative model and its justification live in
+[`CLAUDE.md`](https://github.com/munch-group/tslai/blob/main/CLAUDE.md) (referenced
+below as §N). Names here are verified against
+[`src/tslai/__init__.py`](https://github.com/munch-group/tslai/blob/main/src/tslai/__init__.py);
+links go to the [API reference](../api/index.qmd) where one exists.
+
+## The one call
+
+The whole library funnels through a single high-level entry point:
+
+```python
+import tslai
+
+ts     = tslai.simulate_admixture(n_admix=10, n_ref=10)   # or tslai.io.infer_tree_sequence(...)
+labels = {0: 0, 1: 0, 2: 1, 3: 1}                         # reference sample-node -> ancestry state
+painting = tslai.paint(ts, labels)                        # EM-fit on references, paint the queries
+
+painting.posteriors[q]            # soft per-position posterior for query q (list[Segment])
+painting.segments(deadband=0.4)   # hard ancestry tracts for downstream dating
+```
+
+[`paint`](../api/paint.qmd) ties three stages together — **fit**, **paint**,
+**segment** — and returns a [`Painting`](../api/Painting.qmd). Everything else in
+the package is either machinery underneath those stages or tooling around them
+(front ends, comparators, metrics, experiment drivers).
+
+## End-to-end data flow
+
+```{mermaid}
+flowchart LR
+  subgraph IN["Input front ends — tslai.io"]
+    TSI["io_tsinfer<br/>infer_tree_sequence"]
+    SNG["io_singer<br/>singer_tree_sequences"]
+    REL["Relate --compress<br/>(external)"]
+  end
+
+  TS["tskit.TreeSequence<br/>(cross-tree node-ID stable)"]
+  LBL["labels: dict<br/>ref node -> state"]
+
+  TSI --> TS
+  SNG --> TS
+  REL --> TS
+  TS --> PAINT
+  LBL --> PAINT
+
+  subgraph PAINT["paint() — api.py"]
+    direction TB
+
+    subgraph FIT["fit() — em.py  (blocked EM loop)"]
+      direction TB
+      EMIT["build_emissions<br/>soft clamp + query"]
+      ACC["accumulate.py<br/>edge_diffs sweep,<br/>bank per edge × span"]
+      PRU["pruning.py<br/>up/down per root<br/>(γ, ξ, loo, loglik)"]
+      VL["branch_stats.py<br/>Van Loan rewards<br/>(dwell, jumps)"]
+      MSTEP["M-step (em.py)<br/>m_step_Q / _pi / _w"]
+      EMIT --> ACC
+      ACC --> PRU
+      ACC --> VL
+      PRU --> ACC
+      VL --> ACC
+      ACC --> MSTEP
+      MSTEP -->|next iter| EMIT
+    end
+
+    POST["posterior_table — output.py<br/>down-pass γ per query<br/>-> Segment tracks"]
+    SMOOTH["bp/horizontal.py<br/>(optional smooth=True)"]
+
+    FIT -->|"Q, π, w"| POST
+    POST --> SMOOTH
+  end
+
+  PAINT --> PAINTING["Painting<br/>.posteriors (soft)"]
+  PAINTING --> SEG[".segments(deadband)<br/>output.hard_segments<br/>(hard tracts)"]
+  PAINTING --> METRICS["tslai.metrics / tslai.compare<br/>(scoring vs. truth)"]
+```
+
+### Walkthrough
+
+**0. Get a tree sequence.** `tslai` paints *any* `tskit.TreeSequence` whose nodes
+keep stable IDs across marginal trees (§5). The
+[`tslai.io`](../api/io.infer_tree_sequence.qmd) namespace gathers the supported
+ways to obtain one from genotypes; a true/simulated ARG works directly.
+
+**1. Emissions (§2.2).**
+[`build_emissions`](../api/em.build_emissions.qmd) (in `em.py`) turns the labels
+into per-sample Felsenstein emission vectors. A labelled reference tip `i` gets the
+**soft clamp** `w_i · 1[label] + (1 − w_i) · π` (anchors default to `w = 1`, a hard
+clamp); every other sample gets the **query** emission `π` (flat / root-frequency).
+This is rebuilt each EM iteration because `w` and `π` move.
+
+**2. E-step: pruning, per tree, per root (§3.1).**
+[`pruning.py`](../api/pruning.prune_tree.qmd) runs exact two-pass sum-product
+message passing on each marginal tree. The up-pass (post-order) accumulates partial
+likelihoods `L_u(s)` as a product over **all** children (polytomy-safe); the
+down-pass (pre-order) yields the posterior marginal `γ_u`, the joint parent–child
+posterior `ξ_{(p,c)}` (a `K×K` object per branch), a **leave-one-out** marginal
+`loo_u` (the outside message excluding a tip's own emission — credibility evidence
+that cannot self-confirm), and the exact tree log-likelihood. A marginal tree may
+be a **forest**, so this runs once *per root* and aggregates.
+
+**3. Edge-blocked, span-weighted sufficient statistics (§3.3 — the correctness
+core).** [`accumulate.py`](../api/accumulate.accumulate_sufficient_statistics.qmd)
+drives the genome with `zip(ts.edge_diffs(), ts.trees())`. For each marginal tree
+it prunes once, then **banks each entering edge's contribution exactly once, on
+entry, weighted by that edge's own span** `(right − left)`. A clade persisting
+across many trees is one set of wide-span edges, so summing by span partitions the
+genome without double-counting (the edge-table invariant: the intervals on which a
+node is a *child* are disjoint). Root-state mass is accumulated *per interval*, not
+per edge. The accumulators are `S_dwell`, `S_jumps`, `S_root`, per-tip `S_cred`
+(agree/disagree for the credibility update), and a span-integrated `loglik`.
+
+**4. Per-branch Van Loan rewards (§3.2).** For each entering edge,
+[`branch_stats.py`](../api/branch_stats.branch_expected_stats.qmd) computes the
+endpoint-conditioned **expected dwell time per state** and **expected jump counts
+per ordered pair** via the Van Loan block-triangular matrix exponential
+([Van Loan, 1978](https://doi.org/10.1109/TAC.1978.1101743);
+[Hobolth and Jensen, 2011](https://doi.org/10.1239/jap/1324046009)). The
+`(Q, t)`-dependent part (`branch_kernel`) is **cached by branch length** and applied
+to each edge's `ξ` cheaply (`stats_from_kernel`), so the expensive `expm` runs once
+per *distinct* branch length per iteration, not once per edge. This module is the
+designated **Phasic seam** (§12): swap the `expm` blocks for Phasic without changing
+callers.
+
+**5. M-step (closed form, §3.4).** Back in `em.py`, the pooled statistics give the
+generator [`m_step_Q`](../api/em.m_step_Q.qmd) (`q_mn = S_jumps[m,n] / S_dwell[m]`),
+the root frequencies [`m_step_pi`](../api/em.m_step_pi.qmd), and the per-tip
+credibility [`m_step_w`](../api/em.m_step_w.qmd) (MAP under a `Beta(α, β)` prior).
+[`fit`](../api/fit.qmd) iterates steps 1–5 to a log-likelihood tolerance or
+`max_iter`, returning a [`FitResult`](../api/FitResult.qmd) `(Q, π, {w_i},
+loglik_history)`. The default `estimate_pi=False` holds `π` uniform — the robust
+choice, since `π` is a prior on the arbitrary GMRCA state and estimating it from
+washing deep branches is the §6 degeneracy.
+
+**6. Deliverable: the soft painting (§2.4).** With the fitted `(Q, π, w)`, `paint`
+rebuilds emissions and calls
+[`posterior_table`](../api/output.posterior_table.qmd) (in `output.py`), which runs
+the down-pass per marginal tree and records each query's posterior as contiguous
+[`Segment`](../api/output.Segment.qmd)s covering `[0, L)`. Spans where a sample is
+an isolated root are tagged `MISSING_INFO` (the tree carries *no information* — the
+posterior is the prior `π`, distinct from a 50–50 *uncertain* call). The result is
+wrapped in a [`Painting`](../api/Painting.qmd).
+
+**7. Optional horizontal smoothing (§7).** With `paint(..., smooth=True)`,
+[`bp/horizontal.py`](../api/bp.bp_smooth_track.qmd) runs a single-pass genome-axis
+forward–backward (EP approximation) over each tip's per-tree beliefs, with a
+per-breakpoint near-identity transition (switch penalty `epsilon`). This adds the
+propagation of *uncertainty* across persist-but-reparent breakpoints that blocked EM
+structurally omits — **recommended on inferred (tsinfer / Relate) ARGs**, redundant
+on a true ARG.
+
+**8. Hard tracts.** [`Painting.segments(deadband)`](../api/Painting.qmd) collapses
+the soft posteriors into hard `(left, right, state)` tracts via
+[`hard_segments`](../api/output.hard_segments.qmd). The `deadband` suppresses
+low-confidence `argmax` flips that fragment long tracts — a precision/recall dial a
+fixed hard segmenter does not expose. This is the object a downstream tract-length /
+admixture-pulse dating analysis consumes.
+
+## Public API map
+
+The top-level package re-exports a curated surface and a set of grouped namespaces.
+The submodules are all importable directly too (e.g. `tslai.pruning`), but the table
+below is the intended entry map.
+
+### Curated top-level
+
+| Symbol | Module | Role |
+|:--|:--|:--|
+| [`paint`](../api/paint.qmd) | `api` | High-level entry: fit + paint queries → `Painting` |
+| [`Painting`](../api/Painting.qmd) | `api` | Result: `.posteriors` (soft), `.segments()`, `.posterior_at()` |
+| [`fit`](../api/fit.qmd) | `em` | The blocked-EM fit directly → `FitResult` |
+| [`FitResult`](../api/FitResult.qmd) | `em` | Fitted `(Q, π, {w_i}, loglik_history)` |
+| [`posterior_table`](../api/output.posterior_table.qmd) | `output` | Down-pass posterior → per-sample `Segment` tracks |
+| [`hard_segments`](../api/output.hard_segments.qmd) | `output` | Collapse soft track → hard `(left, right, state)` tracts |
+| [`Segment`](../api/output.Segment.qmd) | `output` | One span carrying a soft posterior + info-status |
+| `INFORMATIVE`, `MISSING_INFO` | `output` | Segment status constants (missing-info ≠ uncertain) |
+| [`make_generator_2state`](../api/make_generator_2state.qmd) | `model` | Build the 2-state CTMC generator `Q` |
+| [`simulate_admixture`](../api/simulate_admixture.qmd) | `sim` | msprime admixture sim with known truth |
+| [`local_ancestry_truth`](../api/local_ancestry_truth.qmd) | `sim` | Census-event ground-truth tracts |
+| `SOURCE_A`, `SOURCE_B`, `ADMIXED` | `sim` | Population-name constants for the sim |
+
+### Namespaces
+
+| Namespace | Backing module(s) | Key members |
+|:--|:--|:--|
+| `tslai.metrics` | `validate` | [`balanced_accuracy`](../api/validate.balanced_accuracy.qmd), [`per_base_accuracy`](../api/validate.per_base_accuracy.qmd), [`mean_confidence`](../api/validate.mean_confidence.qmd), [`reliability_curve`](../api/validate.reliability_curve.qmd), [`breakpoint_flicker`](../api/validate.breakpoint_flicker.qmd), [`tract_boundary_error`](../api/validate.tract_boundary_error.qmd), [`map_truth`](../api/validate.map_truth.qmd) |
+| `tslai.compare` | `compare`, `io_rfmix` | [`tslai_paint`](../api/compare.tslai_paint.qmd), [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd), [`rfmix_paint`](../api/compare.rfmix_paint.qmd), [`head_to_head`](../api/compare.head_to_head.qmd), [`score_painter`](../api/compare.score_painter.qmd) |
+| `tslai.io` | `io_tsinfer`, `io_singer` | [`infer_tree_sequence`](../api/io.infer_tree_sequence.qmd), [`add_mutations`](../api/io.add_mutations.qmd), [`singer_tree_sequences`](../api/io.singer_tree_sequences.qmd), [`write_haploid_vcf`](../api/io.write_haploid_vcf.qmd) |
+| `tslai.bp` | `bp.horizontal` | [`bp_paint`](../api/bp.bp_paint.qmd), [`bp_smooth`](../api/bp.bp_smooth.qmd), [`bp_smooth_track`](../api/bp.bp_smooth_track.qmd) |
+| `tslai.experiments` | `experiments` | [`admixture_experiment`](../api/experiments.admixture_experiment.qmd), [`age_sweep`](../api/experiments.age_sweep.qmd), [`scaling_sweep`](../api/experiments.scaling_sweep.qmd), [`fragmentation_experiment`](../api/experiments.fragmentation_experiment.qmd), [`arg_ensemble_experiment`](../api/experiments.arg_ensemble_experiment.qmd), [`singer_ensemble_experiment`](../api/experiments.singer_ensemble_experiment.qmd), [`flicker_vs_true_boundaries`](../api/experiments.flicker_vs_true_boundaries.qmd) |
+
+`tslai.metrics` is an alias for the `validate` module (`from . import validate as
+metrics`); `tslai.validate` works too.
+
+## Front ends (`tslai.io`)
+
+`tslai` is **front-end agnostic**: it paints any tree sequence with cross-tree
+node-ID stability (§5). The supported routes to one:
+
+| Front end | Module | What it does |
+|:--|:--|:--|
+| **tsinfer** | [`io_tsinfer`](../api/io.infer_tree_sequence.qmd) | `infer_tree_sequence` runs tsinfer on genotypes → a point-estimate ARG with native node-ID stability. `add_mutations` overlays variants on a bare ARG first. The realistic substrate where tree accuracy becomes the binding constraint (§9). |
+| **SINGER** | [`io_singer`](../api/io.singer_tree_sequences.qmd) | `singer_tree_sequences` shells out to the SINGER binary (haploid VCF → `singer -ploidy 1`, with a retry loop → tskit), returning **posterior ARG samples**. These represent genuine ARG uncertainty, so they are the input to the ensemble merge (§7.4). Sample order preserved; times in generations. |
+| **Relate `--compress`** | external (`io_relate`) | Convert outside Python with `Convert --mode ConvertToTreeSequence --compress`, then `tskit.load`. `--compress` is **load-bearing** — it unifies a persistent clade into one long-span node ID (§5), the invariant the edge-blocking depends on. |
+
+RFMix is **not** a front end — it is genotype-native and appears as a *comparator*
+(below).
+
+## Comparators (`tslai.compare`)
+
+A **painter** is any `f(ts, labels, queries) -> {sample: [Segment]}`. The harness
+scores every painter against the same simulated truth on equal footing, so `tslai`,
+simple baselines, and external tools compare directly.
+
+| Painter | Module | What it is |
+|:--|:--|:--|
+| [`tslai_paint`](../api/compare.tslai_paint.qmd) | `compare` | The full method (EM fit + down-pass posterior) in painter form. |
+| [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd) | `compare` | ARG-native **baseline**: paint each query by its nearest labelled reference (smallest TMRCA) per tree. No CTMC, no EM — the genealogy painter the generative model should beat. |
+| [`rfmix_paint`](../api/compare.rfmix_paint.qmd) | `io_rfmix` | The field-standard **segment incumbent** (RFMix v2): writes phased VCFs, shells out to `rfmix` (isolated `compare` pixi env), parses the `.fb.tsv` posteriors back to `Segment` tracks. |
+| [`head_to_head`](../api/compare.head_to_head.qmd) | `compare` | Driver: simulate one admixture scenario, score a panel of painters across ARG substrates (`"true"`, `"tsinfer"`). |
+| [`score_painter`](../api/compare.score_painter.qmd) | `compare` | Run one painter and return balanced accuracy, accuracy, and mean confidence. |
+
+To add a comparator (MOSAIC/FLARE, ARGMix, AncestralPaths, …), implement the same
+painter signature — shell out to the tool over a VCF, parse its calls into
+`Segment`s — and pass it to `head_to_head`; it is then scored like the rest.
+
+## Invariants that keep it correct
+
+These come straight from the tskit data model and the method's design (§4, §12). A
+naive traversal violates them and **silently** corrupts the sufficient statistics or
+the painting — they are the load-bearing rules, not optional polish.
+
+| Invariant | Where enforced | Why |
+|:--|:--|:--|
+| **Accumulate per edge, span-weighted, banked once on entry** | `accumulate.py` (`edges_in` loop, `w_edge = e.right − e.left`) | A persistent clade is one wide-span edge set; summing by span partitions the genome without double-counting and is the channel for genome-scale autocorrelation. Never sum per-(tree × branch). |
+| **Prune per root** | `pruning.prune_tree` (`for r in tree.roots`) | A marginal tree may be a **forest**; each root carries its own `π`. There may be no single root. |
+| **Skip root branches** | `accumulate.py` / `pruning.py` (root has no parent edge); `branch_kernel` returns `None` for `t ≤ 0` | Root branch length is 0 by definition in tskit; root state enters via `π` (`S_root`) only, never via `Q` on a (nonexistent) root edge. |
+| **Polytomy-safe traversal** | `pruning.py` (`tree.children(u)` / sib pointers; product over all children) | Internal nodes with >2 children are real and first-class; never assume binarity. |
+| **Isolated span = missing-info ≠ uncertain** | `pruning.py` (tags `missing_info`), `output.py` (`MISSING_INFO` status, `missing_info_mask`) | An isolated sample's posterior falls back to the prior and is tagged distinctly; conflating "no information" with "50–50" is a real interpretive error for introgression mapping. |
+| **Keep a hard-clamped anchor set** | `em.fit` (raises `ValueError` if `soft_refs` covers every labelled tip) | Never let the whole panel float — that reintroduces unsupervised degeneracy (label switching, Q/`w` trade-off, collapse). |
+| **Input must have cross-tree node-ID stability** | front ends (`tslai.io`); diagnostics (`diagnostics.node_persistence`) | The edge-blocking and horizontal coupling depend on a persistent clade being *one* node ID across trees. Delivered natively by msprime/tsinfer/SINGER, or by Relate `--compress`. Verify with the persistence histogram before trusting results. |
+| **Leave-one-out for credibility** | `pruning.py` (`loo`), `accumulate.py` (`S_cred`) | Judge a tip's label against what the *rest* of the tree says, not its own self-confirming posterior. |
+
+## Module reference
+
+| Module | Responsibility |
+|:--|:--|
+| `api.py` | High-level [`paint`](../api/paint.qmd) pipeline and the [`Painting`](../api/Painting.qmd) result. The one call most users need. |
+| `model.py` | Ancestry CTMC: generator `Q`, root frequencies `π`, transition matrices, tip/query emissions, the soft-credibility noise model. Generator-agnostic; touches no tskit. |
+| `pruning.py` | Felsenstein two-pass sum-product per marginal tree, **per root**, polytomy-safe. Produces `γ`, `ξ`, leave-one-out marginals, missing-info tags, exact log-likelihood. The E-step kernel. |
+| `branch_stats.py` | Per-branch endpoint-conditioned expected dwell times and jump counts via the Van Loan block exponential. Length-cached. The designated **Phasic seam**. |
+| `accumulate.py` | The correctness core: `edge_diffs` sweep, edge-blocked **span-weighted** sufficient statistics, banked once per edge. |
+| `em.py` | EM orchestration ([`fit`](../api/fit.qmd)) + the closed-form M-step (`m_step_Q/_pi/_w`) + `build_emissions`. |
+| `output.py` | The deliverable: per-haplotype, per-position posterior as `Segment` tracks; `hard_segments` collapse; `missing_info_mask`; `posterior_at`. |
+| `bp/horizontal.py` | Deferred §7 horizontal coupling: single-pass genome-axis forward–backward (EP) over per-tree beliefs; `bp_paint`, `bp_smooth`, `bp_smooth_track`. Helps on inferred ARGs. |
+| `ensemble.py` | Marginalise ARG uncertainty: average per-position paintings across a posterior ensemble (e.g. SINGER) → `MergedSegment`s with a spread band. |
+| `io_tsinfer.py` | tsinfer front end: `add_mutations`, `infer_tree_sequence`. |
+| `io_singer.py` | SINGER front end: haploid VCF → posterior ARG samples; `write_haploid_vcf`, `singer_tree_sequences`. |
+| `io_rfmix.py` | RFMix comparator (genotype-native): VCF/map writers, `run_rfmix`, `.fb.tsv`/`.msp.tsv` parsers, `rfmix_paint`. |
+| `io_relate.py` | Relate `--compress` → tskit wrappers/checks (external C++ toolchain). |
+| `io.py` | The `tslai.io` namespace — gathers the front ends. |
+| `compare.py` | Head-to-head harness: painters (`tslai_paint`, `nearest_reference_paint`, `rfmix_paint`), `score_painter`, `head_to_head`. |
+| `validate.py` | Metrics (exposed as `tslai.metrics`): accuracy, calibration, flicker, tract-boundary error, fragmentation, `map_truth`. |
+| `sim.py` | msprime admixture sims with **census-event** ground truth; `simulate_admixture`, `local_ancestry_truth`, `admixture_demography`. |
+| `ranked.py` | Order-only (dense-ranked) ablation (`ranked_tree_sequence`). **Measured not beneficial** (§6); kept runnable behind `tslai_paint(..., ranked=True)`. |
+| `diagnostics.py` | Front-end-agnostic premise checks: node-persistence histogram and edge-span summary — the **go/no-go** on the central premise (§5.1). |
+| `experiments.py` | End-to-end benchmark drivers (`tslai.experiments`): sim → fit → paint → score, age/scaling sweeps, ensemble and SINGER drivers, the flicker metric. |
+
+## See also
+
+- [API reference](../api/index.qmd) — full signatures and parameter docs.
+- [`CLAUDE.md`](https://github.com/munch-group/tslai/blob/main/CLAUDE.md) — the
+  authoritative spec (model, math, tree-sequence accounting, validation plan), with
+  the §N anchors referenced throughout this page.

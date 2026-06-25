@@ -1,0 +1,36 @@
+# compare.nearest_reference_paint { #tslai.compare.nearest_reference_paint }
+
+```python
+tslai.compare.nearest_reference_paint(ts, labels, queries, K=2)
+```
+
+Paint queries by their nearest labelled reference (ARG-native baseline).
+
+Per marginal tree, paint each query with the label of its nearest labelled
+reference (minimum TMRCA). Yields a one-hot posterior; spans where a query has
+no labelled reference are tagged missing-info. No CTMC, no EM, no credibility —
+the naive genealogy painter the generative model should beat.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to paint.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> ancestry-state index.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Sample ids to paint.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per-query segment tracks with one-hot posteriors; :data:`tslai.output.MISSING_INFO` marks spans with no reachable reference.

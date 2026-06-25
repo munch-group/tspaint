@@ -1,0 +1,37 @@
+# em.m_step_w { #tslai.em.m_step_w }
+
+```python
+tslai.em.m_step_w(agree, disagree, alpha, beta)
+```
+
+Per-tip credibility MAP under a ``Beta(alpha, beta)`` prior (CLAUDE.md §3.4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**agree**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Expected (span-weighted) mass where the tip posterior agrees with its label.
+
+<code>[**disagree**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Expected (span-weighted) mass where it disagrees.
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Beta-prior hyperparameters (default mass near 1).
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Beta-prior hyperparameters (default mass near 1).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   The MAP credibility ``w``.
+
+## Notes {.doc-section .doc-section-notes}
+
+::
+
+    w = (alpha - 1 + agree) / (alpha + beta - 2 + agree + disagree)

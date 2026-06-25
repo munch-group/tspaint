@@ -1,0 +1,35 @@
+# em.build_emissions { #tslai.em.build_emissions }
+
+```python
+tslai.em.build_emissions(ts, labels, w, pi)
+```
+
+Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2).
+
+Labelled tips get the soft-clamp ``w_i * 1[label] + (1 - w_i) * pi`` (anchors
+default to ``w = 1``); every other sample gets the query (flat / root-freq)
+emission.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Provides the sample-node ids.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample-node id → ancestry-state index.
+
+<code>[**w**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Per-tip credibility; tips absent default to ``1.0`` (hard clamp).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies ``π`` used by the soft-clamp and query emissions.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+
+:   Per sample-node id, the ``(K,)`` emission vector.

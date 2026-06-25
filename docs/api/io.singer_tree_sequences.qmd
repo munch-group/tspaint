@@ -1,0 +1,101 @@
+# io.singer_tree_sequences { #tslai.io.singer_tree_sequences }
+
+```python
+tslai.io.singer_tree_sequences(
+    ts,
+    *,
+    Ne,
+    mutation_rate,
+    recombination_rate,
+    n_samples=20,
+    thin=10,
+    burn_in=5,
+    seed=42,
+    ploidy=1,
+    workdir=None,
+    singer_bin=None,
+    with_mutations=True,
+    max_retries=50,
+)
+```
+
+Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
+
+SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
+samples are the ideal input to :func:`tslai.ensemble.merge_posterior_tables`,
+since they represent genuine ARG uncertainty (§7.4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence carrying mutations; written out as a haploid VCF for SINGER.
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Effective population size passed to SINGER (``-Ne``).
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-base mutation rate (``-m``).
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-base recombination rate (``-r``).
+
+<code>[**n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   Number of MCMC samples SINGER draws (``-n``, default 20).
+
+<code>[**thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   MCMC thinning interval (``-thin``, default 10).
+
+<code>[**burn_in**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [5]{.parameter-default}</code>
+
+:   Number of leading samples to discard as burn-in (default 5).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+
+:   Base random seed; retries derive fresh seeds from it (default 42).
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Ploidy passed to SINGER (``-ploidy``, default 1).
+
+<code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Working directory for VCF and ARG text tables (default: a fresh tempdir).
+
+<code>[**singer_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to the SINGER binary (default: ``DEFAULT_SINGER`` / ``TSLAI_SINGER``).
+
+<code>[**with_mutations**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Whether to read mutations into the returned tree sequences (default True).
+
+<code>[**max_retries**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
+
+:   Maximum ``-debug`` re-invocations with fresh seeds on failure (default 50).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [list of tskit.TreeSequence]{.parameter-annotation}</code>
+
+:   Post-burn-in posterior samples (one per thinned MCMC sample), with sample order preserved (VCF column ``i`` -> sample ``i``).
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[FileNotFoundError](`FileNotFoundError`)]{.parameter-annotation}</code>
+
+:   If the SINGER binary is absent at ``singer_bin``.
+
+<code>[:]{.parameter-annotation-sep} [[RuntimeError](`RuntimeError`)]{.parameter-annotation}</code>
+
+:   If SINGER still exits nonzero after ``max_retries`` retries.
+
+## Notes {.doc-section .doc-section-notes}
+
+Mirrors SINGER's ``singer_master`` retry loop: on a nonzero exit it re-invokes
+``-debug`` with fresh seeds.

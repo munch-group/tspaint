@@ -1,0 +1,96 @@
+# Painting { #tslai.Painting }
+
+```python
+tslai.Painting(
+    posteriors,
+    Q,
+    pi,
+    w,
+    loglik_history,
+    queries,
+    default_deadband=0.0,
+)
+```
+
+Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted model.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:`~tslai.output.Segment`\ s covering ``[0, L)`` (the soft, calibrated deliverable).
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   The fitted generator.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   The fitted root frequencies.
+
+<code>[**w**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   The learned per-tip credibility.
+
+<code>[**loglik_history**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   Observed-data log-likelihood per EM step (non-decreasing).
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   The painted sample-node ids.
+
+<code>[**default_deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Default dead-band passed to :meth:`segments`. Default ``0.0``.
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [posterior_at](#tslai.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [segments](#tslai.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
+
+### posterior_at { #tslai.Painting.posterior_at }
+
+```python
+tslai.Painting.posterior_at(sample, position)
+```
+
+Posterior vector for ``sample`` at a genomic ``position``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample-node id to look up.
+
+<code>[**position**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Genomic position.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
+
+:   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
+
+### segments { #tslai.Painting.segments }
+
+```python
+tslai.Painting.segments(deadband=None)
+```
+
+Hard ancestry segments for downstream tract-length / dating analysis.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Confidence dead-band suppressing low-confidence flips that fragment long tracts. Defaults to :attr:`default_deadband`. See :func:`tslai.output.hard_segments`.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per query, hard ``(left, right, state)`` segments.

@@ -32,6 +32,10 @@ interlinks:
       url: https://docs.scipy.org/doc/scipy/
     statsmodels:
       url: https://www.statsmodels.org/stable/
+    tskit:
+      url: https://tskit.dev/tskit/docs/stable/
+    msprime:
+      url: https://tskit.dev/msprime/docs/stable/
     # quartodoc-test:
     #   url: https://machow.github.io/quartodoc
     #   inv: objects-test.txt
@@ -41,23 +45,35 @@ website:
   page-navigation: true
   navbar:
     left:
+      - href: pages/overview.qmd
+        text: Overview
+      - href: pages/results.qmd
+        text: Results
       - href: api/
         text: API reference
-      # - href: gallery/
-      #   text: Gallery
     right:
       - icon: github
         href: https://github.com/munch-group/tslai/
   sidebar:
     - id: pages
-      title: Get Started
+      title: Guide
       style: floating
       align: left
       contents:
-        - pages/overview.ipynb
-        - section: "Examples"
+        - pages/overview.qmd
+        - section: "Theory"
           contents:
-            - pages/example.ipynb                   
+            - pages/model.qmd
+            - pages/inference.qmd
+            - pages/assumptions.qmd
+            - pages/code_paths.qmd
+        - section: "Notebooks"
+          contents:
+            - notebooks/painting.ipynb
+            - notebooks/calibration.ipynb
+            - notebooks/fragmentation.ipynb
+            - notebooks/bp_smoother.ipynb
+        - pages/results.qmd
 
 lightbox: true
 
@@ -89,9 +105,120 @@ quartodoc:
   css: "api/_styles-quartodoc.css"
 
   sections:
-    - title: Some section
-      package: tslai
+    - title: Painting local ancestry
       desc: |
-        Some description...
+        The high-level entry point: fit the ancestry CTMC on the reference tips and paint the
+        query haplotypes. `paint` returns a `Painting`; `fit` exposes the EM directly.
       contents:
         - paint
+        - Painting
+        - fit
+        - FitResult
+    - title: Output & segmentation
+      desc: |
+        The soft per-haplotype posterior (`Segment` tracks) and its collapse into hard ancestry
+        tracts for downstream tract-length / admixture-dating analysis.
+      contents:
+        - output.posterior_table
+        - output.hard_segments
+        - output.Segment
+        - output.missing_info_mask
+        - output.posterior_at
+    - title: Validation metrics
+      desc: |
+        Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
+        experiments (the `tslai.metrics` namespace).
+      contents:
+        - validate.balanced_accuracy
+        - validate.per_base_accuracy
+        - validate.mean_confidence
+        - validate.reliability_curve
+        - validate.breakpoint_precision_recall
+        - validate.switch_density
+        - validate.tract_boundary_error
+        - validate.breakpoint_flicker
+        - validate.map_truth
+    - title: Comparators (head-to-head)
+      desc: |
+        Painters scored on equal footing by a uniform harness — the full method, a runnable
+        ARG-native baseline, and the RFMix incumbent (the `tslai.compare` namespace).
+      contents:
+        - compare.tslai_paint
+        - compare.nearest_reference_paint
+        - compare.rfmix_paint
+        - compare.head_to_head
+        - compare.score_painter
+    - title: Input front ends
+      desc: |
+        Obtain a tslai-ready tree sequence from genotypes (the `tslai.io` namespace).
+      contents:
+        - io.infer_tree_sequence
+        - io.add_mutations
+        - io.singer_tree_sequences
+        - io.write_haploid_vcf
+    - title: Horizontal BP/EP smoother
+      desc: |
+        The §7 horizontal coupling — a genome-axis forward-backward over each tip's per-tree
+        beliefs that suppresses spurious switches on inferred ARGs (the `tslai.bp` namespace;
+        also `paint(smooth=True)`).
+      contents:
+        - bp.bp_paint
+        - bp.bp_smooth
+        - bp.bp_smooth_track
+        - bp.bp_vs_deadband_experiment
+    - title: Simulation (known truth)
+      desc: |
+        msprime admixture scenarios with census-event ground truth — the primary validation
+        track and the source of examples.
+      contents:
+        - simulate_admixture
+        - local_ancestry_truth
+        - sim.admixture_demography
+    - title: Generators & model
+      desc: |
+        The ancestry CTMC generator, transition matrices, stationary distribution, and tip
+        emission model.
+      contents:
+        - make_generator_2state
+        - model.transition_matrix
+        - model.stationary_distribution
+        - model.tip_emission
+        - model.query_emission
+        - model.validate_generator
+    - title: Experiment drivers
+      desc: |
+        End-to-end drivers used to produce the validation results (the `tslai.experiments`
+        namespace).
+      contents:
+        - experiments.admixture_experiment
+        - experiments.age_sweep
+        - experiments.scaling_sweep
+        - experiments.fragmentation_experiment
+        - experiments.arg_ensemble_experiment
+        - experiments.singer_ensemble_experiment
+        - experiments.flicker_vs_true_boundaries
+    - title: ARG-posterior ensemble merge
+      desc: |
+        Marginalise ARG uncertainty by averaging per-position paintings across a posterior
+        ensemble (e.g. SINGER samples).
+      contents:
+        - ensemble.merge_posterior_tables
+        - ensemble.MergedSegment
+    - title: Lower-level machinery
+      desc: |
+        The pieces underneath the EM: per-root pruning, edge-blocked sufficient statistics,
+        per-branch Van Loan reward integrals, the closed-form M-step, and persistence
+        diagnostics.
+      contents:
+        - pruning.prune_tree
+        - pruning.prune_root
+        - accumulate.accumulate_sufficient_statistics
+        - branch_stats.branch_expected_stats
+        - em.build_emissions
+        - em.m_step_Q
+        - em.m_step_pi
+        - em.m_step_w
+        - ranked.ranked_tree_sequence
+        - diagnostics.persistence_summary
+        - diagnostics.node_persistence
+        - diagnostics.edge_span_summary

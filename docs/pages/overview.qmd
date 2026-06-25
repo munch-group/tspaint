@@ -1,0 +1,69 @@
+---
+title: Overview
+aliases:
+  - ../index.html
+---
+
+**tslai** infers soft, calibrated **local ancestry** along individual haplotypes from an
+inferred **tree sequence** (Relate → tskit, or tsinfer/SINGER). Ancestry is modelled as a
+discrete character evolving up the branches of each marginal tree under a continuous-time
+Markov chain (a CTMC "mugration" model); reference haplotypes label tips through a soft noise
+model with **learned per-tip credibility**; and the parameters are fit by **EM** whose
+sufficient statistics are accumulated **per tree-sequence edge, span-weighted** — so a clade
+persisting across many trees is counted once. The output is, for every haplotype at every
+position, a calibrated posterior `P(ancestry)` — soft, not a hard call.
+
+See [the model](model.qmd) for the generative construction, [inference](inference.qmd) for the
+EM math, and [assumptions](assumptions.qmd) for the sharp edges.
+
+## Install
+
+```bash
+pixi install          # dev environment (tskit, msprime, numpy, scipy, …)
+pixi run test         # run the test suite
+```
+
+## Quickstart
+
+```python
+import tslai
+
+# 1. Get a tree sequence — simulate admixture with known truth,
+#    or build one from genotypes: tslai.io.infer_tree_sequence / singer_tree_sequences.
+ts = tslai.simulate_admixture(n_admix=10, n_ref=10, sequence_length=2e6,
+                              T_admix=100, T_split=5000, Ne=1000, random_seed=1)
+
+# 2. Label the reference haplotypes (sample-node id -> ancestry state); paint the rest.
+labels = {...}                              # source-A tips -> 0, source-B tips -> 1
+painting = tslai.paint(ts, labels)          # EM-fit on references, paint the queries
+
+painting.posteriors[q]                      # soft per-position posterior (Segments)
+painting.segments(deadband=0.4)             # hard ancestry tracts (for dating)
+```
+
+On an inferred (tsinfer / Relate) ARG, add `smooth=True` to suppress tree-inference-induced
+spurious switches with the horizontal BP smoother.
+
+## The deliverable
+
+For each query haplotype, the soft posterior over ancestry at every position (red = ancestry
+A, blue = B, white where the local tree cannot tell), with the true ancestry shown beneath
+each row:
+
+{{< embed ../notebooks/painting.ipynb#fig-painting >}}
+
+Collapsed to hard ancestry tracts with a confidence deadband (for tract-length / admixture
+dating):
+
+{{< embed ../notebooks/painting.ipynb#fig-painting-hard >}}
+
+## Where to go next
+
+| Page | What |
+|---|---|
+| [The model](model.qmd) | Ancestry CTMC, soft emission + credibility, the two Markov structures |
+| [Inference](inference.qmd) | Felsenstein pruning, Van Loan rewards, edge-blocked EM |
+| [Assumptions & limitations](assumptions.qmd) | Identifiability, π-degeneracy, calibration, mugration |
+| [Code paths](code_paths.qmd) | Module map and the `paint` pipeline |
+| [Results](results.qmd) | Accuracy, calibration, fragmentation, head-to-head, the BP smoother |
+| [API reference](../api/) | Every public function and class |

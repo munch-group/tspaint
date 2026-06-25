@@ -1,0 +1,46 @@
+# compare.score_painter { #tslai.compare.score_painter }
+
+```python
+tslai.compare.score_painter(
+    painter,
+    ts,
+    labels,
+    queries,
+    truth_states,
+    **kwargs,
+)
+```
+
+Run a painter on ``ts`` and score it against the truth.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**painter**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   A painter ``f(ts, labels, queries, **kwargs) -> {sample: [Segment]}``.
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to paint.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> ancestry-state index.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Sample ids to paint and score.
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`tslai.validate.map_truth`).
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded to ``painter``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Keys ``"balanced_accuracy"``, ``"accuracy"`` and ``"confidence"`` from the :mod:`tslai.validate` metrics, scored over ``queries``.

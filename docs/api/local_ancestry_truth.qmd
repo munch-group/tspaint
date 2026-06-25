@@ -1,0 +1,26 @@
+# local_ancestry_truth { #tslai.local_ancestry_truth }
+
+```python
+tslai.local_ancestry_truth(ts)
+```
+
+True local ancestry per sample as source-population tracts.
+
+For each sample and each marginal tree, climb to the sample's census ancestor
+and read its population. Consecutive trees with the same source are merged.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence from :func:`simulate_admixture` (must carry census nodes).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**tracts**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Sample node id -> list of ``(left, right, population_id)`` covering ``[0, sequence_length)`` with no gaps or overlaps. ``population_id == -1`` marks a sample with no census ancestor (should not occur in this scenario).
+
+<code>[**pop_name**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [str](`str`)\]]{.parameter-annotation}</code>
+
+:   Population id -> name, for readability.

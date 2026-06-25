@@ -31,6 +31,24 @@ __all__ = ["MergedSegment", "merge_posterior_tables"]
 
 @dataclass
 class MergedSegment:
+    """One span of an ensemble-merged painting.
+
+    Duck-compatible with :class:`tslai.output.Segment` (shares ``left``/``right``/
+    ``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.
+
+    Attributes
+    ----------
+    left, right : float
+        Half-open genome interval ``[left, right)`` of this span.
+    posterior : numpy.ndarray, shape (K,)
+        Mean posterior over the ensemble (the painting).
+    status : str
+        ``INFORMATIVE`` if any member is informative here, else ``MISSING_INFO``.
+    posterior_std : numpy.ndarray, shape (K,)
+        Std over the ensemble — the ARG-uncertainty band.
+    n_informative : int
+        How many ensemble members were informative on this span.
+    """
     left: float
     right: float
     posterior: np.ndarray       # (K,) mean posterior over the ensemble (the painting)
@@ -40,11 +58,20 @@ class MergedSegment:
 
 
 def _refine_tracks(track_list):
-    """Yield ``(lo, hi, [Segment_per_member])`` over the common breakpoint refinement
-    of M piecewise-constant tracks that each cover the same ``[0, L)`` contiguously.
+    """Iterate the common breakpoint refinement of M piecewise-constant tracks.
 
     Generalises the 2-way :func:`tslai.validate._walk_overlap` to M tracks: advance
     every member whose current segment ends at the current right breakpoint.
+
+    Parameters
+    ----------
+    track_list : list[list[Segment]]
+        M tracks that each cover the same ``[0, L)`` contiguously.
+
+    Yields
+    ------
+    tuple
+        ``(lo, hi, [Segment_per_member])`` for each refined span ``[lo, hi)``.
     """
     m = len(track_list)
     ptr = [0] * m

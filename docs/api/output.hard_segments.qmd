@@ -1,0 +1,36 @@
+# output.hard_segments { #tslai.output.hard_segments }
+
+```python
+tslai.output.hard_segments(track, deadband=0.0)
+```
+
+Collapse a soft posterior ``track`` into hard ancestry segments.
+
+Produces ``[(left, right, state), ...]`` — the object a downstream tract-length /
+admixture-pulse dating analysis consumes.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+
+:   Soft posterior segments for one sample (e.g. from :func:`posterior_table`).
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0]{.parameter-default}</code>
+
+:   Confidence dead-band on the top-two posterior **margin** ``max(P) - 2nd-max(P)``. A switch to a new ``argmax`` state is accepted only where ``margin >= deadband``; otherwise the previous state is carried forward. Default ``0.0`` (naive ``argmax``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]]{.parameter-annotation}</code>
+
+:   Hard ``(left, right, state)`` ancestry segments.
+
+## Notes {.doc-section .doc-section-notes}
+
+A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment
+long tracts under naive ``argmax`` (``deadband=0``). Because the posterior is
+calibrated, a modest dead-band (≈0.3–0.5) recovers the true switch density and
+tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9).
+This is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF)
+does not expose. ``MISSING_INFO`` spans carry the previous state forward; the first
+interval takes its ``argmax``.

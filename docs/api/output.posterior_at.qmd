@@ -1,0 +1,27 @@
+# output.posterior_at { #tslai.output.posterior_at }
+
+```python
+tslai.output.posterior_at(tracks, sample, position)
+```
+
+Posterior vector for ``sample`` at a genomic ``position``.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per-sample segment tracks (e.g. from :func:`posterior_table`).
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample-node id to look up.
+
+<code>[**position**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Genomic position.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
+
+:   The ``(K,)`` posterior on the segment covering ``position``, or ``None`` if no segment covers it.

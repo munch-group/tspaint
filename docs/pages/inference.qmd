@@ -1,0 +1,414 @@
+---
+title: "Inference: structured (blocked) EM"
+---
+
+`tslai` fits the ancestry CTMC to an inferred tree sequence by
+**expectation–maximization (EM)**. The E-step is *exact* Felsenstein pruning,
+run per marginal tree and per root; the M-step is closed-form CTMC maximum
+likelihood from expected dwell times and jump counts. The distinguishing piece
+sits between them: sufficient statistics are accumulated **per tree-sequence
+edge, span-weighted, and banked once** — so a clade that persists across many
+marginal trees is counted a single time. This page documents that machinery
+rigorously.
+
+The two latent Markov structures the model couples are kept separate by
+construction:
+
+- **Vertical** — ancestry evolving *up* a marginal tree under generator $Q$,
+  handled by Felsenstein pruning ([Felsenstein, 1981](https://doi.org/10.1007/BF01734359))
+  and the discrete-trait "mugration" construction
+  ([Lemey et al., 2009](https://doi.org/10.1371/journal.pcbi.1000520)).
+- **Horizontal** — ancestry tracts *along* the genome, carried entirely by
+  **edge span** (recombination breakpoints), not by a separate switch-rate
+  parameter. Between breakpoints the genealogical context is identical, so there
+  is nothing to switch against.
+
+This separation is what makes $Q$ estimate *only* the ancestral-migration
+timescale, while tract switching is handled by topology — a more specific and
+more falsifiable model than a generic $\rho$-HMM.
+
+---
+
+## E-step: Felsenstein pruning per tree, per root
+
+For each marginal tree the E-step is exact two-pass sum–product message passing
+([`pruning.prune_root`](../api/pruning.prune_root.qmd),
+[`pruning.prune_tree`](../api/pruning.prune_tree.qmd)). A marginal tree may be a
+**forest** of several roots; pruning runs independently per root, each with its
+own root-frequency prior $\pi$.
+
+### Up-pass: partial likelihoods
+
+Post-order (tips → root), each node $u$ accumulates a partial likelihood vector
+$L_u(s)$ — the probability of the data in $u$'s subtree given that $u$ is in
+state $s$:
+
+$$
+L_u(s) \;=\; e_u(s)\;\prod_{c \,\in\, \mathrm{children}(u)}
+            \;\Bigl[\, \textstyle\sum_{s'} P(t_{u\to c})[s,\,s']\; L_c(s') \,\Bigr]
+$${#eq-uppass}
+
+where the per-branch transition matrix is $P(t) = \exp(Q\,t)$, indexed
+`[parent_state, child_state]`, and $t_{u\to c} = \text{time}[u] - \text{time}[c] > 0$.
+
+Three points in @eq-uppass are load-bearing:
+
+- **Polytomy-safe.** The product runs over *all* children, reached via the
+  quintuply-linked `left_child` / `right_sib` pointers (`tree.children(u)`).
+  Nothing assumes binarity; a soft polytomy is integrated under
+  conditional-independence-of-children-given-parent — an ordinary product, each
+  child with its own branch length $t$.
+- **Tip / internal-sample emission.** The factor $e_u(s)$ is the node's own
+  emission. For a labelled reference tip it is the soft-clamp noise model
+  $e_u(s) = w_u\,\mathbb{1}[s = \ell_u] + (1-w_u)\,\pi(s)$; for a query tip it is
+  flat ($\pi$). Because $e_u$ multiplies in for *every* node, an internal sample
+  is handled correctly too — not only leaves.
+- **Numerical scaling.** Each $L_u$ is normalized to sum to 1 and the discarded
+  log-scale is accumulated, so the returned tree log-likelihood is exact (it
+  monitors EM convergence and is a strong correctness check). Posteriors are
+  scale-invariant.
+
+The root belief is $b_r(s) = \pi(s)\,L_r(s)$; its normalizer gives that root's
+contribution to the log-likelihood.
+
+### Down-pass: marginals and joint endpoint posteriors
+
+Pre-order (root → tips) propagates an **outside** message $U_p(s)$ (the
+evidence reaching $p$ from everything *except* $p$'s own subtree, seeded at the
+root by $\pi$). The node-marginal posterior is the inside × outside product:
+
+$$
+\gamma_u(s) \;\propto\; L_u(s)\; U_u(s),
+\qquad
+\textstyle\sum_s \gamma_u(s) = 1
+$${#eq-downpass}
+
+For every parent–child branch we also need the **joint** posterior over its two
+endpoint states — the $K \times K$ object the M-step consumes:
+
+$$
+\xi_{(p,c)}(s_p,\,s_c) \;\propto\;
+   \mathrm{cav}_{p\setminus c}(s_p)\; P(t_{p\to c})[s_p,\,s_c]\; L_c(s_c)
+$${#eq-xi}
+
+where $\mathrm{cav}_{p\setminus c}$ is the **cavity** message into $p$ — the
+outside message $U_p$, times $p$'s own emission, times the up-messages from $c$'s
+*siblings*, but **excluding** $c$'s own message. The implementation forms these
+cavities with left/right **prefix–suffix products** of the child messages, so it
+never divides messages (division is numerically unsafe when a message entry is
+near zero). Both $\gamma$ and $\xi$ are normalized.
+
+::: {.callout-note}
+## Leave-one-out marginal for credibility
+The down-pass also returns, per node, a **leave-one-out** marginal: the outside
+message *excluding the node's own emission*. This is what the credibility update
+(§ M-step) judges a reference label against — "what does the *rest* of the tree
+say about this tip?" — so a label can never confirm itself. See
+[`pruning.PruneResult`](../api/pruning.prune_root.qmd).
+:::
+
+### Static sketch
+
+```python
+# up-pass (post-order): partial likelihoods, product over ALL children
+for u in tree.nodes(root, order="postorder"):
+    L = emissions.get(u, ones(K))          # e_u(s): soft-clamp / query / flat
+    for c in tree.children(u):              # polytomy-safe via sib pointers
+        L = L * msg[c]                       # msg[c] = P(t_c) @ L_c
+    L = normalize(L)                         # bank log-scale for exact loglik
+    if tree.parent(u) != tskit.NULL:         # skip the root branch
+        t = node_time[parent] - node_time[u]
+        msg[u] = expm(Q * t) @ L
+
+# down-pass (pre-order): gamma, xi via leave-one-out (cavity) products
+for p in tree.nodes(root, order="preorder"):
+    base = U[p] * emissions.get(p, ones(K))  # outside * p's OWN emission
+    # prefix/suffix products of child messages -> cavity for each child (no division)
+    for c in tree.children(p):
+        cavity = base * (siblings' messages)
+        Pc     = expm(Q * (node_time[p] - node_time[c]))
+        U[c]    = normalize(cavity @ Pc)      # outside message into child
+        gamma[c] = normalize(U[c] * L[c])     # @eq-downpass
+        xi[(p,c)] = normalize((cavity[:,None] * Pc) * L[c][None,:])  # @eq-xi
+```
+
+---
+
+## Per-branch expected sufficient statistics (Van Loan)
+
+The M-step needs, for each branch and conditioned on its endpoint posterior
+$\xi$, the **expected time spent in each state** and the **expected number of
+jumps** of each ordered type. These are the endpoint-conditioned CTMC summary
+statistics of [Hobolth and Jensen (2011)](https://doi.org/10.1239/jap/1324046009),
+computed via the **Van Loan block-triangular matrix exponential**
+([Van Loan, 1978](https://doi.org/10.1109/TAC.1978.1101743)).
+
+For a $K \times K$ reward indicator $E$, the integral
+
+$$
+\int_0^t \exp(Q\tau)\; E\; \exp\!\bigl(Q(t-\tau)\bigr)\, d\tau
+$$
+
+is recovered as the **top-right block** of a single $2K \times 2K$ matrix
+exponential:
+
+$$
+\exp\!\left(
+  \begin{bmatrix} Q & E \\ 0 & Q \end{bmatrix} t
+\right)
+=
+\begin{bmatrix}
+  P(t) & \displaystyle\int_0^t \exp(Q\tau)\,E\,\exp\!\bigl(Q(t-\tau)\bigr)\,d\tau \\[2.2ex]
+  0    & P(t)
+\end{bmatrix}
+$${#eq-vanloan}
+
+with $P(t) = \exp(Qt)$ on the diagonal blocks
+([`branch_stats.vanloan_integral`](../api/branch_stats.branch_expected_stats.qmd)).
+The reward indicators are:
+
+| Reward | Indicator $E$ | Conditional expectation |
+|:--|:--|:--|
+| Time spent in state $m$ | $E = e_m e_m^{\mathsf T}$ | $\mathbb{E}[\,\text{time in }m \mid s_p, s_c\,]$ |
+| Number of $m \to n$ jumps | $E = q_{mn}\, e_m e_n^{\mathsf T}$ | $\mathbb{E}[\,\#\{m\to n\} \mid s_p, s_c\,]$ |
+
+Dividing the Van Loan block @eq-vanloan elementwise by the endpoint transition
+probability $P(t)[s_p, s_c]$ converts the *joint* integral into the
+**conditional** expectation given the branch endpoints. Then the branch's
+contribution is just the inner product with that branch's posterior $\xi$:
+
+$$
+\overline{d}_m \;=\; \sum_{s_p,\,s_c} \xi(s_p, s_c)\;
+   \frac{\bigl[\,\text{Van Loan block for } E=e_m e_m^{\mathsf T}\,\bigr][s_p,s_c]}{P(t)[s_p,s_c]},
+$${#eq-dwell}
+
+and analogously for jumps with $E = q_{mn}\, e_m e_n^{\mathsf T}$. A useful
+invariant: for any normalized $\xi$, the dwell vector $\overline{d}$ sums to the
+branch length $t$.
+
+::: {.callout-tip}
+## The kernel is cached by branch length
+The $(Q,t)$-dependent conditional-expectation matrices — everything in
+@eq-vanloan except $\xi$ — are split out into a **branch kernel** keyed by $t$
+([`branch_stats.branch_kernel`](../api/branch_stats.branch_expected_stats.qmd)),
+and the cheap inner product with $\xi$ is applied separately
+(`stats_from_kernel`). Combined with edge-blocking (next section) this computes
+the expensive `expm` **once per distinct branch length per EM iteration**,
+rather than once per edge or once per (tree × branch).
+:::
+
+For $K = 2$ these statistics are closed-form scalars, but the block-exponential
+is used anyway so the generator-agnostic seam holds: K-way is a generator swap,
+not a rewrite. The module is also the designated **Phasic seam** — the `expm`
+calls can be replaced by reward-accumulated phase-type machinery, with better
+numerics on stiff $Q\,t$, without touching callers.
+[Tataru and Hobolth (2011)](https://doi.org/10.1186/1471-2105-12-465) compare
+EXPM/Van Loan against eigendecomposition and uniformization for exactly these
+conditional expectations and document the fallbacks if `expm` is unstable at
+small or stiff $Q\,t$.
+
+---
+
+## Edge-blocked, span-weighted accumulation {#sec-edge-blocking}
+
+This is the correctness core and the lead methodological novelty
+([`accumulate.accumulate_sufficient_statistics`](../api/accumulate.accumulate_sufficient_statistics.qmd)).
+
+A tree-sequence **edge** is a record `(left, right, parent, child)` valid over
+the half-open span $[\text{left}, \text{right})$. The genome is swept by zipping
+`ts.edge_diffs()` with `ts.trees()`, which yields, at each new tree, the edges
+that **enter** (`edges_in`) and **leave** (`edges_out`) relative to the
+previous tree. The rule:
+
+> **Bank each entering edge's contribution exactly once, on entry, weighted by
+> its own span $(\text{right} - \text{left})$. While the edge persists across
+> subsequent trees, do nothing.**
+
+So a clade that persists across many marginal trees is **one set of wide-span
+edges**, contributing once, not a row re-counted at every tree it survives. The
+pooled sufficient statistics are
+
+$$
+S_{\text{dwell}} = \sum_{e} w_e\, \overline{d}^{\,(e)},
+\quad
+S_{\text{jumps}} = \sum_{e} w_e\, \overline{J}^{\,(e)},
+\quad
+S_{\text{root}} = \sum_{\text{intervals } I}\;\sum_{r \in \mathrm{roots}(I)} |I|\,\gamma_r,
+$${#eq-suffstats}
+
+where $w_e = \text{right}_e - \text{left}_e$ is the edge span,
+$\overline{d}^{\,(e)}, \overline{J}^{\,(e)}$ are the per-branch dwell/jump
+expectations of @eq-dwell evaluated at the edge's endpoint posterior $\xi$, and
+root-state mass $S_{\text{root}}$ is accumulated **per interval** (per tree
+span), not per edge — a tree's roots are an interval property.
+
+### Why this is exact for the double-counting fix
+
+The tskit edge table guarantees an invariant:
+
+> The set of intervals on which each node appears **as a child** is disjoint.
+
+Each child's branch therefore appears in the edge table as a set of
+non-overlapping spans that partition exactly the region where that lineage
+exists. Summing a child-edge's contribution weighted by $(\text{right} -
+\text{left})$ thus integrates each branch's expected statistics over the genome
+**without overlap** and cannot double-count that child's branch. This is
+provably the per-genome span integral of the per-tree statistics — equal to a
+naive "sum over (tree × branch)" only because the persistence is folded into the
+weight, which is precisely the saving.
+
+### Why it carries genome-scale autocorrelation
+
+The horizontal Markov structure is **not dropped** — it is *encoded in the
+blocking*. Holding an edge's contribution constant over its span, and keying it
+by the edge, asserts that the lineage's ancestry state is constant while its
+genealogical context (the edge) persists — i.e. the near-identity horizontal
+coupling, enforced **structurally** rather than by belief-propagation messages.
+A persistent subclade is therefore counted once *and* its long span is what
+weights it, so genome-scale autocorrelation enters $Q$ through the same channel
+that removes the double-counting. (This is why the
+[`--compress`](../api/io.infer_tree_sequence.qmd) flag — or a tsinfer-native
+tree sequence — is mandatory: without cross-tree node-ID stability the same
+clade is minted as fresh short edges, keeping the double-counting fix but losing
+almost all of the autocorrelation benefit. Run the persistence-histogram check
+first.)
+
+### Static sketch
+
+```python
+for (interval, edges_out, edges_in), tree in zip(ts.edge_diffs(), ts.trees()):
+    span = interval.right - interval.left
+    res  = prune_tree(tree, emissions, Q, node_time, pi)   # E-step, this tree
+
+    for e in edges_in:                       # bank ONCE, on entry
+        if tree.parent(e.child) == tskit.NULL:
+            continue                          # never a root branch (skip; §4)
+        t      = node_time[e.parent] - node_time[e.child]
+        xi     = res.xi[(e.parent, e.child)]
+        w_edge = e.right - e.left             # span weight
+        dwell, jumps = branch_expected_stats(Q, t, xi)    # cached kernel by t
+        S_dwell += w_edge * dwell
+        S_jumps += w_edge * jumps
+        # credibility evidence (leave-one-out, never self-confirming):
+        if e.child in soft_refs:
+            agree = res.loo[e.child][label[e.child]]
+            S_cred[e.child] += w_edge * array([agree, 1 - agree])
+
+    for r in tree.roots:                      # root mass: per interval
+        S_root += span * res.root_marginal[r]
+```
+
+---
+
+## M-step: closed form, $O(\#\text{edges})$
+
+Every parameter update is a ratio of the pooled sufficient statistics of
+@eq-suffstats — no inner optimization, no per-tree loop.
+
+| Parameter | Closed-form update | Source |
+|:--|:--|:--|
+| Generator off-diagonals | $q_{mn} = \dfrac{S_{\text{jumps}}[m,n]}{S_{\text{dwell}}[m]}\;\;(m \ne n)$, then $q_{mm} = -\sum_{n \ne m} q_{mn}$ | [`em.m_step_Q`](../api/em.m_step_Q.qmd) |
+| Root frequencies | $\pi = \dfrac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]}$ | [`em.m_step_pi`](../api/em.m_step_pi.qmd) |
+| Per-tip credibility | $w_i = \dfrac{\alpha - 1 + a_i}{\alpha + \beta - 2 + a_i + d_i}$ | [`em.m_step_w`](../api/em.m_step_w.qmd) |
+
+$$
+q_{mn} = \frac{S_{\text{jumps}}[m,n]}{S_{\text{dwell}}[m]}\;\;(m \ne n),
+\qquad
+\pi = \frac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]},
+\qquad
+w_i = \frac{\alpha - 1 + a_i}{\alpha + \beta - 2 + a_i + d_i}
+$${#eq-mstep}
+
+The generator update is the standard CTMC MLE: rate = expected jumps divided by
+expected dwell time in the originating state. The credibility update is the MAP
+of a $\mathrm{Beta}(\alpha,\beta)$ prior given the leave-one-out evidence
+$(a_i, d_i) = $ (span-weighted agree, disagree) mass — a label is believed
+*unless the genealogy insists otherwise*. Because @eq-mstep are sums over
+per-edge accumulators, the M-step is $O(\#\text{edges})$, not
+$O(\#\text{trees} \times \#\text{nodes})$. EM iterates @eq-uppass–@eq-mstep to a
+log-likelihood tolerance ([`fit`](../api/fit.qmd)).
+
+::: {.callout-important}
+## Hold a hard-clamped anchor set; consider holding $\pi$ fixed
+Once labels can move, the model can explain disagreement three ways — lower a
+tip's $w_i$, inflate $Q$, or relabel a whole clade — and a fully soft panel
+trades these off (label switching, unstable $Q$, collapse). Keep a trusted
+**anchor set** at $w_i \equiv 1$ and only let the rest float under an
+informative Beta prior near 1. `fit` refuses to run if `soft_refs` covers every
+label.
+
+Separately, $\pi$ is a prior on the *arbitrary* GMRCA state. When deep/root
+branches wash (large $Q\,t$ on sparse or short ARGs), each tree's root marginal
+merely echoes $\pi$, so $\pi$ becomes unidentifiable and the M-step drifts it to
+a degenerate extreme — collapsing the painting to one colour with high
+confidence. The default `estimate_pi=False` ([`paint`](../api/paint.qmd)) holds
+$\pi$ fixed (uniform is principled) and recovers this failure at no cost on good
+data. `estimate_pi=True` remains for $\pi$-recovery studies.
+:::
+
+---
+
+## tskit accounting that keeps it correct
+
+These edge cases come straight from the tskit data model and will silently
+corrupt the sufficient statistics if traversed naively. They are honored by
+[`pruning`](../api/pruning.prune_root.qmd) and
+[`accumulate`](../api/accumulate.accumulate_sufficient_statistics.qmd).
+
+| Edge case | Why it bites | How it is handled |
+|:--|:--|:--|
+| **Multiple roots / forests** | A marginal tree can be several unlinked topologies; there may be no single root. | Prune **per root** (`for r in tree.roots`), each with its own $\pi$; aggregate. |
+| **Isolated samples** | A tip with no parent and no children over a span: the tree says *nothing* — that is **missing information, not 50–50 uncertainty**. | Posterior falls back to $\pi$ **and** the span is tagged `missing_info`, kept distinct from an uncertain call. |
+| **Root branches** | The branch above a root has length 0 by tskit convention. | **Skip** root branches for dwell/jumps; root state enters only through $\pi$ / $S_{\text{root}}$. |
+| **Virtual root** | Bookkeeping only; real roots have parent `tskit.NULL`, not the virtual root, which has no node-table row. | Never let $Q$ act on a (non-existent) edge to the virtual root. |
+| **Polytomies** | Internal nodes with $>2$ children are real and first-class; $\text{time}[p] > \text{time}[c]$ strictly, so $\exp(Q\,t)$ is always well-defined. | Product over *all* children via sib-pointer traversal (@eq-uppass); no binarity assumed. |
+| **Span coverage** | Accumulating only over reachable edges leaves isolated stretches contributing nothing to $Q$ (correct) — but they must still emit output. | Isolated spans contribute prior-fallback output, so a gap reads as *missing data*, not missing output. |
+
+---
+
+## What "blocked" approximates (and when BP tightens it)
+
+Being explicit about the one approximation is part of the method. The horizontal
+coupling is encoded *in the blocking* (above), which holds an edge's $\xi$
+constant over its whole span. This is **exact** when the topology outside the
+edge does not change across that span. What it approximates is the propagation of
+*uncertainty* across a **persist-but-reparent** breakpoint — a node that
+survives a breakpoint while its parent edge is swapped. There, the node-state
+posterior can be slightly inconsistent across the breakpoint because uncertainty
+does not flow through the swap. The residual is **breakpoint flicker**, measured
+by [`validate.breakpoint_flicker`](../api/validate.breakpoint_flicker.qmd) and
+[`experiments.flicker_vs_true_boundaries`](../api/experiments.flicker_vs_true_boundaries.qmd).
+
+The inference object is genuinely a graph with cycles (a subclade persisting
+across a region where another part of the tree recombines forms a loop in the
+vertical–horizontal coupling graph), so exact marginals are unavailable in
+general; blocked EM sidesteps this by exact per-tree pruning plus structural
+horizontal coupling, losing only that across-breakpoint uncertainty flow. The
+deferred tighter alternative is **loopy belief propagation / expectation
+propagation** over the full edge graph (vertical messages $\exp(Q\,t)$;
+horizontal near-identity messages across persist-but-reparent breakpoints;
+forward–backward along the genome interleaved with up–down within trees).
+
+::: {.callout-note}
+## When the BP/EP upgrade matters
+On strong-structure simulations with the **true ARG**, flicker at
+persist-but-reparent boundaries is negligible relative to the discontinuity at
+true tract switches, so blocked EM is the published method and BP is a footnote.
+The stress regime is **inferred ARGs** (Relate / tsinfer) and weak-structure /
+ancient-admixture histories, where the topology itself is uncertain and spurious
+switches appear. For that case a horizontal smoother is implemented — a
+genome-axis forward–backward over each tip's per-tree beliefs that suppresses
+spurious switches — exposed as [`bp.bp_paint`](../api/bp.bp_paint.qmd) and via
+[`paint(smooth=True)`](../api/paint.qmd). It tightens the across-breakpoint
+coupling the blocking leaves approximate.
+:::
+
+---
+
+## References
+
+- Felsenstein, J. (1981). [Evolutionary trees from DNA sequences: a maximum likelihood approach](https://doi.org/10.1007/BF01734359). *J. Mol. Evol.* 17, 368–376. (Pruning.)
+- Van Loan, C. F. (1978). [Computing integrals involving the matrix exponential](https://doi.org/10.1109/TAC.1978.1101743). *IEEE Trans. Automat. Contr.* 23, 395–404. (Block-triangular exponential for the CTMC reward integrals.)
+- Hobolth, A. and Jensen, J. L. (2011). [Summary statistics for endpoint-conditioned continuous-time Markov chains](https://doi.org/10.1239/jap/1324046009). *J. Appl. Probab.* 48(4), 911–924. (Expected dwell times and jump counts conditioned on branch endpoints.)
+- Tataru, P. and Hobolth, A. (2011). [Comparison of methods for calculating conditional expectations of sufficient statistics for continuous time Markov chains](https://doi.org/10.1186/1471-2105-12-465). *BMC Bioinformatics* 12, 465. (EXPM/Van Loan vs. eigendecomposition vs. uniformization — the numerics fallback / Phasic seam.)
+- Lemey, P., Rambaut, A., et al. (2009). [Bayesian phylogeography finds its roots](https://doi.org/10.1371/journal.pcbi.1000520). *PLoS Comput. Biol.* 5, e1000520. (Mugration / discrete-trait CTMC on trees.)

@@ -16,7 +16,19 @@ __all__ = ["edge_span_summary", "node_persistence", "persistence_summary"]
 
 
 def edge_span_summary(ts):
-    """Summary of the tree-sequence edge-span distribution."""
+    """Summary of the tree-sequence edge-span distribution.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence.
+
+    Returns
+    -------
+    dict
+        ``median``, ``mean``, ``min``, ``max`` of the edge spans (float) and
+        ``n_edges`` (int).
+    """
     spans = ts.tables.edges.right - ts.tables.edges.left
     return {
         "median": float(np.median(spans)),
@@ -32,6 +44,19 @@ def node_persistence(ts, include_samples=False):
 
     Relies on cross-tree node-ID stability: a persistent clade keeps one id and so
     accumulates a count > 1.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence.
+    include_samples : bool, optional
+        If False (default) count internal nodes only; if True include sample nodes.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer per-node tree counts (one entry per qualifying node; empty array if
+        none).
     """
     counts = Counter()
     for tree in ts.trees():
@@ -44,7 +69,23 @@ def node_persistence(ts, include_samples=False):
 
 
 def persistence_summary(ts):
-    """Summary of internal-node persistence; ``frac_singletons`` near 1 fails the premise."""
+    """Summary of internal-node persistence (the go/no-go on the method's premise).
+
+    ``frac_singletons`` near 1 means persistence is spiked at a single tree, so the
+    autocorrelation premise is not met (CLAUDE.md §5.1).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence.
+
+    Returns
+    -------
+    dict
+        ``median`` (float) and ``max`` (int) persistence, ``frac_singletons`` (float;
+        fraction of internal nodes appearing in exactly one tree) and ``n_internal``
+        (int).
+    """
     counts = node_persistence(ts)
     if counts.size == 0:
         return {"median": 0.0, "max": 0, "frac_singletons": float("nan"), "n_internal": 0}

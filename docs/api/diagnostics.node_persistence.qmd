@@ -1,0 +1,26 @@
+# diagnostics.node_persistence { #tslai.diagnostics.node_persistence }
+
+```python
+tslai.diagnostics.node_persistence(ts, include_samples=False)
+```
+
+Number of distinct marginal trees in which each (internal) node appears.
+
+Relies on cross-tree node-ID stability: a persistent clade keeps one id and so
+accumulates a count > 1.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The tree sequence.
+
+<code>[**include_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If False (default) count internal nodes only; if True include sample nodes.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   Integer per-node tree counts (one entry per qualifying node; empty array if none).

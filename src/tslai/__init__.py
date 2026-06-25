@@ -42,9 +42,8 @@ from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
-from . import validate as metrics
 from . import (  # noqa: F401  (exposed as tslai.<name>)
-    compare, io, experiments, bp, sim, model, ensemble, ranked, validate,
+    metrics, compare, io, experiments, bp, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics,
     io_tsinfer, io_singer, io_rfmix,
 )

@@ -1,0 +1,22 @@
+# model.stationary_distribution { #tslai.model.stationary_distribution }
+
+```python
+tslai.model.stationary_distribution(Q)
+```
+
+Stationary distribution ``π`` of a CTMC generator.
+
+Solves ``π Q = 0`` subject to ``π >= 0`` and ``Σ π = 1`` as the normalised
+left null vector via an augmented least-squares system.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   ``(K, K)`` CTMC generator.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` stationary distribution (non-negative, sums to 1).

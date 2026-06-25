@@ -1,0 +1,21 @@
+# output.Segment { #tslai.output.Segment }
+
+```python
+tslai.output.Segment(left, right, posterior, status)
+```
+
+A contiguous span carrying one soft ancestry posterior.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**left, right**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)`` the segment covers.
+
+<code>[**posterior**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` posterior over ancestry states on ``[left, right)``.
+
+<code>[**status**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   :data:`INFORMATIVE` or :data:`MISSING_INFO` — the latter tags an isolated span where the tree carries no information and ``posterior`` is the prior ``π`` fallback, distinct from a 50-50 uncertain call (CLAUDE.md §4.2).

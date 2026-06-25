@@ -1,0 +1,53 @@
+# sim.admixture_demography { #tslai.sim.admixture_demography }
+
+```python
+tslai.sim.admixture_demography(
+    Ne=10000,
+    T_admix=30.0,
+    census_offset=1.0,
+    T_split=2000.0,
+    f_A=0.3,
+)
+```
+
+Build a two-source admixture demography with a post-pulse census.
+
+Two sources (A, B) feed an admixed population, with a census placed just
+older than the admixture pulse. A and B contribute fractions ``f_A`` and
+``1 - f_A`` to ADMIX at ``T_admix``; they merge into a common ancestor at
+``T_split``. The census sits at ``T_admix + census_offset`` (strictly
+between admixture and split).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10000]{.parameter-default}</code>
+
+:   Diploid effective population size for every population.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [30.0]{.parameter-default}</code>
+
+:   Time (generations ago) of the admixture pulse forming ADMIX.
+
+<code>[**census_offset**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Offset added to ``T_admix`` to place the census (must keep it strictly between admixture and split).
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000.0]{.parameter-default}</code>
+
+:   Time (generations ago) at which A and B coalesce into ANCESTRAL.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.3]{.parameter-default}</code>
+
+:   Fraction of ADMIX contributed by source A (B contributes ``1 - f_A``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   Demography with populations A, B, ADMIX and ANCESTRAL plus the admixture, census and split events.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``T_admix < T_admix + census_offset < T_split`` is violated.

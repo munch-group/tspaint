@@ -1,0 +1,19 @@
+# model.query_emission { #tslai.model.query_emission }
+
+```python
+tslai.model.query_emission(pi)
+```
+
+Flat / root-frequency emission for an unlabelled query tip (CLAUDE.md §2.2).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` root frequencies, used directly as the query tip's emission.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` emission likelihood vector (a copy of ``pi``).

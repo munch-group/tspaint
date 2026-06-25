@@ -1,0 +1,19 @@
+# diagnostics.edge_span_summary { #tslai.diagnostics.edge_span_summary }
+
+```python
+tslai.diagnostics.edge_span_summary(ts)
+```
+
+Summary of the tree-sequence edge-span distribution.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The tree sequence.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``median``, ``mean``, ``min``, ``max`` of the edge spans (float) and ``n_edges`` (int).

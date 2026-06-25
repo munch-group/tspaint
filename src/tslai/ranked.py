@@ -23,10 +23,32 @@ __all__ = ["ranked_tree_sequence"]
 
 
 def ranked_tree_sequence(ts):
-    """Copy of ``ts`` with node times replaced by the dense rank of each node's time
-    (samples at time 0 → rank 0; the k-th oldest distinct time → rank k). Parent ranks
-    stay strictly above child ranks (distinct times), so the result is a valid tree
-    sequence; only the time scale changes."""
+    """Copy of ``ts`` with node times replaced by the dense rank of each time.
+
+    The order-only (ranked-topology) ablation of §6 / §8.4: coalescence order only,
+    magnitudes discarded. Samples at time 0 map to rank 0; the k-th oldest distinct
+    time maps to rank k. Parent ranks stay strictly above child ranks (distinct
+    times), so the result is a valid tree sequence; only the time scale changes.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence whose node times are dense-ranked. Sample ids and topology are
+        preserved, so labels/truth transfer unchanged.
+
+    Returns
+    -------
+    tskit.TreeSequence
+        A copy of ``ts`` with dense-ranked node times.
+
+    Notes
+    -----
+    Measured to be **not beneficial** for inference (collapses true-ARG painting from
+    ~1.0 to ~0.5): dense-rank compresses the timescale, EM compensates with a much
+    larger Q, deep/root branches wash out, and ``pi`` becomes unidentifiable. Kept as
+    a runnable ablation behind ``tslai_paint(..., ranked=True)``; the actual fix for
+    the same ``pi`` failure is ``estimate_pi=False`` (see :func:`tslai.em.fit`).
+    """
     tables = ts.dump_tables()
     nodes = tables.nodes
     _, ranks = np.unique(nodes.time, return_inverse=True)   # dense rank; min (tips) -> 0

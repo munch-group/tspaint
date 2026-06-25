@@ -1,0 +1,32 @@
+# model.tip_emission { #tslai.model.tip_emission }
+
+```python
+tslai.model.tip_emission(label, w, pi)
+```
+
+Soft-clamp emission for a labelled tip (CLAUDE.md §2.2).
+
+The emission is the credibility-weighted noise model
+``e(s) = w * 1[s == label] + (1 - w) * pi(s)``: ``w = 1`` gives a hard clamp
+(one-hot), while ``w -> 0`` lets the tip be effectively re-inferred from the
+rest of the tree (like a query).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**label**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Observed ancestry-state index for the tip.
+
+<code>[**w**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-tip credibility in ``[0, 1]``.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` root frequencies used as the noise fallback.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` Felsenstein emission likelihood vector for the tip.

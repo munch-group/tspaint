@@ -1,0 +1,26 @@
+# em.m_step_Q { #tslai.em.m_step_Q }
+
+```python
+tslai.em.m_step_Q(S_dwell, S_jumps)
+```
+
+Closed-form generator MLE from expected dwell times and jump counts.
+
+``q_mn = S_jumps[m, n] / S_dwell[m]`` for ``m != n``, with
+``q_mm = -Σ_n q_mn`` (CLAUDE.md §3.4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**S_dwell**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Total expected dwell time per state (span-weighted).
+
+<code>[**S_jumps**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Total expected ``m -> n`` jump counts per ordered pair (span-weighted).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) numpy.ndarray]{.parameter-annotation}</code>
+
+:   The fitted generator ``Q`` (rows sum to 0).

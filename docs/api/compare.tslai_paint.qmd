@@ -1,0 +1,64 @@
+# compare.tslai_paint { #tslai.compare.tslai_paint }
+
+```python
+tslai.compare.tslai_paint(
+    ts,
+    labels,
+    queries,
+    K=2,
+    max_iter=6,
+    Q0=None,
+    soft_refs=None,
+    ranked=False,
+    estimate_pi=False,
+)
+```
+
+Paint queries with the full tslai method (EM fit + down-pass posterior).
+
+EM-fits ``(Q[, π, w])`` on the labelled references, then paints the queries
+with the down-pass posterior.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to paint (true or inferred ARG).
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> ancestry-state index.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Sample ids to paint.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Maximum number of EM iterations.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   References whose credibility ``w`` is learned (the rest stay hard-clamped); passed through to :func:`tslai.em.fit`.
+
+<code>[**ranked**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If True, run the order-only variant on a dense-ranked tree sequence. **Not recommended** — it worsens the π degeneracy (CLAUDE.md §6).
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If False (default), hold π fixed (uniform), which is robust to the π-identifiability degeneracy that makes painting confidently wrong on sparse ARGs (CLAUDE.md §6). Set True to also estimate π (fine on good, long data).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per-query posterior segment tracks (from :func:`tslai.output.posterior_table`).

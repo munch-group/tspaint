@@ -1,0 +1,19 @@
+# em.m_step_pi { #tslai.em.m_step_pi }
+
+```python
+tslai.em.m_step_pi(S_root)
+```
+
+Closed-form root-frequency MLE: ``π = S_root / Σ S_root`` (CLAUDE.md §3.4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**S_root**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Total expected root-state mass (span-weighted, pooled over roots).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) numpy.ndarray]{.parameter-annotation}</code>
+
+:   The fitted root frequencies ``π``; uniform if ``S_root`` sums to ``<= 0``.

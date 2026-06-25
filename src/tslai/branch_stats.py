@@ -34,6 +34,21 @@ def vanloan_integral(Q, t, E):
     Equals ``∫_0^t expm(Q τ) E expm(Q (t-τ)) dτ`` (Van Loan, 1978). For a reward
     indicator ``E`` this is the joint (un-normalized) expected reward together with
     the branch endpoints.
+
+    Parameters
+    ----------
+    Q : (K, K) array_like
+        CTMC generator (rows sum to zero).
+    t : float
+        Branch length.
+    E : (K, K) array_like
+        Reward indicator matrix (``e_m e_m^T`` for dwell time in state ``m``;
+        ``q_{mn} e_m e_n^T`` for ``m -> n`` jumps).
+
+    Returns
+    -------
+    (K, K) ndarray
+        The top-right block ``∫_0^t expm(Q τ) E expm(Q (t-τ)) dτ``.
     """
     Q = np.asarray(Q, float)
     K = Q.shape[0]
@@ -76,12 +91,29 @@ def branch_expected_stats(Q, t, xi):
 
 
 def branch_kernel(Q, t):
-    """The ``(Q, t)``-dependent part of :func:`branch_expected_stats` — the per-reward
-    conditional-expectation matrices ``E[reward | s_p, s_c]``. **Cacheable by ``t``**
-    (the per-branch posterior ``xi`` is applied separately, cheaply, via
+    """Per-reward conditional-expectation matrices ``E[reward | s_p, s_c]`` for a branch.
+
+    The ``(Q, t)``-dependent part of :func:`branch_expected_stats`. **Cacheable by
+    ``t``** (the per-branch posterior ``xi`` is applied separately, cheaply, via
     :func:`stats_from_kernel`), so a sweep computes the Van Loan ``expm`` once per
-    distinct branch length rather than once per edge (CLAUDE.md §3.3). Returns ``None``
-    for ``t <= 0`` (root branches are skipped by the caller, §3.4)."""
+    distinct branch length rather than once per edge (CLAUDE.md §3.3).
+
+    Parameters
+    ----------
+    Q : (K, K) array_like
+        CTMC generator (rows sum to zero).
+    t : float
+        Branch length. ``t <= 0`` (root branches, skipped by the caller per §3.4)
+        returns ``None``.
+
+    Returns
+    -------
+    tuple or None
+        ``(dwell_cond, jump_cond, K)`` where ``dwell_cond`` is a length-``K`` list of
+        ``(K, K)`` matrices ``E[time in m | s_p, s_c]`` and ``jump_cond`` maps
+        ``(m, n)`` to ``(K, K)`` matrices ``E[# m->n jumps | s_p, s_c]``. ``None`` for
+        ``t <= 0``.
+    """
     Q = np.asarray(Q, float)
     K = Q.shape[0]
     if t <= 0:
@@ -110,8 +142,22 @@ def branch_kernel(Q, t):
 
 
 def stats_from_kernel(kernel, xi):
-    """Apply the endpoint posterior ``xi`` to a cached :func:`branch_kernel` to get
-    expected dwell times and jump counts (cheap; no matrix exponentials)."""
+    """Apply an endpoint posterior to a cached branch kernel (cheap; no ``expm``).
+
+    Parameters
+    ----------
+    kernel : tuple
+        A cached :func:`branch_kernel` result ``(dwell_cond, jump_cond, K)``.
+    xi : (K, K) array_like
+        Posterior over ``(parent_state, child_state)`` for this branch.
+
+    Returns
+    -------
+    dwell : (K,) ndarray
+        Expected time spent in each state along the branch, under ``xi``.
+    jumps : (K, K) ndarray
+        Expected number of ``m -> n`` transitions (``m != n``), under ``xi``.
+    """
     dwell_cond, jump_cond, K = kernel
     xi = np.asarray(xi, float)
     dwell = np.array([float(np.sum(xi * dwell_cond[m])) for m in range(K)])

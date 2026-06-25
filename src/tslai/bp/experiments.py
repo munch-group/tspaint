@@ -25,6 +25,26 @@ __all__ = ["bp_vs_deadband_experiment"]
 
 
 def _setup(T_admix, seed, infer, mutation_rate, **sim_kw):
+    """Simulate an admixture scenario and derive labels, queries, and truth.
+
+    Parameters
+    ----------
+    T_admix : float
+        Generations since admixture.
+    seed : int
+        Simulation seed.
+    infer : bool
+        If True, return a tsinfer-inferred ARG instead of the true ARG.
+    mutation_rate : float
+        Mutation rate used when ``infer=True``.
+    **sim_kw
+        Forwarded to :func:`tslai.sim.simulate_admixture`.
+
+    Returns
+    -------
+    tuple
+        ``(work_ts, labels, queries, true_segs)``.
+    """
     ts = simulate_admixture(random_seed=seed, T_admix=T_admix, **sim_kw)
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
@@ -43,6 +63,28 @@ def _setup(T_admix, seed, infer, mutation_rate, **sim_kw):
 
 
 def _ratio_f1(seg_by_node, true_segs, queries, length, true_density, tol):
+    """Mean breakpoint F1 and the switch-density ratio for one segmentation.
+
+    Parameters
+    ----------
+    seg_by_node : dict[int, list]
+        Inferred hard segments per query node.
+    true_segs : dict[int, list]
+        True ancestry segments per query node.
+    queries : iterable[int]
+        Query node ids to score.
+    length : float
+        Genome length, for the per-Mb switch density.
+    true_density : float
+        True switch density (switches per Mb), the ratio's denominator.
+    tol : float
+        Breakpoint-matching tolerance in bp.
+
+    Returns
+    -------
+    tuple
+        ``(switch_density_ratio, breakpoint_f1)``.
+    """
     precs, recs, nsw = [], [], 0
     for q in queries:
         pr = breakpoint_precision_recall(seg_by_node[q], true_segs[q], tol)
@@ -64,9 +106,55 @@ def bp_vs_deadband_experiment(*, T_admix=500.0, infer=False, seeds=(1, 2, 3), n_
                               epsilons=(0.3, 0.2, 0.1, 0.05, 0.02, 0.01)):
     """Compare BP smoothing vs the deadband for segmentation, over ``seeds``.
 
-    For each method the operating point whose switch-density ratio is closest to 1 (the
-    dating-relevant point) is selected per seed; returns mean±std breakpoint F1 there, plus
-    raw and BP per-base balanced accuracy. ``infer=True`` runs on tsinfer-inferred ARGs.
+    Quantifies how much the horizontal BP smoother adds over the per-position
+    :func:`tslai.output.hard_segments` deadband for segmentation fidelity (the
+    admixture-dating object), on the true vs the inferred (tsinfer) ARG.
+
+    Parameters
+    ----------
+    T_admix : float, optional
+        Generations since admixture in the simulation (default ``500.0``).
+    infer : bool, optional
+        If True, run on tsinfer-inferred ARGs rather than the true ARG (default False).
+    seeds : iterable[int], optional
+        Simulation seeds to average over (default ``(1, 2, 3)``).
+    n_admix : int, optional
+        Number of admixed (query) individuals (default 8).
+    n_ref : int, optional
+        Number of reference individuals per source (default 8).
+    sequence_length : float, optional
+        Simulated genome length (default ``2e6``).
+    Ne : float, optional
+        Effective population size (default 1000).
+    T_split : float, optional
+        Source-population split time (default ``5000.0``).
+    f_A : float, optional
+        Admixture fraction from source A (default 0.5).
+    recombination_rate : float, optional
+        Per-base recombination rate (default ``1e-8``).
+    mutation_rate : float, optional
+        Per-base mutation rate, used when ``infer=True`` (default ``4e-7``).
+    tol : float, optional
+        Breakpoint-matching tolerance in bp (default ``1e5``).
+    deadbands : iterable[float], optional
+        Deadband widths to scan for the per-position operating point.
+    epsilons : iterable[float], optional
+        Switch penalties to scan for the BP operating point.
+
+    Returns
+    -------
+    dict
+        Keys: ``T_admix``, ``inferred``, ``n_seeds``, ``deadband_f1`` and ``bp_f1``
+        (each a ``(mean, std)`` breakpoint-F1 tuple at the operating point whose
+        switch-density ratio is closest to 1, the dating-relevant point), and
+        ``raw_balanced_accuracy`` / ``bp_balanced_accuracy`` (per-base).
+
+    Notes
+    -----
+    On the true ARG the per-tree posteriors are clean, the deadband is near-optimal,
+    and BP adds nothing; on the inferred ARG, BP's spatial smoothing recovers the
+    tract structure tree-inference scatter obscures (breakpoint F1 ~0.71 -> ~0.98 at
+    ``T_admix=500``).
     """
     pi = np.full(2, 0.5)
     sim_kw = dict(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length, Ne=Ne,
