@@ -1,0 +1,3 @@
+[submodule "claude-ref-docs"]
+	path = claude-ref-docs
+	url = git@github.com:munch-group/claude-ref-docs.git
