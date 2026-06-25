@@ -90,14 +90,8 @@ quartodoc:
 
   sections:
     - title: Some section
-      package: tslai.modulename
+      package: tslai
       desc: |
         Some description...
       contents:
-        - functionname
-    - title: Some other section
-      package: tslai.modulename
-      desc: |
-        Some description...
-      contents:
-        - scriptname
+        - paint

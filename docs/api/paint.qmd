@@ -1,0 +1,96 @@
+# paint { #tslai.paint }
+
+```python
+tslai.paint(
+    ts,
+    labels,
+    queries=None,
+    *,
+    K=2,
+    soft_refs=None,
+    estimate_pi=False,
+    deadband=0.0,
+    smooth=False,
+    epsilon=0.01,
+    Q0=None,
+    max_iter=12,
+    tol=1e-07,
+    alpha=20.0,
+    beta=1.0,
+    w0=0.9,
+)
+```
+
+Infer soft local ancestry along query haplotypes from a tree sequence.
+
+EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
+(:func:`tslai.fit`), then returns the per-position posterior over ancestry states for each
+query haplotype as a :class:`Painting`.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   An inferred (tsinfer / Relate ``--compress``) or true tree sequence; sample nodes are haplotypes. Use :mod:`tslai.io` to obtain one from genotypes.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample-node id → ancestry-state index in ``0..K-1``.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Sample nodes to paint; defaults to every sample not in ``labels``.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states (2 by default; pass a ``K×K`` ``Q0`` for K-way).
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Reference tips whose credibility ``w_i`` is *learned* (the rest stay hard-clamped anchors — never let the whole panel float, CLAUDE.md §6).
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Estimate root frequencies ``π`` rather than holding them uniform. Default ``False``: ``π`` is a prior on the arbitrary GMRCA state and estimating it from washing deep branches is the degeneracy of CLAUDE.md §6; uniform is the robust choice.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0]{.parameter-default}</code>
+
+:   Stored as :attr:`Painting.default_deadband` for :meth:`Painting.segments`.
+
+<code>[**smooth**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Apply the horizontal BP/EP smoother (:mod:`tslai.bp`) to the posteriors along the genome. **Recommended on inferred (tsinfer / Relate) ARGs**, where tree inference scatters spurious breakpoints a per-position deadband cannot filter; redundant on a true/known ARG (CLAUDE.md §7). Default ``False``.
+
+<code>[**epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.01]{.parameter-default}</code>
+
+:   Per-breakpoint switch penalty for ``smooth`` (smaller ⇒ more smoothing).
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator (default a slow symmetric 2-state generator).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tslai.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   
+
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tslai.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tslai.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tslai.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   
+
+<code>[**w0**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tslai.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Painting](`tslai.api.Painting`)]{.parameter-annotation}</code>
+
+:   

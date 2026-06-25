@@ -7,13 +7,4 @@ Some description...
 
 | | |
 | --- | --- |
-| [functionname](functionname.qmd#tslai.modulename.functionname) | The sum of two numbers. |
-
-## Some other section
-
-Some description...
-
-
-| | |
-| --- | --- |
-| [scriptname](scriptname.qmd#tslai.modulename.scriptname) |  |
+| [paint](paint.qmd#tslai.paint) | Infer soft local ancestry along query haplotypes from a tree sequence. |

@@ -3,10 +3,7 @@ website:
   - contents:
     - api/index.qmd
     - contents:
-      - api/functionname.qmd
+      - api/paint.qmd
       section: Some section
-    - contents:
-      - api/scriptname.qmd
-      section: Some other section
     id: api
   - id: dummy-sidebar

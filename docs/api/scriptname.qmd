@@ -1,6 +1,0 @@
-# scriptname { #tslai.modulename.scriptname }
-
-```python
-tslai.modulename.scriptname()
-```
-

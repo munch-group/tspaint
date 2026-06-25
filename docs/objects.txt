@@ -2,5 +2,5 @@
 # Project: tslai
 # Version: 0.0.9999
 # The remainder of this file is compressed using zlib.
-tslai.modulename.functionname py:function 1 api/functionname.html#tslai.modulename.functionname -
-tslai.modulename.scriptname py:function 1 api/scriptname.html#tslai.modulename.scriptname -
+tslai.paint py:function 1 api/paint.html#tslai.paint -
+tslai.api.paint py:function 1 api/paint.html#tslai.paint tslai.paint
