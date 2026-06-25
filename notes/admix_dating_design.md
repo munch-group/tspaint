@@ -142,3 +142,34 @@ tests/test_dating_*  # unit + integration
 - **Scope creep** — this is a *new estimator* riding the same engine; keep it a separate subpackage
   (`tslai.dating`), not entangled with the LAI painter.
 ```
+
+---
+
+## Findings (rungs 1–5, MEASURED)
+
+- **Rung 1** — per-cell endpoint-conditioned E-step is exact (sum-invariant vs whole-branch
+  `branch_expected_stats`).
+- **Rung 2** — Stage-1 binned profile (homogeneous E-step) shows the `T_split` feature but
+  **smears the onset early** (the resolution floor).
+- **Rung 3** — directional penalised-Poisson spline M-step recovers a known step rate.
+- **Rung 4** — the full time-inhomogeneous EM **sharpens the onset to ≈`T_split`** (1852 vs the
+  Stage-1 1002), log-likelihood monotone. **Deep-tail instability is real** (rate diverges ~1e9
+  in data-poor deep cells); fixed by restricting the M-step to the informative occupation window.
+- **Rung 5** — the profile **resolves demographic structure**: a gene-flow **pulse** appears as a
+  bump at `T_pulse`; **asymmetric** flow gives `q_AB ≠ q_BA`; **ongoing** migration gives an
+  elevated recent rate. The clean-split case is onset-only.
+
+### Direction convention (important)
+
+tslai's jumps are **parent→child = old→young = forward in time**, so a *backward-time* A→B
+mass-migration registers as **forward-time B→A** — i.e. it shows up in `q_BA`, not `q_AB`. State
+the profile's directionality in forward time, or flip when reporting admixture (backward-time)
+direction.
+
+### Open / caveats
+
+- Profiles are noisy at small sample/sequence size and at the recent time boundary; the rate is
+  only trustworthy in the informative occupation window.
+- It estimates a *relative cross-coalescence rate* (divergence + gene-flow epochs), not literal
+  migration rates (mugration bias, §5).
+- Time-calibration dependence (§5): use SINGER's calibrated times on real data (rung 6).
