@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Assumptions, identifiability &amp; limitations – tspaint</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../pages/code_paths.html" rel="next">
+<link href="../pages/dating.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1c33c0780a01951c1c2d77b4a45239a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../pages/overview.html" aria-current="page"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/assumptions.html">Assumptions, identifiability &amp; limitations</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inference: structured (blocked) EM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/assumptions.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Assumptions, identifiability &amp; limitations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/code_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code organization and data flow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Notebooks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Haplotype painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calibration &amp; accuracy vs admixture age</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/fragmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fragmentation &amp; tract-length fidelity</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/bp_smoother.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Horizontal BP smoother on inferred ARGs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Results</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#sec-input" id="toc-sec-input" class="nav-link active" data-scroll-target="#sec-input">1. Input requirement: cross-tree node-ID stability</a>
+  <ul class="collapse">
+  <li><a href="#sec-persistence" id="toc-sec-persistence" class="nav-link" data-scroll-target="#sec-persistence">1.1 The persistence go/no-go</a></li>
+  </ul></li>
+  <li><a href="#sec-collapse" id="toc-sec-collapse" class="nav-link" data-scroll-target="#sec-collapse">2. Identifiability &amp; collapse modes</a></li>
+  <li><a href="#sec-pi" id="toc-sec-pi" class="nav-link" data-scroll-target="#sec-pi">3. <span class="math inline">\(\pi\)</span>-identifiability — the measured real failure mode</a></li>
+  <li><a href="#sec-calibration" id="toc-sec-calibration" class="nav-link" data-scroll-target="#sec-calibration">4. Branch-length / time-calibration risk</a>
+  <ul class="collapse">
+  <li><a href="#sec-ranked" id="toc-sec-ranked" class="nav-link" data-scroll-target="#sec-ranked">3.1 The order-only ablation — a measured <em>negative</em> result</a></li>
+  </ul></li>
+  <li><a href="#sec-mugration" id="toc-sec-mugration" class="nav-link" data-scroll-target="#sec-mugration">5. The mugration approximation</a></li>
+  <li><a href="#sec-old-admixture" id="toc-sec-old-admixture" class="nav-link" data-scroll-target="#sec-old-admixture">6. Loss of signal at old admixture</a></li>
+  <li><a href="#sec-arg-bound" id="toc-sec-arg-bound" class="nav-link" data-scroll-target="#sec-arg-bound">7. Inherited from the front end: ARG accuracy is the binding constraint</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/assumptions.html">Assumptions, identifiability &amp; limitations</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Assumptions, identifiability &amp; limitations</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This page is the honest accounting of what <code>tspaint</code> assumes, where its parameters can fail to be identified, and the regimes in which it stops working. It is the companion to the <a href="../pages/overview.html">Overview</a>: the Overview tells you how to run the method; this page tells you when to trust the result and when not to. None of the caveats below are hypothetical hedges — each is either forced by the model or has been measured directly. The MEASURED numbers are quoted verbatim from the project’s validation runs.</p>
+<p>The short version: <code>tspaint</code> is a <em>generative</em> model — a continuous-time Markov chain (CTMC) for an ancestry character riding up the branches of an inferred tree sequence, fitted by EM. Generative models give you calibrated soft posteriors and an interpretable, readable <code>Q</code>, but they also have identifiability structure that a black-box classifier hides. The sharp edges here are the price of that interpretability.</p>
+<section id="sec-input" class="level2">
+<h2 class="anchored" data-anchor-id="sec-input">1. Input requirement: cross-tree node-ID stability</h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>The premise is delivered by the <em>input</em>, not the method
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>tspaint</code> accumulates its sufficient statistics <strong>per tree-sequence edge, span-weighted</strong> (the lead novelty, CLAUDE.md §3.3). This is what removes double-counting and is the channel through which genome-scale autocorrelation enters: a clade that persists across many marginal trees must be <strong>one set of edges with a wide span</strong>, identified by a stable node ID across those trees. If the input does not deliver that stability, the central premise is not met — the method is still <em>correct</em>, but it is no better than independent per-tree pruning.</p>
+</div>
+</div>
+<p>Two front ends deliver the persistence invariant:</p>
+<ul>
+<li><strong>Relate → tskit with <code>--compress</code>.</strong> The <code>--compress</code> flag (Nathaniel S. Pope) assigns the same age to nodes with <strong>identical descendant sets across adjacent trees</strong>, unifying a persistent subclade into a single long-span node. This is not optional. Without it, Relate’s conversion can mint fresh node IDs per local tree even for unchanged descendant sets, producing short churning edges that retain the double-counting fix but lose almost all autocorrelation benefit.</li>
+<li><strong><code>tsinfer</code> / <code>tsdate</code></strong> tree sequences have native cross-tree node-ID stability by construction and are an equally valid (or preferable) front end.</li>
+</ul>
+<p>Two source-confirmed caveats on <code>--compress</code> (<a href="https://www.nature.com/articles/s41588-019-0484-x">Speidel et al., 2019</a>; <code>relate_lib</code>):</p>
+<ol type="1">
+<li>It unifies on <strong>exact sorted-leaf-set equality, no threshold</strong> (<code>tree_sequence.hpp::FindIdenticalNodes</code>) — provably stricter than Relate’s own “equivalent branch” notion (Pearson correlation ≥ 0.9). A clade that persists but gains or loses a single tip at a breakpoint is <strong>split</strong> into separate node IDs. Autocorrelation capture is therefore slightly <strong>conservative</strong> (the safe direction: it never falsely merges distinct lineages, only under-links near-equivalent ones).</li>
+<li>The global root is deliberately re-IDed whenever either of its children changes (to avoid forcing a genome-wide constant TMRCA), and merged node ages are span-weighted-averaged then monotonicity-constrained. We skip root branches anyway (see <a href="#sec-mugration">§4</a>), so the first is benign; the second compounds the time-calibration concern of <a href="#sec-calibration">§3</a>.</li>
+</ol>
+<section id="sec-persistence" class="level3">
+<h3 class="anchored" data-anchor-id="sec-persistence">1.1 The persistence go/no-go</h3>
+<p>Before any inference, run the persistence check (CLAUDE.md §5.1). It is the go/no-go test on the method’s premise — the histogram of how many distinct marginal trees each internal node survives:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tskit, numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>ts <span class="op">=</span> tskit.load(<span class="st">"example.trees"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># how many distinct trees each internal node survives &lt;-- THE key histogram</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>node_tree_count <span class="op">=</span> Counter()</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (_interval, eout, ein), tree <span class="kw">in</span> <span class="bu">zip</span>(ts.edge_diffs(), ts.trees()):</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> u <span class="kw">in</span> tree.nodes():</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> tree.is_sample(u):</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>            node_tree_count[u] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>counts <span class="op">=</span> np.array(<span class="bu">list</span>(node_tree_count.values()))</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"internal-node persistence: median"</span>, np.median(counts),</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="st">"max"</span>, counts.<span class="bu">max</span>(), <span class="st">"frac==1"</span>, np.mean(counts <span class="op">==</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<ul>
+<li>If <code>frac==1</code> is near 1 (persistence spiked at a single tree), <code>--compress</code> did not take or something upstream is wrong — <strong>the method’s premise is not met. Stop and fix the input.</strong></li>
+<li>If there is real mass above 1, the horizontal coupling is getting signal. Proceed.</li>
+</ul>
+<p>The packaged helper <code>diagnostics.persistence_summary</code> computes the same histogram.</p>
+</section>
+</section>
+<section id="sec-collapse" class="level2">
+<h2 class="anchored" data-anchor-id="sec-collapse">2. Identifiability &amp; collapse modes</h2>
+<p>The model is well-pinned with a hard-clamped reference panel. The identifiability problems appear only once labels are allowed to move — i.e.&nbsp;once per-tip credibility <span class="math inline">\(w_i\)</span> is learned (the soft-reference / introgression-mapping mode, CLAUDE.md §2.2). The danger is structural: when a reference’s genealogical context disagrees with its label, the model has <strong>three ways</strong> to explain the same disagreement, and they trade off against each other.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Collapse mode</th>
+<th style="text-align: left;">What the model does</th>
+<th style="text-align: left;">Why it is degenerate</th>
+<th style="text-align: left;">Guard</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Lower <span class="math inline">\(w_i\)</span></strong></td>
+<td style="text-align: left;">Declares this haplotype admixed and stops trusting its label</td>
+<td style="text-align: left;">Any disagreement can be absorbed tip-by-tip; the panel dissolves</td>
+<td style="text-align: left;">Hard-clamped anchor set (<span class="math inline">\(w_i \equiv 1\)</span>); only the rest float</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Inflate <span class="math inline">\(Q\)</span></strong></td>
+<td style="text-align: left;">Says <em>everyone</em> switches ancestry fast</td>
+<td style="text-align: left;">Large <span class="math inline">\(Q\cdot t\)</span> washes every branch toward <span class="math inline">\(\pi\)</span>; tips stop informing their ancestors</td>
+<td style="text-align: left;">Informative <span class="math inline">\(\mathrm{Beta}(\alpha,\beta)\)</span> prior near 1 keeps labels believed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Relabel a clade</strong></td>
+<td style="text-align: left;">Flips the ancestry assignment of a whole subtree</td>
+<td style="text-align: left;">Pure label-switching: the likelihood is invariant under a global relabel</td>
+<td style="text-align: left;">Never let the whole panel go soft simultaneously</td>
+</tr>
+</tbody>
+</table>
+<p>The implementation enforces the anchor guard directly: <a href="../api/fit.html"><code>fit</code></a> raises <code>ValueError</code> if <code>soft_refs</code> covers every labelled tip, with the message “keep a hard-clamped anchor set; never let the whole panel float (CLAUDE.md §6)”.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Two degenerate fixed points to watch in tests
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><span class="math inline">\(Q \to 0\)</span> <strong>freezes the initialization</strong>: with no migration the up-pass never mixes states, so whatever the tips say propagates unchanged and EM never moves off its starting point.</li>
+<li><span class="math inline">\(Q \to \infty\)</span> <strong>washes everything to <span class="math inline">\(\pi\)</span></strong>: every branch becomes the stationary distribution regardless of its tips, so all posteriors relax to the prior and all discriminating signal is lost.</li>
+</ul>
+<p>Both are exercised by the degenerate-case tests (<code>test_em_degenerate.py</code>). They are also the two ends of the <span class="math inline">\(Q\)</span>-inflation collapse above.</p>
+</div>
+</div>
+</section>
+<section id="sec-pi" class="level2">
+<h2 class="anchored" data-anchor-id="sec-pi">3. <span class="math inline">\(\pi\)</span>-identifiability — the measured real failure mode</h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>When deep branches wash, <span class="math inline">\(\pi\)</span> drifts and the painting collapses to one colour — <em>confidently</em>
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is not a hypothetical. It is the failure mode that the order-only ablation (<a href="#sec-calibration">§3.1</a>) surfaced and that the head-to-head harness caught on short genomes. <strong>Hold <span class="math inline">\(\pi\)</span> fixed.</strong></p>
+</div>
+</div>
+<p>The root frequencies <span class="math inline">\(\pi\)</span> are a prior on the state of the genealogical MRCA. The M-step estimate is</p>
+<p><span id="eq-pi-mstep"><span class="math display">\[
+\pi = \frac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]}
+\tag{1}\]</span></span></p>
+<p>where <span class="math inline">\(S_{\text{root}}\)</span> is the span-weighted expected root-state mass pooled over all roots (<a href="../api/em.m_step_pi.html"><code>m_step_pi</code></a>). The problem: when the deep/root branches <strong>wash</strong> — large <span class="math inline">\(Q\cdot t\)</span>, as happens on sparse or short ARGs, or under the order-only variant — each tree’s root marginal just <strong>echoes <span class="math inline">\(\pi\)</span></strong> rather than carrying independent evidence about it. So <a href="#eq-pi-mstep" class="quarto-xref">Equation&nbsp;1</a> feeds <span class="math inline">\(\pi\)</span> back onto itself, <span class="math inline">\(\pi\)</span> is under-determined, and the M-step drifts it to a degenerate extreme (e.g.&nbsp;<span class="math inline">\(\pi \approx [0.96, 0.04]\)</span>). With one state dominating the prior, every query relaxes toward that state, and the painting <strong>collapses to one colour with high confidence</strong> — confidently wrong.</p>
+<p><strong>The fix: hold <span class="math inline">\(\pi\)</span> fixed</strong> (<code>estimate_pi=False</code>, the <a href="../api/compare.tspaint_paint.html"><code>tspaint_paint</code></a> default). Uniform <span class="math inline">\(\pi\)</span> is <em>principled</em>, not a kludge: <span class="math inline">\(\pi\)</span> is a prior on the <strong>arbitrary</strong> GMRCA state, so uniform is the right non-informative choice. It is estimating <span class="math inline">\(\pi\)</span> from washing roots that breaks. The lower-level <a href="../api/fit.html"><code>fit</code></a> exposes <code>estimate_pi=True</code> only for deliberate <span class="math inline">\(\pi\)</span>-recovery studies, where deep branches are well-resolved and <span class="math inline">\(\pi\)</span> <em>is</em> identified.</p>
+<p>MEASURED recovery numbers (CLAUDE.md §6, §9):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Regime</th>
+<th style="text-align: left;"><code>estimate_pi=True</code> (balanced acc.)</th>
+<th style="text-align: left;"><code>estimate_pi=False</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">true ARG, order-only (ranked)</td>
+<td style="text-align: left;">0.50</td>
+<td style="text-align: left;">0.94</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">tsinfer, <span class="math inline">\(L = 5\times10^4\)</span></td>
+<td style="text-align: left;">0.50</td>
+<td style="text-align: left;"><strong>1.00</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">tsinfer, <span class="math inline">\(L = 2\times10^5\)</span> (good data)</td>
+<td style="text-align: left;">0.984</td>
+<td style="text-align: left;">0.999</td>
+</tr>
+</tbody>
+</table>
+<p>The fix recovers both failures and is <strong>harmless on good, long data</strong> (the <span class="math inline">\(L=2\times10^5\)</span> row, where <span class="math inline">\(\pi\)</span> <em>is</em> identified). The short/sparse regime is itself an edge case — real LAI runs on long genomes with many roots, where <span class="math inline">\(\pi\)</span> is identified and <code>tspaint</code> already paints 0.98–1.0 — so holding <span class="math inline">\(\pi\)</span> fixed is a free robustness default, not a patch over a practical limitation.</p>
+</section>
+<section id="sec-calibration" class="level2">
+<h2 class="anchored" data-anchor-id="sec-calibration">4. Branch-length / time-calibration risk</h2>
+<p>The CTMC rides on branch lengths through <span class="math inline">\(P(t) = \exp(Q\,t)\)</span>, so <span class="math inline">\(Q\)</span> depends on calibrated node times. Relate estimates branch lengths under a <strong>panmictic coalescent prior</strong> — misspecified <em>precisely</em> in the structured / admixed regime that LAI targets (<a href="https://www.nature.com/articles/s41588-019-0484-x">Speidel et al., 2019</a>, Supp. Fig. 3c: TMRCA bias under the wrong <span class="math inline">\(N_e\)</span>). If <span class="math inline">\(Q\)</span> depends on those biased <span class="math inline">\(t\)</span>, the bias propagates. <code>--compress</code>’s span-weighted-average-then-reconcile age smoothing (<a href="#sec-input">§1</a>) adds a further calibration layer on top.</p>
+<section id="sec-ranked" class="level3">
+<h3 class="anchored" data-anchor-id="sec-ranked">3.1 The order-only ablation — a measured <em>negative</em> result</h3>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>The hypothesised fix makes things worse. Do not use it for inference.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The order-only / ranked-topology variant (<a href="../api/ranked.ranked_tree_sequence.html"><code>ranked_tree_sequence</code></a>) was the natural robustness fix for the calibration risk — discard the (possibly biased) time magnitudes, keep only coalescence <em>order</em>, in the spirit of Relate’s order-based selection test. <strong>It does not work.</strong> It is kept as a runnable ablation only, never a recommended mode.</p>
+</div>
+</div>
+<p>The variant replaces each node’s absolute time with the <strong>dense rank</strong> of that time (order preserved, magnitudes discarded; topology and sample IDs unchanged, so labels and truth transfer). MEASURED: it <strong>collapses true-ARG painting from ~1.0 to ~0.50</strong> (CLAUDE.md §6). The mechanism is a chain:</p>
+<ol type="1">
+<li>Dense-ranking <strong>compresses the timescale</strong>.</li>
+<li>EM compensates by fitting a much <strong>larger <span class="math inline">\(Q\)</span></strong> (~<span class="math inline">\(10^{-2}\)</span> vs.&nbsp;~<span class="math inline">\(5\times10^{-5}\)</span>).</li>
+<li>The large <span class="math inline">\(Q\)</span> <strong>washes the deep/root branches</strong>.</li>
+<li>Washed roots make <strong><span class="math inline">\(\pi\)</span> unidentifiable</strong> — it drifts to a degenerate extreme (<a href="#sec-pi">§3</a>) → confident-wrong painting.</li>
+</ol>
+<p>So the <a href="#sec-calibration">§4</a> worry (mis-calibration hurts) was correct, but this particular cure is wrong: it discards exactly the coalescence-depth <strong>magnitudes</strong> the CTMC needs, and it worsens the <span class="math inline">\(\pi\)</span> degeneracy. The actual robustness fix for the same <span class="math inline">\(\pi\)</span> failure is <code>estimate_pi=False</code> (<a href="#sec-pi">§3</a>), not order-only.</p>
+</section>
+</section>
+<section id="sec-mugration" class="level2">
+<h2 class="anchored" data-anchor-id="sec-mugration">5. The mugration approximation</h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Genealogy and ancestry are <em>jointly</em> distributed; <code>tspaint</code> treats the genealogy as fixed
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>tspaint</code> models ancestry as a discrete character evolving on a <strong>fixed</strong> genealogy (the “mugration” / discrete-phylogeography construction, <a href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000520">Lemey et al., 2009</a>). This ignores that the genealogy and the ancestry are not independent: under the structured coalescent, <strong>lineages in different demes cannot coalesce</strong>, so the tree shape itself carries ancestry information that the mugration model throws away. The consequence is a <strong>bias in the estimated <span class="math inline">\(Q\)</span></strong>.</p>
+</div>
+</div>
+<p>This is a deliberate v1 simplification, stated openly. The structured-coalescent methods that correct it — <a href="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005421">BASTA</a> (<a href="https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005421">De Maio et al., 2015</a>), <a href="https://academic.oup.com/mbe/article/35/11/2613/5072866">MASCOT</a> (<a href="https://academic.oup.com/mbe/article/35/11/2613/5072866">Müller et al., 2018</a>), and, on inferred ARGs specifically, <a href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010422">SCAR</a> (<a href="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010422">Guo et al., 2022</a>) — solve the joint genealogy↔︎ancestry problem, but their deliverable is migration demography (rates, <span class="math inline">\(N_e\)</span>, ancestral lineage locations), <strong>not</strong> per-haplotype painting with credibility. For a v1 painting tool the naive mugration version is likely fine in practice; the limitation is that the learned <span class="math inline">\(Q\)</span> should be read as an effective ancestral-migration timescale, not an unbiased structured-coalescent rate.</p>
+</section>
+<section id="sec-old-admixture" class="level2">
+<h2 class="anchored" data-anchor-id="sec-old-admixture">6. Loss of signal at old admixture</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>A coalescent limit, not a tree-inference one
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>At <em>old</em> admixture under present-day sampling, accuracy decays even on the <strong>true ARG</strong>. This is not tree-inference error — it is the genealogy itself losing the information.</p>
+</div>
+</div>
+<p>The headline hypothesis is that a tree-native method can reach <strong>older</strong> admixture than tract-/copying-based methods (RFMix, MOSAIC, FLARE), because the genealogical relationship of a query to its source references survives even after recombination shreds the surrounding haplotype. The binding constraint becomes <strong>tree accuracy</strong> rather than tract length. That is largely borne out — but with a measured ceiling.</p>
+<p>MEASURED, discrimination vs.&nbsp;admixture age on a <strong>true ARG</strong> (deep split so only tract length varies; balanced 50/50 admixture; balanced accuracy / mean confidence; CLAUDE.md §9):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><span class="math inline">\(T_{\text{admix}}\)</span> (generations)</th>
+<th style="text-align: left;">balanced accuracy</th>
+<th style="text-align: left;">mean confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">30</td>
+<td style="text-align: left;">0.99</td>
+<td style="text-align: left;">0.72</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">300</td>
+<td style="text-align: left;">0.93</td>
+<td style="text-align: left;">0.36</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">1000</td>
+<td style="text-align: left;">0.50</td>
+<td style="text-align: left;">0.15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">3000</td>
+<td style="text-align: left;">0.50</td>
+<td style="text-align: left;">0.18</td>
+</tr>
+</tbody>
+</table>
+<p><code>tspaint</code> discriminates well at recent-to-moderate admixture and <strong>loses the reference signal at old admixture</strong>. Crucially, at <span class="math inline">\(T_{\text{admix}} = 1000\)</span> this is <em>not</em> tree-inference error (the ARG is true) but <strong>coalescent structure</strong>: admixed individuals sampled at the present coalesce <strong>among themselves</strong> before the old pulse, which severs the query→reference genealogical link the method depends on. This refines — does not retract — the headline: tract length is not the binding constraint, but the query↔︎reference link is, and that link decays with admixture age under present-day admixed sampling. The crossover age is scenario-specific (it scales with <span class="math inline">\(N_e\)</span> and the sampling scheme); the qualitative loss-at-old is robust.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Reporting note: report balanced accuracy + confidence, not plain accuracy
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>On a lopsided truth, plain accuracy is misleading — taking <code>argmax</code> of a posterior near <span class="math inline">\(P=0.5\)</span> can score high while carrying no real information. Use <a href="../api/validate.balanced_accuracy.html"><code>validate.balanced_accuracy</code></a> together with <a href="../api/validate.mean_confidence.html"><code>validate.mean_confidence</code></a>, as the tables above do.</p>
+</div>
+</div>
+</section>
+<section id="sec-arg-bound" class="level2">
+<h2 class="anchored" data-anchor-id="sec-arg-bound">7. Inherited from the front end: ARG accuracy is the binding constraint</h2>
+<p>Even setting aside old-admixture coalescent limits, painting on an <strong>inferred</strong> ARG is bounded by the ARG’s quality. MEASURED on a <code>tsinfer</code>-inferred ARG (balanced 50/50, chance 0.5; CLAUDE.md §9): per-base accuracy ~0.53 at ~650 sites (poor ARG, near chance), ~0.64 at ~2100 sites, ~0.88 at ~5400 sites (good ARG). Tree accuracy, not tract length, is the binding constraint — exactly as predicted. The practical implication: feed <code>tspaint</code> the best ARG you can. A Bayesian SMC sampler such as SINGER (<a href="../api/io.singer_tree_sequences.html"><code>io.singer_tree_sequences</code></a>) largely lifts this bound, and averaging across a <em>posterior</em> ensemble (<a href="../api/ensemble.merge_posterior_tables.html"><code>ensemble.merge_posterior_tables</code></a>) turns the residual ARG uncertainty into a calibrated band rather than a hidden error.</p>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Concern</th>
+<th style="text-align: left;">Status</th>
+<th style="text-align: left;">Mitigation / default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Cross-tree node-ID stability</td>
+<td style="text-align: left;">Required premise</td>
+<td style="text-align: left;"><code>--compress</code> or tsinfer; run the <a href="#sec-persistence">persistence check</a> first</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Label-switching / <span class="math inline">\(w_i\)</span> / <span class="math inline">\(Q\)</span> collapse</td>
+<td style="text-align: left;">Structural (soft mode)</td>
+<td style="text-align: left;">Hard-clamped anchor set; <span class="math inline">\(\mathrm{Beta}\)</span> prior near 1; never float the whole panel</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\pi\)</span> drift on washed roots</td>
+<td style="text-align: left;"><strong>Measured failure</strong></td>
+<td style="text-align: left;"><code>estimate_pi=False</code> (default); uniform <span class="math inline">\(\pi\)</span> is principled</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Panmictic branch-length bias</td>
+<td style="text-align: left;">Real; biases <span class="math inline">\(Q\)</span></td>
+<td style="text-align: left;">Order-only ablation <strong>does not help</strong> (measured); feed well-calibrated times (SINGER)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Mugration approximation</td>
+<td style="text-align: left;">Deliberate v1 simplification</td>
+<td style="text-align: left;">Read <span class="math inline">\(Q\)</span> as an effective timescale; BASTA/MASCOT/SCAR correct it</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Old admixture under present sampling</td>
+<td style="text-align: left;">Coalescent limit</td>
+<td style="text-align: left;">None — report balanced accuracy + confidence honestly</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Inferred-ARG quality</td>
+<td style="text-align: left;">Binding constraint</td>
+<td style="text-align: left;">Best available ARG; SINGER posterior + ensemble merge</td>
+</tr>
+</tbody>
+</table>
+<p>The throughline: <code>tspaint</code>’s honesty <em>is</em> its selling point relative to black-box ARG-native classifiers. It produces a calibrated soft posterior, a readable <span class="math inline">\(Q\)</span>, and explicit per-tip credibility — and, in the regimes where the signal is gone, it relaxes toward <span class="math inline">\(\pi\)</span> rather than making a confident wrong call.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../pages/dating.html" class="pagination-link" aria-label="Admixture dating: rate through time">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Admixture dating: rate through time</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../pages/code_paths.html" class="pagination-link" aria-label="Code organization and data flow">
+        <span class="nav-page-text">Code organization and data flow</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

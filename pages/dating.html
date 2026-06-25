@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Admixture dating: rate through time – tspaint</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../pages/assumptions.html" rel="next">
+<link href="../pages/inference.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1c33c0780a01951c1c2d77b4a45239a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../pages/overview.html" aria-current="page"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/dating.html">Admixture dating: rate through time</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inference: structured (blocked) EM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/dating.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Admixture dating: rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/assumptions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Assumptions, identifiability &amp; limitations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/code_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code organization and data flow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Notebooks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Haplotype painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calibration &amp; accuracy vs admixture age</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/fragmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fragmentation &amp; tract-length fidelity</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/bp_smoother.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Horizontal BP smoother on inferred ARGs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Results</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-model" id="toc-the-model" class="nav-link active" data-scroll-target="#the-model">The model</a></li>
+  <li><a href="#per-cell-sufficient-statistics" id="toc-per-cell-sufficient-statistics" class="nav-link" data-scroll-target="#per-cell-sufficient-statistics">Per-cell sufficient statistics</a></li>
+  <li><a href="#directional-smooth-m-step" id="toc-directional-smooth-m-step" class="nav-link" data-scroll-target="#directional-smooth-m-step">Directional smooth M-step</a>
+  <ul class="collapse">
+  <li><a href="#direction-convention" id="toc-direction-convention" class="nav-link" data-scroll-target="#direction-convention">Direction convention</a></li>
+  </ul></li>
+  <li><a href="#the-em-loop" id="toc-the-em-loop" class="nav-link" data-scroll-target="#the-em-loop">The EM loop</a></li>
+  <li><a href="#using-it" id="toc-using-it" class="nav-link" data-scroll-target="#using-it">Using it</a></li>
+  <li><a href="#what-it-recovers" id="toc-what-it-recovers" class="nav-link" data-scroll-target="#what-it-recovers">What it recovers</a></li>
+  <li><a href="#why-not-paintdatingtrue" id="toc-why-not-paintdatingtrue" class="nav-link" data-scroll-target="#why-not-paintdatingtrue">Why not <code>paint(dating=True)</code></a></li>
+  <li><a href="#caveats" id="toc-caveats" class="nav-link" data-scroll-target="#caveats">Caveats</a></li>
+  </ul>
+<div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="../notebooks/dating-preview.html"><i class="bi bi-journal-code"></i>Admixture dating: cross-ancestry rate through time</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/dating.html">Admixture dating: rate through time</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Admixture dating: rate through time</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Painting answers <em>what</em> ancestry a haplotype carries at a locus. A different question is <em>when</em> the labelled ancestries diverged or exchanged genes. <code>tspaint</code> answers it with a <strong>separate, optional estimator</strong> that rides the same engine: make the ancestry CTMC <strong>time-inhomogeneous</strong> and fit the two directional cross-ancestry transition rates <span class="math inline">\(q_{AB}(t)\)</span>, <span class="math inline">\(q_{BA}(t)\)</span> as smooth functions of (backward) time. The result — a <a href="../api/RateThroughTime.html"><code>RateThroughTime</code></a> profile — locates divergence and gene-flow epochs, their direction and asymmetry, and ongoing flow.</p>
+<p>This path lives <strong>side by side</strong> with painting. It does not change how <a href="../api/paint.html"><code>paint</code></a> works, and Q(t) is deliberately <em>not</em> fed back into the default painting (see <a href="#why-not-paintdatingtrue">Why not <code>paint(dating=True)</code></a> below). The design and its rung-by-rung validation are in <code>notes/admix_dating_design.md</code>.</p>
+<hr>
+<section id="the-model" class="level2">
+<h2 class="anchored" data-anchor-id="the-model">The model</h2>
+<p>The homogeneous painter uses one generator <span class="math inline">\(Q\)</span> for the whole genealogy. Here <span class="math inline">\(Q\)</span> becomes a <strong>piecewise-constant function of time</strong> on a fine logarithmic grid (logarithmic so each cell carries comparable coalescent power):</p>
+<p><span class="math display">\[
+Q(t) \;=\; Q_k \;=\;
+\begin{pmatrix} -q_{AB}^{(k)} &amp; q_{AB}^{(k)} \\[2pt] q_{BA}^{(k)} &amp; -q_{BA}^{(k)} \end{pmatrix}
+\qquad \text{for } t \in [\tau_k,\, \tau_{k+1}),
+\]</span></p>
+<p>with grid edges <span class="math inline">\(\tau_0 &lt; \tau_1 &lt; \dots\)</span> from <a href="../api/dating.log_time_grid.html"><code>dating.log_time_grid</code></a>. A branch running from child time <span class="math inline">\(t_c\)</span> to parent time <span class="math inline">\(t_p\)</span> is split at the cell boundaries it crosses (<a href="../api/dating.split_branch.html"><code>dating.split_branch</code></a>), so its transition matrix is a time-ordered product over the cells it spans:</p>
+<p><span class="math display">\[
+P_{\text{branch}}(t_c, t_p) \;=\; \prod_{k} \exp\!\big(Q_k\, d_k\big),
+\qquad d_k = \text{duration of the branch inside cell } k,
+\]</span></p>
+<p>(<a href="../api/dating.composite_transition.html"><code>dating.composite_transition</code></a>). Recombination / tract structure is still carried entirely by edge span, exactly as in the homogeneous model — only the vertical generator gains time-dependence.</p>
+</section>
+<section id="per-cell-sufficient-statistics" class="level2">
+<h2 class="anchored" data-anchor-id="per-cell-sufficient-statistics">Per-cell sufficient statistics</h2>
+<p>The E-step needs, for each cell, the <strong>expected dwell time per state</strong> and <strong>expected directional jump counts</strong>, conditioned on the branch-endpoint posterior <span class="math inline">\(\xi\)</span> (the <span class="math inline">\(K\times K\)</span> joint over parent/child states from the down-pass). For a single cell <span class="math inline">\(j\)</span> this is the <a href="https://doi.org/10.1109/TAC.1978.1101743">Van Loan</a> reward integral for that cell’s generator, <strong>sandwiched</strong> between the transition products below and above it on the branch:</p>
+<p><span class="math display">\[
+M_j \;=\; \underbrace{\Big(\textstyle\prod_{k&lt;j}\! e^{Q_k d_k}\Big)}_{\text{below cell } j}
+\;\cdot\;
+\underbrace{\int_0^{d_j}\! e^{Q_j u}\, E\, e^{Q_j (d_j-u)}\,du}_{\text{reward inside cell } j}
+\;\cdot\;
+\underbrace{\Big(\textstyle\prod_{k&gt;j}\! e^{Q_k d_k}\Big)}_{\text{above cell } j},
+\]</span></p>
+<p>where <span class="math inline">\(E = e_m e_m^\top\)</span> for dwell in state <span class="math inline">\(m\)</span> and <span class="math inline">\(E = q_{mn}\,e_m e_n^\top\)</span> for <span class="math inline">\(m\!\to\!n\)</span> jumps. Conditioning on the endpoints divides by the full-branch transition, <span class="math inline">\(P_{\text{branch}}\)</span>, and contracts against <span class="math inline">\(\xi\)</span>:</p>
+<p><span class="math display">\[
+\text{reward}_j \;=\; \sum_{s_p, s_c} \xi[s_p, s_c]\;
+\frac{M_j[s_p, s_c]}{P_{\text{branch}}[s_p, s_c]} .
+\]</span></p>
+<p>This is <a href="../api/dating.branch_cell_stats.html"><code>dating.branch_cell_stats</code></a>. Summed over cells it collapses to the ordinary single-branch <a href="../api/branch_stats.branch_expected_stats.html"><code>branch_expected_stats</code></a> (a tested invariant), so the time-binning adds resolution without changing the totals. Accumulated <strong>per edge, span-weighted</strong> across the genome (the same blocking as the painter), these give per-cell occupation <span class="math inline">\(D[k]\)</span> and directional jumps <span class="math inline">\(J[k]\)</span>.</p>
+</section>
+<section id="directional-smooth-m-step" class="level2">
+<h2 class="anchored" data-anchor-id="directional-smooth-m-step">Directional smooth M-step</h2>
+<p>Given <span class="math inline">\(D\)</span> and <span class="math inline">\(J\)</span>, each direction’s rate is a <strong>penalised-Poisson log-spline</strong>: the per-cell jump count <span class="math inline">\(J[k, m, n]\)</span> is Poisson with mean <span class="math inline">\(q_{mn}(t_k)\,D[k, m]\)</span> (occupation in the <em>source</em> state is the exposure), and <span class="math inline">\(\log q_{mn}\)</span> is a B-spline with a second-difference roughness penalty whose smoothing <span class="math inline">\(\lambda\)</span> is chosen by <strong>GCV</strong> (<a href="../api/dating.fit_poisson_spline.html"><code>dating.fit_poisson_spline</code></a>, <a href="../api/dating.select_lambda_gcv.html"><code>dating.select_lambda_gcv</code></a>). Fitting <span class="math inline">\(q_{AB}\)</span> and <span class="math inline">\(q_{BA}\)</span> separately is what makes the estimator <strong>directional</strong> — it can see an asymmetric pulse.</p>
+<p>The fit is restricted to the <strong>informative window</strong> (cells whose occupation exceeds a small fraction of the maximum); data-poor deep cells are flat-clamped rather than allowed to diverge (<a href="../api/dating.directional_rate_splines.html"><code>dating.directional_rate_splines</code></a>). A smooth spline (rather than independent per-cell rates) is the natural fit because there is only power to resolve changes on a coalescent timescale — and it is flexible enough to capture genuinely abrupt cross-coalescence-rate changes where that power exists (verified before building; the “spline-resolution” exploration).</p>
+<section id="direction-convention" class="level3">
+<h3 class="anchored" data-anchor-id="direction-convention">Direction convention</h3>
+<p>A jump is recorded <strong>parent → child = old → young = forward in time</strong>. So a <em>backward</em>-time admixture pulse of <span class="math inline">\(A\)</span> into <span class="math inline">\(B\)</span> appears as mass in <span class="math inline">\(q_{BA}(t)\)</span>, not <span class="math inline">\(q_{AB}(t)\)</span> — worth keeping straight when reading a profile.</p>
+</section>
+</section>
+<section id="the-em-loop" class="level2">
+<h2 class="anchored" data-anchor-id="the-em-loop">The EM loop</h2>
+<p><a href="../api/fit_rate_through_time.html"><code>fit_rate_through_time</code></a> alternates the two:</p>
+<pre><code>init   q_AB(t) = q_BA(t) = const          # from one homogeneous tspaint.fit
+E-step accumulate per-cell D, J under the current Q(t)   (decoupled fine-grid accumulation)
+M-step refit q_AB(t), q_BA(t) as directional penalised-Poisson splines  -&gt;  new Q(t)
+repeat until the span-integrated log-likelihood converges</code></pre>
+<p>The log-likelihood is monotone (an EM correctness check, asserted in the tests). The payoff over a single global <span class="math inline">\(Q\)</span> is a <strong>sharp</strong> rate-through-time: the per-cell rate is no longer smeared by one genome-wide constant.</p>
+</section>
+<section id="using-it" class="level2">
+<h2 class="anchored" data-anchor-id="using-it">Using it</h2>
+<p>The headline entry point needs only a tree sequence and reference labels — the log-time grid is built automatically from the node ages:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>rtt <span class="op">=</span> tspaint.fit_rate_through_time(ts, labels)   <span class="co"># -&gt; RateThroughTime</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>rtt.plot()                                       <span class="co"># q_AB(t), q_BA(t) on a log-time axis</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or reuse a painting’s fit (no second homogeneous fit; the painting is untouched):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>painting <span class="op">=</span> tspaint.paint(ts, labels)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>rtt <span class="op">=</span> painting.rate_through_time()               <span class="co"># warm-started from painting's (Q, π, w)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="what-it-recovers" class="level2">
+<h2 class="anchored" data-anchor-id="what-it-recovers">What it recovers</h2>
+<p>On a clean two-population split the cross-ancestry rate is ~0 more recently than the split (the two ancestries cannot share ancestry yet) and rises once <span class="math inline">\(t\)</span> exceeds it — the dashed line is the true split time:</p>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-dating-profile" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:37.352913Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:37.352797Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:37.577483Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:37.576982Z&quot;}}" data-execution_count="3">
+<div class="cell-output cell-output-display">
+<div id="fig-dating-profile" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-dating-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="dating_files/figure-html/..-notebooks-dating-fig-dating-profile-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs backward time: ~0 more recent than the population split, rising once cross-ancestry sharing becomes possible. The dashed line is the true split time."><img src="dating_files/figure-html/..-notebooks-dating-fig-dating-profile-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-dating-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs backward time: ~0 more recent than the population split, rising once cross-ancestry sharing becomes possible. The dashed line is the true split time.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<a class="quarto-notebook-link" id="nblink-1" href="../notebooks/dating-preview.html#cell-fig-dating-profile">Source: Admixture dating: cross-ancestry rate through time</a></div>
+<p>Across the validation rungs (true ARG, strong structure) the estimator: has a sum-invariant E-step and a monotone EM loop; <strong>sharpens the onset toward the true split</strong> as it iterates; resolves demographic structure (a pulse, an asymmetric pulse, ongoing migration); and survives on an <strong>inferred</strong> ARG — SINGER samples reproduce the true-ARG profile (onset and median cross-coalescence time within ~1 % of truth), the binding axis there being calibration rather than point accuracy.</p>
+</section>
+<section id="why-not-paintdatingtrue" class="level2">
+<h2 class="anchored" data-anchor-id="why-not-paintdatingtrue">Why not <code>paint(dating=True)</code></h2>
+<p>Feeding the fitted <span class="math inline">\(Q(t)\)</span> back into the painting (<code>paint_qt</code>) gives <strong>no measurable local-ancestry accuracy gain</strong> (~1.0 either way) — only <em>sharper confidence</em>, at roughly <strong>4–5×</strong> the cost. That sharpening was measured only where accuracy is already ~1.0, so “sharper” there means “better calibrated.” But <code>tspaint</code>’s distinguishing value is <strong>honest calibration</strong> — its posteriors correctly relax toward 0.5 where the query↔︎reference signal is weak (see <a href="../pages/results.html">Results</a>), and whether <span class="math inline">\(Q(t)\)</span> preserves that relaxation in weak-signal regimes is <strong>unmeasured</strong>. A discoverable flag that quietly re-paints under <span class="math inline">\(Q(t)\)</span> could trade away the very property that makes the painter worth using. So the paths stay separate: painting uses the homogeneous, calibrated <span class="math inline">\(Q\)</span>; dating is its own deliverable. The <span class="math inline">\(Q(t)\)</span> re-paint remains available, opt-in, via <a href="../api/dating.paint_qt.html"><code>dating.paint_qt</code></a>.</p>
+</section>
+<section id="caveats" class="level2">
+<h2 class="anchored" data-anchor-id="caveats">Caveats</h2>
+<ul>
+<li><strong>Bounded by ARG quality</strong>, like painting — the profile is only as good as the genealogy and its node ages. SINGER’s coalescent-calibrated times help here and propagate uncertainty.</li>
+<li><strong><span class="math inline">\(\pi\)</span> held fixed</strong> (uniform), as everywhere in <code>tspaint</code>, to avoid the root-frequency degeneracy (see <a href="../pages/assumptions.html">Assumptions</a>).</li>
+<li>The absolute rate scale depends on the time calibration of the input; the <strong>shape</strong> of the profile (where rates rise, their direction and relative magnitude) is the robust read.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../pages/inference.html" class="pagination-link" aria-label="Inference: structured (blocked) EM">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Inference: structured (blocked) EM</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../pages/assumptions.html" class="pagination-link" aria-label="Assumptions, identifiability &amp; limitations">
+        <span class="nav-page-text">Assumptions, identifiability &amp; limitations</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>

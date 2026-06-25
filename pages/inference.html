@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Inference: structured (blocked) EM – tspaint</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../pages/dating.html" rel="next">
+<link href="../pages/model.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1c33c0780a01951c1c2d77b4a45239a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../pages/overview.html" aria-current="page"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/inference.html">Inference: structured (blocked) EM</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/inference.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Inference: structured (blocked) EM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/assumptions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Assumptions, identifiability &amp; limitations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/code_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code organization and data flow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Notebooks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Haplotype painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calibration &amp; accuracy vs admixture age</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/fragmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fragmentation &amp; tract-length fidelity</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/bp_smoother.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Horizontal BP smoother on inferred ARGs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Results</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#e-step-felsenstein-pruning-per-tree-per-root" id="toc-e-step-felsenstein-pruning-per-tree-per-root" class="nav-link active" data-scroll-target="#e-step-felsenstein-pruning-per-tree-per-root">E-step: Felsenstein pruning per tree, per root</a>
+  <ul class="collapse">
+  <li><a href="#up-pass-partial-likelihoods" id="toc-up-pass-partial-likelihoods" class="nav-link" data-scroll-target="#up-pass-partial-likelihoods">Up-pass: partial likelihoods</a></li>
+  <li><a href="#down-pass-marginals-and-joint-endpoint-posteriors" id="toc-down-pass-marginals-and-joint-endpoint-posteriors" class="nav-link" data-scroll-target="#down-pass-marginals-and-joint-endpoint-posteriors">Down-pass: marginals and joint endpoint posteriors</a></li>
+  <li><a href="#static-sketch" id="toc-static-sketch" class="nav-link" data-scroll-target="#static-sketch">Static sketch</a></li>
+  </ul></li>
+  <li><a href="#per-branch-expected-sufficient-statistics-van-loan" id="toc-per-branch-expected-sufficient-statistics-van-loan" class="nav-link" data-scroll-target="#per-branch-expected-sufficient-statistics-van-loan">Per-branch expected sufficient statistics (Van Loan)</a></li>
+  <li><a href="#sec-edge-blocking" id="toc-sec-edge-blocking" class="nav-link" data-scroll-target="#sec-edge-blocking">Edge-blocked, span-weighted accumulation</a>
+  <ul class="collapse">
+  <li><a href="#why-this-is-exact-for-the-double-counting-fix" id="toc-why-this-is-exact-for-the-double-counting-fix" class="nav-link" data-scroll-target="#why-this-is-exact-for-the-double-counting-fix">Why this is exact for the double-counting fix</a></li>
+  <li><a href="#why-it-carries-genome-scale-autocorrelation" id="toc-why-it-carries-genome-scale-autocorrelation" class="nav-link" data-scroll-target="#why-it-carries-genome-scale-autocorrelation">Why it carries genome-scale autocorrelation</a></li>
+  <li><a href="#static-sketch-1" id="toc-static-sketch-1" class="nav-link" data-scroll-target="#static-sketch-1">Static sketch</a></li>
+  </ul></li>
+  <li><a href="#m-step-closed-form-otextedges" id="toc-m-step-closed-form-otextedges" class="nav-link" data-scroll-target="#m-step-closed-form-otextedges">M-step: closed form, <span class="math inline">\(O(\#\text{edges})\)</span></a></li>
+  <li><a href="#tskit-accounting-that-keeps-it-correct" id="toc-tskit-accounting-that-keeps-it-correct" class="nav-link" data-scroll-target="#tskit-accounting-that-keeps-it-correct">tskit accounting that keeps it correct</a></li>
+  <li><a href="#what-blocked-approximates-and-when-bp-tightens-it" id="toc-what-blocked-approximates-and-when-bp-tightens-it" class="nav-link" data-scroll-target="#what-blocked-approximates-and-when-bp-tightens-it">What “blocked” approximates (and when BP tightens it)</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../pages/model.html">Theory</a></li><li class="breadcrumb-item"><a href="../pages/inference.html">Inference: structured (blocked) EM</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Inference: structured (blocked) EM</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><code>tspaint</code> fits the ancestry CTMC to an inferred tree sequence by <strong>expectation–maximization (EM)</strong>. The E-step is <em>exact</em> Felsenstein pruning, run per marginal tree and per root; the M-step is closed-form CTMC maximum likelihood from expected dwell times and jump counts. The distinguishing piece sits between them: sufficient statistics are accumulated <strong>per tree-sequence edge, span-weighted, and banked once</strong> — so a clade that persists across many marginal trees is counted a single time. This page documents that machinery rigorously.</p>
+<p>The two latent Markov structures the model couples are kept separate by construction:</p>
+<ul>
+<li><strong>Vertical</strong> — ancestry evolving <em>up</em> a marginal tree under generator <span class="math inline">\(Q\)</span>, handled by Felsenstein pruning (<a href="https://doi.org/10.1007/BF01734359">Felsenstein, 1981</a>) and the discrete-trait “mugration” construction (<a href="https://doi.org/10.1371/journal.pcbi.1000520">Lemey et al., 2009</a>).</li>
+<li><strong>Horizontal</strong> — ancestry tracts <em>along</em> the genome, carried entirely by <strong>edge span</strong> (recombination breakpoints), not by a separate switch-rate parameter. Between breakpoints the genealogical context is identical, so there is nothing to switch against.</li>
+</ul>
+<p>This separation is what makes <span class="math inline">\(Q\)</span> estimate <em>only</em> the ancestral-migration timescale, while tract switching is handled by topology — a more specific and more falsifiable model than a generic <span class="math inline">\(\rho\)</span>-HMM.</p>
+<hr>
+<section id="e-step-felsenstein-pruning-per-tree-per-root" class="level2">
+<h2 class="anchored" data-anchor-id="e-step-felsenstein-pruning-per-tree-per-root">E-step: Felsenstein pruning per tree, per root</h2>
+<p>For each marginal tree the E-step is exact two-pass sum–product message passing (<a href="../api/pruning.prune_root.html"><code>pruning.prune_root</code></a>, <a href="../api/pruning.prune_tree.html"><code>pruning.prune_tree</code></a>). A marginal tree may be a <strong>forest</strong> of several roots; pruning runs independently per root, each with its own root-frequency prior <span class="math inline">\(\pi\)</span>.</p>
+<section id="up-pass-partial-likelihoods" class="level3">
+<h3 class="anchored" data-anchor-id="up-pass-partial-likelihoods">Up-pass: partial likelihoods</h3>
+<p>Post-order (tips → root), each node <span class="math inline">\(u\)</span> accumulates a partial likelihood vector <span class="math inline">\(L_u(s)\)</span> — the probability of the data in <span class="math inline">\(u\)</span>’s subtree given that <span class="math inline">\(u\)</span> is in state <span class="math inline">\(s\)</span>:</p>
+<p><span id="eq-uppass"><span class="math display">\[
+L_u(s) \;=\; e_u(s)\;\prod_{c \,\in\, \mathrm{children}(u)}
+            \;\Bigl[\, \textstyle\sum_{s'} P(t_{u\to c})[s,\,s']\; L_c(s') \,\Bigr]
+\tag{1}\]</span></span></p>
+<p>where the per-branch transition matrix is <span class="math inline">\(P(t) = \exp(Q\,t)\)</span>, indexed <code>[parent_state, child_state]</code>, and <span class="math inline">\(t_{u\to c} = \text{time}[u] - \text{time}[c] &gt; 0\)</span>.</p>
+<p>Three points in <a href="#eq-uppass" class="quarto-xref">Equation&nbsp;1</a> are load-bearing:</p>
+<ul>
+<li><strong>Polytomy-safe.</strong> The product runs over <em>all</em> children, reached via the quintuply-linked <code>left_child</code> / <code>right_sib</code> pointers (<code>tree.children(u)</code>). Nothing assumes binarity; a soft polytomy is integrated under conditional-independence-of-children-given-parent — an ordinary product, each child with its own branch length <span class="math inline">\(t\)</span>.</li>
+<li><strong>Tip / internal-sample emission.</strong> The factor <span class="math inline">\(e_u(s)\)</span> is the node’s own emission. For a labelled reference tip it is the soft-clamp noise model <span class="math inline">\(e_u(s) = w_u\,\mathbb{1}[s = \ell_u] + (1-w_u)\,\pi(s)\)</span>; for a query tip it is flat (<span class="math inline">\(\pi\)</span>). Because <span class="math inline">\(e_u\)</span> multiplies in for <em>every</em> node, an internal sample is handled correctly too — not only leaves.</li>
+<li><strong>Numerical scaling.</strong> Each <span class="math inline">\(L_u\)</span> is normalized to sum to 1 and the discarded log-scale is accumulated, so the returned tree log-likelihood is exact (it monitors EM convergence and is a strong correctness check). Posteriors are scale-invariant.</li>
+</ul>
+<p>The root belief is <span class="math inline">\(b_r(s) = \pi(s)\,L_r(s)\)</span>; its normalizer gives that root’s contribution to the log-likelihood.</p>
+</section>
+<section id="down-pass-marginals-and-joint-endpoint-posteriors" class="level3">
+<h3 class="anchored" data-anchor-id="down-pass-marginals-and-joint-endpoint-posteriors">Down-pass: marginals and joint endpoint posteriors</h3>
+<p>Pre-order (root → tips) propagates an <strong>outside</strong> message <span class="math inline">\(U_p(s)\)</span> (the evidence reaching <span class="math inline">\(p\)</span> from everything <em>except</em> <span class="math inline">\(p\)</span>’s own subtree, seeded at the root by <span class="math inline">\(\pi\)</span>). The node-marginal posterior is the inside × outside product:</p>
+<p><span id="eq-downpass"><span class="math display">\[
+\gamma_u(s) \;\propto\; L_u(s)\; U_u(s),
+\qquad
+\textstyle\sum_s \gamma_u(s) = 1
+\tag{2}\]</span></span></p>
+<p>For every parent–child branch we also need the <strong>joint</strong> posterior over its two endpoint states — the <span class="math inline">\(K \times K\)</span> object the M-step consumes:</p>
+<p><span id="eq-xi"><span class="math display">\[
+\xi_{(p,c)}(s_p,\,s_c) \;\propto\;
+   \mathrm{cav}_{p\setminus c}(s_p)\; P(t_{p\to c})[s_p,\,s_c]\; L_c(s_c)
+\tag{3}\]</span></span></p>
+<p>where <span class="math inline">\(\mathrm{cav}_{p\setminus c}\)</span> is the <strong>cavity</strong> message into <span class="math inline">\(p\)</span> — the outside message <span class="math inline">\(U_p\)</span>, times <span class="math inline">\(p\)</span>’s own emission, times the up-messages from <span class="math inline">\(c\)</span>’s <em>siblings</em>, but <strong>excluding</strong> <span class="math inline">\(c\)</span>’s own message. The implementation forms these cavities with left/right <strong>prefix–suffix products</strong> of the child messages, so it never divides messages (division is numerically unsafe when a message entry is near zero). Both <span class="math inline">\(\gamma\)</span> and <span class="math inline">\(\xi\)</span> are normalized.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Leave-one-out marginal for credibility
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The down-pass also returns, per node, a <strong>leave-one-out</strong> marginal: the outside message <em>excluding the node’s own emission</em>. This is what the credibility update (§ M-step) judges a reference label against — “what does the <em>rest</em> of the tree say about this tip?” — so a label can never confirm itself. See <a href="../api/pruning.prune_root.html"><code>pruning.PruneResult</code></a>.</p>
+</div>
+</div>
+</section>
+<section id="static-sketch" class="level3">
+<h3 class="anchored" data-anchor-id="static-sketch">Static sketch</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># up-pass (post-order): partial likelihoods, product over ALL children</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> u <span class="kw">in</span> tree.nodes(root, order<span class="op">=</span><span class="st">"postorder"</span>):</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    L <span class="op">=</span> emissions.get(u, ones(K))          <span class="co"># e_u(s): soft-clamp / query / flat</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> c <span class="kw">in</span> tree.children(u):              <span class="co"># polytomy-safe via sib pointers</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        L <span class="op">=</span> L <span class="op">*</span> msg[c]                       <span class="co"># msg[c] = P(t_c) @ L_c</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    L <span class="op">=</span> normalize(L)                         <span class="co"># bank log-scale for exact loglik</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> tree.parent(u) <span class="op">!=</span> tskit.NULL:         <span class="co"># skip the root branch</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        t <span class="op">=</span> node_time[parent] <span class="op">-</span> node_time[u]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        msg[u] <span class="op">=</span> expm(Q <span class="op">*</span> t) <span class="op">@</span> L</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># down-pass (pre-order): gamma, xi via leave-one-out (cavity) products</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p <span class="kw">in</span> tree.nodes(root, order<span class="op">=</span><span class="st">"preorder"</span>):</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> U[p] <span class="op">*</span> emissions.get(p, ones(K))  <span class="co"># outside * p's OWN emission</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># prefix/suffix products of child messages -&gt; cavity for each child (no division)</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> c <span class="kw">in</span> tree.children(p):</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        cavity <span class="op">=</span> base <span class="op">*</span> (siblings<span class="st">' messages)</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="er">        Pc     = expm</span>(Q <span class="op">*</span> (node_time[p] <span class="op">-</span> node_time[c]))</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        U[c]    <span class="op">=</span> normalize(cavity <span class="op">@</span> Pc)      <span class="co"># outside message into child</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        gamma[c] <span class="op">=</span> normalize(U[c] <span class="op">*</span> L[c])     <span class="co"># @eq-downpass</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        xi[(p,c)] <span class="op">=</span> normalize((cavity[:,<span class="va">None</span>] <span class="op">*</span> Pc) <span class="op">*</span> L[c][<span class="va">None</span>,:])  <span class="co"># @eq-xi</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="per-branch-expected-sufficient-statistics-van-loan" class="level2">
+<h2 class="anchored" data-anchor-id="per-branch-expected-sufficient-statistics-van-loan">Per-branch expected sufficient statistics (Van Loan)</h2>
+<p>The M-step needs, for each branch and conditioned on its endpoint posterior <span class="math inline">\(\xi\)</span>, the <strong>expected time spent in each state</strong> and the <strong>expected number of jumps</strong> of each ordered type. These are the endpoint-conditioned CTMC summary statistics of <a href="https://doi.org/10.1239/jap/1324046009">Hobolth and Jensen (2011)</a>, computed via the <strong>Van Loan block-triangular matrix exponential</strong> (<a href="https://doi.org/10.1109/TAC.1978.1101743">Van Loan, 1978</a>).</p>
+<p>For a <span class="math inline">\(K \times K\)</span> reward indicator <span class="math inline">\(E\)</span>, the integral</p>
+<p><span class="math display">\[
+\int_0^t \exp(Q\tau)\; E\; \exp\!\bigl(Q(t-\tau)\bigr)\, d\tau
+\]</span></p>
+<p>is recovered as the <strong>top-right block</strong> of a single <span class="math inline">\(2K \times 2K\)</span> matrix exponential:</p>
+<p><span id="eq-vanloan"><span class="math display">\[
+\exp\!\left(
+  \begin{bmatrix} Q &amp; E \\ 0 &amp; Q \end{bmatrix} t
+\right)
+=
+\begin{bmatrix}
+  P(t) &amp; \displaystyle\int_0^t \exp(Q\tau)\,E\,\exp\!\bigl(Q(t-\tau)\bigr)\,d\tau \\[2.2ex]
+  0    &amp; P(t)
+\end{bmatrix}
+\tag{4}\]</span></span></p>
+<p>with <span class="math inline">\(P(t) = \exp(Qt)\)</span> on the diagonal blocks (<a href="../api/branch_stats.branch_expected_stats.html"><code>branch_stats.vanloan_integral</code></a>). The reward indicators are:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Reward</th>
+<th style="text-align: left;">Indicator <span class="math inline">\(E\)</span></th>
+<th style="text-align: left;">Conditional expectation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Time spent in state <span class="math inline">\(m\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(E = e_m e_m^{\mathsf T}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(\mathbb{E}[\,\text{time in }m \mid s_p, s_c\,]\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of <span class="math inline">\(m \to n\)</span> jumps</td>
+<td style="text-align: left;"><span class="math inline">\(E = q_{mn}\, e_m e_n^{\mathsf T}\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(\mathbb{E}[\,\#\{m\to n\} \mid s_p, s_c\,]\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Dividing the Van Loan block <a href="#eq-vanloan" class="quarto-xref">Equation&nbsp;4</a> elementwise by the endpoint transition probability <span class="math inline">\(P(t)[s_p, s_c]\)</span> converts the <em>joint</em> integral into the <strong>conditional</strong> expectation given the branch endpoints. Then the branch’s contribution is just the inner product with that branch’s posterior <span class="math inline">\(\xi\)</span>:</p>
+<p><span id="eq-dwell"><span class="math display">\[
+\overline{d}_m \;=\; \sum_{s_p,\,s_c} \xi(s_p, s_c)\;
+   \frac{\bigl[\,\text{Van Loan block for } E=e_m e_m^{\mathsf T}\,\bigr][s_p,s_c]}{P(t)[s_p,s_c]},
+\tag{5}\]</span></span></p>
+<p>and analogously for jumps with <span class="math inline">\(E = q_{mn}\, e_m e_n^{\mathsf T}\)</span>. A useful invariant: for any normalized <span class="math inline">\(\xi\)</span>, the dwell vector <span class="math inline">\(\overline{d}\)</span> sums to the branch length <span class="math inline">\(t\)</span>.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>The kernel is cached by branch length
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <span class="math inline">\((Q,t)\)</span>-dependent conditional-expectation matrices — everything in <a href="#eq-vanloan" class="quarto-xref">Equation&nbsp;4</a> except <span class="math inline">\(\xi\)</span> — are split out into a <strong>branch kernel</strong> keyed by <span class="math inline">\(t\)</span> (<a href="../api/branch_stats.branch_expected_stats.html"><code>branch_stats.branch_kernel</code></a>), and the cheap inner product with <span class="math inline">\(\xi\)</span> is applied separately (<code>stats_from_kernel</code>). Combined with edge-blocking (next section) this computes the expensive <code>expm</code> <strong>once per distinct branch length per EM iteration</strong>, rather than once per edge or once per (tree × branch).</p>
+</div>
+</div>
+<p>For <span class="math inline">\(K = 2\)</span> these statistics are closed-form scalars, but the block-exponential is used anyway so the generator-agnostic seam holds: K-way is a generator swap, not a rewrite. The module is also the designated <strong>Phasic seam</strong> — the <code>expm</code> calls can be replaced by reward-accumulated phase-type machinery, with better numerics on stiff <span class="math inline">\(Q\,t\)</span>, without touching callers. <a href="https://doi.org/10.1186/1471-2105-12-465">Tataru and Hobolth (2011)</a> compare EXPM/Van Loan against eigendecomposition and uniformization for exactly these conditional expectations and document the fallbacks if <code>expm</code> is unstable at small or stiff <span class="math inline">\(Q\,t\)</span>.</p>
+<hr>
+</section>
+<section id="sec-edge-blocking" class="level2">
+<h2 class="anchored" data-anchor-id="sec-edge-blocking">Edge-blocked, span-weighted accumulation</h2>
+<p>This is the correctness core and the lead methodological novelty (<a href="../api/accumulate.accumulate_sufficient_statistics.html"><code>accumulate.accumulate_sufficient_statistics</code></a>).</p>
+<p>A tree-sequence <strong>edge</strong> is a record <code>(left, right, parent, child)</code> valid over the half-open span <span class="math inline">\([\text{left}, \text{right})\)</span>. The genome is swept by zipping <code>ts.edge_diffs()</code> with <code>ts.trees()</code>, which yields, at each new tree, the edges that <strong>enter</strong> (<code>edges_in</code>) and <strong>leave</strong> (<code>edges_out</code>) relative to the previous tree. The rule:</p>
+<blockquote class="blockquote">
+<p><strong>Bank each entering edge’s contribution exactly once, on entry, weighted by its own span <span class="math inline">\((\text{right} - \text{left})\)</span>. While the edge persists across subsequent trees, do nothing.</strong></p>
+</blockquote>
+<p>So a clade that persists across many marginal trees is <strong>one set of wide-span edges</strong>, contributing once, not a row re-counted at every tree it survives. The pooled sufficient statistics are</p>
+<p><span id="eq-suffstats"><span class="math display">\[
+S_{\text{dwell}} = \sum_{e} w_e\, \overline{d}^{\,(e)},
+\quad
+S_{\text{jumps}} = \sum_{e} w_e\, \overline{J}^{\,(e)},
+\quad
+S_{\text{root}} = \sum_{\text{intervals } I}\;\sum_{r \in \mathrm{roots}(I)} |I|\,\gamma_r,
+\tag{6}\]</span></span></p>
+<p>where <span class="math inline">\(w_e = \text{right}_e - \text{left}_e\)</span> is the edge span, <span class="math inline">\(\overline{d}^{\,(e)}, \overline{J}^{\,(e)}\)</span> are the per-branch dwell/jump expectations of <a href="#eq-dwell" class="quarto-xref">Equation&nbsp;5</a> evaluated at the edge’s endpoint posterior <span class="math inline">\(\xi\)</span>, and root-state mass <span class="math inline">\(S_{\text{root}}\)</span> is accumulated <strong>per interval</strong> (per tree span), not per edge — a tree’s roots are an interval property.</p>
+<section id="why-this-is-exact-for-the-double-counting-fix" class="level3">
+<h3 class="anchored" data-anchor-id="why-this-is-exact-for-the-double-counting-fix">Why this is exact for the double-counting fix</h3>
+<p>The tskit edge table guarantees an invariant:</p>
+<blockquote class="blockquote">
+<p>The set of intervals on which each node appears <strong>as a child</strong> is disjoint.</p>
+</blockquote>
+<p>Each child’s branch therefore appears in the edge table as a set of non-overlapping spans that partition exactly the region where that lineage exists. Summing a child-edge’s contribution weighted by <span class="math inline">\((\text{right} -
+\text{left})\)</span> thus integrates each branch’s expected statistics over the genome <strong>without overlap</strong> and cannot double-count that child’s branch. This is provably the per-genome span integral of the per-tree statistics — equal to a naive “sum over (tree × branch)” only because the persistence is folded into the weight, which is precisely the saving.</p>
+</section>
+<section id="why-it-carries-genome-scale-autocorrelation" class="level3">
+<h3 class="anchored" data-anchor-id="why-it-carries-genome-scale-autocorrelation">Why it carries genome-scale autocorrelation</h3>
+<p>The horizontal Markov structure is <strong>not dropped</strong> — it is <em>encoded in the blocking</em>. Holding an edge’s contribution constant over its span, and keying it by the edge, asserts that the lineage’s ancestry state is constant while its genealogical context (the edge) persists — i.e.&nbsp;the near-identity horizontal coupling, enforced <strong>structurally</strong> rather than by belief-propagation messages. A persistent subclade is therefore counted once <em>and</em> its long span is what weights it, so genome-scale autocorrelation enters <span class="math inline">\(Q\)</span> through the same channel that removes the double-counting. (This is why the <a href="../api/io.infer_tree_sequence.html"><code>--compress</code></a> flag — or a tsinfer-native tree sequence — is mandatory: without cross-tree node-ID stability the same clade is minted as fresh short edges, keeping the double-counting fix but losing almost all of the autocorrelation benefit. Run the persistence-histogram check first.)</p>
+</section>
+<section id="static-sketch-1" class="level3">
+<h3 class="anchored" data-anchor-id="static-sketch-1">Static sketch</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (interval, edges_out, edges_in), tree <span class="kw">in</span> <span class="bu">zip</span>(ts.edge_diffs(), ts.trees()):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    span <span class="op">=</span> interval.right <span class="op">-</span> interval.left</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    res  <span class="op">=</span> prune_tree(tree, emissions, Q, node_time, pi)   <span class="co"># E-step, this tree</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> e <span class="kw">in</span> edges_in:                       <span class="co"># bank ONCE, on entry</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> tree.parent(e.child) <span class="op">==</span> tskit.NULL:</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span>                          <span class="co"># never a root branch (skip; §4)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        t      <span class="op">=</span> node_time[e.parent] <span class="op">-</span> node_time[e.child]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        xi     <span class="op">=</span> res.xi[(e.parent, e.child)]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        w_edge <span class="op">=</span> e.right <span class="op">-</span> e.left             <span class="co"># span weight</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        dwell, jumps <span class="op">=</span> branch_expected_stats(Q, t, xi)    <span class="co"># cached kernel by t</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        S_dwell <span class="op">+=</span> w_edge <span class="op">*</span> dwell</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        S_jumps <span class="op">+=</span> w_edge <span class="op">*</span> jumps</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># credibility evidence (leave-one-out, never self-confirming):</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> e.child <span class="kw">in</span> soft_refs:</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            agree <span class="op">=</span> res.loo[e.child][label[e.child]]</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>            S_cred[e.child] <span class="op">+=</span> w_edge <span class="op">*</span> array([agree, <span class="dv">1</span> <span class="op">-</span> agree])</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> r <span class="kw">in</span> tree.roots:                      <span class="co"># root mass: per interval</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        S_root <span class="op">+=</span> span <span class="op">*</span> res.root_marginal[r]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="m-step-closed-form-otextedges" class="level2">
+<h2 class="anchored" data-anchor-id="m-step-closed-form-otextedges">M-step: closed form, <span class="math inline">\(O(\#\text{edges})\)</span></h2>
+<p>Every parameter update is a ratio of the pooled sufficient statistics of <a href="#eq-suffstats" class="quarto-xref">Equation&nbsp;6</a> — no inner optimization, no per-tree loop.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Closed-form update</th>
+<th style="text-align: left;">Source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Generator off-diagonals</td>
+<td style="text-align: left;"><span class="math inline">\(q_{mn} = \dfrac{S_{\text{jumps}}[m,n]}{S_{\text{dwell}}[m]}\;\;(m \ne n)\)</span>, then <span class="math inline">\(q_{mm} = -\sum_{n \ne m} q_{mn}\)</span></td>
+<td style="text-align: left;"><a href="../api/em.m_step_Q.html"><code>em.m_step_Q</code></a></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Root frequencies</td>
+<td style="text-align: left;"><span class="math inline">\(\pi = \dfrac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]}\)</span></td>
+<td style="text-align: left;"><a href="../api/em.m_step_pi.html"><code>em.m_step_pi</code></a></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Per-tip credibility</td>
+<td style="text-align: left;"><span class="math inline">\(w_i = \dfrac{\alpha - 1 + a_i}{\alpha + \beta - 2 + a_i + d_i}\)</span></td>
+<td style="text-align: left;"><a href="../api/em.m_step_w.html"><code>em.m_step_w</code></a></td>
+</tr>
+</tbody>
+</table>
+<p><span id="eq-mstep"><span class="math display">\[
+q_{mn} = \frac{S_{\text{jumps}}[m,n]}{S_{\text{dwell}}[m]}\;\;(m \ne n),
+\qquad
+\pi = \frac{S_{\text{root}}}{\sum_s S_{\text{root}}[s]},
+\qquad
+w_i = \frac{\alpha - 1 + a_i}{\alpha + \beta - 2 + a_i + d_i}
+\tag{7}\]</span></span></p>
+<p>The generator update is the standard CTMC MLE: rate = expected jumps divided by expected dwell time in the originating state. The credibility update is the MAP of a <span class="math inline">\(\mathrm{Beta}(\alpha,\beta)\)</span> prior given the leave-one-out evidence $(a_i, d_i) = $ (span-weighted agree, disagree) mass — a label is believed <em>unless the genealogy insists otherwise</em>. Because <a href="#eq-mstep" class="quarto-xref">Equation&nbsp;7</a> are sums over per-edge accumulators, the M-step is <span class="math inline">\(O(\#\text{edges})\)</span>, not <span class="math inline">\(O(\#\text{trees} \times \#\text{nodes})\)</span>. EM iterates <a href="#eq-uppass" class="quarto-xref">Equation&nbsp;1</a>–<a href="#eq-mstep" class="quarto-xref">Equation&nbsp;7</a> to a log-likelihood tolerance (<a href="../api/fit.html"><code>fit</code></a>).</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Hold a hard-clamped anchor set; consider holding <span class="math inline">\(\pi\)</span> fixed
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Once labels can move, the model can explain disagreement three ways — lower a tip’s <span class="math inline">\(w_i\)</span>, inflate <span class="math inline">\(Q\)</span>, or relabel a whole clade — and a fully soft panel trades these off (label switching, unstable <span class="math inline">\(Q\)</span>, collapse). Keep a trusted <strong>anchor set</strong> at <span class="math inline">\(w_i \equiv 1\)</span> and only let the rest float under an informative Beta prior near 1. <code>fit</code> refuses to run if <code>soft_refs</code> covers every label.</p>
+<p>Separately, <span class="math inline">\(\pi\)</span> is a prior on the <em>arbitrary</em> GMRCA state. When deep/root branches wash (large <span class="math inline">\(Q\,t\)</span> on sparse or short ARGs), each tree’s root marginal merely echoes <span class="math inline">\(\pi\)</span>, so <span class="math inline">\(\pi\)</span> becomes unidentifiable and the M-step drifts it to a degenerate extreme — collapsing the painting to one colour with high confidence. The default <code>estimate_pi=False</code> (<a href="../api/paint.html"><code>paint</code></a>) holds <span class="math inline">\(\pi\)</span> fixed (uniform is principled) and recovers this failure at no cost on good data. <code>estimate_pi=True</code> remains for <span class="math inline">\(\pi\)</span>-recovery studies.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="tskit-accounting-that-keeps-it-correct" class="level2">
+<h2 class="anchored" data-anchor-id="tskit-accounting-that-keeps-it-correct">tskit accounting that keeps it correct</h2>
+<p>These edge cases come straight from the tskit data model and will silently corrupt the sufficient statistics if traversed naively. They are honored by <a href="../api/pruning.prune_root.html"><code>pruning</code></a> and <a href="../api/accumulate.accumulate_sufficient_statistics.html"><code>accumulate</code></a>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Edge case</th>
+<th style="text-align: left;">Why it bites</th>
+<th style="text-align: left;">How it is handled</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Multiple roots / forests</strong></td>
+<td style="text-align: left;">A marginal tree can be several unlinked topologies; there may be no single root.</td>
+<td style="text-align: left;">Prune <strong>per root</strong> (<code>for r in tree.roots</code>), each with its own <span class="math inline">\(\pi\)</span>; aggregate.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Isolated samples</strong></td>
+<td style="text-align: left;">A tip with no parent and no children over a span: the tree says <em>nothing</em> — that is <strong>missing information, not 50–50 uncertainty</strong>.</td>
+<td style="text-align: left;">Posterior falls back to <span class="math inline">\(\pi\)</span> <strong>and</strong> the span is tagged <code>missing_info</code>, kept distinct from an uncertain call.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Root branches</strong></td>
+<td style="text-align: left;">The branch above a root has length 0 by tskit convention.</td>
+<td style="text-align: left;"><strong>Skip</strong> root branches for dwell/jumps; root state enters only through <span class="math inline">\(\pi\)</span> / <span class="math inline">\(S_{\text{root}}\)</span>.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Virtual root</strong></td>
+<td style="text-align: left;">Bookkeeping only; real roots have parent <code>tskit.NULL</code>, not the virtual root, which has no node-table row.</td>
+<td style="text-align: left;">Never let <span class="math inline">\(Q\)</span> act on a (non-existent) edge to the virtual root.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Polytomies</strong></td>
+<td style="text-align: left;">Internal nodes with <span class="math inline">\(&gt;2\)</span> children are real and first-class; <span class="math inline">\(\text{time}[p] &gt; \text{time}[c]\)</span> strictly, so <span class="math inline">\(\exp(Q\,t)\)</span> is always well-defined.</td>
+<td style="text-align: left;">Product over <em>all</em> children via sib-pointer traversal (<a href="#eq-uppass" class="quarto-xref">Equation&nbsp;1</a>); no binarity assumed.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Span coverage</strong></td>
+<td style="text-align: left;">Accumulating only over reachable edges leaves isolated stretches contributing nothing to <span class="math inline">\(Q\)</span> (correct) — but they must still emit output.</td>
+<td style="text-align: left;">Isolated spans contribute prior-fallback output, so a gap reads as <em>missing data</em>, not missing output.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="what-blocked-approximates-and-when-bp-tightens-it" class="level2">
+<h2 class="anchored" data-anchor-id="what-blocked-approximates-and-when-bp-tightens-it">What “blocked” approximates (and when BP tightens it)</h2>
+<p>Being explicit about the one approximation is part of the method. The horizontal coupling is encoded <em>in the blocking</em> (above), which holds an edge’s <span class="math inline">\(\xi\)</span> constant over its whole span. This is <strong>exact</strong> when the topology outside the edge does not change across that span. What it approximates is the propagation of <em>uncertainty</em> across a <strong>persist-but-reparent</strong> breakpoint — a node that survives a breakpoint while its parent edge is swapped. There, the node-state posterior can be slightly inconsistent across the breakpoint because uncertainty does not flow through the swap. The residual is <strong>breakpoint flicker</strong>, measured by <a href="../api/validate.breakpoint_flicker.html"><code>validate.breakpoint_flicker</code></a> and <a href="../api/experiments.flicker_vs_true_boundaries.html"><code>experiments.flicker_vs_true_boundaries</code></a>.</p>
+<p>The inference object is genuinely a graph with cycles (a subclade persisting across a region where another part of the tree recombines forms a loop in the vertical–horizontal coupling graph), so exact marginals are unavailable in general; blocked EM sidesteps this by exact per-tree pruning plus structural horizontal coupling, losing only that across-breakpoint uncertainty flow. The deferred tighter alternative is <strong>loopy belief propagation / expectation propagation</strong> over the full edge graph (vertical messages <span class="math inline">\(\exp(Q\,t)\)</span>; horizontal near-identity messages across persist-but-reparent breakpoints; forward–backward along the genome interleaved with up–down within trees).</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>When the BP/EP upgrade matters
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>On strong-structure simulations with the <strong>true ARG</strong>, flicker at persist-but-reparent boundaries is negligible relative to the discontinuity at true tract switches, so blocked EM is the published method and BP is a footnote. The stress regime is <strong>inferred ARGs</strong> (Relate / tsinfer) and weak-structure / ancient-admixture histories, where the topology itself is uncertain and spurious switches appear. For that case a horizontal smoother is implemented — a genome-axis forward–backward over each tip’s per-tree beliefs that suppresses spurious switches — exposed as <a href="../api/bp.bp_paint.html"><code>bp.bp_paint</code></a> and via <a href="../api/paint.html"><code>paint(smooth=True)</code></a>. It tightens the across-breakpoint coupling the blocking leaves approximate.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<ul>
+<li>Felsenstein, J. (1981). <a href="https://doi.org/10.1007/BF01734359">Evolutionary trees from DNA sequences: a maximum likelihood approach</a>. <em>J. Mol. Evol.</em> 17, 368–376. (Pruning.)</li>
+<li>Van Loan, C. F. (1978). <a href="https://doi.org/10.1109/TAC.1978.1101743">Computing integrals involving the matrix exponential</a>. <em>IEEE Trans. Automat. Contr.</em> 23, 395–404. (Block-triangular exponential for the CTMC reward integrals.)</li>
+<li>Hobolth, A. and Jensen, J. L. (2011). <a href="https://doi.org/10.1239/jap/1324046009">Summary statistics for endpoint-conditioned continuous-time Markov chains</a>. <em>J. Appl. Probab.</em> 48(4), 911–924. (Expected dwell times and jump counts conditioned on branch endpoints.)</li>
+<li>Tataru, P. and Hobolth, A. (2011). <a href="https://doi.org/10.1186/1471-2105-12-465">Comparison of methods for calculating conditional expectations of sufficient statistics for continuous time Markov chains</a>. <em>BMC Bioinformatics</em> 12, 465. (EXPM/Van Loan vs.&nbsp;eigendecomposition vs.&nbsp;uniformization — the numerics fallback / Phasic seam.)</li>
+<li>Lemey, P., Rambaut, A., et al.&nbsp;(2009). <a href="https://doi.org/10.1371/journal.pcbi.1000520">Bayesian phylogeography finds its roots</a>. <em>PLoS Comput. Biol.</em> 5, e1000520. (Mugration / discrete-trait CTMC on trees.)</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../pages/model.html" class="pagination-link" aria-label="The model">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">The model</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../pages/dating.html" class="pagination-link" aria-label="Admixture dating: rate through time">
+        <span class="nav-page-text">Admixture dating: rate through time</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
