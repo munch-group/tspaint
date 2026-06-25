@@ -24,7 +24,7 @@ from ..pruning import prune_tree
 from .grid import split_branch, cell_centers
 
 __all__ = ["branch_cell_stats", "accumulate_time_binned", "rate_through_time_binned",
-           "composite_transition", "accumulate_time_binned_tv"]
+           "composite_transition", "accumulate_time_binned_tv", "paint_qt"]
 
 
 def composite_transition(Q_of_cell, t_c, t_p, edges):
@@ -65,6 +65,9 @@ def _prune_root_tv(tree, root, emissions, node_time, pi, Pbranch, K):
     loglik = (np.log(Zr) if Zr > 0 else -np.inf) + cumscale[root]
     xi = {}
     U = {root: pi.copy()}
+    gamma = {root: (b_root / Zr if Zr > 0 else pi.copy())}
+    if tree.is_sample(root) and len(tree.children(root)) == 0:
+        gamma[root] = pi.copy()                          # isolated sample -> prior
     for p in tree.nodes(root, order="preorder"):
         children = list(tree.children(p))
         if not children:
@@ -89,10 +92,13 @@ def _prune_root_tv(tree, root, emissions, node_time, pi, Pbranch, K):
             Uc = cavity @ Pc
             sUc = Uc.sum()
             U[c] = Uc / sUc if sUc > 0 else np.full(K, 1.0 / K)
+            bc = U[c] * Lnorm[c]
+            sbc = bc.sum()
+            gamma[c] = bc / sbc if sbc > 0 else np.full(K, 1.0 / K)
             M = (cavity[:, None] * Pc) * Lnorm[c][None, :]
             sM = M.sum()
             xi[(p, c)] = M / sM if sM > 0 else np.full((K, K), 1.0 / (K * K))
-    return xi, float(loglik)
+    return xi, gamma, float(loglik)
 
 
 def accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges):
@@ -118,7 +124,7 @@ def accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges):
         span = interval[1] - interval[0]
         xi_all = {}
         for r in tree.roots:
-            xi, ll = _prune_root_tv(tree, r, emissions, node_time, pi, Pbranch, K)
+            xi, _gamma, ll = _prune_root_tv(tree, r, emissions, node_time, pi, Pbranch, K)
             xi_all.update(xi)
             loglik += span * ll
         for e in ein:
@@ -135,6 +141,47 @@ def accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges):
             for k, jm in jumps.items():
                 J[k] += w * jm
     return D, J, loglik
+
+
+def paint_qt(ts, emissions, Q_of_cell, pi, edges, focal):
+    """Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same
+    deliverable as :func:`tslai.output.posterior_table` but using the per-cell rates from the
+    admixture-rate-through-time fit (so recent branches with a low rate wash less). Returns
+    ``{sample: [Segment]}``; isolated spans are tagged ``MISSING_INFO``."""
+    from ..output import Segment, INFORMATIVE, MISSING_INFO
+    node_time = ts.tables.nodes.time
+    K = np.asarray(pi).shape[0]
+    samples = [int(s) for s in focal]
+    tracks = {s: [] for s in samples}
+    cache = {}
+
+    def Pbranch(t_c, t_p):
+        key = (t_c, t_p)
+        P = cache.get(key)
+        if P is None:
+            P = composite_transition(Q_of_cell, t_c, t_p, edges)
+            cache[key] = P
+        return P
+
+    for tree in ts.trees():
+        left, right = tree.interval.left, tree.interval.right
+        gamma_all = {}
+        missing = set()
+        for r in tree.roots:
+            _xi, gamma, _ll = _prune_root_tv(tree, r, emissions, node_time, pi, Pbranch, K)
+            gamma_all.update(gamma)
+            if tree.is_sample(r) and len(tree.children(r)) == 0:
+                missing.add(r)
+        for s in samples:
+            post = np.asarray(gamma_all.get(s, pi), float)
+            status = MISSING_INFO if s in missing else INFORMATIVE
+            segs = tracks[s]
+            if (segs and segs[-1].right == left and segs[-1].status == status
+                    and np.allclose(segs[-1].posterior, post)):
+                segs[-1].right = right
+            else:
+                segs.append(Segment(left, right, post, status))
+    return tracks
 
 
 def branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges):
