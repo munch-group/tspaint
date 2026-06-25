@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .grid import cell_centers
+from .grid import cell_centers, log_time_grid
 from .estep import accumulate_time_binned_tv
 from .mstep import directional_rate_splines
 
@@ -25,13 +25,44 @@ __all__ = ["RateThroughTime", "make_Q_of_cell", "fit_rate_through_time"]
 
 @dataclass
 class RateThroughTime:
-    """Result of :func:`fit_rate_through_time`."""
-    centers: np.ndarray      # cell centres (generations)
-    q_AB: np.ndarray         # A->B rate per cell
-    q_BA: np.ndarray         # B->A rate per cell
-    D: np.ndarray            # (n_cells, K) occupation
-    J: np.ndarray            # (n_cells, K, K) directional jumps
-    loglik_history: list     # span-integrated log-likelihood per EM iteration
+    """Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile.
+
+    Attributes
+    ----------
+    centers : (n_cells,) ndarray
+        Cell centres (generations ago).
+    q_AB, q_BA : (n_cells,) ndarray
+        Directional transition rates per cell (forward in time: parent→child = old→young; a
+        *backward*-time admixture A→B shows up in ``q_BA``).
+    D : (n_cells, K) ndarray
+        Per-cell occupation (the exposure / informative window).
+    J : (n_cells, K, K) ndarray
+        Per-cell directional expected jumps.
+    loglik_history : list
+        Span-integrated log-likelihood per EM iteration (non-decreasing).
+    """
+    centers: np.ndarray
+    q_AB: np.ndarray
+    q_BA: np.ndarray
+    D: np.ndarray
+    J: np.ndarray
+    loglik_history: list
+
+    def plot(self, ax=None, scale=1.0):
+        """Plot the directional rate-through-time profile (log-time x-axis).
+
+        ``scale`` multiplies the rates (e.g. pass ``Ne`` to show ``rate × N``). Returns the axes.
+        """
+        import matplotlib.pyplot as plt
+        if ax is None:
+            _fig, ax = plt.subplots(figsize=(7, 4.2))
+        ax.plot(self.centers, self.q_AB * scale, "-", lw=2, color="C2", label="q_AB(t)")
+        ax.plot(self.centers, self.q_BA * scale, "--", lw=2, color="C1", label="q_BA(t)")
+        ax.set_xscale("log")
+        ax.set_xlabel("time (generations ago)")
+        ax.set_ylabel("rate" + (" × scale" if scale != 1.0 else ""))
+        ax.legend()
+        return ax
 
 
 def make_Q_of_cell(q_AB, q_BA):
@@ -49,7 +80,7 @@ def make_Q_of_cell(q_AB, q_BA):
     return Q
 
 
-def fit_rate_through_time(ts, labels, edges, *, n_iter=15, em_init=8, Q0=None,
+def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_init=8, Q0=None,
                           estimate_pi=False, soft_refs=None, n_knots=20, tol=1e-4,
                           floor=1e-9):
     """Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM.
@@ -59,8 +90,11 @@ def fit_rate_through_time(ts, labels, edges, *, n_iter=15, em_init=8, Q0=None,
     ts : tskit.TreeSequence
     labels : dict[int, int]
         Reference sample-node id -> ancestry state (0/1).
-    edges : array_like
-        Fine log-time grid edges (:func:`tslai.dating.log_time_grid`).
+    edges : array_like, optional
+        Fine log-time grid edges (:func:`tslai.dating.log_time_grid`). If ``None`` (default), a
+        grid of ``n_cells`` log-spaced cells is built automatically from the node ages.
+    n_cells : int
+        Number of log-time cells when ``edges`` is auto-constructed (ignored if ``edges`` given).
     n_iter : int
         Maximum EM iterations.
     em_init : int
@@ -77,6 +111,10 @@ def fit_rate_through_time(ts, labels, edges, *, n_iter=15, em_init=8, Q0=None,
     from ..em import fit, build_emissions
     from ..model import make_generator_2state
 
+    if edges is None:                                  # auto log-time grid from the node ages
+        nt = np.asarray(ts.tables.nodes.time, float)
+        pos = nt[nt > 0]
+        edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
     res = fit(ts, labels, Q0=Q0, max_iter=em_init, estimate_pi=estimate_pi, soft_refs=soft_refs)
     emissions = build_emissions(ts, labels, res.w, res.pi)

@@ -75,7 +75,10 @@ def fit_poisson_spline(centers, events, exposure, lam, n_knots=25, degree=3, ord
 def _deviance(events, mu):
     m = mu > 0
     ev = events[m]
-    term = np.where(ev > 0, ev * np.log(ev / mu[m]), 0.0) - (ev - mu[m])
+    pos = ev > 0
+    ratio = np.ones_like(ev)
+    ratio[pos] = ev[pos] / mu[m][pos]                 # avoid log(0) for empty cells
+    term = np.where(pos, ev * np.log(ratio), 0.0) - (ev - mu[m])
     return 2.0 * np.sum(term)
 
 

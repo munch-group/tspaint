@@ -1,5 +1,6 @@
 """Admixture-rate-through-time E-step tests (admix-dating, rung 1)."""
 import numpy as np
+import pytest
 
 from tslai.model import make_generator_2state
 from tslai.branch_stats import branch_expected_stats
@@ -65,3 +66,34 @@ def test_poisson_spline_recovers_known_step_rate():
     assert above > 5 * below                                               # the rise is recovered
     m = exposure > 1
     assert np.corrcoef(rate[m], true[m])[0, 1] > 0.9                        # tracks the truth
+
+
+@pytest.mark.slow
+def test_fit_rate_through_time_recovers_split():
+    """End-to-end: the inhomogeneous EM recovers the divergence onset on a clean A/B split.
+
+    Cross-ancestry coalescence is impossible more recently than the population split, so the
+    fitted cross-rate q_AB(t) must be ~0 for t < T_split and rise once t exceeds it. Also checks
+    the EM log-likelihood is (weakly) monotone. Uses the auto log-time grid (edges=None)."""
+    import msprime
+    from tslai.dating import fit_rate_through_time
+
+    N, T_split = 1000, 2000.0
+    d = msprime.Demography()
+    d.add_population(name="A", initial_size=N)
+    d.add_population(name="B", initial_size=N)
+    d.add_population(name="ANC", initial_size=N)
+    d.add_population_split(time=T_split, derived=["A", "B"], ancestral="ANC")
+    ts = msprime.sim_ancestry(samples={"A": 6, "B": 6}, demography=d, sequence_length=3e5,
+                              recombination_rate=1e-8, random_seed=1, ploidy=1)
+    pop = ts.tables.nodes.population
+    labels = {int(s): (0 if pop[s] == 0 else 1) for s in ts.samples()}
+
+    rtt = fit_rate_through_time(ts, labels, n_iter=8)        # edges=None -> auto grid
+
+    ll = rtt.loglik_history
+    assert all(ll[i + 1] >= ll[i] - 1e-6 for i in range(len(ll) - 1))       # EM monotone
+    c = rtt.centers
+    recent = np.nanmean(rtt.q_AB[c < 0.5 * T_split])
+    deep = np.nanmean(rtt.q_AB[(c > T_split) & (c < 4 * T_split)])
+    assert deep > 3 * recent + 1e-9                                         # onset recovered
