@@ -9,13 +9,13 @@ Run: `pixi run -e compare rfmix`
 
 Docs: https://github.com/AI-sandbox/gnomix
 
-Run: `pixi run --manifest-path ~/gnomix python ~/gnomix/gnomix.py`
+Run: `pixi run --manifest-path ~/gnomix python ~/gnomix/gnomix.py --help`
 
 # SALAI-Net
 
 Docs: https://github.com/AI-sandbox/SALAI-Net
 
-Run: `pixi run --manifest-path ~/SALAI-Net python ~/SALAI-Net/src/SALAI.py`
+Run: `pixi run --manifest-path ~/SALAI-Net python ~/SALAI-Net/src/SALAI.py --help`
 
 # Recomb-Mix
 
