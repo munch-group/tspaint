@@ -173,3 +173,18 @@ direction.
 - It estimates a *relative cross-coalescence rate* (divergence + gene-flow epochs), not literal
   migration rates (mugration bias, §5).
 - Time-calibration dependence (§5): use SINGER's calibrated times on real data (rung 6).
+
+### Rung 6 — calibration / inferred ARGs (MEASURED)
+
+- **Survives on SINGER.** SINGER's coalescent-calibrated times are accurate even on a structured
+  sample: median A-B coalescence time 2185±42 vs true 2184 (ratio ~1.00) — the panmictic prior
+  does *not* mis-time the deep structure once the mutation data constrain it. With the correct
+  labels, the SINGER rate-through-time **reproduces the true-ARG profile** (same rise at T_split).
+  => **real-data-ready via SINGER.**
+- **Time calibration is the binding axis.** A systematic time warp (t·(t/t_ref)^(a−1)) visibly
+  shifts/distorts the profile — so calibrated times are required (SINGER; not raw tsinfer, whose
+  times are uncalibrated, and tsdate is not installed here).
+- **Gotcha (documented):** SINGER (panmictic) **drops the population labels** but preserves sample
+  order/ids — so map labels by the original sample order, not the SINGER ARG's `population` field
+  (using the latter silently labels everything one class). Candidate `io_singer` improvement:
+  propagate the input sample populations.
