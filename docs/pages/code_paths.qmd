@@ -163,6 +163,34 @@ low-confidence `argmax` flips that fragment long tracts — a precision/recall d
 fixed hard segmenter does not expose. This is the object a downstream tract-length /
 admixture-pulse dating analysis consumes.
 
+## A parallel path: admixture dating (`tslai.dating`)
+
+Dating is **not** part of the `paint` pipeline — it is a separate estimator that *reuses the
+same engine* (pruning + Van Loan rewards + edge-blocked accumulation) with one change: the
+generator becomes **time-inhomogeneous**, piecewise-constant on a logarithmic time grid. The
+flow ([admixture dating](../pages/dating.qmd) has the math):
+
+- **grid** (`dating/grid.py`) — `log_time_grid` / `split_branch` cut each branch at the cell
+  boundaries it crosses.
+- **E-step** (`dating/estep.py`) — `branch_cell_stats` sandwiches the per-cell Van Loan reward
+  between the composite transition products above/below it on the branch, conditioned on the
+  same endpoint posterior `ξ`; accumulated per edge, span-weighted, into per-cell occupation
+  `D` and directional jumps `J`. Summed over cells this collapses to the homogeneous
+  [`branch_expected_stats`](../api/branch_stats.branch_expected_stats.qmd) (a tested invariant).
+- **M-step** (`dating/mstep.py`) — each direction's rate is a penalised-Poisson **log-spline**
+  with GCV smoothing, restricted to the informative occupation window
+  ([`directional_rate_splines`](../api/dating.directional_rate_splines.qmd)).
+- **EM loop** (`dating/em.py`) — [`fit_rate_through_time`](../api/fit_rate_through_time.qmd)
+  alternates the two to a monotone log-likelihood, returning a
+  [`RateThroughTime`](../api/RateThroughTime.qmd) (`q_AB(t)`, `q_BA(t)`, `.plot()`).
+
+Entry points: [`fit_rate_through_time(ts, labels)`](../api/fit_rate_through_time.qmd) standalone,
+or [`Painting.rate_through_time()`](../api/Painting.qmd) which **warm-starts from the painting's
+fitted `(Q, π, w)`** (skips the homogeneous fit) and returns a *new* profile — it does **not**
+modify `painting.posteriors`. Feeding `Q(t)` back into painting
+([`dating.paint_qt`](../api/dating.paint_qt.qmd)) is available but off the default path: it gives
+no painting-accuracy gain, only sharper confidence at ~4–5× cost, so the paths stay side by side.
+
 ## Public API map
 
 The top-level package re-exports a curated surface and a set of grouped namespaces.
@@ -194,6 +222,7 @@ below is the intended entry map.
 | `tslai.compare` | `compare`, `io_rfmix` | [`tslai_paint`](../api/compare.tslai_paint.qmd), [`nearest_reference_paint`](../api/compare.nearest_reference_paint.qmd), [`rfmix_paint`](../api/compare.rfmix_paint.qmd), [`head_to_head`](../api/compare.head_to_head.qmd), [`score_painter`](../api/compare.score_painter.qmd) |
 | `tslai.io` | `io_tsinfer`, `io_singer` | [`infer_tree_sequence`](../api/io.infer_tree_sequence.qmd), [`add_mutations`](../api/io.add_mutations.qmd), [`singer_tree_sequences`](../api/io.singer_tree_sequences.qmd), [`write_haploid_vcf`](../api/io.write_haploid_vcf.qmd) |
 | `tslai.bp` | `bp.horizontal` | [`bp_paint`](../api/bp.bp_paint.qmd), [`bp_smooth`](../api/bp.bp_smooth.qmd), [`bp_smooth_track`](../api/bp.bp_smooth_track.qmd) |
+| `tslai.dating` | `dating.{em,estep,mstep,grid}` | [`fit_rate_through_time`](../api/fit_rate_through_time.qmd), [`RateThroughTime`](../api/RateThroughTime.qmd), [`paint_qt`](../api/dating.paint_qt.qmd), [`rate_through_time_binned`](../api/dating.rate_through_time_binned.qmd), [`directional_rate_splines`](../api/dating.directional_rate_splines.qmd) (also `Painting.rate_through_time()`) |
 | `tslai.experiments` | `experiments` | [`admixture_experiment`](../api/experiments.admixture_experiment.qmd), [`age_sweep`](../api/experiments.age_sweep.qmd), [`scaling_sweep`](../api/experiments.scaling_sweep.qmd), [`fragmentation_experiment`](../api/experiments.fragmentation_experiment.qmd), [`arg_ensemble_experiment`](../api/experiments.arg_ensemble_experiment.qmd), [`singer_ensemble_experiment`](../api/experiments.singer_ensemble_experiment.qmd), [`flicker_vs_true_boundaries`](../api/experiments.flicker_vs_true_boundaries.qmd) |
 
 `tslai.metrics` is an alias for the `validate` module (`from . import validate as
@@ -260,6 +289,10 @@ the painting — they are the load-bearing rules, not optional polish.
 | `em.py` | EM orchestration ([`fit`](../api/fit.qmd)) + the closed-form M-step (`m_step_Q/_pi/_w`) + `build_emissions`. |
 | `output.py` | The deliverable: per-haplotype, per-position posterior as `Segment` tracks; `hard_segments` collapse; `missing_info_mask`; `posterior_at`. |
 | `bp/horizontal.py` | Deferred §7 horizontal coupling: single-pass genome-axis forward–backward (EP) over per-tree beliefs; `bp_paint`, `bp_smooth`, `bp_smooth_track`. Helps on inferred ARGs. |
+| `dating/grid.py` | Log-time grid for the time-inhomogeneous estimator: `log_time_grid`, `cell_centers`, `split_branch` (cut a branch at cell boundaries). |
+| `dating/estep.py` | Per-cell endpoint-conditioned stats (`branch_cell_stats`, Van Loan sandwiched by composite transitions), time-binned accumulation, and the `Q(t)` painter `paint_qt`. |
+| `dating/mstep.py` | Directional penalised-Poisson **log-spline** rate fit with GCV smoothing: `fit_poisson_spline`, `select_lambda_gcv`, `directional_rate_splines`. |
+| `dating/em.py` | The time-inhomogeneous EM (`fit_rate_through_time`) → `RateThroughTime`; `make_Q_of_cell`. The `tslai.dating` headline — a parallel path to `paint`, not part of it. |
 | `ensemble.py` | Marginalise ARG uncertainty: average per-position paintings across a posterior ensemble (e.g. SINGER) → `MergedSegment`s with a spread band. |
 | `io_tsinfer.py` | tsinfer front end: `add_mutations`, `infer_tree_sequence`. |
 | `io_singer.py` | SINGER front end: haploid VCF → posterior ARG samples; `write_haploid_vcf`, `singer_tree_sequences`. |

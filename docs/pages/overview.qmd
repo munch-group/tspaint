@@ -13,8 +13,14 @@ sufficient statistics are accumulated **per tree-sequence edge, span-weighted** 
 persisting across many trees is counted once. The output is, for every haplotype at every
 position, a calibrated posterior `P(ancestry)` — soft, not a hard call.
 
+A separate, optional path — [admixture dating](dating.qmd) — reuses the same engine with a
+*time-inhomogeneous* generator to estimate **when** the labelled ancestries diverged or exchanged
+genes, as directional cross-ancestry rates `q_AB(t)`, `q_BA(t)` through time. It is its own
+deliverable and does not change the painting.
+
 See [the model](model.qmd) for the generative construction, [inference](inference.qmd) for the
-EM math, and [assumptions](assumptions.qmd) for the sharp edges.
+EM math, [admixture dating](dating.qmd) for the rate-through-time estimator, and
+[assumptions](assumptions.qmd) for the sharp edges.
 
 ## Install
 
@@ -38,11 +44,20 @@ labels = {...}                              # source-A tips -> 0, source-B tips 
 painting = tslai.paint(ts, labels)          # EM-fit on references, paint the queries
 
 painting.posteriors[q]                      # soft per-position posterior (Segments)
-painting.segments(deadband=0.4)             # hard ancestry tracts (for dating)
+painting.segments(deadband=0.4)             # hard ancestry tracts (tract-length distribution)
+
+# 3. Optional: admixture dating — a separate deliverable, reusing the painting's fit.
+rtt = painting.rate_through_time()          # or tslai.fit_rate_through_time(ts, labels)
+rtt.plot()                                  # q_AB(t), q_BA(t): when the ancestries diverged / mixed
 ```
 
 On an inferred (tsinfer / Relate) ARG, add `smooth=True` to suppress tree-inference-induced
 spurious switches with the horizontal BP smoother.
+
+Two routes lead to *admixture timing*: the **tract-length distribution** from
+`painting.segments(...)` (an indirect, downstream input to pulse-dating methods), and the
+**direct** rate-through-time estimator [`fit_rate_through_time`](dating.qmd), which fits the
+cross-ancestry rate as a function of time.
 
 ## The deliverable
 
@@ -63,6 +78,7 @@ dating):
 |---|---|
 | [The model](model.qmd) | Ancestry CTMC, soft emission + credibility, the two Markov structures |
 | [Inference](inference.qmd) | Felsenstein pruning, Van Loan rewards, edge-blocked EM |
+| [Admixture dating](dating.qmd) | Time-inhomogeneous Q(t): directional cross-ancestry rate through time |
 | [Assumptions & limitations](assumptions.qmd) | Identifiability, π-degeneracy, calibration, mugration |
 | [Code paths](code_paths.qmd) | Module map and the `paint` pipeline |
 | [Results](results.qmd) | Accuracy, calibration, fragmentation, head-to-head, the BP smoother |

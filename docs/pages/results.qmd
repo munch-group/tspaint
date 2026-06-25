@@ -75,9 +75,25 @@ on inferred ARGs** (breakpoint F1 ≈ 0.71 → 0.98 at `T_admix`=500):
 
 {{< embed ../notebooks/bp_smoother.ipynb#fig-bp >}}
 
+## Admixture dating: rate through time
+
+A separate deliverable (see [admixture dating](dating.qmd)): the time-inhomogeneous estimator
+fits the directional cross-ancestry rates `q_AB(t)`, `q_BA(t)`. On a clean split the rate is ~0
+more recently than the divergence and rises across it — here the inferred onset lands within
+~1 % of the true split time:
+
+{{< embed ../notebooks/dating.ipynb#fig-dating-profile >}}
+
+Across the validation rungs (true ARG) it sharpens the onset toward the true split, resolves a
+pulse / asymmetric pulse / ongoing migration, and survives on inferred (SINGER) ARGs — where the
+binding axis is calibration rather than point accuracy. Feeding `Q(t)` back into the painting is
+*not* on the default path: it adds no painting accuracy, only sharper (possibly mis-calibrated)
+confidence at ~4–5× cost, so painting and dating stay side by side.
+
 ## Reproducing
 
 Every figure above is computed in a [notebook](../notebooks/painting.ipynb); the end-to-end drivers live in
 `tslai.experiments` (e.g. [`age_sweep`](../api/experiments.age_sweep.html),
 [`fragmentation_experiment`](../api/experiments.fragmentation_experiment.html),
-[`bp_vs_deadband_experiment`](../api/bp.bp_vs_deadband_experiment.html)).
+[`bp_vs_deadband_experiment`](../api/bp.bp_vs_deadband_experiment.html)), with the dating
+estimator in [`tslai.dating`](dating.qmd).
