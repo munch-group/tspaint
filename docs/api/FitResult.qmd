@@ -1,0 +1,25 @@
+# FitResult { #tslai.FitResult }
+
+```python
+tslai.FitResult(Q, pi, w, loglik_history)
+```
+
+Fitted parameters returned by :func:`fit`.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   Fitted generator.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   Fitted root frequencies.
+
+<code>[**w**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Learned per-tip credibility for soft refs (empty if hard-clamp).
+
+<code>[**loglik_history**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   Observed-data log-likelihood per E-step (non-decreasing).

@@ -1,0 +1,90 @@
+# compare.head_to_head { #tslai.compare.head_to_head }
+
+```python
+tslai.compare.head_to_head(
+    painters,
+    *,
+    T_admix=300.0,
+    n_admix=12,
+    n_ref=12,
+    sequence_length=100000.0,
+    recombination_rate=1e-08,
+    Ne=1000,
+    T_split=5000.0,
+    f_A=0.5,
+    seed=1,
+    substrates=('true',),
+    mutation_rate=4e-07,
+)
+```
+
+Score a panel of painters on one admixture scenario across ARG substrates.
+
+Simulates a single admixture scenario, then scores every painter on each
+requested ARG substrate.
+
+SINGER is intentionally left to
+:func:`tslai.experiments.singer_ensemble_experiment` (it samples an ensemble
+rather than a single ts); external tools slot in as painters.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**painters**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[str](`str`), [callable](`callable`)\]]{.parameter-annotation}</code>
+
+:   Mapping name -> painter ``f(ts, labels, queries) -> {sample: [Segment]}``.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   Time (generations ago) of the admixture pulse.
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   Number of admixed individuals (queries).
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
+
+:   Number of individuals sampled from each reference source.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [100000.0]{.parameter-default}</code>
+
+:   Simulated sequence length in base pairs.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base, per-generation recombination rate.
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   Diploid effective population size.
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [5000.0]{.parameter-default}</code>
+
+:   Time (generations ago) at which the two sources coalesce.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Fraction of the admixed population contributed by source A.
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed for the simulation (and tsinfer mutation overlay).
+
+<code>[**substrates**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[str](`str`), ...\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [(\'true\',)]{.parameter-default}</code>
+
+:   ARG substrates to score on; each is ``"true"`` or ``"tsinfer"``.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [4e-07]{.parameter-default}</code>
+
+:   Mutation rate used to overlay variants before tsinfer inference.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Nested ``{substrate: {painter_name: scores}}``, where ``scores`` is the dict returned by :func:`score_painter`.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If a substrate other than ``"true"`` or ``"tsinfer"`` is requested.

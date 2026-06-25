@@ -1,0 +1,27 @@
+# io.add_mutations { #tslai.io.add_mutations }
+
+```python
+tslai.io.add_mutations(ts, rate=1e-08, random_seed=None)
+```
+
+Overlay biallelic mutations on a tree sequence so tsinfer has variant data.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to mutate (typically a bare, mutationless ARG).
+
+<code>[**rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base, per-generation mutation rate (default ``1e-8``).
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Seed for the mutation simulation.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   ``ts`` with biallelic mutations overlaid under ``msprime.BinaryMutationModel``.

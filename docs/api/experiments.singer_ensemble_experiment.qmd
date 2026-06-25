@@ -1,0 +1,101 @@
+# experiments.singer_ensemble_experiment { #tslai.experiments.singer_ensemble_experiment }
+
+```python
+tslai.experiments.singer_ensemble_experiment(
+    T_admix=300.0,
+    n_admix=12,
+    n_ref=12,
+    sequence_length=80000.0,
+    recombination_rate=1e-08,
+    Ne=1000,
+    T_split=5000.0,
+    f_A=0.5,
+    mutation_rate=2.5e-07,
+    seed=1,
+    max_iter=6,
+    n_singer=20,
+    thin=8,
+    burn_in=6,
+    singer_seed=42,
+    Q0=None,
+)
+```
+
+Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth.
+
+The §7.4 test: genuine posterior draws (thinned -> independent-ish errors) should
+make merging help, unlike the correlated tsinfer ensemble
+(:func:`arg_ensemble_experiment`). Requires the SINGER binary (env ``TSLAI_SINGER``
+or :mod:`tslai.io_singer`'s default path).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2.5e-07]{.parameter-default}</code>
+
+:   Mutation rate for the sites SINGER consumes.
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed for simulation and mutations.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Maximum EM iterations.
+
+<code>[**n_singer**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   Number of SINGER posterior samples to draw.
+
+<code>[**thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   SINGER MCMC thinning interval and burn-in.
+
+<code>[**burn_in**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   SINGER MCMC thinning interval and burn-in.
+
+<code>[**singer_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+
+:   Seed passed to the SINGER binary.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``M`` (realised number of samples), ``n_haplotypes``, ``n_sites``, ``single_balanced_mean``/``_std``/``_per_member``, ``merged_balanced``, ``merged_confidence``, ``merged_reliability``, ``true_balanced``, and the ``merged_tracks``, ``truth_states``, ``queries``.

@@ -1,0 +1,39 @@
+# validate.mean_confidence { #tslai.validate.mean_confidence }
+
+```python
+tslai.validate.mean_confidence(
+    tracks,
+    samples=None,
+    state=0,
+    exclude_missing=True,
+)
+```
+
+Span-weighted mean painter confidence ``|2*P(state) - 1|``.
+
+A value of 0 is uninformative (``P ≈ 0.5``) and 1 is fully confident. This
+distinguishes "the tree can't tell" from a wrong confident call.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to score; defaults to all keys of ``tracks``.
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry-state index whose posterior probability is read.
+
+<code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-weighted mean confidence, or ``nan`` if no span was scored.

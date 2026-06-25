@@ -1,0 +1,39 @@
+# validate.per_base_accuracy { #tslai.validate.per_base_accuracy }
+
+```python
+tslai.validate.per_base_accuracy(
+    tracks,
+    truth_states,
+    samples=None,
+    exclude_missing=True,
+)
+```
+
+Span-weighted per-base painting accuracy.
+
+Computes the span-weighted fraction of the genome where the ``argmax`` of the
+posterior matches the truth.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample (e.g. from :func:`tslai.output.posterior_table`).
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to score; defaults to all keys of ``tracks``.
+
+<code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-weighted accuracy, or ``nan`` if no span was scored.

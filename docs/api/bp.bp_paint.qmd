@@ -1,0 +1,77 @@
+# bp.bp_paint { #tslai.bp.bp_paint }
+
+```python
+tslai.bp.bp_paint(
+    ts,
+    labels,
+    queries,
+    K=2,
+    *,
+    epsilon=0.01,
+    max_iter=6,
+    Q0=None,
+    soft_refs=None,
+    estimate_pi=False,
+    n_sweeps=1,
+)
+```
+
+tslai painter with horizontal BP smoothing.
+
+EM-fits ``(Q[, pi, w])``, paints the queries, then smooths each tip's track
+along the genome (switch penalty ``epsilon``) — adding the propagation of
+uncertainty across persist-but-reparent breakpoints that blocked EM omits (§7).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to paint.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Map from reference sample-node id to ancestry state.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Sample-node ids of the haplotypes to paint.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states (default 2).
+
+<code>[**epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.01]{.parameter-default}</code>
+
+:   Per-breakpoint switch penalty for the horizontal smoother (default ``1e-2``).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Maximum EM iterations (default 6).
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Reference sample ids whose label credibility ``w`` is learned (the rest are hard-clamped anchors).
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Whether to estimate the root frequencies ``pi`` (default False; see §6).
+
+<code>[**n_sweeps**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Reserved for the full-loopy extension (re-feeding smoothed beliefs into the vertical pass); only the single-pass ``n_sweeps=1`` is implemented (default 1).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   ``{query_node: [Segment]}`` with the smoothed posteriors, duck-compatible with the :mod:`tslai.validate` metrics and :func:`tslai.output.hard_segments`.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[NotImplementedError](`NotImplementedError`)]{.parameter-annotation}</code>
+
+:   If ``n_sweeps != 1`` (the full-loopy extension is deferred).

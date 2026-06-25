@@ -1,0 +1,39 @@
+# ensemble.MergedSegment { #tslai.ensemble.MergedSegment }
+
+```python
+tslai.ensemble.MergedSegment(
+    left,
+    right,
+    posterior,
+    status,
+    posterior_std,
+    n_informative,
+)
+```
+
+One span of an ensemble-merged painting.
+
+Duck-compatible with :class:`tslai.output.Segment` (shares ``left``/``right``/
+``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**left, right**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genome interval ``[left, right)`` of this span.
+
+<code>[**posterior**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Mean posterior over the ensemble (the painting).
+
+<code>[**status**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   ``INFORMATIVE`` if any member is informative here, else ``MISSING_INFO``.
+
+<code>[**posterior_std**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Std over the ensemble — the ARG-uncertainty band.
+
+<code>[**n_informative**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   How many ensemble members were informative on this span.

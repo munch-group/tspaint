@@ -1,0 +1,42 @@
+# pruning.prune_tree { #tslai.pruning.prune_tree }
+
+```python
+tslai.pruning.prune_tree(tree, emissions, Q, node_time, pi, Pget=None)
+```
+
+Prune every root of a marginal tree and aggregate the results.
+
+Aggregates ``γ``, ``ξ``, root marginals, missing-info tags and the total
+log-likelihood over all roots (a marginal tree may be a forest; CLAUDE.md §3.1, §4).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tree**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[Tree](`tskit.Tree`)]{.parameter-annotation}</code>
+
+:   The marginal tree.
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [array_like](`array_like`)\]]{.parameter-annotation}</code>
+
+:   Per-tip emission vectors (labelled refs and queries).
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**node_time**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Node times, indexed by node id.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies.
+
+<code>[**Pget**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Transition-matrix cache (:func:`_transition_cache`) shared across trees in a sweep, so ``expm(Q t)`` is computed once per distinct branch length per EM iteration rather than once per tree (CLAUDE.md §3.3). Built fresh if omitted.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[PruneResult](`tslai.pruning.PruneResult`)]{.parameter-annotation}</code>
+
+:   Posteriors aggregated over all roots of the tree.

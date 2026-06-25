@@ -1,0 +1,71 @@
+# compare.rfmix_paint { #tslai.compare.rfmix_paint }
+
+```python
+tslai.compare.rfmix_paint(
+    ts,
+    labels,
+    queries,
+    K=2,
+    *,
+    recombination_rate=1e-08,
+    generations=30.0,
+    mutation_rate=4e-07,
+    seed=1,
+    rfmix_bin=None,
+    extra_args=None,
+)
+```
+
+RFMix painter with the standard ``painter(ts, labels, queries)`` signature.
+
+Adds mutations if ``ts`` has none (the true-ARG substrate), runs RFMix, and
+returns the ``.fb.tsv`` posteriors as per-haplotype Segment tracks — so RFMix
+scores through the same :func:`tslai.compare.score_painter` harness.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence; mutations are added if it has none.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Map from reference sample-node id to ancestry state.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Sample-node ids of the admixed query haplotypes.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states (default 2).
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base recombination rate (default ``1e-8``).
+
+<code>[**generations**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [30.0]{.parameter-default}</code>
+
+:   RFMix's ``-G``, generations since admixture — known from the sim's ``T_admix`` (default ``30.0``).
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [4e-07]{.parameter-default}</code>
+
+:   Mutation rate used if ``ts`` lacks sites (default ``4e-7``).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed for the mutation simulation (default 1).
+
+<code>[**rfmix_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to the ``rfmix`` binary (default: ``DEFAULT_RFMIX`` / ``TSLAI_RFMIX``).
+
+<code>[**extra_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Additional command-line arguments appended to the RFMix invocation.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   ``{query_node: [Segment]}`` from the ``.fb.tsv`` per-marker posteriors.

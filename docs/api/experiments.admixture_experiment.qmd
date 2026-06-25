@@ -1,0 +1,86 @@
+# experiments.admixture_experiment { #tslai.experiments.admixture_experiment }
+
+```python
+tslai.experiments.admixture_experiment(
+    T_admix=30.0,
+    n_admix=6,
+    n_ref=8,
+    sequence_length=200000.0,
+    recombination_rate=1e-08,
+    Ne=1000,
+    T_split=5000.0,
+    f_A=0.3,
+    seed=1,
+    max_iter=8,
+    Q0=None,
+    infer=False,
+    mutation_rate=5e-08,
+)
+```
+
+Simulate admixture, fit hard-clamp EM on the references, paint the queries, score.
+
+The headline demonstration (CLAUDE.md §9): sim -> fit -> paint -> score against the
+census truth. With ``infer=True`` the painting runs on a tsinfer-inferred ARG (the
+§9 binding constraint: does tree-native LAI survive tree-inference error?), else on
+the true ARG.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [30.0]{.parameter-default}</code>
+
+:   Admixture time in generations.
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Number of admixed-query and per-source-reference individuals.
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Number of admixed-query and per-source-reference individuals.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200000.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters (sequence length, recombination rate, effective size, source-split time, admixture fraction of source A).
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200000.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters (sequence length, recombination rate, effective size, source-split time, admixture fraction of source A).
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200000.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters (sequence length, recombination rate, effective size, source-split time, admixture fraction of source A).
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200000.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters (sequence length, recombination rate, effective size, source-split time, admixture fraction of source A).
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200000.0]{.parameter-default}</code>
+
+:   msprime admixture-scenario parameters (sequence length, recombination rate, effective size, source-split time, admixture fraction of source A).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   Maximum EM iterations.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+<code>[**infer**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If True paint on a tsinfer-inferred ARG; else on the true ARG.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [5e-08]{.parameter-default}</code>
+
+:   Mutation rate used to overlay sites before tsinfer (only when ``infer=True``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Includes ``accuracy``, ``balanced_accuracy``, ``confidence``, calibration ``reliability``, flicker summaries (``mean_flicker``, ``mean_flicker_off_true``, ``mean_flip_rate``), ``boundary_error``, fitted ``Q``/``pi``, ``timings``, and the raw ``tracks``/``truth_states`` (plus ``ts`` and ``work_ts``) for further analysis.

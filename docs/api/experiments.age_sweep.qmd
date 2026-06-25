@@ -1,0 +1,30 @@
+# experiments.age_sweep { #tslai.experiments.age_sweep }
+
+```python
+tslai.experiments.age_sweep(ages, infer=False, **kwargs)
+```
+
+Accuracy vs. admixture age — the §9 headline.
+
+For each ``T_admix`` reports accuracy plus the mean number of *true* ancestry
+switches per query (so one can see tracts shortening as admixture ages).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ages**]{.parameter-name} [:]{.parameter-annotation-sep} [iterable of float]{.parameter-annotation}</code>
+
+:   Admixture times (generations) to sweep.
+
+<code>[**infer**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If True run on tsinfer-inferred ARGs (accuracy then bounded by ARG quality).
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded to :func:`admixture_experiment`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [list of dict]{.parameter-annotation}</code>
+
+:   One dict per age with ``T_admix``, ``accuracy``, ``balanced_accuracy``, ``confidence``, ``mean_true_switches``, ``n_sites`` and ``inferred``.

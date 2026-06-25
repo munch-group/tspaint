@@ -1,0 +1,95 @@
+# fit { #tslai.fit }
+
+```python
+tslai.fit(
+    ts,
+    labels,
+    *,
+    K=2,
+    Q0=None,
+    pi0=None,
+    max_iter=200,
+    tol=1e-07,
+    soft_refs=None,
+    alpha=20.0,
+    beta=1.0,
+    w0=0.9,
+    estimate_pi=True,
+)
+```
+
+Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
+
+The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient
+statistics are accumulated per edge, span-weighted; the M-step is the closed forms
+:func:`m_step_Q`, :func:`m_step_pi`, :func:`m_step_w`. Iterates to a log-likelihood
+tolerance or ``max_iter``.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [tskit.TreeSequence or list thereof]{.parameter-annotation}</code>
+
+:   One genome, or several independent tree sequences whose statistics are pooled.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [dict\[int, int\] or list thereof]{.parameter-annotation}</code>
+
+:   Per-sample label index for the reference tips; samples absent are queries.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states. Default ``2``.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator; defaults to a symmetric 2-state generator.
+
+<code>[**pi0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial / fixed root frequencies; defaults to uniform.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [200]{.parameter-default}</code>
+
+:   Maximum number of EM iterations. Default ``200``.
+
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-07]{.parameter-default}</code>
+
+:   Stop when the log-likelihood changes by less than ``tol``. Default ``1e-7``.
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Labelled tips whose credibility ``w_i`` is **learned** (MAP under ``Beta(alpha, beta)``). All other labelled tips are hard-clamped anchors (``w ≡ 1``). With ``soft_refs=None`` every reference is an anchor (Rung 5). At least one anchor is required when ``soft_refs`` is non-empty — never let the whole panel float (CLAUDE.md §6).
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Beta prior on credibility (default mass near 1).
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Beta prior on credibility (default mass near 1).
+
+<code>[**w0**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.9]{.parameter-default}</code>
+
+:   Initial credibility for soft refs. Default ``0.9``.
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Re-estimate ``π`` each M-step rather than holding ``pi0`` fixed. Default ``True``. See Notes.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[FitResult](`tslai.em.FitResult`)]{.parameter-annotation}</code>
+
+:   The fitted ``(Q, π, {w_i})`` and the log-likelihood history.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``soft_refs`` covers every labelled tip (no hard-clamped anchor left).
+
+## Notes {.doc-section .doc-section-notes}
+
+``π`` is a prior on the (arbitrary) GMRCA state. When deep branches wash it is
+unidentifiable from the root marginals (they echo ``π``) and drifts to a degenerate
+extreme — confident-wrong painting on sparse ARGs / the order-only variant
+(CLAUDE.md §6). ``estimate_pi=False`` holds it fixed (uniform unless ``pi0`` given).

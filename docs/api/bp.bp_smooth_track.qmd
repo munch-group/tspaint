@@ -1,0 +1,30 @@
+# bp.bp_smooth_track { #tslai.bp.bp_smooth_track }
+
+```python
+tslai.bp.bp_smooth_track(track, pi, epsilon)
+```
+
+Smooth one tip's :class:`~tslai.output.Segment` track along the genome.
+
+Intervals and status are preserved; posteriors are replaced by the
+horizontally-smoothed ones.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**track**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+
+:   One tip's piecewise-constant painting.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [([array_like](`array_like`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Per-tree prior (see :func:`bp_smooth`).
+
+<code>[**epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-breakpoint switch probability (see :func:`bp_smooth`).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[Segment](`tslai.output.Segment`)\]]{.parameter-annotation}</code>
+
+:   The track with smoothed posteriors (a copy of ``track`` if it has < 2 segments).

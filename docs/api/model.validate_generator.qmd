@@ -1,0 +1,32 @@
+# model.validate_generator { #tslai.model.validate_generator }
+
+```python
+tslai.model.validate_generator(Q, atol=1e-09)
+```
+
+Check that ``Q`` is a valid CTMC generator.
+
+Validates that ``Q`` is square, its rows sum to zero, and its off-diagonal
+rates are non-negative.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Candidate ``(K, K)`` generator matrix.
+
+<code>[**atol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-09]{.parameter-default}</code>
+
+:   Absolute tolerance for the row-sum and non-negativity checks.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``Q`` as a float array (unchanged), once validated.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``Q`` is not square, its rows do not sum to zero, or any off-diagonal rate is negative.

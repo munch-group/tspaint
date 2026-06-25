@@ -1,0 +1,30 @@
+# experiments.scaling_sweep { #tslai.experiments.scaling_sweep }
+
+```python
+tslai.experiments.scaling_sweep(admix_sizes, infer=False, **kwargs)
+```
+
+Runtime + correctness + flicker vs. sample size.
+
+Sweeps ``n_admix`` (admixed *individuals*; haplotypes = ploidy x
+(n_admix + 2*n_ref)) — the data behind the scaling/regime plots.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**admix_sizes**]{.parameter-name} [:]{.parameter-annotation-sep} [iterable of int]{.parameter-annotation}</code>
+
+:   Values of ``n_admix`` to sweep.
+
+<code>[**infer**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   If True run on tsinfer-inferred ARGs.
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded to :func:`admixture_experiment`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [list of dict]{.parameter-annotation}</code>
+
+:   One dict per size with ``n_admix``, ``n_haplotypes``, ``n_trees``, ``n_iter``, total fit time ``t_fit``, per-iteration ``t_per_iter``, tsinfer time ``t_infer``, ``balanced_accuracy``, ``confidence``, ``mean_flicker_off_true``, ``n_sites`` and ``inferred``.

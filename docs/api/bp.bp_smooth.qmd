@@ -1,0 +1,27 @@
+# bp.bp_smooth { #tslai.bp.bp_smooth }
+
+```python
+tslai.bp.bp_smooth(emissions, pi, epsilon)
+```
+
+Forward-backward over per-segment beliefs along the genome.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [([array_like](`array_like`), [shape](`shape`)([T](`T`), [K](`K`)))]{.parameter-annotation}</code>
+
+:   Per-segment beliefs ``gamma_t`` (the vertical / pruning evidence) for one tip.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [([array_like](`array_like`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Per-tree prior, divided out so ``gamma_t`` enters as a likelihood (a no-op constant when ``pi`` is uniform, the painter default).
+
+<code>[**epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-breakpoint switch probability of the near-identity transition ``A = (1 - epsilon) I + epsilon / K``: ``epsilon -> 0`` is maximal smoothing (one tract), ``epsilon -> (K-1)/K`` is no coupling (recovers the per-segment input).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([T](`T`), [K](`K`)))]{.parameter-annotation}</code>
+
+:   The horizontally-smoothed posterior.

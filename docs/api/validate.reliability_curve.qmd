@@ -1,0 +1,43 @@
+# validate.reliability_curve { #tslai.validate.reliability_curve }
+
+```python
+tslai.validate.reliability_curve(
+    tracks,
+    truth_states,
+    state=0,
+    n_bins=10,
+    exclude_missing=True,
+)
+```
+
+Calibration curve of ``P(state)``: predicted vs. empirical per bin.
+
+A well-calibrated painter has ``pred ≈ emp`` in every populated bin.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry-state index whose posterior probability is binned.
+
+<code>[**n_bins**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of equal-width probability bins on ``[0, 1]``.
+
+<code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Keys ``"pred"``, ``"emp"`` and ``"weight"``, each a 1-D array over the populated bins giving the span-weighted mean predicted probability, the empirical frequency of ``state``, and the total span weight respectively.

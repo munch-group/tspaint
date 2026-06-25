@@ -1,0 +1,23 @@
+# ensemble.merge_posterior_tables { #tslai.ensemble.merge_posterior_tables }
+
+```python
+tslai.ensemble.merge_posterior_tables(tables, samples=None)
+```
+
+Average per-haplotype posteriors across an ensemble of paintings.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tables**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]\]]{.parameter-annotation}</code>
+
+:   One :func:`tslai.output.posterior_table` per ensemble member; all over the same samples and genome coordinates (sample ids preserved across members).
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Restrict to these sample ids (default: those in the first table).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[MergedSegment](`tslai.ensemble.MergedSegment`)\]\]]{.parameter-annotation}</code>
+
+:   Per sample, the ensemble-mean posterior with an uncertainty band, on the common breakpoint refinement. Duck-compatible with ``Segment`` (``left``/``right``/ ``posterior``/``status``), so :mod:`tslai.validate` metrics score it directly.

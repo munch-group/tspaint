@@ -1,0 +1,286 @@
+---
+title: The model
+---
+
+This page is the theoretical reference for the **tslai** generative model: local
+ancestry as a discrete character evolving up the branches of each marginal tree
+of an inferred tree sequence. It fixes the notation, the state space, the
+generator $Q$, the root frequencies $\pi$, the soft tip-emission noise model, and
+the two Markov structures (vertical and horizontal) that the method keeps
+separate. Inference (the blocked EM that fits these objects) is documented
+elsewhere; here we describe only *what is being modelled*.
+
+The construction reuses the **mugration** / discrete-phylogeography idea — a
+discrete trait evolving under a continuous-time Markov chain (CTMC) on a fixed
+genealogy
+([Lemey et al. (2009)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1000520)) —
+and computes likelihoods by Felsenstein pruning
+([Felsenstein (1981)](https://link.springer.com/article/10.1007/BF01734359)).
+The novelty is not any single component but the synthesis: a generative
+ancestry-CTMC run *per marginal tree* of an inferred tree sequence, with an
+EM-learned generator and per-tip credibility, yielding a calibrated soft
+posterior over local ancestry.
+
+## Local ancestry as a character on the trees
+
+An inferred tree sequence (from Relate, tsinfer, or SINGER) is a sequence of
+**marginal trees**, one for each non-recombining genomic interval, sharing nodes
+and edges across adjacent intervals. Every sampled haplotype is a **tip in every
+marginal tree**. We treat the population of origin — the *ancestry* — as a
+discrete character that sits at every node of every marginal tree and evolves *up*
+each branch under a CTMC.
+
+The two things being modelled, kept deliberately separate, are:
+
+| Structure | Axis | Mechanism | What it estimates |
+|:--|:--|:--|:--|
+| **Vertical** | up a tree | ancestry CTMC with generator $Q$; Felsenstein pruning | the **ancestral-migration timescale** |
+| **Horizontal** | along the genome | ancestry tracts, carried by **edge span** (recombination structure) | tract switching — **no free rate parameter** |
+
+This decomposition — recombination (horizontal, a topology change) versus
+ancestral migration (vertical, $Q$) — is the conceptual heart of the model and is
+discussed in @sec-two-markov.
+
+## State space and the generator $Q$
+
+The ancestry state at a node is $s \in \{A, B\}$ for v1, generalising to
+$s \in \{1, \dots, K\}$ for $K$ populations. Along a branch the state evolves as a
+CTMC with **generator** (rate matrix) $Q$. For two states,
+
+$$
+Q = \begin{pmatrix} -q_{AB} & q_{AB} \\ q_{BA} & -q_{BA} \end{pmatrix},
+$$ {#eq-generator}
+
+where $q_{AB} \ge 0$ is the instantaneous $A \to B$ rate and $q_{BA} \ge 0$ the
+$B \to A$ rate. For general $K$, $Q$ is a $K \times K$ matrix whose off-diagonal
+entries are non-negative rates and whose **rows sum to zero**,
+
+$$
+\sum_{n} Q_{mn} = 0 \quad\text{for every } m, \qquad Q_{mn} \ge 0 \ (m \ne n),
+$$ {#eq-rowsum}
+
+so the diagonal is fixed by $Q_{mm} = -\sum_{n \ne m} Q_{mn}$. The implementation
+enforces exactly these conditions
+([`validate_generator`](../api/model.validate_generator.qmd) checks squareness,
+@eq-rowsum, and non-negativity;
+[`make_generator_2state`](../api/make_generator_2state.qmd) builds @eq-generator).
+The code is written to be **generator-agnostic**: moving from two states to $K$ is
+a generator swap, not a rewrite.
+
+### Transition probabilities over a branch
+
+The probability of ending in state $s'$ after time $t$ given start state $s$ is the
+$(s, s')$ entry of the matrix exponential of $Q t$,
+
+$$
+P(t) = \exp(Q\,t), \qquad P(t)_{ss'} = \Pr(s' \text{ at child} \mid s \text{ at parent}),
+$$ {#eq-transition}
+
+computed by [`transition_matrix`](../api/model.transition_matrix.qmd). Because $Q$
+has rows summing to zero, every row of $P(t)$ is a probability distribution for all
+$t \ge 0$. Branch lengths $t$ come from the node times of the tree sequence; root
+branches have length $0$ by tskit's definition and are handled through $\pi$ rather
+than through @eq-transition.
+
+### Root frequencies $\pi$
+
+The state at the root of each marginal tree is drawn from the **root frequencies**
+$\pi = (\pi_A, \pi_B)$ (more generally $\pi = (\pi_1, \dots, \pi_K)$, with
+$\pi_m \ge 0$ and $\sum_m \pi_m = 1$). $\pi$ is a prior on the ancestry of the
+grand-MRCA — an essentially *arbitrary* ancestral lineage — so a uniform $\pi$ is
+the principled default. $\pi$ also appears inside the tip-emission noise model
+(@sec-emission) as the fallback distribution.
+
+$\pi$ is conceptually distinct from the generator's **stationary distribution**
+$\pi^{\star}$, the equilibrium solving $\pi^{\star} Q = 0$
+([`stationary_distribution`](../api/model.stationary_distribution.qmd)). The model
+does not require $\pi = \pi^{\star}$; the root frequencies are a free prior, not
+the CTMC equilibrium.
+
+## Tip emission: a soft noise model with learned credibility {#sec-emission}
+
+Reference haplotypes carry a sampled population **label** $\ell_i \in \{A, B\}$;
+query haplotypes carry none. Rather than clamp a labelled tip to a one-hot
+indicator, tslai gives each tip a Felsenstein emission *likelihood vector* that is
+a **noise model** parameterised by a per-tip **credibility** $w_i \in [0, 1]$:
+
+$$
+\mathrm{emission}_i(s) = w_i \,\mathbf{1}[s = \ell_i] + (1 - w_i)\,\pi(s)
+\qquad \text{(labelled tip)},
+$$ {#eq-emission}
+
+$$
+\mathrm{emission}_i(s) = \pi(s)
+\qquad \text{(query tip; flat / root-frequency)}.
+$$ {#eq-query-emission}
+
+Equation @eq-emission is implemented by
+[`tip_emission`](../api/model.tip_emission.qmd) (it forms $(1-w_i)\pi$ and adds
+$w_i$ at the label index) and @eq-query-emission by
+[`query_emission`](../api/model.query_emission.qmd). The credibility interpolates
+between two limits:
+
+| $w_i$ | Emission @eq-emission becomes | Meaning |
+|:--|:--|:--|
+| $w_i = 1$ | $\mathbf{1}[s = \ell_i]$ (one-hot) | **hard clamp** — the label is taken as truth |
+| $0 < w_i < 1$ | a mix of label and $\pi$ | label believed, but the genealogy can override it |
+| $w_i \to 0$ | $\pi(s)$ | tip effectively **re-inferred** from the rest of the tree (like a query) |
+
+So a reference whose own down-pass posterior dissents from its label over a
+genuinely foreign tract *is* the introgression signal — the same machinery, with
+no separate code path. Reference and query tips are the **same kind of object**;
+the only difference is the strength of the prior on the label.
+
+### Anchors, the Beta prior, and why the panel must not all float {#sec-anchors}
+
+The credibilities $\{w_i\}$ are learned, but they cannot all be free at once.
+Letting the whole panel go soft simultaneously reintroduces unsupervised
+degeneracy — label switching, a $Q$ / $w_i$ trade-off, and collapse. Two guards
+are part of the model specification:
+
+- **A trusted anchor set** is held at $w_i \equiv 1$ (the most-confidently
+  unadmixed references), pinning the labelling so the rest can float against a
+  fixed reference frame.
+- The remaining soft references carry a $\mathrm{Beta}(\alpha, \beta)$ **prior with
+  mass near $1$**, so a label is believed *unless the genealogy insists otherwise*.
+
+Under this prior the credibility update has the MAP form
+
+$$
+w_i = \frac{\alpha - 1 + a_i}{\alpha + \beta - 2 + a_i + d_i},
+$$ {#eq-credibility}
+
+where $a_i$ and $d_i$ are the (span-weighted) expected counts of the tip's
+posterior **agreeing** with and **disagreeing** with its label, accumulated during
+inference. Equation @eq-credibility is shown here only to make the role of the
+$\mathrm{Beta}(\alpha, \beta)$ prior concrete; how $a_i$ and $d_i$ are accumulated
+belongs to the inference description.
+
+## Why the state must be per-tip-per-tree {#sec-per-edge}
+
+A haplotype is a tip in *every* marginal tree. If we kept **one ancestry colour per
+individual** and pooled the evidence across all trees, the latent state would have
+nowhere to vary along the genome and the estimate would converge to a **global
+ancestry proportion** — the wrong target. Local ancestry requires the latent state
+to be **per-tip-per-tree**, equivalently **per-edge**: free to differ at one locus
+from the next.
+
+Concretely, the latent ancestry lives on tree-sequence **edges**. An edge
+$(\text{left}, \text{right}, \text{parent}, \text{child})$ carries a child lineage
+over the half-open interval $[\text{left}, \text{right})$, and a clade that persists
+across many marginal trees is a single set of edges with wide span (given a
+persistence-preserving front end). This per-edge representation is also the channel
+through which genome-scale autocorrelation enters: the same edge spanning many trees
+ties the ancestry state together across that span, without a separate smoothing
+parameter.
+
+## The two Markov structures {#sec-two-markov}
+
+The model contains two Markov processes on orthogonal axes, **both** explicit but
+parameterised very differently.
+
+### Vertical: the ancestry CTMC
+
+Up any single tree, ancestry evolves under the generator $Q$ via the branch
+transitions $P(t) = \exp(Q t)$ of @eq-transition. Felsenstein pruning over a
+marginal tree turns these branch factors plus the tip emissions of @eq-emission
+into node-level likelihoods and posteriors. The vertical process estimates only
+the **ancestral-migration timescale** — how fast ancestry changes as one moves *up*
+into the past — and nothing about tract switching along the chromosome.
+
+### Horizontal: tracts carried by edge span, not by a rate $\rho$
+
+Along the genome, contiguous stretches of one ancestry (**tracts**) are *not*
+modelled with a free switch-rate parameter $\rho$ as in a copying/HMM model.
+Instead, tract structure is **carried by edge span**. A lineage's ancestry can only
+change where its **genealogical context** changes — at the recombination
+breakpoints where edges begin and end. Between two breakpoints the local tree is
+identical, so there is nothing to switch *against*; the ancestry is constant by
+construction over the edge's span. The recombination structure that Relate / tsinfer
+/ SINGER already inferred therefore *supplies* the horizontal coupling, and $\rho$
+disappears as a free nuisance parameter.
+
+### Why this decomposition is more falsifiable than a generic $\rho$-HMM
+
+A generic ancestry HMM lumps *all* state change into a single switch rate $\rho$
+estimated from the data. tslai instead **decomposes** state change into two
+mechanisms with separate, identifiable channels:
+
+- **recombination** — horizontal, a *topology* change, handled entirely by edge
+  spans (the inferred ARG);
+- **ancestral migration** — vertical, handled entirely by $Q$.
+
+Because the edge representation separates them cleanly, $Q$ estimates *only* the
+ancestral-migration timescale and tract switching is handled *only* by the
+topology. This pins each mechanism to an observable structure rather than to one
+catch-all rate, which makes the model more specific — and therefore more
+**falsifiable** — than a generic $\rho$-HMM: the recombination breakpoints are not
+free to absorb migration, nor vice versa.
+
+## The deliverable: a calibrated soft posterior {#sec-deliverable}
+
+For each tip (haplotype) in each marginal tree — equivalently each tip-edge span —
+the model's output is the **down-pass posterior** over the tip's ancestry,
+
+$$
+\gamma_i(s) = \Pr(s_i = s \mid \text{local tree}, \theta),
+\qquad \theta = (Q, \pi, \{w_i\}),
+$$ {#eq-posterior}
+
+a *soft* probability, not a hard call. Because the local tree topology is shared
+across a span and the per-edge accounting ties states together along the genome,
+$\gamma_i$ is **spatially smoothed** without an explicit smoother. Two emergent
+behaviours follow directly from @eq-posterior and the emission model:
+
+- **Graceful relaxation.** When the local tree *cannot discriminate* — e.g. a query
+  coalesces with both source clades at similar depth — $\gamma_i$ relaxes toward
+  the prior $\pi$ (50/50 for a uniform two-state prior) rather than making a
+  confident wrong call. This is a consequence of the generative model, not a
+  bolted-on rule.
+- **Missing information is distinct from uncertainty.** A tip that is *isolated*
+  over an interval (no parent, no children) is a root unto itself: the tree says
+  *nothing* about its ancestry there. Its posterior falls back to $\pi$, but the
+  output marks this span as **missing-info**, distinct from a genuine 50/50
+  *uncertain* call — a real interpretive distinction for introgression mapping.
+
+A schematic of the emission likelihood vector and the resulting per-tip posterior:
+
+```python
+# Illustration only — see the API reference for the real functions.
+import numpy as np
+from tslai.model import tip_emission, query_emission, transition_matrix
+
+pi = np.array([0.5, 0.5])            # uniform root frequencies (A, B)
+
+e_ref   = tip_emission(label=0, w=0.9, pi=pi)   # labelled A, credibility 0.9
+e_query = query_emission(pi)                    # unlabelled query tip
+P_t     = transition_matrix(Q, t)               # branch factor exp(Q t)
+# Felsenstein pruning combines {e_i} and {P(t)} into the posterior gamma_i (eq-posterior).
+```
+
+## Modelling assumptions and their limits
+
+The model is deliberately a **mugration** approximation: ancestry is treated as a
+trait on a *fixed* inferred genealogy. This ignores that genealogy and ancestry are
+jointly distributed (lineages in different populations cannot coalesce) — the
+structured-coalescent point that BASTA and MASCOT correct, and that SCAR
+([Guo et al. (2022)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1010422))
+addresses on inferred ARGs for a different deliverable (migration demography, not
+per-haplotype painting). For a v1 painting tool the naive version is expected to be
+adequate, but it **biases $Q$**, and the inferred branch lengths feeding
+@eq-transition carry their own calibration assumptions; these limits are stated
+plainly here so downstream interpretation accounts for them.
+
+## Equation reference
+
+For cross-referencing from other pages:
+
+| Label | Object |
+|:--|:--|
+| `@eq-generator` | the 2-state generator $Q$ |
+| `@eq-rowsum` | generator row-sum and non-negativity constraints |
+| `@eq-transition` | branch transition $P(t) = \exp(Q t)$ |
+| `@eq-emission` | soft tip emission with credibility $w_i$ |
+| `@eq-query-emission` | query (flat / root-frequency) emission |
+| `@eq-credibility` | MAP credibility update under the $\mathrm{Beta}(\alpha,\beta)$ prior |
+| `@eq-posterior` | the per-tip down-pass posterior $\gamma_i(s)$ (the deliverable) |

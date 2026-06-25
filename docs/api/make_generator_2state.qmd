@@ -1,0 +1,31 @@
+# make_generator_2state { #tslai.make_generator_2state }
+
+```python
+tslai.make_generator_2state(q_AB, q_BA)
+```
+
+Build the 2-state ancestry CTMC generator (CLAUDE.md §2.1).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**q_AB**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Instantaneous A->B rate.
+
+<code>[**q_BA**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Instantaneous B->A rate.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   The ``(2, 2)`` generator ``Q = [[-q_AB, q_AB], [q_BA, -q_BA]]``.
+
+## Examples {.doc-section .doc-section-examples}
+
+```python
+>>> make_generator_2state(1e-3, 1e-3)
+array([[-0.001,  0.001],
+       [ 0.001, -0.001]])
+```

@@ -1,0 +1,57 @@
+# validate.balanced_accuracy { #tslai.validate.balanced_accuracy }
+
+```python
+tslai.validate.balanced_accuracy(
+    tracks,
+    truth_states,
+    samples=None,
+    exclude_missing=True,
+    K=2,
+)
+```
+
+Mean of per-true-class painting accuracies.
+
+Robust to class imbalance: an uninformative painter (argmax tie-broken to one
+class) scores ~0.5 rather than the majority-class fraction. The honest "does
+it discriminate?" metric.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to score; defaults to all keys of ``tracks``.
+
+<code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   If True, skip segments tagged :data:`tslai.output.MISSING_INFO`.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Mean over present classes of the span-weighted per-class accuracy, or ``nan`` if no class is present.
+
+## Examples {.doc-section .doc-section-examples}
+
+```python
+>>> from tslai.output import Segment, INFORMATIVE
+>>> import numpy as np
+>>> tracks = {0: [Segment(0, 10, np.array([0.9, 0.1]), INFORMATIVE),
+...               Segment(10, 20, np.array([0.2, 0.8]), INFORMATIVE)]}
+>>> truth = {0: [(0, 10, 0), (10, 20, 1)]}
+>>> balanced_accuracy(tracks, truth)
+1.0
+```

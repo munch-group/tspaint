@@ -1,0 +1,30 @@
+# validate.tract_boundary_error { #tslai.validate.tract_boundary_error }
+
+```python
+tslai.validate.tract_boundary_error(tracks, truth_states, sample)
+```
+
+Tract-boundary localization error against the truth.
+
+For each true ancestry switch, measures the distance to the nearest inferred
+switch (from the posterior ``argmax``).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tslai.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample id to score.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Keys ``"n_true_switches"`` (number of true switch points), ``"median_error"`` and ``"mean_error"`` (median/mean distance from each true switch to the nearest inferred switch). The errors are ``nan`` when there are no true switches and ``inf`` when there are no inferred ones.

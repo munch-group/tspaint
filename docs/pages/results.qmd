@@ -1,0 +1,83 @@
+---
+title: Results
+---
+
+All results are on **simulated truth**: `msprime` admixture scenarios with a census event
+placed just older than the admixture pulse, so every lineage is unambiguously in a source
+population and the true local ancestry is known per haplotype
+([`simulate_admixture`](../api/simulate_admixture.html),
+[`local_ancestry_truth`](../api/local_ancestry_truth.html)). Figures are embedded from the
+[notebooks](../notebooks/painting.ipynb) — the code that produced them is one click away.
+
+## Accuracy & calibration
+
+tslai's distinguishing value is a **calibrated** soft posterior, not raw accuracy. Predicted
+`P(A)` tracks the empirical frequency (points near the diagonal):
+
+{{< embed ../notebooks/calibration.ipynb#fig-reliability >}}
+
+Discrimination is strong at recent-to-moderate admixture and decays at old admixture — but not
+from tree-inference error: under present-day sampling, admixed lineages coalesce **among
+themselves** before an old pulse, severing the query→reference genealogical link. This is a
+coalescent limit; the crossover age scales with $N_e$ and the sampling scheme.
+
+{{< embed ../notebooks/calibration.ipynb#fig-accuracy-age >}}
+
+## Fragmentation & tract-length fidelity
+
+Downstream admixture-pulse dating reads the **segment-length distribution**, so spurious short
+opposite-ancestry calls bias the inferred pulse *older*. Naive `argmax` of the posterior
+over-fragments; because the posterior is calibrated, a modest confidence **deadband**
+(`paint(deadband=…)` / [`hard_segments`](../api/output.hard_segments.html)) suppresses the
+low-confidence flips and recovers the true switch density:
+
+{{< embed ../notebooks/fragmentation.ipynb#fig-switchdensity >}}
+
+so the inferred tract-length distribution matches the truth:
+
+{{< embed ../notebooks/fragmentation.ipynb#fig-tractlen >}}
+
+Over 6 seeds (true ARG, strong structure, `T_admix`=200, 5 Mb), the switch-density ratio
+(inferred / true) is **1.95 ± 0.58** for naive argmax but **0.99 ± 0.01** with a deadband of
+0.4 — recovering the true distribution near-perfectly, and beating RFMix's native segmentation
+(1.35 ± 0.22).
+
+## Head-to-head vs. RFMix
+
+Against the field-standard segment incumbent
+([RFMix v2](https://www.cell.com/ajhg/fulltext/S0002-9297(13)00276-8); wired as
+[`rfmix_paint`](../api/compare.rfmix_paint.html)), tslai **matches balanced accuracy** across
+regimes while staying calibrated where RFMix saturates to 0/1:
+
+| regime | rfmix | tslai | nearest-ref baseline |
+|---|---|---|---|
+| strong structure (Ne 1e3, split 5e3) | 0.99 / conf 1.00 | 0.99 / conf **0.68** | 0.99 / conf 1.00 |
+| weak structure (Ne 1e4, split 2e3) | 0.78–0.85 / conf 0.92–1.0 | 0.77–0.80 / conf **0.10** | 0.79–0.82 / conf 1.0 |
+
+*(balanced accuracy / mean confidence)*. Neither dominates on accuracy; tslai's edge is the
+calibrated soft posterior + readable `Q` / credibility.
+
+## Inferred ARGs & the horizontal BP smoother
+
+On a **true** ARG the per-tree posteriors are clean and the deadband is near-optimal. On an
+**inferred** (tsinfer) ARG, tree inference scatters spurious breakpoints a per-position
+threshold cannot filter — the horizontal BP smoother
+([`paint(smooth=True)`](../api/bp.bp_paint.html)) suppresses them. Without smoothing:
+
+{{< embed ../notebooks/bp_smoother.ipynb#fig-bp-plain >}}
+
+with smoothing:
+
+{{< embed ../notebooks/bp_smoother.ipynb#fig-bp-smooth >}}
+
+Quantified over seeds, the BP smoother is **redundant on the true ARG** but **wins decisively
+on inferred ARGs** (breakpoint F1 ≈ 0.71 → 0.98 at `T_admix`=500):
+
+{{< embed ../notebooks/bp_smoother.ipynb#fig-bp >}}
+
+## Reproducing
+
+Every figure above is computed in a [notebook](../notebooks/painting.ipynb); the end-to-end drivers live in
+`tslai.experiments` (e.g. [`age_sweep`](../api/experiments.age_sweep.html),
+[`fragmentation_experiment`](../api/experiments.fragmentation_experiment.html),
+[`bp_vs_deadband_experiment`](../api/bp.bp_vs_deadband_experiment.html)).

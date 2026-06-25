@@ -1,0 +1,27 @@
+# validate.switch_density { #tslai.validate.switch_density }
+
+```python
+tslai.validate.switch_density(segs, length)
+```
+
+Ancestry switches per unit length.
+
+This is the quantity admixture-pulse dating reads as time: over-fragmentation
+inflates it and biases the inferred pulse older, over-smoothing deflates it
+and biases younger.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**segs**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]]{.parameter-annotation}</code>
+
+:   Hard segment list ``[(left, right, state)]``.
+
+<code>[**length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Sequence length to normalise by.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Number of ancestry switches divided by ``length``, or ``nan`` if ``length <= 0``.
