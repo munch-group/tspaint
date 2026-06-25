@@ -47,3 +47,21 @@ def test_branch_cell_stats_localises_in_time():
     dwell, _ = branch_cell_stats(lambda k: Q, t_c, t_p, xi, edges)
     assert set(dwell) == {k0}
     assert np.isclose(sum(dwell.values()).sum(), t_p - t_c)
+
+
+def test_poisson_spline_recovers_known_step_rate():
+    """The M-step penalised spline recovers a (smooth) step rate from Poisson data with a
+    coalescent-shaped exposure (admix-dating rung 3)."""
+    from tslai.dating.mstep import select_lambda_gcv
+    rng = np.random.default_rng(1)
+    centers = np.geomspace(20.0, 20000.0, 60)
+    true = 1e-3 / (1.0 + np.exp(-(np.log(centers) - np.log(2000.0)) * 3.0))  # onset ~2000
+    exposure = 1e6 * np.exp(-centers / 8000.0)                              # decays deep
+    events = rng.poisson(true * exposure).astype(float)
+    fit = select_lambda_gcv(centers, events, exposure)
+    rate = fit["rate"]
+    below = rate[centers < 1000].mean()
+    above = rate[(centers > 4000) & (centers < 12000)].mean()
+    assert above > 5 * below                                               # the rise is recovered
+    m = exposure > 1
+    assert np.corrcoef(rate[m], true[m])[0, 1] > 0.9                        # tracks the truth

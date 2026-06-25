@@ -23,7 +23,118 @@ from ..branch_stats import vanloan_integral
 from ..pruning import prune_tree
 from .grid import split_branch, cell_centers
 
-__all__ = ["branch_cell_stats", "accumulate_time_binned", "rate_through_time_binned"]
+__all__ = ["branch_cell_stats", "accumulate_time_binned", "rate_through_time_binned",
+           "composite_transition", "accumulate_time_binned_tv"]
+
+
+def composite_transition(Q_of_cell, t_c, t_p, edges):
+    """Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a
+    time-inhomogeneous generator (indexed ``[s_p, s_c]``, the pruning convention)."""
+    subs = split_branch(t_c, t_p, edges)
+    K = Q_of_cell(subs[0][0]).shape[0]
+    P = np.eye(K)
+    for (k, d) in subs:                      # parent -> child order
+        P = P @ expm(Q_of_cell(k) * d)
+    return P
+
+
+def _prune_root_tv(tree, root, emissions, node_time, pi, Pbranch, K):
+    """Up/down pass for one root under a time-inhomogeneous generator. ``Pbranch(t_c, t_p)``
+    gives the composite branch transition. Returns ``(xi, loglik)`` — mirrors
+    :func:`tslai.pruning.prune_root` with the per-branch composite transition."""
+    Lnorm, cumscale, msg = {}, {}, {}
+    for u in tree.nodes(root, order="postorder"):
+        e = emissions.get(u)
+        L = np.array(e, float) if e is not None else np.ones(K)
+        cs = 0.0
+        for c in tree.children(u):
+            L = L * msg[c]
+            cs += cumscale[c]
+        s = L.sum()
+        if s > 0:
+            L = L / s
+            cs += np.log(s)
+        Lnorm[u] = L
+        cumscale[u] = cs
+        parent = tree.parent(u)
+        if parent != tskit.NULL:
+            msg[u] = Pbranch(float(node_time[u]), float(node_time[parent])) @ L
+
+    b_root = pi * Lnorm[root]
+    Zr = b_root.sum()
+    loglik = (np.log(Zr) if Zr > 0 else -np.inf) + cumscale[root]
+    xi = {}
+    U = {root: pi.copy()}
+    for p in tree.nodes(root, order="preorder"):
+        children = list(tree.children(p))
+        if not children:
+            continue
+        ep = emissions.get(p)
+        base = U[p] * np.asarray(ep, float) if ep is not None else U[p]
+        msgs = [msg[c] for c in children]
+        k = len(children)
+        prefix = [None] * k
+        suffix = [None] * k
+        acc = np.ones(K)
+        for i in range(k):
+            prefix[i] = acc
+            acc = acc * msgs[i]
+        acc = np.ones(K)
+        for i in range(k - 1, -1, -1):
+            suffix[i] = acc
+            acc = acc * msgs[i]
+        for i, c in enumerate(children):
+            cavity = base * prefix[i] * suffix[i]
+            Pc = Pbranch(float(node_time[c]), float(node_time[p]))
+            Uc = cavity @ Pc
+            sUc = Uc.sum()
+            U[c] = Uc / sUc if sUc > 0 else np.full(K, 1.0 / K)
+            M = (cavity[:, None] * Pc) * Lnorm[c][None, :]
+            sM = M.sum()
+            xi[(p, c)] = M / sM if sM > 0 else np.full((K, K), 1.0 / (K * K))
+    return xi, float(loglik)
+
+
+def accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges):
+    """Time-**inhomogeneous** E-step: per-cell dwell + directional jumps under ``Q_of_cell``,
+    edge-blocked and span-weighted. Returns ``(D, J, loglik)`` (the full rung-4 E-step)."""
+    node_time = ts.tables.nodes.time
+    K = np.asarray(pi).shape[0]
+    ncell = len(edges) - 1
+    D = np.zeros((ncell, K))
+    J = np.zeros((ncell, K, K))
+    loglik = 0.0
+    cache = {}
+
+    def Pbranch(t_c, t_p):
+        key = (t_c, t_p)
+        P = cache.get(key)
+        if P is None:
+            P = composite_transition(Q_of_cell, t_c, t_p, edges)
+            cache[key] = P
+        return P
+
+    for (interval, _eout, ein), tree in zip(ts.edge_diffs(), ts.trees()):
+        span = interval[1] - interval[0]
+        xi_all = {}
+        for r in tree.roots:
+            xi, ll = _prune_root_tv(tree, r, emissions, node_time, pi, Pbranch, K)
+            xi_all.update(xi)
+            loglik += span * ll
+        for e in ein:
+            c, p = e.child, e.parent
+            if tree.parent(c) == tskit.NULL:
+                continue
+            t_c, t_p = float(node_time[c]), float(node_time[p])
+            if t_p <= t_c:
+                continue
+            dwell, jumps = branch_cell_stats(Q_of_cell, t_c, t_p, xi_all[(p, c)], edges)
+            w = e.right - e.left
+            for k, dw in dwell.items():
+                D[k] += w * dw
+            for k, jm in jumps.items():
+                J[k] += w * jm
+    return D, J, loglik
 
 
 def branch_cell_stats(Q_of_cell, t_c, t_p, xi, edges):
