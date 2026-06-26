@@ -26,10 +26,11 @@ import os
 import random
 import subprocess
 import tempfile
+import warnings
 
 import numpy as np
 
-__all__ = ["write_haploid_vcf", "singer_tree_sequences"]
+__all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences"]
 
 DEFAULT_SINGER = os.environ.get("TSPAINT_SINGER", "/Users/kmt/SINGER/SINGER/SINGER/singer")
 
@@ -112,10 +113,10 @@ def _read_singer_arg(node_file, branch_file, mut_file=None):
     return tables.tree_sequence()
 
 
-def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_samples=20,
-                          thin=10, burn_in=5, seed=42, ploidy=1, workdir=None,
-                          singer_bin=None, with_mutations=True, max_retries=50):
-    """Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
+def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=20,
+           thin=10, burn_in=5, seed=42, ploidy=1, workdir=None,
+           singer_bin=None, with_mutations=True, max_retries=50, sequence_length=None):
+    """Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4).
 
     SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
     samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
@@ -123,8 +124,10 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
 
     Parameters
     ----------
-    ts : tskit.TreeSequence
-        Tree sequence carrying mutations; written out as a haploid VCF for SINGER.
+    source : tskit.TreeSequence or str
+        The genotypes to sample ARGs from — a tree sequence carrying mutations, a **VCF Zarr**
+        store, or a **VCF** file (normalised by :mod:`tspaint.io_genotypes`). All are written out
+        as a haploid VCF for SINGER.
     Ne : float
         Effective population size passed to SINGER (``-Ne``).
     mutation_rate : float
@@ -149,6 +152,9 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
         Whether to read mutations into the returned tree sequences (default True).
     max_retries : int, optional
         Maximum ``-debug`` re-invocations with fresh seeds on failure (default 50).
+    sequence_length : float, optional
+        Override the sequence length (SINGER ``-end``) for VCF / Zarr sources; defaults to the
+        max variant position. Ignored for a ``ts`` source (its ``sequence_length`` is used).
 
     Returns
     -------
@@ -176,9 +182,16 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
-    write_haploid_vcf(ts, prefix + ".vcf")
+    from .io_genotypes import source_kind, resolve_variants
+    from .io_genotypes import write_haploid_vcf as _write_variants_vcf
+    if source_kind(source) == "ts":
+        write_haploid_vcf(source, prefix + ".vcf")
+        L = int(source.sequence_length)
+    else:
+        v = resolve_variants(source)
+        _write_variants_vcf(v, prefix + ".vcf")
+        L = int(sequence_length or v.sequence_length)
     out = os.path.join(tmp, "arg")
-    L = int(ts.sequence_length)
 
     base = [singer_bin, "-Ne", str(Ne), "-m", str(mutation_rate), "-r", str(recombination_rate),
             "-ploidy", str(ploidy), "-input", prefix, "-output", out,
@@ -205,3 +218,10 @@ def singer_tree_sequences(ts, *, Ne, mutation_rate, recombination_rate, n_sample
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
         samples.append(_read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf))
     return samples
+
+
+def singer_tree_sequences(ts, **kwargs):
+    """Deprecated alias for :func:`singer`."""
+    warnings.warn("tspaint.io.singer_tree_sequences is deprecated; use tspaint.io.singer",
+                  DeprecationWarning, stacklevel=2)
+    return singer(ts, **kwargs)

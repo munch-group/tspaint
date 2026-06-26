@@ -127,19 +127,24 @@ quartodoc:
         - output.Segment
         - output.missing_info_mask
         - output.posterior_at
-    - title: Reference QC & introgression
+    - title: Reference QC, introgression & archaic detection
       desc: |
         Audit a reference panel for admixture / mislabelling, flag foreign tracts of any
-        haplotype without naming a donor, and detect introgression from an unsampled ("ghost")
-        source (the `tspaint.introgression` namespace). All read the leave-one-out map, which
-        surfaces a sample's own foreign tracts that the down-pass posterior hides.
+        haplotype without naming a donor, detect introgression from an unsampled ("ghost")
+        source, and — with no reference at all — detect deep archaic tracts (the
+        `tspaint.introgression` and `tspaint.archaic` namespaces). All read the leave-one-out
+        map, which surfaces a sample's own foreign tracts the down-pass posterior hides;
+        `detect_ghost` and `detect_archaic` return objects with a shared `.burden` / `.tracts()`.
       contents:
         - reference_qc
         - foreign_tracts
         - detect_ghost
+        - detect_archaic
         - output.loo_posterior_table
         - introgression.ReferenceQC
+        - introgression.GhostResult
         - introgression.foreignness_track
+        - archaic.ArchaicResult
     - title: Validation metrics
       desc: |
         Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
@@ -166,12 +171,19 @@ quartodoc:
         - compare.score_painter
     - title: Input front ends
       desc: |
-        Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace).
+        Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace). The
+        inference front ends `tsinfer` and `singer` take the same `source` — a tree sequence, a
+        VCF Zarr, or a VCF; `relate` converts Relate `.anc` / `.mut` output. (The pre-unification
+        names `infer_tree_sequence` / `singer_tree_sequences` / `convert_relate` remain as
+        deprecated aliases.)
       contents:
-        - io.infer_tree_sequence
+        - io.tsinfer
+        - io.relate
+        - io.singer
         - io.add_mutations
-        - io.singer_tree_sequences
         - io.write_haploid_vcf
+        - io.check_persistence
+        - io_genotypes.Variants
     - title: Horizontal BP/EP smoother
       desc: |
         The §7 horizontal coupling — a genome-axis forward-backward over each tip's per-tree

@@ -171,7 +171,7 @@ class ArchaicResult:
         return out
 
 
-def detect_archaic(ts, modern_labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
+def detect_archaic(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
                    init_archaic_burden=0.1, init_switch=0.02):
     """Reference-free archaic / ghost detection via a depth-emission HMM (Plan B).
 
@@ -184,7 +184,7 @@ def detect_archaic(ts, modern_labels, samples=None, *, max_iter=50, tol=1e-3, de
     ----------
     ts : tskit.TreeSequence
         Tree sequence to analyse.
-    modern_labels : dict[int, int] or iterable[int]
+    labels : dict[int, int] or iterable[int]
         The modern reference sample ids (a ``{ref: state}`` painting label dict is accepted — only
         the ids are used; every reference is "modern"). They anchor the modern depth distribution.
     samples : iterable[int], optional
@@ -207,8 +207,8 @@ def detect_archaic(ts, modern_labels, samples=None, *, max_iter=50, tol=1e-3, de
     ValueError
         If the modern anchor cannot be estimated (no informative reference depths).
     """
-    modern_ids = [int(r) for r in (modern_labels.keys() if isinstance(modern_labels, dict)
-                                   else modern_labels)]
+    modern_ids = [int(r) for r in (labels.keys() if isinstance(labels, dict)
+                                   else labels)]
     modern_set = set(modern_ids)
     if samples is None:
         samples = [int(s) for s in ts.samples() if int(s) not in modern_set]

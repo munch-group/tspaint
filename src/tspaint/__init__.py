@@ -6,7 +6,7 @@ ancestry CTMC fit by edge-blocked, span-weighted EM. See CLAUDE.md for the autho
 Quick start
 -----------
 >>> import tspaint
->>> ts = tspaint.simulate_admixture(n_admix=10, n_ref=10)   # or tspaint.io.infer_tree_sequence(...)
+>>> ts = tspaint.simulate_admixture(n_admix=10, n_ref=10)   # or tspaint.io.tsinfer(...)
 >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}                     # reference sample-node -> ancestry state
 >>> painting = tspaint.paint(ts, labels)                    # EM-fit on references, paint the queries
 >>> painting.posteriors[q]                                # soft per-position posterior (Segments)
@@ -59,7 +59,7 @@ from .archaic import detect_archaic
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
     metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics, introgression, archaic,
-    io_tsinfer, io_singer, io_rfmix,
+    io_tsinfer, io_singer, io_relate, io_genotypes, io_rfmix,
 )
 
 try:  # version is best-effort; not required for use

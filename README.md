@@ -85,7 +85,7 @@ pixi run test         # run the test suite
 import tspaint
 
 # 1. Get a tree sequence — here, simulate admixture with known truth
-#    (or build one from genotypes: tspaint.io.infer_tree_sequence / singer_tree_sequences).
+#    (or build one from genotypes: tspaint.io.tsinfer / relate / singer — ts | VCF Zarr | VCF).
 ts = tspaint.simulate_admixture(n_admix=10, n_ref=10, sequence_length=1e6,
                               T_admix=100, T_split=5000, Ne=1000, random_seed=1)
 
@@ -119,7 +119,7 @@ gain — the paths stay side by side).
 |---|---|
 | `tspaint.metrics` | `balanced_accuracy`, `reliability_curve`, `breakpoint_precision_recall`, `switch_density`, `tract_boundary_error`, … |
 | `tspaint.compare` | painters `tspaint_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
-| `tspaint.io` | input front ends: `infer_tree_sequence`/`add_mutations` (tsinfer), `singer_tree_sequences` (SINGER) |
+| `tspaint.io` | unified front ends `tsinfer` / `relate` / `singer` (accept ts \| VCF Zarr \| VCF) + `add_mutations` |
 | `tspaint.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
 | `tspaint.dating` | admixture rate through time (time-inhomogeneous directional mugration EM): `fit_rate_through_time`, `RateThroughTime`, `paint_qt` |
 | `tspaint.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |

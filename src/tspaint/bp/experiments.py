@@ -57,8 +57,8 @@ def _setup(T_admix, seed, infer, mutation_rate, **sim_kw):
     true_segs = map_truth({q: local_ancestry_truth(ts)[0][q] for q in queries}, sop)
     work = ts
     if infer:
-        from ..io_tsinfer import add_mutations, infer_tree_sequence
-        work = infer_tree_sequence(add_mutations(ts, rate=mutation_rate, random_seed=seed))
+        from ..io_tsinfer import add_mutations, tsinfer
+        work = tsinfer(add_mutations(ts, rate=mutation_rate, random_seed=seed))
     return work, labels, queries, true_segs
 
 
