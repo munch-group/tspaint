@@ -75,6 +75,7 @@ website:
             - notebooks/fragmentation.ipynb
             - notebooks/bp_smoother.ipynb
             - notebooks/dating.ipynb
+            - notebooks/introgression_qc.ipynb
         - pages/results.qmd
 
 lightbox: true
@@ -126,6 +127,19 @@ quartodoc:
         - output.Segment
         - output.missing_info_mask
         - output.posterior_at
+    - title: Reference QC & introgression
+      desc: |
+        Audit a reference panel for admixture / mislabelling, flag foreign tracts of any
+        haplotype without naming a donor, and detect introgression from an unsampled ("ghost")
+        source (the `tspaint.introgression` namespace). All read the leave-one-out map, which
+        surfaces a sample's own foreign tracts that the down-pass posterior hides.
+      contents:
+        - reference_qc
+        - foreign_tracts
+        - detect_ghost
+        - output.loo_posterior_table
+        - introgression.ReferenceQC
+        - introgression.foreignness_track
     - title: Validation metrics
       desc: |
         Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
@@ -195,6 +209,9 @@ quartodoc:
         - simulate_admixture
         - local_ancestry_truth
         - sim.admixture_demography
+        - sim.simulate_admixture_impure_refs
+        - sim.simulate_admixture_with_ghost
+        - sim.admixture_demography_with_ghost
     - title: Generators & model
       desc: |
         The ancestry CTMC generator, transition matrices, stationary distribution, and tip
@@ -217,6 +234,8 @@ quartodoc:
         - experiments.fragmentation_experiment
         - experiments.arg_ensemble_experiment
         - experiments.singer_ensemble_experiment
+        - experiments.impure_reference_experiment
+        - experiments.impure_reference_sweep
         - experiments.flicker_vs_true_boundaries
     - title: ARG-posterior ensemble merge
       desc: |

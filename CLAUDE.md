@@ -793,6 +793,24 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
     anchoring + recent admixture; signal-bound — see the §6 "softening slightly-impure
     references" note). Tools: `experiments.impure_reference_experiment` /
     `impure_reference_sweep`, `sim.simulate_admixture_impure_refs`.
+  - **[MEASURED — Plan A: three shipped workflows]** Now user-facing (`tspaint.introgression`;
+    top-level `reference_qc` / `foreign_tracts` / `detect_ghost` + `Painting.introgression_map`),
+    all on one new primitive `introgression.foreignness_track` (per locus: `loo`;
+    `fit = max_s loo[s]`; nearest-ref coalescence `depth`, rank-normalised — they nest:
+    QC ⊂ anonymous-foreign ⊂ ghost). (1) **Reference QC** (`reference_qc`, two-pass: hard-clamp
+    LOO self-agreement → soften suspects keeping a clean anchor core) — impure refs rank
+    least-credible (pure−impure credibility gap 0.18–0.26), their LOO maps recover the foreign
+    tracts (~0.9), *assuming the clean refs are the majority*. (2) **Anonymous foreign tracts**
+    (`foreign_tracts`) — label-dissent for refs / normalised fits-nothing for queries,
+    source-agnostic. (3) **Ghost detection** (`detect_ghost` = low `fit` AND deep) — on an
+    archaic-like ghost sim (`sim.simulate_admixture_with_ghost`, deep unsampled outgroup) ghost
+    vs other segs separate cleanly (fit 0.51/0.81, depth 0.92/0.42); default recall 0.58 /
+    precision 1.0, ghost burden 0.10 vs **no-ghost-control false positive 0.01** (~10×).
+    Detection (*that* a tract is foreign-to-panel), not attribution; the depth threshold scales
+    with ghost prevalence (tune vs your own no-ghost control). Plans:
+    `plans/PLAN_A_workflows.md` (shipped) and `plans/PLAN_B_archaic_detector.md`
+    (depth-as-a-generative-state — reference-free archaic, deferred). Tests:
+    `tests/test_introgression.py`.
 
 ---
 

@@ -125,6 +125,32 @@ class Painting:
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
         return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, **kwargs)
 
+    def introgression_map(self, sample):
+        """Leave-one-out introgression map for ``sample``, reusing this painting's fit.
+
+        Returns what the rest of the genealogy says about ``sample`` *excluding its own
+        emission* (:func:`tspaint.output.loo_posterior_table`). Unlike :attr:`posteriors` (the
+        down-pass), it is not suppressed by a confident tip emission, so it surfaces a labelled
+        reference's own foreign tracts — the reference-introgression / mislabel lens
+        (CLAUDE.md §2.3, §9). For a panel-wide audit see :func:`tspaint.reference_qc`.
+
+        Parameters
+        ----------
+        sample : int
+            Sample-node id to map (a labelled reference or a query).
+
+        Returns
+        -------
+        list[tspaint.output.Segment]
+            The leave-one-out posterior as contiguous segments covering ``[0, L)``.
+        """
+        if self.ts is None or self.labels is None:
+            raise ValueError("Painting was constructed without ts/labels; cannot map "
+                             "introgression. Use tspaint.output.loo_posterior_table directly.")
+        from .output import loo_posterior_table
+        emissions = build_emissions(self.ts, self.labels, self.w, self.pi)
+        return loo_posterior_table(self.ts, self.Q, self.pi, emissions, focal=[int(sample)])[int(sample)]
+
     def __repr__(self):
         return (f"Painting(queries={len(self.queries)}, K={self.pi.shape[0]}, "
                 f"Q={np.array2string(self.Q, precision=2)}, "
