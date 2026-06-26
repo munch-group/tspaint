@@ -73,6 +73,7 @@ nbdime = ">=4.0.2,<5"
 vscodenb = "*"
 r-rsvg = "*"
 tsinfer = ">=0.5.1,<0.6"
+demesdraw = ">=0.4.1,<0.5"
 
 [tool.pixi.pypi-dependencies]
 tspaint = { path = ".", editable = true }
