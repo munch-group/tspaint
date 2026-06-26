@@ -17,6 +17,7 @@ tspaint.paint(
     tol=1e-07,
     alpha=20.0,
     beta=1.0,
+    priors=None,
     w0=0.9,
 )
 ```
@@ -47,7 +48,7 @@ query haplotype as a :class:`Painting`.
 
 <code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Reference tips whose credibility ``w_i`` is *learned* (the rest stay hard-clamped anchors — never let the whole panel float, CLAUDE.md §6).
+:   Reference tips whose credibility ``w_i`` is *learned* (the rest stay hard-clamped anchors — never let the whole panel float, CLAUDE.md §6). Softening a slightly impure reference (rather than hard-clamping it) lets the genealogy override its label over its foreign tracts — both painting queries there correctly and mapping the reference's own introgression (CLAUDE.md §2.3).
 
 <code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
@@ -68,6 +69,10 @@ query haplotype as a :class:`Painting`.
 <code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   Initial generator (default a slow symmetric 2-state generator).
+
+<code>[**priors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-tip ``Beta(alpha_i, beta_i)`` prior overrides for the graded-trust setting (keys ⊆ ``soft_refs``); see :func:`tspaint.fit`.
 
 <code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tspaint.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
 

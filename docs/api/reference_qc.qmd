@@ -1,0 +1,79 @@
+# reference_qc { #tspaint.reference_qc }
+
+```python
+tspaint.reference_qc(
+    ts,
+    labels,
+    *,
+    anchors=None,
+    refine=True,
+    anchor_frac=0.5,
+    K=2,
+    Q0=None,
+    max_iter=8,
+    alpha=20.0,
+    beta=1.0,
+)
+```
+
+Audit a reference panel for admixture / mislabelling (Plan A Workflow 1; CLAUDE.md §9).
+
+Two passes (the second optional). Pass 1 hard-clamps every reference and reads each one's
+**leave-one-out** self-agreement — what the rest of the genealogy says about it, ignoring
+its own label — which flags foreignness even under hard clamps. Pass 2 keeps a trusted
+hard-clamped anchor core and **softens the rest**, learning their credibility ``w_i`` and
+sharpening their introgression maps.
+
+.. note::
+   The auto-anchor bootstrap assumes the **clean references are the majority** (it picks the
+   most self-consistent ``anchor_frac`` as the core). If impurity is widespread the core is
+   contaminated and discrimination degrades — pass a known-trusted ``anchors`` set instead,
+   and never let the whole panel float (CLAUDE.md §6).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence whose samples include the references (no queries required).
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> nominal ancestry-state label.
+
+<code>[**anchors**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Known-trusted references to hold as the hard-clamped core (the rest are softened). If given, overrides the ``anchor_frac`` auto-selection — the robust choice when you know which references are clean.
+
+<code>[**refine**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Run the second (soften-suspects) pass when ``anchors`` is not given. Default ``True``.
+
+<code>[**anchor_frac**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Fraction of references (most self-consistent) auto-selected as the anchor core when ``anchors`` is not given. Default ``0.5``.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator (default a symmetric ``1e-3`` 2-state generator).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   Maximum EM iterations per pass.
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Beta prior for the softened references (refine pass).
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Beta prior for the softened references (refine pass).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[ReferenceQC](`tspaint.introgression.ReferenceQC`)]{.parameter-annotation}</code>
+
+:   Per-reference credibility, introgression maps and the flagged-tract / summary helpers.

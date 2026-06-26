@@ -13,6 +13,7 @@ tspaint.fit(
     soft_refs=None,
     alpha=20.0,
     beta=1.0,
+    priors=None,
     w0=0.9,
     estimate_pi=True,
 )
@@ -61,11 +62,15 @@ tolerance or ``max_iter``.
 
 <code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
 
-:   Beta prior on credibility (default mass near 1).
+:   Default ``Beta(alpha, beta)`` prior on credibility (mass near 1), applied to every soft ref not named in ``priors``.
 
 <code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
 
-:   Beta prior on credibility (default mass near 1).
+:   Default ``Beta(alpha, beta)`` prior on credibility (mass near 1), applied to every soft ref not named in ``priors``.
+
+<code>[**priors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-tip ``Beta`` prior overrides ``{tip: (alpha_i, beta_i)}`` for the graded-trust setting — give the references believed purer a stronger prior (mass closer to 1) than the rest. Keys must be a subset of ``soft_refs`` (hard-clamped anchors have no learned ``w``); a key outside ``soft_refs`` raises ``ValueError``. Note at genome scale the span-weighted credibility evidence typically swamps the prior, so ``w_i`` converges to the reference's empirical purity almost regardless of prior strength — the prior's role is the identifiability backstop and short/low-info-region regularisation (CLAUDE.md §6).
 
 <code>[**w0**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.9]{.parameter-default}</code>
 

@@ -1,0 +1,117 @@
+# experiments.impure_reference_experiment { #tspaint.experiments.impure_reference_experiment }
+
+```python
+tspaint.experiments.impure_reference_experiment(
+    T_admix=300.0,
+    n_admix=10,
+    n_pure=6,
+    n_impure=8,
+    sequence_length=5000000.0,
+    recombination_rate=1e-08,
+    Ne=1000,
+    T_split=5000.0,
+    f_A=0.5,
+    ref_impurity=0.15,
+    seed=1,
+    max_iter=10,
+    alpha=20.0,
+    beta=1.0,
+    alpha_grid=(2.0, 20.0, 200.0, 2000.0),
+    Q0=None,
+)
+```
+
+Hard-clamp vs strong-Beta-soft credibility for **slightly impure references**.
+
+Tests the CLAUDE.md §2.2/§2.3/§6 design question: when reference panels carry a bit
+of admixture (here a known ``ref_impurity`` minority of foreign tracts), is it better
+to hard-clamp them (``w ≡ 1``) or to soften them with a strong ``Beta`` prior (``w``
+learned)? The mechanism under test: a hard clamp makes the tip emission a one-hot
+delta, so the tip posterior is **pinned to its label and can never dissent** over a
+foreign tract; any ``w < 1`` restores the genealogy's ability to override the label
+locally. So the decisive contrast is the impure references' **self-painting
+foreign-tract recall** — identically ~0 under a hard clamp, positive under soft.
+
+On one true-ARG simulation (admixed queries, a pure-source anchor core, two impure
+reference panels) it fits and scores:
+
+* ``hard_clamp`` — every reference hard-clamped (the impure ones inject
+  confident-wrong votes and hide their own introgression);
+* ``soft_strong`` — impure refs softened with a strong ``Beta(alpha, beta)`` prior,
+  the pure refs kept as the hard anchor core (never let the whole panel float, §6);
+* ``graded`` — exercises the per-tip prior API (:func:`tspaint.fit` ``priors``):
+  half the impure refs "trusted" ``Beta(200, 1)``, half "suspect" ``Beta(2, 1)``;
+* an ``alpha`` sweep — is the benefit from *un-clamping* (≈flat in ``alpha``, the
+  genome-scale span-weighted evidence swamping the prior) rather than prior strength?
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**n_pure**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**n_impure**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [300.0]{.parameter-default}</code>
+
+:   msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime — enough recombination since the pulse that each impure reference haplotype is a majority-native mosaic with distributed foreign tracts (not a whole-haplotype mislabel), while the query↔reference signal is still strong on the true ARG.
+
+<code>[**ref_impurity**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.15]{.parameter-default}</code>
+
+:   Minority foreign fraction of each impure reference panel.
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Maximum EM iterations per fit.
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Default ``Beta`` prior for the ``soft_strong`` and ``graded`` configs.
+
+<code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
+
+:   Default ``Beta`` prior for the ``soft_strong`` and ``graded`` configs.
+
+<code>[**alpha_grid**]{.parameter-name} [:]{.parameter-annotation-sep} [iterable of float]{.parameter-annotation} [ = ]{.parameter-default-sep} [(2.0, 20.0, 200.0, 2000.0)]{.parameter-default}</code>
+
+:   ``alpha`` values (paired with ``beta``) for the sweep.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``T_admix``, ``ref_impurity``, ``seed``, ``n_queries``, ``n_impure_refs``, ``n_pure_anchors``, ``mean_true_purity`` and ``true_purity_per_ref`` (census truth), ``configs`` (``hard_clamp``/``soft_strong``/``graded`` -> metrics with ``query_balanced_accuracy``, ``query_confidence``, ``impure_self_balanced_accuracy``, ``impure_self_foreign_recall`` (down-pass) and ``impure_self_foreign_recall_loo`` (the stronger leave-one-out introgression map, :func:`tspaint.output.loo_posterior_table`, *not* suppressed by the tip's own emission), ``mean_learned_w``, ``learned_w_per_ref``), ``alpha_sweep`` and ``graded_priors``.

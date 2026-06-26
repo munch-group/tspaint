@@ -1,0 +1,54 @@
+# output.loo_posterior_table { #tspaint.output.loo_posterior_table }
+
+```python
+tspaint.output.loo_posterior_table(
+    ts,
+    Q,
+    pi,
+    emissions,
+    focal=None,
+    merge_tol=1e-12,
+)
+```
+
+Per-sample **leave-one-out** ancestry posterior as contiguous segments.
+
+Like :func:`posterior_table` but paints the *outside message* — what the rest of
+the tree says about each focal sample's ancestry, **excluding that sample's own
+emission** (``PruneResult.loo``). For a labelled reference this is the
+introgression / mislabel map: where its own genealogy dissents from its label
+(CLAUDE.md §2.3, §9). Unlike the down-pass :func:`posterior_table`, it is *not*
+suppressed by a confident (e.g. hard-clamped, one-hot) tip emission, so it surfaces a
+reference's foreign tracts even where the down-pass posterior is pinned to the label.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+<code>[**focal**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+<code>[**merge_tol**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per focal sample, the leave-one-out posterior as contiguous :class:`Segment`\ s covering ``[0, L)``.

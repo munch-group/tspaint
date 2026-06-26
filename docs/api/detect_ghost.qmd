@@ -1,0 +1,68 @@
+# detect_ghost { #tspaint.detect_ghost }
+
+```python
+tspaint.detect_ghost(
+    ts,
+    labels,
+    samples,
+    *,
+    fit_thresh=0.6,
+    depth_thresh=0.9,
+    K=2,
+    Q0=None,
+    max_iter=8,
+    soft_refs=None,
+)
+```
+
+Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3).
+
+A ghost / archaic tract fits **no** panel source (low ``fit``) **and** sits on an
+anomalously **deep** branch relative to every labelled reference (high ``depth``). That
+second criterion is what separates a genuine unsampled-source tract from a merely
+uninformative (50/50, shallow) one. Detection, not attribution — it flags that a tract
+descends from something outside the panel, not what (CLAUDE.md §9).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to analyse.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> ancestry-state label.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Samples to scan (typically the queries).
+
+<code>[**fit_thresh**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.6]{.parameter-default}</code>
+
+:   Flag where ``fit < fit_thresh`` (fits no panel source). Default ``0.6``.
+
+<code>[**depth_thresh**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.9]{.parameter-default}</code>
+
+:   Flag where the rank-normalised nearest-reference ``depth >= depth_thresh`` (a deep outlier). Default ``0.9`` (the deepest 10%) — measured on an archaic-like ghost sim: recall 0.58 at precision 1.0 and a ~1% false-positive burden on the no-ghost control; lower it to ``0.8`` for recall ~1.0 at precision ~0.86 (same control floor). The right value scales with how prevalent the ghost ancestry is — tune against your own no-ghost control. The genome-wide ghost **burden** separates ghost from no-ghost ~10x even when per-tract recall is partial.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[GhostResult](`tspaint.introgression.GhostResult`)]{.parameter-annotation}</code>
+
+:   ``.burden`` (per-sample flagged fraction) and ``.tracts(sample)`` (the merged ghost ``(left, right)`` tracts) — the same accessors as :class:`tspaint.archaic.ArchaicResult`.

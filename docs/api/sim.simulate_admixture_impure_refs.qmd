@@ -1,0 +1,72 @@
+# sim.simulate_admixture_impure_refs { #tspaint.sim.simulate_admixture_impure_refs }
+
+```python
+tspaint.sim.simulate_admixture_impure_refs(
+    n_admix=10,
+    n_pure=6,
+    n_impure=6,
+    sequence_length=2000000.0,
+    recombination_rate=1e-08,
+    ploidy=2,
+    random_seed=42,
+    ref_impurity=0.1,
+    **demography_kwargs,
+)
+```
+
+Simulate admixed queries, a pure reference anchor core, and impure reference panels.
+
+Samples ``n_admix`` admixed individuals (queries), ``n_pure`` from each pure source
+(A, B — the trusted hard-clamp anchor core, CLAUDE.md §6) and ``n_impure`` from each
+impure reference panel (``REF_A_IMPURE``, ``REF_B_IMPURE`` — nominally A / B but
+carrying a ``ref_impurity`` minority of foreign tracts). The census truth covers
+every sample, so the impure references' own foreign tracts are known ground truth.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of admixed (query) individuals.
+
+<code>[**n_pure**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Number of individuals sampled from each pure source (A and B).
+
+<code>[**n_impure**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [6]{.parameter-default}</code>
+
+:   Number of individuals sampled from each impure reference panel.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   Sequence length in base pairs.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base, per-generation recombination rate.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Ploidy; each individual yields ``ploidy`` sample haplotypes.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+
+:   Seed for :func:`msprime.sim_ancestry`.
+
+<code>[**ref_impurity**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Minority foreign fraction of each impure reference panel (see :func:`admixture_demography_impure_refs`).
+
+<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Passed to :func:`admixture_demography_impure_refs` (e.g. ``T_admix``, ``T_split``, ``f_A``, ``Ne``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence whose sample nodes are haplotypes from the admixed, pure-source and impure-reference populations; identify them by node population (as the experiments do) rather than by index.
+
+## See Also {.doc-section .doc-section-see-also}
+
+admixture_demography_impure_refs : The underlying demography.
+local_ancestry_truth : Recover the ground-truth ancestry tracts (references included).

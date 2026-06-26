@@ -1,0 +1,60 @@
+# introgression.foreignness_track { #tspaint.introgression.foreignness_track }
+
+```python
+tspaint.introgression.foreignness_track(
+    ts,
+    Q,
+    pi,
+    emissions,
+    labels,
+    focal=None,
+    depth='rank',
+    merge_tol=1e-09,
+)
+```
+
+Per-sample foreignness components as contiguous segments covering ``[0, L)``.
+
+Single pass over the marginal trees (one pruning per tree); for each focal sample records
+the leave-one-out posterior ``loo``, the ``fit = max_s loo[s]`` and the nearest-reference
+coalescence ``depth``. Adjacent segments with equal components are merged.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The tree sequence whose marginal trees are pruned.
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) numpy.ndarray]{.parameter-annotation}</code>
+
+:   Ancestry CTMC generator.
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies ``π`` (prior fallback on uninformative spans).
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+
+:   Per-sample emission vectors (e.g. from :func:`tspaint.em.build_emissions`).
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\] or [iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   The labelled reference sample ids (only the keys / ids are used — they define which tips the nearest-reference depth is measured against).
+
+<code>[**focal**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to record; defaults to every sample in ``ts``.
+
+<code>[**depth**]{.parameter-name} [:]{.parameter-annotation-sep} [(\'rank\', \'time\')]{.parameter-annotation} [ = ]{.parameter-default-sep} [\"rank\"]{.parameter-default}</code>
+
+:   ``"rank"`` (default) rank-normalises the nearest-reference depth genome-wide into ``[0, 1]`` (robust to branch-length miscalibration, CLAUDE.md §6); ``"time"`` keeps the raw coalescent time.
+
+<code>[**merge_tol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-09]{.parameter-default}</code>
+
+:   Absolute tolerance for merging adjacent segments with equal ``loo``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[ForeignnessSegment](`tspaint.introgression.ForeignnessSegment`)\]\]]{.parameter-annotation}</code>
+
+:   Per focal sample, the foreignness components as contiguous :class:`ForeignnessSegment`\ s covering ``[0, L)``.

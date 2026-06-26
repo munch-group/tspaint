@@ -1,0 +1,50 @@
+# io.relate { #tspaint.io.relate }
+
+```python
+tspaint.io.relate(anc, mut, *, out_prefix=None, compress=True, convert_bin=None)
+```
+
+Convert Relate output (``.anc`` / ``.mut``) to a tskit tree sequence (CLAUDE.md §5).
+
+Wraps ``relate_lib`` ``Convert --mode ConvertToTreeSequence [--compress]`` (run Relate itself
+upstream). ``--compress`` is **load-bearing** — it unifies persistent clades into one node id
+across adjacent trees, the persistence invariant the edge-blocking depends on (§5) — so keep
+it on. Run :func:`check_persistence` on the result before inference (§5.1).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**anc**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to the Relate ``.anc`` (``.gz``) file.
+
+<code>[**mut**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to the Relate ``.mut`` (``.gz``) file.
+
+<code>[**out_prefix**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Output prefix for the converted ``.trees`` (default: a tempfile prefix).
+
+<code>[**compress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Pass ``--compress`` (default ``True`` — load-bearing; do not turn off, §5).
+
+<code>[**convert_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to the ``relate_lib`` ``Convert`` binary (default: env ``TSPAINT_RELATE_CONVERT`` or ``Convert`` on ``PATH``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The converted tree sequence (node ids stable across trees thanks to ``--compress``).
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[FileNotFoundError](`FileNotFoundError`)]{.parameter-annotation}</code>
+
+:   If the ``Convert`` binary or an input file is absent.
+
+<code>[:]{.parameter-annotation-sep} [[RuntimeError](`RuntimeError`)]{.parameter-annotation}</code>
+
+:   If ``Convert`` exits nonzero.

@@ -1,0 +1,7 @@
+# io.check_persistence { #tspaint.io.check_persistence }
+
+```python
+tspaint.io.check_persistence(ts)
+```
+
+Run the §5.1 persistence go/no-go on an already-loaded tree sequence.

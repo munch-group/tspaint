@@ -27,6 +27,28 @@ tracts for downstream tract-length / admixture-dating analysis.
 | [output.missing_info_mask](output.missing_info_mask.qmd#tspaint.output.missing_info_mask) | Per-sample spans where the tree is uninformative (isolated sample). |
 | [output.posterior_at](output.posterior_at.qmd#tspaint.output.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
 
+## Reference QC, introgression & archaic detection
+
+Audit a reference panel for admixture / mislabelling, flag foreign tracts of any
+haplotype without naming a donor, detect introgression from an unsampled ("ghost")
+source, and — with no reference at all — detect deep archaic tracts (the
+`tspaint.introgression` and `tspaint.archaic` namespaces). All read the leave-one-out
+map, which surfaces a sample's own foreign tracts the down-pass posterior hides;
+`detect_ghost` and `detect_archaic` return objects with a shared `.burden` / `.tracts()`.
+
+
+| | |
+| --- | --- |
+| [reference_qc](reference_qc.qmd#tspaint.reference_qc) | Audit a reference panel for admixture / mislabelling (Plan A Workflow 1; CLAUDE.md §9). |
+| [foreign_tracts](foreign_tracts.qmd#tspaint.foreign_tracts) | Anonymous foreign-tract inference: where a haplotype is foreign to its expectation |
+| [detect_ghost](detect_ghost.qmd#tspaint.detect_ghost) | Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3). |
+| [detect_archaic](detect_archaic.qmd#tspaint.detect_archaic) | Reference-free archaic / ghost detection via a depth-emission HMM (Plan B). |
+| [output.loo_posterior_table](output.loo_posterior_table.qmd#tspaint.output.loo_posterior_table) | Per-sample **leave-one-out** ancestry posterior as contiguous segments. |
+| [introgression.ReferenceQC](introgression.ReferenceQC.qmd#tspaint.introgression.ReferenceQC) | Result of :func:`reference_qc` — a per-reference admixture/mislabel audit. |
+| [introgression.GhostResult](introgression.GhostResult.qmd#tspaint.introgression.GhostResult) | Result of :func:`detect_ghost` — per-sample ghost tracts + genome-wide burden. |
+| [introgression.foreignness_track](introgression.foreignness_track.qmd#tspaint.introgression.foreignness_track) | Per-sample foreignness components as contiguous segments covering ``[0, L)``. |
+| [archaic.ArchaicResult](archaic.ArchaicResult.qmd#tspaint.archaic.ArchaicResult) | Result of :func:`detect_archaic`. |
+
 ## Validation metrics
 
 Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
@@ -61,15 +83,22 @@ ARG-native baseline, and the RFMix incumbent (the `tspaint.compare` namespace).
 
 ## Input front ends
 
-Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace).
+Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace). The
+inference front ends `tsinfer` and `singer` take the same `source` — a tree sequence, a
+VCF Zarr, or a VCF; `relate` converts Relate `.anc` / `.mut` output. (The pre-unification
+names `infer_tree_sequence` / `singer_tree_sequences` / `convert_relate` remain as
+deprecated aliases.)
 
 
 | | |
 | --- | --- |
-| [io.infer_tree_sequence](io.infer_tree_sequence.qmd#tspaint.io.infer_tree_sequence) | Infer a tree sequence from the genotypes of ``ts_with_mutations`` via tsinfer. |
-| [io.add_mutations](io.add_mutations.qmd#tspaint.io.add_mutations) | Overlay biallelic mutations on a tree sequence so tsinfer has variant data. |
-| [io.singer_tree_sequences](io.singer_tree_sequences.qmd#tspaint.io.singer_tree_sequences) | Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER. |
+| [io.tsinfer](io.tsinfer.qmd#tspaint.io.tsinfer) | Infer a tree sequence from genotypes via tsinfer (CLAUDE.md §5, §9). |
+| [io.relate](io.relate.qmd#tspaint.io.relate) | Convert Relate output (``.anc`` / ``.mut``) to a tskit tree sequence (CLAUDE.md §5). |
+| [io.singer](io.singer.qmd#tspaint.io.singer) | Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4). |
+| [io.add_mutations](io.add_mutations.qmd#tspaint.io.add_mutations) | Overlay biallelic mutations on a tree sequence so the inference front ends have variant |
 | [io.write_haploid_vcf](io.write_haploid_vcf.qmd#tspaint.io.write_haploid_vcf) | Write one haploid VCF column per sample node. |
+| [io.check_persistence](io.check_persistence.qmd#tspaint.io.check_persistence) | Run the §5.1 persistence go/no-go on an already-loaded tree sequence. |
+| [io_genotypes.Variants](io_genotypes.Variants.qmd#tspaint.io_genotypes.Variants) | A tool-agnostic biallelic variant matrix (one column per **haplotype**). |
 
 ## Horizontal BP/EP smoother
 
@@ -119,6 +148,9 @@ track and the source of examples.
 | [simulate_admixture](simulate_admixture.qmd#tspaint.simulate_admixture) | Simulate an admixed sample plus two reference panels. |
 | [local_ancestry_truth](local_ancestry_truth.qmd#tspaint.local_ancestry_truth) | True local ancestry per sample as source-population tracts. |
 | [sim.admixture_demography](sim.admixture_demography.qmd#tspaint.sim.admixture_demography) | Build a two-source admixture demography with a post-pulse census. |
+| [sim.simulate_admixture_impure_refs](sim.simulate_admixture_impure_refs.qmd#tspaint.sim.simulate_admixture_impure_refs) | Simulate admixed queries, a pure reference anchor core, and impure reference panels. |
+| [sim.simulate_admixture_with_ghost](sim.simulate_admixture_with_ghost.qmd#tspaint.sim.simulate_admixture_with_ghost) | Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**. |
+| [sim.admixture_demography_with_ghost](sim.admixture_demography_with_ghost.qmd#tspaint.sim.admixture_demography_with_ghost) | Two-source admixture with a third **unsampled ("ghost") source** ``C``. |
 
 ## Generators & model
 
@@ -149,6 +181,8 @@ namespace).
 | [experiments.fragmentation_experiment](experiments.fragmentation_experiment.qmd#tspaint.experiments.fragmentation_experiment) | Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts. |
 | [experiments.arg_ensemble_experiment](experiments.arg_ensemble_experiment.qmd#tspaint.experiments.arg_ensemble_experiment) | Merge LAI across an ensemble of inferred ARGs vs. a single inferred ARG. |
 | [experiments.singer_ensemble_experiment](experiments.singer_ensemble_experiment.qmd#tspaint.experiments.singer_ensemble_experiment) | Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth. |
+| [experiments.impure_reference_experiment](experiments.impure_reference_experiment.qmd#tspaint.experiments.impure_reference_experiment) | Hard-clamp vs strong-Beta-soft credibility for **slightly impure references**. |
+| [experiments.impure_reference_sweep](experiments.impure_reference_sweep.qmd#tspaint.experiments.impure_reference_sweep) | Sweep :func:`impure_reference_experiment` across regimes (and seeds); tabulate the |
 | [experiments.flicker_vs_true_boundaries](experiments.flicker_vs_true_boundaries.qmd#tspaint.experiments.flicker_vs_true_boundaries) | Split a sample's segment-boundary flicker into at-true vs. off-true boundaries. |
 
 ## ARG-posterior ensemble merge

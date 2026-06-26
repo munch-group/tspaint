@@ -1,0 +1,64 @@
+# sim.simulate_admixture_with_ghost { #tspaint.sim.simulate_admixture_with_ghost }
+
+```python
+tspaint.sim.simulate_admixture_with_ghost(
+    n_admix=10,
+    n_ref=8,
+    sequence_length=2000000.0,
+    recombination_rate=1e-08,
+    ploidy=2,
+    random_seed=42,
+    ghost_fraction=0.1,
+    **demography_kwargs,
+)
+```
+
+Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**.
+
+The admixed individuals carry tracts from A, B and the ghost ``C``; only A and B are
+sampled as references, so the ghost tracts are foreign-to-the-panel ground truth (labelled
+``GHOST`` by the census). Use ``ghost_fraction=0`` for the matched no-ghost control.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of admixed (query) individuals.
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   Number of individuals sampled from each of A and B (no ghost references).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   Sequence length in base pairs.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base, per-generation recombination rate.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Ploidy; each individual yields ``ploidy`` sample haplotypes.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+
+:   Seed for :func:`msprime.sim_ancestry`.
+
+<code>[**ghost_fraction**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Fraction of the admixed population contributed by the unsampled ghost source.
+
+<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Passed to :func:`admixture_demography_with_ghost` (e.g. ``T_admix``, ``T_split_AB``, ``T_split_ABC``, ``Ne``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence whose samples are admixed queries and A/B references; identify them by node population. Census truth (:func:`local_ancestry_truth`) labels tracts A / B / GHOST.
+
+## See Also {.doc-section .doc-section-see-also}
+
+admixture_demography_with_ghost : The underlying demography (and the archaic-like regime).

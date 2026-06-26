@@ -58,9 +58,36 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 | Name | Description |
 | --- | --- |
+| [introgression_map](#tspaint.Painting.introgression_map) | Leave-one-out introgression map for ``sample``, reusing this painting's fit. |
 | [posterior_at](#tspaint.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
 | [rate_through_time](#tspaint.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
 | [segments](#tspaint.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
+
+### introgression_map { #tspaint.Painting.introgression_map }
+
+```python
+tspaint.Painting.introgression_map(sample)
+```
+
+Leave-one-out introgression map for ``sample``, reusing this painting's fit.
+
+Returns what the rest of the genealogy says about ``sample`` *excluding its own
+emission* (:func:`tspaint.output.loo_posterior_table`). Unlike :attr:`posteriors` (the
+down-pass), it is not suppressed by a confident tip emission, so it surfaces a labelled
+reference's own foreign tracts — the reference-introgression / mislabel lens
+(CLAUDE.md §2.3, §9). For a panel-wide audit see :func:`tspaint.reference_qc`.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample-node id to map (a labelled reference or a query).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tspaint](`tspaint`).[output](`tspaint.output`).[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
+
+:   The leave-one-out posterior as contiguous segments covering ``[0, L)``.
 
 ### posterior_at { #tspaint.Painting.posterior_at }
 

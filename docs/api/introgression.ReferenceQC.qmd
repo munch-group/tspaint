@@ -1,0 +1,91 @@
+# introgression.ReferenceQC { #tspaint.introgression.ReferenceQC }
+
+```python
+tspaint.introgression.ReferenceQC(
+    labels,
+    credibility,
+    loo_agreement,
+    learned_w,
+    anchors,
+    maps,
+    Q,
+    pi,
+    _length=0.0,
+)
+```
+
+Result of :func:`reference_qc` — a per-reference admixture/mislabel audit.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> its nominal ancestry-state label.
+
+<code>[**credibility**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Per-reference credibility in ``[0, 1]`` — the learned ``w_i`` for softened (suspect) references, the leave-one-out self-agreement for the hard-clamped anchor core. Low = the genealogy disagrees with the label (admixed / mislabelled).
+
+<code>[**loo_agreement**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Pass-1 leave-one-out self-agreement for every reference (the hard-clamp baseline).
+
+<code>[**learned_w**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Learned credibility ``w_i`` for the softened references only.
+
+<code>[**anchors**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   References kept hard-clamped as the trusted core (CLAUDE.md §6).
+
+<code>[**maps**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\]]{.parameter-annotation}</code>
+
+:   Per reference, its leave-one-out introgression map (:func:`tspaint.output.loo_posterior_table` segments) — where its own genealogy dissents from its label.
+
+<code>[**Q, pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   The fitted generator and root frequencies (from the refined pass when refining).
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [flagged_tracts](#tspaint.introgression.ReferenceQC.flagged_tracts) | Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state. |
+| [foreign_fraction](#tspaint.introgression.ReferenceQC.foreign_fraction) | Fraction of ``ref``'s genome flagged foreign at the given ``deadband``. |
+| [introgression_map](#tspaint.introgression.ReferenceQC.introgression_map) | The leave-one-out introgression map (list of segments) for one reference. |
+| [summary](#tspaint.introgression.ReferenceQC.summary) | Per-reference QC rows, least-credible first (the audit table). |
+
+### flagged_tracts { #tspaint.introgression.ReferenceQC.flagged_tracts }
+
+```python
+tspaint.introgression.ReferenceQC.flagged_tracts(ref, deadband=0.3)
+```
+
+Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state.
+
+A segment is flagged where ``loo[foreign] - loo[label] >= deadband`` (``foreign`` =
+the best non-label state). Returns merged ``[(left, right, foreign_state)]``.
+
+### foreign_fraction { #tspaint.introgression.ReferenceQC.foreign_fraction }
+
+```python
+tspaint.introgression.ReferenceQC.foreign_fraction(ref, deadband=0.3)
+```
+
+Fraction of ``ref``'s genome flagged foreign at the given ``deadband``.
+
+### introgression_map { #tspaint.introgression.ReferenceQC.introgression_map }
+
+```python
+tspaint.introgression.ReferenceQC.introgression_map(ref)
+```
+
+The leave-one-out introgression map (list of segments) for one reference.
+
+### summary { #tspaint.introgression.ReferenceQC.summary }
+
+```python
+tspaint.introgression.ReferenceQC.summary(deadband=0.3)
+```
+
+Per-reference QC rows, least-credible first (the audit table).

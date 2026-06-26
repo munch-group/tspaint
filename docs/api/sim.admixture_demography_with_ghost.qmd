@@ -1,0 +1,61 @@
+# sim.admixture_demography_with_ghost { #tspaint.sim.admixture_demography_with_ghost }
+
+```python
+tspaint.sim.admixture_demography_with_ghost(
+    Ne=1000,
+    T_admix=100.0,
+    census_offset=1.0,
+    T_split_AB=2000.0,
+    T_split_ABC=20000.0,
+    ghost_fraction=0.1,
+)
+```
+
+Two-source admixture with a third **unsampled ("ghost") source** ``C``.
+
+Source ``C`` (``GHOST``) contributes a fraction ``ghost_fraction`` to the admixed
+population but is **not sampled as a reference** — it is the deeper outgroup: A and B
+coalesce at ``T_split_AB`` while their ancestor and ``C`` coalesce only at the deeper
+``T_split_ABC``. A ghost tract therefore coalesces with the A/B panel only at that deep
+split — the deep-outlier signature ghost detection keys on. Setting ``T_split_ABC`` far
+above ``T_split_AB`` gives the **archaic-like** regime; ``ghost_fraction=0`` is the matched
+no-ghost control. The post-pulse census labels each lineage A / B / C per segment, so
+:func:`local_ancestry_truth` returns the ghost tracts as ground truth.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   Diploid effective size for every population.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [100.0]{.parameter-default}</code>
+
+:   Time (generations ago) of the admixture pulse forming ADMIX.
+
+<code>[**census_offset**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Offset added to ``T_admix`` for the census (kept strictly between admixture and ``T_split_AB``).
+
+<code>[**T_split_AB**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000.0]{.parameter-default}</code>
+
+:   Time at which A and B coalesce into their common ancestor.
+
+<code>[**T_split_ABC**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20000.0]{.parameter-default}</code>
+
+:   Time at which the A/B ancestor and the ghost ``C`` coalesce (the deep outgroup split).
+
+<code>[**ghost_fraction**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Fraction of ADMIX contributed by the ghost source ``C`` (A and B split the remainder equally). ``0`` reproduces a two-source (no-ghost) control.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   Demography with populations A, B, GHOST, ADMIX, AB and ANCESTRAL plus the admixture, census and two split events.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``T_admix < T_admix + census_offset < T_split_AB < T_split_ABC`` is violated or ``ghost_fraction`` is outside ``[0, 1)``.

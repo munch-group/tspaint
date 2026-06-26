@@ -1,0 +1,55 @@
+# archaic.ArchaicResult { #tspaint.archaic.ArchaicResult }
+
+```python
+tspaint.archaic.ArchaicResult(
+    posteriors,
+    burden,
+    mu,
+    sd,
+    A,
+    pi0,
+    loglik_history,
+)
+```
+
+Result of :func:`detect_archaic`.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per sample, contiguous ``(left, right, P(archaic))`` over the genome.
+
+<code>[**burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Per sample, the span-weighted mean ``P(archaic)`` (the genome-wide archaic burden).
+
+<code>[**mu, sd**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2,)`` learned emission means / stds on log-depth (index 0 modern, 1 archaic).
+
+<code>[**A**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2, 2)`` learned per-breakpoint transition matrix.
+
+<code>[**pi0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2,)`` learned initial distribution.
+
+<code>[**loglik_history**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   Pooled Baum–Welch log-likelihood per iteration (non-decreasing).
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [tracts](#tspaint.archaic.ArchaicResult.tracts) | Merged archaic tracts ``[(left, right)]`` where ``P(archaic) >= threshold``. |
+
+### tracts { #tspaint.archaic.ArchaicResult.tracts }
+
+```python
+tspaint.archaic.ArchaicResult.tracts(sample, threshold=0.5)
+```
+
+Merged archaic tracts ``[(left, right)]`` where ``P(archaic) >= threshold``.

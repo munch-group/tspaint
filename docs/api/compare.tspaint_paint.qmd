@@ -11,6 +11,7 @@ tspaint.compare.tspaint_paint(
     soft_refs=None,
     ranked=False,
     estimate_pi=False,
+    priors=None,
 )
 ```
 
@@ -56,6 +57,10 @@ with the down-pass posterior.
 <code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
 :   If False (default), hold π fixed (uniform), which is robust to the π-identifiability degeneracy that makes painting confidently wrong on sparse ARGs (CLAUDE.md §6). Set True to also estimate π (fine on good, long data).
+
+<code>[**priors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-tip ``Beta`` prior overrides for soft refs (keys ⊆ ``soft_refs``); passed through to :func:`tspaint.em.fit`.
 
 ## Returns {.doc-section .doc-section-returns}
 

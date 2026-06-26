@@ -1,8 +1,8 @@
-# io.singer_tree_sequences { #tspaint.io.singer_tree_sequences }
+# io.singer { #tspaint.io.singer }
 
 ```python
-tspaint.io.singer_tree_sequences(
-    ts,
+tspaint.io.singer(
+    source,
     *,
     Ne,
     mutation_rate,
@@ -16,10 +16,11 @@ tspaint.io.singer_tree_sequences(
     singer_bin=None,
     with_mutations=True,
     max_retries=50,
+    sequence_length=None,
 )
 ```
 
-Sample posterior ARGs for ``ts`` (which must carry mutations) via SINGER.
+Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4).
 
 SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
 samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
@@ -27,9 +28,9 @@ since they represent genuine ARG uncertainty (§7.4).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [str](`str`)]{.parameter-annotation}</code>
 
-:   Tree sequence carrying mutations; written out as a haploid VCF for SINGER.
+:   The genotypes to sample ARGs from — a tree sequence carrying mutations, a **VCF Zarr** store, or a **VCF** file (normalised by :mod:`tspaint.io_genotypes`). All are written out as a haploid VCF for SINGER.
 
 <code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
 
@@ -78,6 +79,10 @@ since they represent genuine ARG uncertainty (§7.4).
 <code>[**max_retries**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
 
 :   Maximum ``-debug`` re-invocations with fresh seeds on failure (default 50).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Override the sequence length (SINGER ``-end``) for VCF / Zarr sources; defaults to the max variant position. Ignored for a ``ts`` source (its ``sequence_length`` is used).
 
 ## Returns {.doc-section .doc-section-returns}
 

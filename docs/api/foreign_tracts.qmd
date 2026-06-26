@@ -1,0 +1,71 @@
+# foreign_tracts { #tspaint.foreign_tracts }
+
+```python
+tspaint.foreign_tracts(
+    ts,
+    labels,
+    samples,
+    *,
+    min_score=0.5,
+    mode='auto',
+    K=2,
+    Q0=None,
+    max_iter=8,
+    soft_refs=None,
+)
+```
+
+Anonymous foreign-tract inference: where a haplotype is foreign to its expectation
+(Plan A Workflow 2; CLAUDE.md §2.3, §9).
+
+Flags tracts **without attributing a donor**. The foreignness score is per segment:
+
+* a **labelled** sample (in ``labels``) — ``1 - loo[label]``: how much the leave-one-out
+  genealogy withholds from its own label (its introgression, source-agnostic);
+* an **unlabelled** query — ``(1 - fit) / (1 - 1/K)`` where ``fit = max_s loo[s]``: how
+  poorly it fits any panel source ("fits nothing"), normalised so a maximally-ambiguous
+  tract scores 1.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to analyse.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample id -> ancestry-state label.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Samples to scan (references and/or queries).
+
+<code>[**min_score**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Flag segments whose foreignness score ``>= min_score`` (default ``0.5`` — the expected ancestry gets less than half the support).
+
+<code>[**mode**]{.parameter-name} [:]{.parameter-annotation-sep} [(\'auto\', \'label\', \'fit\')]{.parameter-annotation} [ = ]{.parameter-default-sep} [\"auto\"]{.parameter-default}</code>
+
+:   ``"auto"`` (default) uses the label rule for labelled samples and the fit rule for queries; ``"label"`` / ``"fit"`` force one rule for all samples.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Model / EM controls (see :func:`tspaint.fit`).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per sample, merged foreign tracts ``(left, right, score)``.

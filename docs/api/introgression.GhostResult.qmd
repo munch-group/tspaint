@@ -1,0 +1,34 @@
+# introgression.GhostResult { #tspaint.introgression.GhostResult }
+
+```python
+tspaint.introgression.GhostResult(burden, tracts_by_sample)
+```
+
+Result of :func:`detect_ghost` — per-sample ghost tracts + genome-wide burden.
+
+Mirrors :class:`tspaint.archaic.ArchaicResult`'s accessor vocabulary (``.burden`` dict,
+``.tracts(sample)`` method) so the two detectors are used the same way.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Per sample, the fraction of the genome flagged ghost.
+
+<code>[**tracts_by_sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per sample, the merged ghost ``(left, right)`` tracts.
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [tracts](#tspaint.introgression.GhostResult.tracts) | Ghost tracts ``[(left, right)]`` for one ``sample``. |
+
+### tracts { #tspaint.introgression.GhostResult.tracts }
+
+```python
+tspaint.introgression.GhostResult.tracts(sample)
+```
+
+Ghost tracts ``[(left, right)]`` for one ``sample``.

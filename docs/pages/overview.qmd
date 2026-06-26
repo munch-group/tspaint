@@ -68,9 +68,7 @@ each row:
 {{< embed ../notebooks/painting.ipynb#fig-painting >}}
 
 Collapsed to hard ancestry tracts with a confidence deadband (for tract-length / admixture
-dating):
-
-{{< embed ../notebooks/painting.ipynb#fig-painting-hard >}}
+dating).
 
 ## Where to go next
 

@@ -1,0 +1,68 @@
+# detect_archaic { #tspaint.detect_archaic }
+
+```python
+tspaint.detect_archaic(
+    ts,
+    labels,
+    samples=None,
+    *,
+    max_iter=50,
+    tol=0.001,
+    delta=None,
+    init_archaic_burden=0.1,
+    init_switch=0.02,
+)
+```
+
+Reference-free archaic / ghost detection via a depth-emission HMM (Plan B).
+
+Fits a per-sample 2-state (modern / archaic) HMM along the genome on nearest-modern-reference
+coalescence depth, the modern emission anchored by the panel, the archaic emission learned and
+constrained deeper. Returns a **calibrated** per-locus ``P(archaic)`` — no archaic reference
+required.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence to analyse.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\] or [iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   The modern reference sample ids (a ``{ref: state}`` painting label dict is accepted — only the ids are used; every reference is "modern"). They anchor the modern depth distribution.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to scan; defaults to every non-reference sample.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
+
+:   Baum–Welch iteration cap and log-likelihood tolerance.
+
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
+
+:   Baum–Welch iteration cap and log-likelihood tolerance.
+
+<code>[**delta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Minimum gap ``μ_a - μ_m`` (log-depth) enforced on the archaic mean. Defaults to ``0.5 * σ_m`` (half the modern depth spread).
+
+<code>[**init_archaic_burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Initial archaic fraction and per-breakpoint switch probability.
+
+<code>[**init_switch**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Initial archaic fraction and per-breakpoint switch probability.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[ArchaicResult](`tspaint.archaic.ArchaicResult`)]{.parameter-annotation}</code>
+
+:   Per-sample ``P(archaic)`` posteriors / tracts / burden plus the learned HMM parameters.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If the modern anchor cannot be estimated (no informative reference depths).

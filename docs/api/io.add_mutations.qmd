@@ -4,7 +4,8 @@
 tspaint.io.add_mutations(ts, rate=1e-08, random_seed=None)
 ```
 
-Overlay biallelic mutations on a tree sequence so tsinfer has variant data.
+Overlay biallelic mutations on a tree sequence so the inference front ends have variant
+data.
 
 ## Parameters {.doc-section .doc-section-parameters}
 

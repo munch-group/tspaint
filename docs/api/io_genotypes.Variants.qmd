@@ -1,0 +1,35 @@
+# io_genotypes.Variants { #tspaint.io_genotypes.Variants }
+
+```python
+tspaint.io_genotypes.Variants(
+    positions,
+    genotypes,
+    alleles,
+    sequence_length,
+    sample_names=None,
+)
+```
+
+A tool-agnostic biallelic variant matrix (one column per **haplotype**).
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**positions**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(S,)`` integer site positions (sorted, strictly increasing).
+
+<code>[**genotypes**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(S, H)`` allele indices (``int8``; 0 = ancestral/REF, 1 = derived/ALT) over ``H`` haplotype columns (``samples × ploidy``).
+
+<code>[**alleles**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[str](`str`), [str](`str`)\]\]]{.parameter-annotation}</code>
+
+:   Per-site ``(ref, alt)`` allele strings.
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Sequence length for the inferred tree sequence.
+
+<code>[**sample_names**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[str](`str`)\] or None]{.parameter-annotation}</code>
+
+:   Optional haplotype/sample names (length ``H``).
