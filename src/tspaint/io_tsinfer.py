@@ -58,17 +58,19 @@ def tsinfer(source):
 
     Notes
     -----
-    A ``ts`` source uses ``SampleData.from_tree_sequence`` (deprecated in tsinfer 0.5 but valid
-    while tsinfer is pinned ``<0.6``); VCF / Zarr sources are normalised by
-    :mod:`tspaint.io_genotypes` and added site-by-site.
+    A **zarr** source is read chunked via ``tsinfer.VariantData``
+    (:func:`tspaint.io_genotypes.variant_data_from_zarr`) — scalable to whole-genome data; a **ts**
+    source uses ``SampleData.from_tree_sequence`` (deprecated in tsinfer 0.5 but valid while tsinfer
+    is pinned ``<0.6``); a **VCF** is parsed in-memory by :mod:`tspaint.io_genotypes`.
     """
     import tsinfer as _tsinfer
-    from .io_genotypes import source_kind, resolve_variants, to_sample_data
-    if source_kind(source) == "ts":
-        sample_data = _tsinfer.SampleData.from_tree_sequence(source)
-    else:
-        sample_data = to_sample_data(resolve_variants(source))
-    return _tsinfer.infer(sample_data)
+    from .io_genotypes import source_kind, variants_from_vcf, to_sample_data, variant_data_from_zarr
+    kind = source_kind(source)
+    if kind == "ts":
+        return _tsinfer.infer(_tsinfer.SampleData.from_tree_sequence(source))
+    if kind == "zarr":
+        return _tsinfer.infer(variant_data_from_zarr(source))           # chunked / scalable
+    return _tsinfer.infer(to_sample_data(variants_from_vcf(source)))     # VCF -> in-memory SampleData
 
 
 def infer_tree_sequence(ts_with_mutations):
