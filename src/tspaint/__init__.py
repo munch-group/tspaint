@@ -27,6 +27,8 @@ Dating (admixture rate through time — an optional, separate deliverable)
 Reference QC & introgression (Plan A workflows)
     reference_qc, foreign_tracts, detect_ghost, loo_posterior_table; also
     ``Painting.introgression_map()``
+Reference-free archaic detection (Plan B)
+    detect_archaic — a depth-emission HMM that learns the archaic state with no archaic reference
 Namespaces
     tspaint.metrics      accuracy, calibration, fragmentation / tract-length metrics
     tspaint.compare      painters (tspaint_paint, nearest_reference_paint, rfmix_paint) + head_to_head
@@ -35,6 +37,7 @@ Namespaces
     tspaint.dating       time-inhomogeneous directional mugration EM (admixture dating)
     tspaint.experiments  end-to-end benchmark drivers
     tspaint.introgression  reference QC, anonymous foreign tracts, ghost detection
+    tspaint.archaic      reference-free archaic / ghost detection (depth-emission HMM, Plan B)
 Lower-level machinery lives in the named submodules (``tspaint.model``, ``tspaint.pruning``,
 ``tspaint.accumulate``, ``tspaint.em``, ``tspaint.output``, ``tspaint.ensemble``, ``tspaint.ranked``,
 ``tspaint.diagnostics``).
@@ -50,11 +53,12 @@ from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from .dating import fit_rate_through_time, RateThroughTime
 from .introgression import reference_qc, foreign_tracts, detect_ghost
+from .archaic import detect_archaic
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
     metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
-    em, output, pruning, accumulate, branch_stats, diagnostics, introgression,
+    em, output, pruning, accumulate, branch_stats, diagnostics, introgression, archaic,
     io_tsinfer, io_singer, io_rfmix,
 )
 
@@ -79,7 +83,9 @@ __all__ = [
     "fit_rate_through_time", "RateThroughTime",
     # reference QC & introgression (Plan A workflows)
     "reference_qc", "foreign_tracts", "detect_ghost", "loo_posterior_table",
+    # reference-free archaic detection (Plan B)
+    "detect_archaic",
     # namespaces
-    "metrics", "compare", "io", "bp", "dating", "experiments", "introgression",
+    "metrics", "compare", "io", "bp", "dating", "experiments", "introgression", "archaic",
     "__version__",
 ]

@@ -70,3 +70,18 @@ def test_detect_archaic_recovers_burden_reference_free():
     control = float(np.mean([res0.burden[q] for q in q0]))
     assert control < 0.05                                              # identifiability: no false archaic
     assert burden > 3 * control
+
+
+@pytest.mark.slow
+def test_archaic_detection_beats_fixed_threshold():
+    # Plan B go/no-go: the learned HMM beats the Plan A fixed-threshold detect_ghost on per-locus
+    # recall at equal (high) precision, recovers the burden, and keeps a low control false-positive.
+    from tspaint.experiments import archaic_detection_experiment
+    r = archaic_detection_experiment(ghost_fraction=0.25, n_admix=8, n_ref=8,
+                                     sequence_length=1.5e6, seed=1, max_iter=40)
+    a, g = r["archaic"], r["ghost"]
+    assert a["recall"] > g["recall"] + 0.2          # learned detector recovers far more of the tracts
+    assert a["precision"] > 0.8 and g["precision"] > 0.8
+    assert abs(a["burden"] - r["true_burden"]) < 0.1   # near-exact burden recovery (vs the flag's under-detection)
+    assert a["control_fp"] < 0.05                    # identifiability: low no-ghost false-positive
+    assert a["mu_archaic"] > a["mu_modern"] + 1.0    # learns a deep archaic state

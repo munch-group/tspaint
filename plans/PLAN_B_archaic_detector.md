@@ -1,5 +1,18 @@
 # Plan B — Reference-free archaic detector (separate branch)
 
+> **[OUTCOME — GO, built on branch `plan-b-archaic`.]** The generative reference-free detector
+> (`tspaint.archaic.detect_archaic`) **beats the Plan A fixed-threshold flag**: per-locus recall
+> 0.99–1.00 vs 0.38–0.54 at equal precision 1.0, near-exact burden recovery, lower control
+> false-positive (~0.002 vs ~0.009), calibrated, no manual threshold, and it *learns* the archaic
+> divergence depth. The §6 identifiability collapse (naive version → 0.92 control false-positive)
+> is fixed by three guards: anchor the archaic floor above the panel's deepest coalescence, widen
+> modern to cover its deep tail, cap the archaic σ. Realised as the **genome-axis** "deep-coalescence
+> emission" HMM (variant (b) below) rather than a tree-axis CTMC — with no archaic tip there is no
+> vertical signal to propagate; the signal is "is this lineage anomalously deep here," which is a
+> genome-axis question. Driver `experiments.archaic_detection_experiment`; tests `tests/test_archaic.py`.
+> Outstanding: rank-depth / Relate-calibration variant (Phase 3 robustness item); softer-signal
+> (shallower-divergence) calibration; the Relate deep-branch (Speidel et al., 2019) baseline.
+
 Promote the **depth** signal from Plan A — used there as a *diagnostic flag* on top of the
 supervised painter — into a **generative latent state**: a 2-state CTMC where state 0 =
 "modern background" (anchored by the panel) and state 1 = "deep/archaic", whose emission is
