@@ -251,8 +251,8 @@ def head_to_head(painters, *, T_admix=300.0, n_admix=12, n_ref=12, sequence_leng
         if sub == "true":
             work = ts
         elif sub == "tsinfer":
-            from .io_tsinfer import add_mutations, infer_tree_sequence
-            work = infer_tree_sequence(add_mutations(ts, rate=mutation_rate, random_seed=seed))
+            from .io_tsinfer import add_mutations, tsinfer
+            work = tsinfer(add_mutations(ts, rate=mutation_rate, random_seed=seed))
         else:
             raise ValueError(f"unknown substrate {sub!r}")
         out[sub] = {name: score_painter(p, work, labels, queries, truth_states)

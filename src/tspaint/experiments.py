@@ -93,10 +93,10 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
     n_sites = None
     t_infer = 0.0
     if infer:
-        from .io_tsinfer import add_mutations, infer_tree_sequence
+        from .io_tsinfer import add_mutations, tsinfer
         t0 = clk()
         ts_mut = add_mutations(ts, rate=mutation_rate, random_seed=seed)
-        work_ts = infer_tree_sequence(ts_mut)
+        work_ts = tsinfer(ts_mut)
         t_infer = clk() - t0
         n_sites = int(ts_mut.num_sites)
     else:
@@ -371,7 +371,7 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     posterior samples (SINGER) additionally marginalise coalescent-time and topology
     uncertainty, so the realised gain here is a lower bound on the SINGER case.
     """
-    from .io_tsinfer import add_mutations, infer_tree_sequence
+    from .io_tsinfer import add_mutations, tsinfer
 
     ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
                             recombination_rate=recombination_rate, random_seed=seed,
@@ -389,7 +389,7 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     truth_states = map_truth({q: truth[q] for q in queries}, state_of_pop)
 
     # M inferred ARGs (stand-in posterior samples): independent mutation overlays
-    ensemble = [infer_tree_sequence(add_mutations(ts, rate=mutation_rate,
+    ensemble = [tsinfer(add_mutations(ts, rate=mutation_rate,
                                                   random_seed=seed + 1 + m))
                 for m in range(M)]
 
@@ -464,7 +464,7 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
         ``merged_tracks``, ``truth_states``, ``queries``.
     """
     import msprime
-    from .io_singer import singer_tree_sequences
+    from .io_singer import singer
 
     ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
                             recombination_rate=recombination_rate, random_seed=seed,
@@ -483,7 +483,7 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
 
     tsm = msprime.sim_mutations(ts, rate=mutation_rate, random_seed=seed,
                                 model=msprime.BinaryMutationModel())
-    ensemble = singer_tree_sequences(tsm, Ne=Ne, mutation_rate=mutation_rate,
+    ensemble = singer(tsm, Ne=Ne, mutation_rate=mutation_rate,
                                      recombination_rate=recombination_rate, n_samples=n_singer,
                                      thin=thin, burn_in=burn_in, seed=singer_seed)
 
