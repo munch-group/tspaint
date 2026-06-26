@@ -29,7 +29,8 @@ from .output import INFORMATIVE, MISSING_INFO, loo_posterior_table
 from .em import fit, build_emissions
 from .model import make_generator_2state
 
-__all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc"]
+__all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc",
+           "foreign_tracts", "detect_ghost"]
 
 
 @dataclass
@@ -345,3 +346,144 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     return ReferenceQC(labels=labels, credibility=credibility, loo_agreement=agreement,
                        learned_w=learned, anchors=anchor_set, maps=maps, Q=Q, pi=pi,
                        _length=float(ts.sequence_length))
+
+
+# --- Workflows 2 & 3: anonymous foreign tracts & ghost-source detection ----------------------
+
+def _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank"):
+    """Fit ``θ`` on the panel and return the per-sample foreignness track."""
+    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False, soft_refs=soft_refs)
+    em = build_emissions(ts, labels, res.w, res.pi)
+    return foreignness_track(ts, res.Q, res.pi, em, labels, focal=samples, depth=depth)
+
+
+def _merge_scored(segs):
+    """Merge contiguous ``(left, right, score)`` runs, span-averaging the score."""
+    out = []
+    for (l, r, sc) in segs:
+        if out and abs(out[-1][1] - l) < 1e-9:
+            pl, pr, psc = out[-1]
+            w1, w2 = pr - pl, r - l
+            out[-1] = (pl, r, (psc * w1 + sc * w2) / (w1 + w2))
+        else:
+            out.append((l, r, sc))
+    return out
+
+
+def _merge_intervals(intervals):
+    """Merge contiguous ``(left, right)`` intervals."""
+    out = []
+    for (l, r) in intervals:
+        if out and abs(out[-1][1] - l) < 1e-9:
+            out[-1] = (out[-1][0], r)
+        else:
+            out.append((l, r))
+    return out
+
+
+def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=None,
+                   max_iter=8, soft_refs=None):
+    """Anonymous foreign-tract inference: where a haplotype is foreign to its expectation
+    (Plan A Workflow 2; CLAUDE.md §2.3, §9).
+
+    Flags tracts **without attributing a donor**. The foreignness score is per segment:
+
+    * a **labelled** sample (in ``labels``) — ``1 - loo[label]``: how much the leave-one-out
+      genealogy withholds from its own label (its introgression, source-agnostic);
+    * an **unlabelled** query — ``(1 - fit) / (1 - 1/K)`` where ``fit = max_s loo[s]``: how
+      poorly it fits any panel source ("fits nothing"), normalised so a maximally-ambiguous
+      tract scores 1.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence to analyse.
+    labels : dict[int, int]
+        Reference sample id -> ancestry-state label.
+    samples : iterable[int]
+        Samples to scan (references and/or queries).
+    min_score : float, optional
+        Flag segments whose foreignness score ``>= min_score`` (default ``0.5`` — the expected
+        ancestry gets less than half the support).
+    mode : {"auto", "label", "fit"}, optional
+        ``"auto"`` (default) uses the label rule for labelled samples and the fit rule for
+        queries; ``"label"`` / ``"fit"`` force one rule for all samples.
+    K, Q0, max_iter, soft_refs
+        Model / EM controls (see :func:`tspaint.fit`).
+
+    Returns
+    -------
+    dict[int, list[tuple[float, float, float]]]
+        Per sample, merged foreign tracts ``(left, right, score)``.
+    """
+    if mode not in ("auto", "label", "fit"):
+        raise ValueError("mode must be 'auto', 'label' or 'fit'")
+    labels = {int(k): int(v) for k, v in labels.items()}
+    samples = [int(s) for s in samples]
+    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs)
+    out = {}
+    for s in samples:
+        use_label = (mode == "label") or (mode == "auto" and s in labels)
+        flagged = []
+        for seg in ft[s]:
+            if seg.status == MISSING_INFO:
+                continue
+            score = ((1.0 - float(seg.loo[labels[s]])) if use_label
+                     else (1.0 - seg.fit) / (1.0 - 1.0 / K))
+            if score >= min_score:
+                flagged.append((seg.left, seg.right, score))
+        out[s] = _merge_scored(flagged)
+    return out
+
+
+def detect_ghost(ts, labels, samples, *, fit_thresh=0.6, depth_thresh=0.9, K=2, Q0=None,
+                 max_iter=8, soft_refs=None):
+    """Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3).
+
+    A ghost / archaic tract fits **no** panel source (low ``fit``) **and** sits on an
+    anomalously **deep** branch relative to every labelled reference (high ``depth``). That
+    second criterion is what separates a genuine unsampled-source tract from a merely
+    uninformative (50/50, shallow) one. Detection, not attribution — it flags that a tract
+    descends from something outside the panel, not what (CLAUDE.md §9).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence to analyse.
+    labels : dict[int, int]
+        Reference sample id -> ancestry-state label.
+    samples : iterable[int]
+        Samples to scan (typically the queries).
+    fit_thresh : float, optional
+        Flag where ``fit < fit_thresh`` (fits no panel source). Default ``0.6``.
+    depth_thresh : float, optional
+        Flag where the rank-normalised nearest-reference ``depth >= depth_thresh`` (a deep
+        outlier). Default ``0.9`` (the deepest 10%) — measured on an archaic-like ghost sim:
+        recall 0.58 at precision 1.0 and a ~1% false-positive burden on the no-ghost control;
+        lower it to ``0.8`` for recall ~1.0 at precision ~0.86 (same control floor). The right
+        value scales with how prevalent the ghost ancestry is — tune against your own no-ghost
+        control. The genome-wide ghost **burden** separates ghost from no-ghost ~10x even when
+        per-tract recall is partial.
+    K, Q0, max_iter, soft_refs
+        Model / EM controls (see :func:`tspaint.fit`).
+
+    Returns
+    -------
+    dict
+        ``{"tracts": {sample: [(left, right)]}, "burden": {sample: fraction}}`` — the ghost
+        tracts per sample and the genome-wide ghost burden (flagged fraction).
+    """
+    labels = {int(k): int(v) for k, v in labels.items()}
+    samples = [int(s) for s in samples]
+    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank")
+    L = float(ts.sequence_length)
+    tracts, burden = {}, {}
+    for s in samples:
+        flagged = [(seg.left, seg.right) for seg in ft[s]
+                   if seg.status != MISSING_INFO and np.isfinite(seg.depth)
+                   and seg.fit < fit_thresh and seg.depth >= depth_thresh]
+        merged = _merge_intervals(flagged)
+        tracts[s] = merged
+        burden[s] = (sum(r - l for (l, r) in merged) / L) if L else float("nan")
+    return {"tracts": tracts, "burden": burden}

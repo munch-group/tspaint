@@ -4,8 +4,13 @@ import pytest
 import tskit
 
 from tspaint.model import make_generator_2state, tip_emission, query_emission
-from tspaint.introgression import foreignness_track, ForeignnessSegment, reference_qc
+from tspaint.introgression import (foreignness_track, ForeignnessSegment, reference_qc,
+                                 foreign_tracts, detect_ghost)
 from tspaint.output import INFORMATIVE, MISSING_INFO
+
+
+def _span_overlap(l, r, intervals):
+    return sum(max(0.0, min(r, b) - max(l, a)) for (a, b) in intervals)
 
 
 def _build_ts(parents, times, samples, L=10.0):
@@ -120,3 +125,74 @@ def test_reference_qc_flags_impure_minority():
     rt = map_truth({r: truth[r] for r in impure}, {pid[SOURCE_A]: 0, pid[SOURCE_B]: 1})
     rec = float(np.nanmean([_foreign_recall(qc.maps[r], rt[r], labels[r]) for r in impure]))
     assert rec > 0.3
+
+
+@pytest.mark.slow
+def test_detect_ghost_finds_unsampled_source():
+    # Plan A Workflow 3: an unsampled ghost source is detectable (low fit + deep), with a low
+    # false-positive burden on the matched no-ghost control (the honesty gate; CLAUDE.md §9).
+    from tspaint.sim import (simulate_admixture_with_ghost, local_ancestry_truth,
+                             SOURCE_A, SOURCE_B, GHOST, ADMIXED)
+    common = dict(n_admix=12, n_ref=8, sequence_length=2e6, recombination_rate=1e-8,
+                  T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000)
+
+    def run(gf, seed):
+        ts = simulate_admixture_with_ghost(ghost_fraction=gf, random_seed=seed, **common)
+        names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+        pid = {n: p for p, n in names.items()}
+        node_pop = ts.tables.nodes.population
+        of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+        queries = of(ADMIXED)
+        labels = {s: 0 for s in of(SOURCE_A)}
+        labels.update({s: 1 for s in of(SOURCE_B)})
+        tracts, _ = local_ancestry_truth(ts)
+        gid = pid[GHOST]
+        true_ghost = {q: [(l, r) for (l, r, p) in tracts[q] if p == gid] for q in queries}
+        return queries, true_ghost, detect_ghost(ts, labels, queries, max_iter=8)
+
+    queries, true_ghost, gh = run(0.25, 1)
+    q0, _, gh0 = run(0.0, 1)
+
+    # detection: the genome-wide ghost burden is far above the no-ghost control (measured ~10x)
+    burden = float(np.mean([gh["burden"][q] for q in queries]))
+    burden0 = float(np.mean([gh0["burden"][q] for q in q0]))
+    assert burden > 3 * burden0
+    assert burden0 < 0.05                              # false-positive floor (measured ~0.01)
+
+    # localisation: the flagged tracts overlap the true ghost tracts (measured recall 0.58 / prec 1.0)
+    det = sum(r - l for q in queries for (l, r) in gh["tracts"][q])
+    det_ghost = sum(_span_overlap(l, r, true_ghost[q]) for q in queries for (l, r) in gh["tracts"][q])
+    total_ghost = sum(r - l for q in queries for (l, r) in true_ghost[q])
+    assert det_ghost / total_ghost > 0.4               # recall
+    assert det_ghost / det > 0.7                        # precision
+
+
+@pytest.mark.slow
+def test_foreign_tracts_flags_reference_introgression():
+    # Plan A Workflow 2: anonymous foreign-tract inference recovers an impure reference's own
+    # foreign tracts (label mode), without attributing a source.
+    from tspaint.sim import (simulate_admixture_impure_refs, local_ancestry_truth,
+                             SOURCE_A, SOURCE_B, REF_A_IMPURE, REF_B_IMPURE)
+    from tspaint.validate import map_truth
+
+    ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=2e6,
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    pid = {n: p for p, n in names.items()}
+    of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+    impure = of(REF_A_IMPURE) + of(REF_B_IMPURE)
+    labels = {s: 0 for s in of(SOURCE_A) + of(REF_A_IMPURE)}
+    labels.update({s: 1 for s in of(SOURCE_B) + of(REF_B_IMPURE)})
+    truth, _ = local_ancestry_truth(ts)
+    rt = map_truth({r: truth[r] for r in impure}, {pid[SOURCE_A]: 0, pid[SOURCE_B]: 1})
+
+    ft = foreign_tracts(ts, labels, impure, soft_refs=set(impure), max_iter=8)
+    total_det = total_hit = 0.0
+    for r in impure:
+        true_foreign = [(l, rr) for (l, rr, st) in rt[r] if st != labels[r]]
+        for (l, rr, _sc) in ft[r]:
+            total_det += rr - l
+            total_hit += _span_overlap(l, rr, true_foreign)
+    assert total_det > 0                                # flags something
+    assert total_hit / total_det > 0.5                  # most flagged span is truly foreign
