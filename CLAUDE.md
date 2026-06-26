@@ -600,7 +600,7 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
 > **That is the point** — the benefit needs genuine *posterior* draws (independent-ish
 > errors), which SINGER provides and a point-estimate ensemble does not.
 
-> **[BUILT + MEASURED — SINGER].** `io_singer.singer_tree_sequences` runs the SINGER
+> **[BUILT + MEASURED — SINGER].** `io.singer` (formerly `io_singer.singer_tree_sequences`) runs the SINGER
 > binary (haploid VCF → `singer -ploidy 1` with an auto-retry loop → tskit; sample order
 > preserved, order-aligned = 1.000; node times in generations). Driver
 > `experiments.singer_ensemble_experiment`. The headline **flips the §9 story**: SINGER

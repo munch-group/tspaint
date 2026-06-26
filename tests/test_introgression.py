@@ -154,14 +154,14 @@ def test_detect_ghost_finds_unsampled_source():
     q0, _, gh0 = run(0.0, 1)
 
     # detection: the genome-wide ghost burden is far above the no-ghost control (measured ~10x)
-    burden = float(np.mean([gh["burden"][q] for q in queries]))
-    burden0 = float(np.mean([gh0["burden"][q] for q in q0]))
+    burden = float(np.mean([gh.burden[q] for q in queries]))
+    burden0 = float(np.mean([gh0.burden[q] for q in q0]))
     assert burden > 3 * burden0
     assert burden0 < 0.05                              # false-positive floor (measured ~0.01)
 
     # localisation: the flagged tracts overlap the true ghost tracts (measured recall 0.58 / prec 1.0)
-    det = sum(r - l for q in queries for (l, r) in gh["tracts"][q])
-    det_ghost = sum(_span_overlap(l, r, true_ghost[q]) for q in queries for (l, r) in gh["tracts"][q])
+    det = sum(r - l for q in queries for (l, r) in gh.tracts(q))
+    det_ghost = sum(_span_overlap(l, r, true_ghost[q]) for q in queries for (l, r) in gh.tracts(q))
     total_ghost = sum(r - l for q in queries for (l, r) in true_ghost[q])
     assert det_ghost / total_ghost > 0.4               # recall
     assert det_ghost / det > 0.7                        # precision

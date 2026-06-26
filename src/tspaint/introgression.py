@@ -30,7 +30,7 @@ from .em import fit, build_emissions
 from .model import make_generator_2state
 
 __all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc",
-           "foreign_tracts", "detect_ghost"]
+           "foreign_tracts", "GhostResult", "detect_ghost"]
 
 
 @dataclass
@@ -437,6 +437,28 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
     return out
 
 
+@dataclass
+class GhostResult:
+    """Result of :func:`detect_ghost` — per-sample ghost tracts + genome-wide burden.
+
+    Mirrors :class:`tspaint.archaic.ArchaicResult`'s accessor vocabulary (``.burden`` dict,
+    ``.tracts(sample)`` method) so the two detectors are used the same way.
+
+    Attributes
+    ----------
+    burden : dict[int, float]
+        Per sample, the fraction of the genome flagged ghost.
+    tracts_by_sample : dict[int, list[tuple[float, float]]]
+        Per sample, the merged ghost ``(left, right)`` tracts.
+    """
+    burden: dict
+    tracts_by_sample: dict
+
+    def tracts(self, sample):
+        """Ghost tracts ``[(left, right)]`` for one ``sample``."""
+        return self.tracts_by_sample[int(sample)]
+
+
 def detect_ghost(ts, labels, samples, *, fit_thresh=0.6, depth_thresh=0.9, K=2, Q0=None,
                  max_iter=8, soft_refs=None):
     """Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3).
@@ -470,9 +492,9 @@ def detect_ghost(ts, labels, samples, *, fit_thresh=0.6, depth_thresh=0.9, K=2, 
 
     Returns
     -------
-    dict
-        ``{"tracts": {sample: [(left, right)]}, "burden": {sample: fraction}}`` — the ghost
-        tracts per sample and the genome-wide ghost burden (flagged fraction).
+    GhostResult
+        ``.burden`` (per-sample flagged fraction) and ``.tracts(sample)`` (the merged ghost
+        ``(left, right)`` tracts) — the same accessors as :class:`tspaint.archaic.ArchaicResult`.
     """
     labels = {int(k): int(v) for k, v in labels.items()}
     samples = [int(s) for s in samples]
@@ -486,4 +508,4 @@ def detect_ghost(ts, labels, samples, *, fit_thresh=0.6, depth_thresh=0.9, K=2, 
         merged = _merge_intervals(flagged)
         tracts[s] = merged
         burden[s] = (sum(r - l for (l, r) in merged) / L) if L else float("nan")
-    return {"tracts": tracts, "burden": burden}
+    return GhostResult(burden=burden, tracts_by_sample=tracts)

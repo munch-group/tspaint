@@ -881,14 +881,14 @@ def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, se
     ar_tracts = {x: ar.tracts(x, threshold) for x in q}
     gh = detect_ghost(ts, lab, q)
     a_rec, a_prec, a_burden, true_burden = _score(ar_tracts, true_g, q, L)
-    g_rec, g_prec, g_burden, _ = _score(gh["tracts"], true_g, q, L)
+    g_rec, g_prec, g_burden, _ = _score(gh.tracts_by_sample, true_g, q, L)
 
     ts0, lab0, q0, _ = setup(0.0, seed)
     L0 = ts0.sequence_length
     ar0 = detect_archaic(ts0, lab0, q0, max_iter=max_iter)
     gh0 = detect_ghost(ts0, lab0, q0)
     a_fp = float(np.mean([ar0.burden[x] for x in q0]))
-    g_fp = sum(r - l for x in q0 for (l, r) in gh0["tracts"][x]) / (L0 * len(q0))
+    g_fp = sum(r - l for x in q0 for (l, r) in gh0.tracts(x)) / (L0 * len(q0))
 
     return {
         "ghost_fraction": ghost_fraction, "seed": seed, "n_queries": len(q),
