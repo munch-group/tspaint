@@ -410,6 +410,25 @@ off. Guards:
   the genealogy insists otherwise.
 - **Never let the whole panel go soft simultaneously** (label switching, unstable
   Q).
+- **[MEASURED — softening slightly-impure references]** For references carrying a known
+  minority of foreign tracts, **un-clamp them** (soft `w` + strong `Beta` prior) rather than
+  hard-clamping — but the payoff is **introgression recovery, not query accuracy**, and it is
+  **bound by the genealogical foreign-tract signal**, not the impure:pure ratio. A hard clamp
+  makes the emission one-hot, so the impure-ref posterior is pinned (down-pass foreign recall
+  **0 by construction**); any `w < 1` restores local override. On strong-structure true-ARG
+  sims (`experiments.impure_reference_experiment` / `impure_reference_sweep`,
+  `sim.simulate_admixture_impure_refs`): the payoff is **maximal with strong source anchoring +
+  recent admixture** (many pure anchors, T_admix≈120) — down-pass recall **0 → 0.76**, the
+  leave-one-out introgression map (`output.loo_posterior_table`) **0.64 → 0.92**; **moderate**
+  at baseline (down-pass 0.18 but LOO 0.56 — the LOO lens recovers ~3× more, since the down-pass
+  hides foreign tracts behind the tip's own soft emission); and it **vanishes at old admixture**
+  (T_admix≈1000: LOO Δ≈0.01, down-pass 0) where the query↔reference link is itself gone (§9
+  signal-loss). The **query bal-acc gain is small everywhere (+0.01–0.03)** and ceiling-limited —
+  the pure anchor core already carries the painting. Benefit is from **un-clamping, not prior
+  strength**: learned `w` is flat across `Beta` α∈[2, 2000] (genome-scale span-weighted evidence
+  swamps the prior ⇒ `w →` the ref's empirical purity), so the per-tip prior override
+  (`em.fit(priors=...)`, `paint(..., priors=...)`) is available but ~inert at genome scale. Keep
+  the pure anchors hard-clamped.
 - Degenerate fixed points to watch in tests: `Q → 0` freezes initialization;
   `Q → ∞` washes everything to `π`; unsupervised mode label-switches/collapses.
 - **Branch-length / time-calibration risk.** Relate estimates branch lengths
@@ -766,6 +785,14 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
   introgressed or just mislabelled" — inherently a *where on the chromosome*
   question, which is why full local introgression-mapping (§2.3) is the right
   target, not a global scalar.
+  - **[MEASURED — the introgression map is leave-one-out.]** A reference's *own* foreign
+    tracts are hidden in the down-pass posterior by its (still-confident) tip emission; read
+    them instead from the **outside message** (`output.loo_posterior_table`, the LOO marginal
+    `PruneResult.loo`). Hard-clamping pins the down-pass (foreign recall 0); softening the
+    suspect refs surfaces them (down-pass up to ~0.76, LOO up to ~0.92 with strong source
+    anchoring + recent admixture; signal-bound — see the §6 "softening slightly-impure
+    references" note). Tools: `experiments.impure_reference_experiment` /
+    `impure_reference_sweep`, `sim.simulate_admixture_impure_refs`.
 
 ---
 

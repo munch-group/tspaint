@@ -11,7 +11,8 @@ import numpy as np
 import pytest
 
 from tspaint.experiments import (admixture_experiment, flicker_vs_true_boundaries,
-                               age_sweep, scaling_sweep, impure_reference_experiment)
+                               age_sweep, scaling_sweep, impure_reference_experiment,
+                               impure_reference_sweep)
 
 
 @pytest.mark.slow
@@ -98,3 +99,22 @@ def test_impure_reference_softening_un_clamps_introgression():
     # the per-tip graded-prior path runs over every impure ref and yields valid credibilities
     assert set(r["graded_priors"]) == set(soft["learned_w_per_ref"])
     assert all(0.0 <= v <= 1.0 for v in graded["learned_w_per_ref"].values())
+
+
+@pytest.mark.slow
+def test_impure_reference_sweep_signal_bound_benefit():
+    # CLAUDE.md §6/§9: softening's introgression-recovery payoff is bound by the genealogical
+    # foreign-tract signal -> present at recent admixture, ~gone at old admixture (the
+    # query<->reference link is itself lost, §9). The sweep driver tabulates the deltas.
+    rows = impure_reference_sweep(
+        {"recent": {"T_admix": 120}, "old": {"T_admix": 1000}},
+        seeds=(1,), sequence_length=1.5e6, n_pure=6, n_impure=5, n_admix=6, max_iter=5)
+    assert len(rows) == 2
+    by = {r["regime"]: r for r in rows}
+    for r in rows:
+        assert r["foreign_recall_hard"] == 0.0             # down-pass pinned under hard clamp
+        assert 0.4 < r["mean_learned_w"] < 0.98             # soft refs un-clamped, not collapsed
+        assert np.isfinite(r["query_gain"]) and np.isfinite(r["introgression_gain_loo"])
+    # recent admixture recovers impure-ref introgression; old admixture (signal gone) does not
+    assert by["recent"]["foreign_recall_loo_soft"] > by["old"]["foreign_recall_loo_soft"]
+    assert by["old"]["foreign_recall_loo_soft"] < 0.3

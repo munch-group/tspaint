@@ -24,7 +24,8 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
 
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
            "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment",
-           "fragmentation_experiment", "impure_reference_experiment"]
+           "fragmentation_experiment", "impure_reference_experiment",
+           "impure_reference_sweep"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -740,3 +741,66 @@ def impure_reference_experiment(*, T_admix=300.0, n_admix=10, n_pure=6, n_impure
         "alpha_sweep": sweep,
         "graded_priors": graded_priors,
     }
+
+
+def impure_reference_sweep(regimes, *, seeds=(1,), **kwargs):
+    """Sweep :func:`impure_reference_experiment` across regimes (and seeds); tabulate the
+    soft-vs-hard-clamp deltas for slightly-impure references.
+
+    For each regime and seed it runs the ``hard_clamp`` and ``soft_strong`` configs and
+    reports, averaged over seeds, the query-painting gain (soft − hard balanced accuracy)
+    and the impure-reference introgression recovery — down-pass and **leave-one-out**
+    (:func:`tspaint.output.loo_posterior_table`) foreign-tract recall. The tool behind the
+    "where does softening impure references help?" characterisation (CLAUDE.md §6, §9):
+    the payoff is bound by the genealogical foreign-tract signal (maximal with strong source
+    anchoring + recent admixture, vanishing at old admixture), and is introgression recovery
+    rather than a large query gain.
+
+    Parameters
+    ----------
+    regimes : dict[str, dict] or iterable of dict
+        Named regimes (or a bare list) of parameter overrides forwarded to
+        :func:`impure_reference_experiment` — e.g.
+        ``{"recent": {"T_admix": 120, "n_pure": 16}, "old": {"T_admix": 1000}}``.
+    seeds : iterable of int, optional
+        Seeds averaged per regime. Default ``(1,)``.
+    **kwargs
+        Common overrides forwarded to every :func:`impure_reference_experiment` call (e.g.
+        ``sequence_length``, ``max_iter``, ``ref_impurity``). ``alpha_grid`` defaults to
+        ``()`` here — the sweep needs only hard vs soft, not the per-``alpha`` curve.
+
+    Returns
+    -------
+    list of dict
+        One row per regime: ``regime``, ``params``, ``n_seeds``, ``mean_true_purity``,
+        ``query_balanced_hard``/``_soft`` and ``query_gain``, ``foreign_recall_hard``/
+        ``_soft`` (down-pass; ``_hard`` is 0 by construction — a hard clamp pins the tip),
+        ``foreign_recall_loo_hard``/``_soft`` and ``introgression_gain_loo`` (soft − hard
+        LOO recall), and ``mean_learned_w``.
+    """
+    items = list(regimes.items()) if isinstance(regimes, dict) else \
+        [(str(i), dict(r)) for i, r in enumerate(regimes)]
+    kwargs.setdefault("alpha_grid", ())
+    out = []
+    for name, params in items:
+        acc = []
+        for seed in seeds:
+            r = impure_reference_experiment(seed=seed, **{**kwargs, **params})
+            h, s = r["configs"]["hard_clamp"], r["configs"]["soft_strong"]
+            acc.append([r["mean_true_purity"],
+                        h["query_balanced_accuracy"], s["query_balanced_accuracy"],
+                        h["impure_self_foreign_recall"], s["impure_self_foreign_recall"],
+                        h["impure_self_foreign_recall_loo"], s["impure_self_foreign_recall_loo"],
+                        s["mean_learned_w"]])
+        purity, qh, qs, gh, gs, lh, ls, w = np.asarray(acc, float).mean(axis=0)
+        out.append({
+            "regime": name, "params": dict(params), "n_seeds": len(acc),
+            "mean_true_purity": float(purity),
+            "query_balanced_hard": float(qh), "query_balanced_soft": float(qs),
+            "query_gain": float(qs - qh),
+            "foreign_recall_hard": float(gh), "foreign_recall_soft": float(gs),
+            "foreign_recall_loo_hard": float(lh), "foreign_recall_loo_soft": float(ls),
+            "introgression_gain_loo": float(ls - lh),
+            "mean_learned_w": float(w),
+        })
+    return out
