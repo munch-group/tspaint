@@ -24,6 +24,9 @@ Simulation (examples / benchmarks)
     simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 Dating (admixture rate through time — an optional, separate deliverable)
     fit_rate_through_time, RateThroughTime; also ``Painting.rate_through_time()``
+Reference QC & introgression (Plan A workflows)
+    reference_qc, foreign_tracts, detect_ghost, loo_posterior_table; also
+    ``Painting.introgression_map()``
 Namespaces
     tspaint.metrics      accuracy, calibration, fragmentation / tract-length metrics
     tspaint.compare      painters (tspaint_paint, nearest_reference_paint, rfmix_paint) + head_to_head
@@ -31,6 +34,7 @@ Namespaces
     tspaint.bp           horizontal BP/EP smoother (helps on inferred ARGs; CLAUDE.md §7)
     tspaint.dating       time-inhomogeneous directional mugration EM (admixture dating)
     tspaint.experiments  end-to-end benchmark drivers
+    tspaint.introgression  reference QC, anonymous foreign tracts, ghost detection
 Lower-level machinery lives in the named submodules (``tspaint.model``, ``tspaint.pruning``,
 ``tspaint.accumulate``, ``tspaint.em``, ``tspaint.output``, ``tspaint.ensemble``, ``tspaint.ranked``,
 ``tspaint.diagnostics``).
@@ -40,15 +44,17 @@ from __future__ import annotations
 # Core public API ---------------------------------------------------------------------------
 from .api import paint, Painting
 from .em import fit, FitResult
-from .output import posterior_table, hard_segments, Segment, INFORMATIVE, MISSING_INFO
+from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
+                     INFORMATIVE, MISSING_INFO)
 from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from .dating import fit_rate_through_time, RateThroughTime
+from .introgression import reference_qc, foreign_tracts, detect_ghost
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
     metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
-    em, output, pruning, accumulate, branch_stats, diagnostics,
+    em, output, pruning, accumulate, branch_stats, diagnostics, introgression,
     io_tsinfer, io_singer, io_rfmix,
 )
 
@@ -71,7 +77,9 @@ __all__ = [
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
     # dating (admixture rate through time)
     "fit_rate_through_time", "RateThroughTime",
+    # reference QC & introgression (Plan A workflows)
+    "reference_qc", "foreign_tracts", "detect_ghost", "loo_posterior_table",
     # namespaces
-    "metrics", "compare", "io", "bp", "dating", "experiments",
+    "metrics", "compare", "io", "bp", "dating", "experiments", "introgression",
     "__version__",
 ]

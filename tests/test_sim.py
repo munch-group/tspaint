@@ -6,6 +6,7 @@ import pytest
 from tspaint.sim import (
     simulate_admixture,
     simulate_admixture_impure_refs,
+    simulate_admixture_with_ghost,
     local_ancestry_truth,
     _census_mask,
     SOURCE_A,
@@ -13,6 +14,7 @@ from tspaint.sim import (
     ADMIXED,
     REF_A_IMPURE,
     REF_B_IMPURE,
+    GHOST,
 )
 from tspaint.diagnostics import persistence_summary, edge_span_summary
 
@@ -112,3 +114,34 @@ def test_impure_refs_carry_known_minority_ancestry():
     # census truth lands only in the two sources, impure references included
     src = {A_id, B_id}
     assert all(p in src for s in ts.samples() for (_, _, p) in tracts[int(s)])
+
+
+def test_ghost_source_tracts_and_no_ghost_control():
+    # Plan A Phase 3: an unsampled ghost source C contributes to the queries (census truth
+    # labels A/B/GHOST); refs are A/B only; ghost_fraction=0 is the matched control.
+    common = dict(n_admix=12, n_ref=8, sequence_length=2e6, recombination_rate=1e-8,
+                  random_seed=1, T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000)
+    ts = simulate_admixture_with_ghost(ghost_fraction=0.25, **common)
+    names = _names(ts)
+    pid = {n: p for p, n in names.items()}
+    node_pop = ts.tables.nodes.population
+    L = ts.sequence_length
+    of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+    queries = of(ADMIXED)
+    gid = pid[GHOST]
+    tracts, popname = local_ancestry_truth(ts)
+
+    qpops = {popname[p] for q in queries for (_, _, p) in tracts[q]}
+    assert GHOST in qpops and qpops <= {SOURCE_A, SOURCE_B, GHOST}     # ghost present in queries
+    ghost_frac = np.mean([sum(r - l for (l, r, p) in tracts[q] if p == gid) / L for q in queries])
+    assert ghost_frac > 0.03                                          # detectable ghost ancestry
+    assert all(names[node_pop[s]] in (SOURCE_A, SOURCE_B) for s in (of(SOURCE_A) + of(SOURCE_B)))
+
+    ts0 = simulate_admixture_with_ghost(ghost_fraction=0.0, **common)  # matched no-ghost control
+    names0 = _names(ts0)
+    pid0 = {n: p for p, n in names0.items()}
+    np0 = ts0.tables.nodes.population
+    q0 = [int(s) for s in ts0.samples() if np0[s] == pid0[ADMIXED]]
+    t0, pn0 = local_ancestry_truth(ts0)
+    q0pops = {pn0[p] for q in q0 for (_, _, p) in t0[q]}
+    assert GHOST not in q0pops and q0pops <= {SOURCE_A, SOURCE_B}

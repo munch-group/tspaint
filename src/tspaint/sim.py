@@ -24,10 +24,13 @@ __all__ = [
     "ANCESTRAL",
     "REF_A_IMPURE",
     "REF_B_IMPURE",
+    "GHOST",
     "admixture_demography",
     "simulate_admixture",
     "admixture_demography_impure_refs",
     "simulate_admixture_impure_refs",
+    "admixture_demography_with_ghost",
+    "simulate_admixture_with_ghost",
     "local_ancestry_truth",
 ]
 
@@ -37,6 +40,8 @@ ADMIXED = "ADMIX"
 ANCESTRAL = "ANC"
 REF_A_IMPURE = "RA"   # impure reference panel: mostly A, a known minority B (CLAUDE.md §2.2, §6)
 REF_B_IMPURE = "RB"   # impure reference panel: mostly B, a known minority A
+GHOST = "GHOST"       # unsampled ("ghost") source contributing introgression (CLAUDE.md §9)
+AB_ANCESTRAL = "AB"   # intermediate ancestor of A and B; the ghost C is the deeper outgroup
 
 # msprime flags census-event nodes; fall back to time-based detection if the
 # constant is unavailable in the installed version.
@@ -267,6 +272,117 @@ def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_le
     return msprime.sim_ancestry(
         samples={ADMIXED: n_admix, SOURCE_A: n_pure, SOURCE_B: n_pure,
                  REF_A_IMPURE: n_impure, REF_B_IMPURE: n_impure},
+        demography=demography,
+        sequence_length=sequence_length,
+        recombination_rate=recombination_rate,
+        ploidy=ploidy,
+        random_seed=random_seed,
+    )
+
+
+def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
+                                    T_split_AB=2000.0, T_split_ABC=20000.0, ghost_fraction=0.10):
+    """Two-source admixture with a third **unsampled ("ghost") source** ``C``.
+
+    Source ``C`` (``GHOST``) contributes a fraction ``ghost_fraction`` to the admixed
+    population but is **not sampled as a reference** — it is the deeper outgroup: A and B
+    coalesce at ``T_split_AB`` while their ancestor and ``C`` coalesce only at the deeper
+    ``T_split_ABC``. A ghost tract therefore coalesces with the A/B panel only at that deep
+    split — the deep-outlier signature ghost detection keys on. Setting ``T_split_ABC`` far
+    above ``T_split_AB`` gives the **archaic-like** regime; ``ghost_fraction=0`` is the matched
+    no-ghost control. The post-pulse census labels each lineage A / B / C per segment, so
+    :func:`local_ancestry_truth` returns the ghost tracts as ground truth.
+
+    Parameters
+    ----------
+    Ne : float, optional
+        Diploid effective size for every population.
+    T_admix : float, optional
+        Time (generations ago) of the admixture pulse forming ADMIX.
+    census_offset : float, optional
+        Offset added to ``T_admix`` for the census (kept strictly between admixture and
+        ``T_split_AB``).
+    T_split_AB : float, optional
+        Time at which A and B coalesce into their common ancestor.
+    T_split_ABC : float, optional
+        Time at which the A/B ancestor and the ghost ``C`` coalesce (the deep outgroup split).
+    ghost_fraction : float, optional
+        Fraction of ADMIX contributed by the ghost source ``C`` (A and B split the
+        remainder equally). ``0`` reproduces a two-source (no-ghost) control.
+
+    Returns
+    -------
+    msprime.Demography
+        Demography with populations A, B, GHOST, ADMIX, AB and ANCESTRAL plus the admixture,
+        census and two split events.
+
+    Raises
+    ------
+    ValueError
+        If ``T_admix < T_admix + census_offset < T_split_AB < T_split_ABC`` is violated or
+        ``ghost_fraction`` is outside ``[0, 1)``.
+    """
+    census_time = T_admix + census_offset
+    if not (T_admix < census_time < T_split_AB < T_split_ABC):
+        raise ValueError("require T_admix < T_admix+census_offset < T_split_AB < T_split_ABC")
+    if not (0.0 <= ghost_fraction < 1.0):
+        raise ValueError("ghost_fraction must be in [0, 1)")
+
+    f = (1.0 - ghost_fraction) / 2.0
+    d = msprime.Demography()
+    for name in (SOURCE_A, SOURCE_B, GHOST, ADMIXED, AB_ANCESTRAL, ANCESTRAL):
+        d.add_population(name=name, initial_size=Ne)
+    d.add_admixture(time=T_admix, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B, GHOST],
+                    proportions=[f, f, ghost_fraction])
+    d.add_census(time=census_time)
+    d.add_population_split(time=T_split_AB, derived=[SOURCE_A, SOURCE_B], ancestral=AB_ANCESTRAL)
+    d.add_population_split(time=T_split_ABC, derived=[AB_ANCESTRAL, GHOST], ancestral=ANCESTRAL)
+    return d
+
+
+def simulate_admixture_with_ghost(n_admix=10, n_ref=8, sequence_length=2e6,
+                                  recombination_rate=1e-8, ploidy=2, random_seed=42,
+                                  ghost_fraction=0.10, **demography_kwargs):
+    """Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**.
+
+    The admixed individuals carry tracts from A, B and the ghost ``C``; only A and B are
+    sampled as references, so the ghost tracts are foreign-to-the-panel ground truth (labelled
+    ``GHOST`` by the census). Use ``ghost_fraction=0`` for the matched no-ghost control.
+
+    Parameters
+    ----------
+    n_admix : int, optional
+        Number of admixed (query) individuals.
+    n_ref : int, optional
+        Number of individuals sampled from each of A and B (no ghost references).
+    sequence_length : float, optional
+        Sequence length in base pairs.
+    recombination_rate : float, optional
+        Per-base, per-generation recombination rate.
+    ploidy : int, optional
+        Ploidy; each individual yields ``ploidy`` sample haplotypes.
+    random_seed : int, optional
+        Seed for :func:`msprime.sim_ancestry`.
+    ghost_fraction : float, optional
+        Fraction of the admixed population contributed by the unsampled ghost source.
+    **demography_kwargs
+        Passed to :func:`admixture_demography_with_ghost` (e.g. ``T_admix``, ``T_split_AB``,
+        ``T_split_ABC``, ``Ne``).
+
+    Returns
+    -------
+    tskit.TreeSequence
+        Tree sequence whose samples are admixed queries and A/B references; identify them by
+        node population. Census truth (:func:`local_ancestry_truth`) labels tracts A / B /
+        GHOST.
+
+    See Also
+    --------
+    admixture_demography_with_ghost : The underlying demography (and the archaic-like regime).
+    """
+    demography = admixture_demography_with_ghost(ghost_fraction=ghost_fraction, **demography_kwargs)
+    return msprime.sim_ancestry(
+        samples={ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},
         demography=demography,
         sequence_length=sequence_length,
         recombination_rate=recombination_rate,
