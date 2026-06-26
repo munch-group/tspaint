@@ -6,9 +6,12 @@ layout), or a **VCF** file. The native ``ts`` path is handled by each tool direc
 normalises the other two into a tool-agnostic :class:`Variants` and builds whatever each tool
 needs from it (tsinfer ``SampleData`` or a haploid VCF).
 
-Scope (v1, dependency-light — only ``zarr``, which tsinfer already needs): **biallelic** sites,
-a single contig, the ``GT`` field; ``.`` (missing) is read as the reference allele. Richer VCF /
-Zarr handling is a follow-up — convert with ``bio2zarr`` / ``sgkit`` upstream if you need it.
+For **inference**, the zarr path is read **chunked** via :func:`variant_data_from_zarr`
+(``tsinfer.VariantData`` — tsinfer's native VCF-Zarr reader, scalable to whole-genome data, no
+new dependency); the in-memory :class:`Variants` readers below back the VCF path and SINGER's
+VCF export. Scope (v1, dependency-light — only ``zarr``, which tsinfer already needs):
+**biallelic** sites, a single contig, the ``GT`` field; ``.`` (missing) is read as the reference
+allele. Convert with ``bio2zarr`` / ``vcf2zarr`` upstream for richer VCF/Zarr data.
 """
 from __future__ import annotations
 
@@ -19,7 +22,7 @@ import numpy as np
 import tskit
 
 __all__ = ["Variants", "source_kind", "resolve_variants", "variants_from_vcf",
-           "variants_from_zarr", "to_sample_data", "write_haploid_vcf"]
+           "variants_from_zarr", "variant_data_from_zarr", "to_sample_data", "write_haploid_vcf"]
 
 
 @dataclass
@@ -169,6 +172,34 @@ def variants_from_zarr(store):
 
 def _as_str(x):
     return x.decode() if isinstance(x, (bytes, bytearray)) else str(x)
+
+
+def variant_data_from_zarr(store):
+    """Build a tsinfer ``VariantData`` from a VCF-Zarr store — **chunked / scalable** (CLAUDE.md §5).
+
+    The preferred zarr path for :func:`tspaint.io.tsinfer`: tsinfer's native VCF-Zarr reader
+    accesses the genotypes lazily (no in-memory genotype matrix), so it scales to whole-genome
+    data with no new dependency. Uses the ``variant_ancestral_allele`` array if present, else the
+    REF allele as the ancestral state.
+
+    Parameters
+    ----------
+    store : str or zarr store / mapping
+        A VCF Zarr store (e.g. from ``bio2zarr``'s ``vcf2zarr``).
+
+    Returns
+    -------
+    tsinfer.VariantData
+    """
+    import tsinfer
+    import zarr
+    root = zarr.open(store, mode="r")
+    if "variant_ancestral_allele" in root:
+        ancestral = np.asarray(root["variant_ancestral_allele"]).astype(str)
+    else:
+        allele = np.asarray(root["variant_allele"])
+        ancestral = np.array([_as_str(allele[i, 0]) for i in range(allele.shape[0])])
+    return tsinfer.VariantData(store, ancestral_state=ancestral)
 
 
 def to_sample_data(variants):

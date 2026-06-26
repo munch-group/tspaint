@@ -22,12 +22,22 @@ def _write_haploid_vcf(ts, path):
 
 
 def _write_vcz(ts, path):
+    # minimal VCF-Zarr (vcz) the way bio2zarr would lay it out: core arrays + dimension attrs,
+    # which tsinfer.VariantData (the chunked reader) requires.
     import zarr
     G = ts.genotype_matrix()                                   # (sites, samples)
+    V, N = G.shape
     root = zarr.open(path, mode="w")
-    root["call_genotype"] = G[:, :, None].astype("i1")         # (sites, samples, ploidy=1)
-    root["variant_position"] = np.asarray(ts.tables.sites.position)
-    root["variant_allele"] = np.array([["0", "1"]] * ts.num_sites)
+    def arr(name, data, dims):
+        root[name] = data
+        root[name].attrs["_ARRAY_DIMENSIONS"] = dims
+    arr("variant_position", np.asarray(ts.tables.sites.position).astype("i8"), ["variants"])
+    arr("call_genotype", G[:, :, None].astype("i1"), ["variants", "samples", "ploidy"])
+    arr("variant_allele", np.array([["0", "1"]] * V), ["variants", "alleles"])
+    arr("variant_contig", np.zeros(V, "i4"), ["variants"])
+    arr("contig_id", np.array(["1"]), ["contigs"])
+    arr("sample_id", np.array([f"n{i}" for i in range(N)]), ["samples"])
+    arr("variant_ancestral_allele", np.array(["0"] * V), ["variants"])
     return path
 
 
