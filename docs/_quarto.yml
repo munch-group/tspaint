@@ -70,6 +70,7 @@ website:
             - pages/code_paths.qmd
         - section: "Notebooks"
           contents:
+            - notebooks/showcase.ipynb
             - notebooks/painting.ipynb
             - notebooks/calibration.ipynb
             - notebooks/fragmentation.ipynb
