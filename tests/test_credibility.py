@@ -55,3 +55,39 @@ def test_never_all_soft_panel_raises():
     labels.update({s: 1 for s in B_refs})
     with pytest.raises(ValueError):
         fit(ts, labels, K=2, soft_refs=set(labels), max_iter=1)   # no anchors left
+
+
+def test_per_tip_prior_targets_named_tip():
+    """The graded-trust knob: a per-tip Beta prior overrides the global default for the
+    tip it names and no other. A near-dogmatic prior on a soft ref drags ITS learned w
+    toward 1; the same prior on a different tip does not rescue the first (CLAUDE.md §6;
+    em.fit ``priors``)."""
+    ts, A_refs, B_refs = _admixture_refs()
+    labels = {s: 0 for s in A_refs}
+    labels.update({s: 1 for s in B_refs})
+    mislabel = B_refs[0]                    # a B ref mislabelled A -> the genealogy says w small
+    labels[mislabel] = 0
+    correct = A_refs[0]
+    soft = {correct, mislabel}
+    Q0 = make_generator_2state(1e-3, 1e-3)
+
+    # a near-dogmatic prior ON the mislabelled tip drags ITS w back toward 1 ...
+    on_mis = fit(ts, labels, K=2, soft_refs=soft, Q0=Q0, max_iter=6,
+                 alpha=20.0, beta=1.0, priors={mislabel: (1e7, 1.0)})
+    # ... while the same strong prior on a DIFFERENT soft tip leaves the mislabel collapsed
+    on_cor = fit(ts, labels, K=2, soft_refs=soft, Q0=Q0, max_iter=6,
+                 alpha=20.0, beta=1.0, priors={correct: (1e7, 1.0)})
+
+    assert on_mis.w[mislabel] > 0.9         # dogmatic prior dominates the genome-scale evidence
+    assert on_cor.w[mislabel] < 0.5         # untouched tip still collapses -> the prior is per-tip
+    assert all(0.0 <= v <= 1.0 for r in (on_mis, on_cor) for v in r.w.values())
+
+
+def test_priors_on_non_soft_tip_raises():
+    """A per-tip prior only applies to soft refs; naming a hard-clamped anchor is an error."""
+    ts, A_refs, B_refs = _admixture_refs(n_ref=4)
+    labels = {s: 0 for s in A_refs}
+    labels.update({s: 1 for s in B_refs})
+    with pytest.raises(ValueError):
+        # B_refs[1] is a hard-clamped anchor (not in soft_refs) -> a prior on it is meaningless
+        fit(ts, labels, K=2, soft_refs={A_refs[0]}, priors={B_refs[1]: (10.0, 1.0)}, max_iter=1)

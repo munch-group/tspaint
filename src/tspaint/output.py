@@ -17,7 +17,7 @@ import numpy as np
 from .pruning import prune_tree
 
 __all__ = ["Segment", "INFORMATIVE", "MISSING_INFO", "posterior_table",
-           "missing_info_mask", "posterior_at", "hard_segments"]
+           "loo_posterior_table", "missing_info_mask", "posterior_at", "hard_segments"]
 
 INFORMATIVE = "informative"
 MISSING_INFO = "missing-info"
@@ -42,6 +42,35 @@ class Segment:
     right: float
     posterior: np.ndarray   # (K,) posterior over ancestry states on [left, right)
     status: str             # INFORMATIVE or MISSING_INFO
+
+
+def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick):
+    """Shared engine for the per-sample segment painters.
+
+    Runs the down-pass per marginal tree and records, for each focal sample, the
+    posterior selected by ``pick(res, sample, prior)`` — ``γ`` for
+    :func:`posterior_table`, the leave-one-out outside message for
+    :func:`loo_posterior_table` — merging adjacent identical segments.
+    """
+    pi = np.asarray(pi, float)
+    node_time = ts.tables.nodes.time
+    samples = [int(s) for s in (ts.samples() if focal is None else focal)]
+    tracks = {s: [] for s in samples}
+
+    for tree in ts.trees():
+        left = tree.interval.left
+        right = tree.interval.right
+        res = prune_tree(tree, emissions, Q, node_time, pi)
+        for s in samples:
+            post = pick(res, s, pi)
+            status = MISSING_INFO if s in res.missing_info else INFORMATIVE
+            segs = tracks[s]
+            if (segs and segs[-1].right == left and segs[-1].status == status
+                    and np.allclose(segs[-1].posterior, post, atol=merge_tol, rtol=0)):
+                segs[-1].right = right
+            else:
+                segs.append(Segment(left, right, np.array(post, float), status))
+    return tracks
 
 
 def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
@@ -72,25 +101,34 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
         Per focal sample, the down-pass posterior as contiguous
         :class:`Segment`\\ s covering ``[0, L)``.
     """
-    pi = np.asarray(pi, float)
-    node_time = ts.tables.nodes.time
-    samples = [int(s) for s in (ts.samples() if focal is None else focal)]
-    tracks = {s: [] for s in samples}
+    return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
+                         lambda res, s, prior: res.gamma[s])
 
-    for tree in ts.trees():
-        left = tree.interval.left
-        right = tree.interval.right
-        res = prune_tree(tree, emissions, Q, node_time, pi)
-        for s in samples:
-            post = res.gamma[s]
-            status = MISSING_INFO if s in res.missing_info else INFORMATIVE
-            segs = tracks[s]
-            if (segs and segs[-1].right == left and segs[-1].status == status
-                    and np.allclose(segs[-1].posterior, post, atol=merge_tol, rtol=0)):
-                segs[-1].right = right
-            else:
-                segs.append(Segment(left, right, np.array(post, float), status))
-    return tracks
+
+def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
+    """Per-sample **leave-one-out** ancestry posterior as contiguous segments.
+
+    Like :func:`posterior_table` but paints the *outside message* — what the rest of
+    the tree says about each focal sample's ancestry, **excluding that sample's own
+    emission** (``PruneResult.loo``). For a labelled reference this is the
+    introgression / mislabel map: where its own genealogy dissents from its label
+    (CLAUDE.md §2.3, §9). Unlike the down-pass :func:`posterior_table`, it is *not*
+    suppressed by a confident (e.g. hard-clamped, one-hot) tip emission, so it surfaces a
+    reference's foreign tracts even where the down-pass posterior is pinned to the label.
+
+    Parameters
+    ----------
+    ts, Q, pi, emissions, focal, merge_tol
+        As for :func:`posterior_table`.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per focal sample, the leave-one-out posterior as contiguous
+        :class:`Segment`\\ s covering ``[0, L)``.
+    """
+    return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
+                         lambda res, s, prior: res.loo.get(s, prior))
 
 
 def missing_info_mask(ts, focal=None):

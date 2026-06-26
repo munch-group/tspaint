@@ -38,7 +38,7 @@ __all__ = ["tspaint_paint", "nearest_reference_paint", "rfmix_paint", "score_pai
 
 
 def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
-                ranked=False, estimate_pi=False):
+                ranked=False, estimate_pi=False, priors=None):
     """Paint queries with the full tspaint method (EM fit + down-pass posterior).
 
     EM-fits ``(Q[, π, w])`` on the labelled references, then paints the queries
@@ -69,6 +69,9 @@ def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
         π-identifiability degeneracy that makes painting confidently wrong on
         sparse ARGs (CLAUDE.md §6). Set True to also estimate π (fine on good,
         long data).
+    priors : dict[int, tuple[float, float]], optional
+        Per-tip ``Beta`` prior overrides for soft refs (keys ⊆ ``soft_refs``);
+        passed through to :func:`tspaint.em.fit`.
 
     Returns
     -------
@@ -81,7 +84,7 @@ def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
         ts = ranked_tree_sequence(ts)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
     res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, soft_refs=soft_refs,
-              estimate_pi=estimate_pi)
+              estimate_pi=estimate_pi, priors=priors)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     return posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
 
