@@ -1,9 +1,10 @@
-"""Plan A Phase 1: the per-locus foreignness primitive (loo / fit / depth)."""
+"""Plan A: the foreignness primitive (Phase 1) and the workflows built on it."""
 import numpy as np
+import pytest
 import tskit
 
 from tspaint.model import make_generator_2state, tip_emission, query_emission
-from tspaint.introgression import foreignness_track, ForeignnessSegment
+from tspaint.introgression import foreignness_track, ForeignnessSegment, reference_qc
 from tspaint.output import INFORMATIVE, MISSING_INFO
 
 
@@ -81,3 +82,41 @@ def test_isolated_sample_tagged_missing_and_depth_nan():
     assert seg2.status == MISSING_INFO
     assert np.isnan(seg2.depth)
     np.testing.assert_allclose(seg2.loo, pi)                         # outside message falls back to prior
+
+
+@pytest.mark.slow
+def test_reference_qc_flags_impure_minority():
+    # Plan A Workflow 1: with the clean references in the majority, QC ranks the impure ones
+    # least-credible and its LOO maps recover their foreign tracts (CLAUDE.md §6, §9).
+    from tspaint.sim import (simulate_admixture_impure_refs, local_ancestry_truth,
+                             SOURCE_A, SOURCE_B, REF_A_IMPURE, REF_B_IMPURE)
+    from tspaint.validate import map_truth
+    from tspaint.experiments import _foreign_recall
+
+    ts = simulate_admixture_impure_refs(n_admix=2, n_pure=8, n_impure=3, sequence_length=2.5e6,
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    pid = {n: p for p, n in names.items()}
+    of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+    pure = of(SOURCE_A) + of(SOURCE_B)
+    impure = of(REF_A_IMPURE) + of(REF_B_IMPURE)
+    labels = {s: 0 for s in of(SOURCE_A) + of(REF_A_IMPURE)}
+    labels.update({s: 1 for s in of(SOURCE_B) + of(REF_B_IMPURE)})
+
+    qc = reference_qc(ts, labels, max_iter=8)
+    # structure
+    assert qc.anchors and len(qc.anchors) < len(qc.labels)
+    assert all(0.0 <= v <= 1.0 for v in qc.credibility.values())
+    assert all(m[0].left == 0.0 and m[-1].right == ts.sequence_length for m in qc.maps.values())
+    assert len(qc.summary()) == len(qc.labels)
+    # discrimination: impure references are less credible than the clean majority
+    # (measured gap 0.18-0.26 over seeds)
+    pc = float(np.mean([qc.credibility[r] for r in pure]))
+    ic = float(np.mean([qc.credibility[r] for r in impure]))
+    assert ic < pc - 0.1
+    # the LOO introgression map recovers the impure refs' foreign tracts (measured ~0.9)
+    truth, _ = local_ancestry_truth(ts)
+    rt = map_truth({r: truth[r] for r in impure}, {pid[SOURCE_A]: 0, pid[SOURCE_B]: 1})
+    rec = float(np.nanmean([_foreign_recall(qc.maps[r], rt[r], labels[r]) for r in impure]))
+    assert rec > 0.3

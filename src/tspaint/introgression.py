@@ -25,9 +25,11 @@ import numpy as np
 import tskit
 
 from .pruning import prune_tree
-from .output import INFORMATIVE, MISSING_INFO
+from .output import INFORMATIVE, MISSING_INFO, loo_posterior_table
+from .em import fit, build_emissions
+from .model import make_generator_2state
 
-__all__ = ["ForeignnessSegment", "foreignness_track"]
+__all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc"]
 
 
 @dataclass
@@ -164,3 +166,182 @@ def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", me
     if depth == "rank":
         _rank_normalise_depth(tracks)
     return tracks
+
+
+# --- Workflow 1: Reference QC ---------------------------------------------------------------
+
+def _loo_agreement(segs, label):
+    """Span-weighted mean leave-one-out posterior on a reference's own label (its credibility)."""
+    num = den = 0.0
+    for seg in segs:
+        if seg.status == MISSING_INFO:
+            continue
+        w = seg.right - seg.left
+        den += w
+        num += w * float(seg.posterior[label])
+    return num / den if den > 0 else float("nan")
+
+
+def _merge_segments(tracts):
+    """Merge adjacent same-state ``(left, right, state)`` tracts."""
+    out = []
+    for (l, r, st) in tracts:
+        if out and out[-1][2] == st and out[-1][1] == l:
+            out[-1] = (out[-1][0], r, st)
+        else:
+            out.append((l, r, st))
+    return out
+
+
+@dataclass
+class ReferenceQC:
+    """Result of :func:`reference_qc` — a per-reference admixture/mislabel audit.
+
+    Attributes
+    ----------
+    labels : dict[int, int]
+        Reference sample id -> its nominal ancestry-state label.
+    credibility : dict[int, float]
+        Per-reference credibility in ``[0, 1]`` — the learned ``w_i`` for softened (suspect)
+        references, the leave-one-out self-agreement for the hard-clamped anchor core. Low =
+        the genealogy disagrees with the label (admixed / mislabelled).
+    loo_agreement : dict[int, float]
+        Pass-1 leave-one-out self-agreement for every reference (the hard-clamp baseline).
+    learned_w : dict[int, float]
+        Learned credibility ``w_i`` for the softened references only.
+    anchors : set[int]
+        References kept hard-clamped as the trusted core (CLAUDE.md §6).
+    maps : dict[int, list]
+        Per reference, its leave-one-out introgression map (:func:`tspaint.output.loo_posterior_table`
+        segments) — where its own genealogy dissents from its label.
+    Q, pi : numpy.ndarray
+        The fitted generator and root frequencies (from the refined pass when refining).
+    """
+    labels: dict
+    credibility: dict
+    loo_agreement: dict
+    learned_w: dict
+    anchors: set
+    maps: dict
+    Q: np.ndarray
+    pi: np.ndarray
+    _length: float = 0.0
+
+    def introgression_map(self, ref):
+        """The leave-one-out introgression map (list of segments) for one reference."""
+        return self.maps[int(ref)]
+
+    def flagged_tracts(self, ref, deadband=0.3):
+        """Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state.
+
+        A segment is flagged where ``loo[foreign] - loo[label] >= deadband`` (``foreign`` =
+        the best non-label state). Returns merged ``[(left, right, foreign_state)]``.
+        """
+        ref = int(ref)
+        lab = self.labels[ref]
+        out = []
+        for seg in self.maps[ref]:
+            if seg.status == MISSING_INFO:
+                continue
+            p = np.asarray(seg.posterior, float)
+            foreign = int(np.argmax([p[s] if s != lab else -np.inf for s in range(p.shape[0])]))
+            if p[foreign] - p[lab] >= deadband:
+                out.append((seg.left, seg.right, foreign))
+        return _merge_segments(out)
+
+    def foreign_fraction(self, ref, deadband=0.3):
+        """Fraction of ``ref``'s genome flagged foreign at the given ``deadband``."""
+        tracts = self.flagged_tracts(ref, deadband)
+        return sum(r - l for (l, r, _) in tracts) / self._length if self._length else float("nan")
+
+    def summary(self, deadband=0.3):
+        """Per-reference QC rows, least-credible first (the audit table)."""
+        return [{"ref": r, "label": self.labels[r], "credibility": self.credibility[r],
+                 "is_anchor": r in self.anchors,
+                 "foreign_fraction": self.foreign_fraction(r, deadband)}
+                for r in sorted(self.labels, key=lambda r: self.credibility[r])]
+
+
+def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2, Q0=None,
+                 max_iter=8, alpha=20.0, beta=1.0):
+    """Audit a reference panel for admixture / mislabelling (Plan A Workflow 1; CLAUDE.md §9).
+
+    Two passes (the second optional). Pass 1 hard-clamps every reference and reads each one's
+    **leave-one-out** self-agreement — what the rest of the genealogy says about it, ignoring
+    its own label — which flags foreignness even under hard clamps. Pass 2 keeps a trusted
+    hard-clamped anchor core and **softens the rest**, learning their credibility ``w_i`` and
+    sharpening their introgression maps.
+
+    .. note::
+       The auto-anchor bootstrap assumes the **clean references are the majority** (it picks the
+       most self-consistent ``anchor_frac`` as the core). If impurity is widespread the core is
+       contaminated and discrimination degrades — pass a known-trusted ``anchors`` set instead,
+       and never let the whole panel float (CLAUDE.md §6).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        Tree sequence whose samples include the references (no queries required).
+    labels : dict[int, int]
+        Reference sample id -> nominal ancestry-state label.
+    anchors : iterable[int], optional
+        Known-trusted references to hold as the hard-clamped core (the rest are softened). If
+        given, overrides the ``anchor_frac`` auto-selection — the robust choice when you know
+        which references are clean.
+    refine : bool, optional
+        Run the second (soften-suspects) pass when ``anchors`` is not given. Default ``True``.
+    anchor_frac : float, optional
+        Fraction of references (most self-consistent) auto-selected as the anchor core when
+        ``anchors`` is not given. Default ``0.5``.
+    K : int, optional
+        Number of ancestry states.
+    Q0 : numpy.ndarray, optional
+        Initial generator (default a symmetric ``1e-3`` 2-state generator).
+    max_iter : int, optional
+        Maximum EM iterations per pass.
+    alpha, beta : float, optional
+        Beta prior for the softened references (refine pass).
+
+    Returns
+    -------
+    ReferenceQC
+        Per-reference credibility, introgression maps and the flagged-tract / summary helpers.
+    """
+    labels = {int(k): int(v) for k, v in labels.items()}
+    refs = list(labels)
+    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+
+    res1 = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False)
+    em1 = build_emissions(ts, labels, res1.w, res1.pi)
+    maps1 = loo_posterior_table(ts, res1.Q, res1.pi, em1, focal=refs)
+    agreement = {r: _loo_agreement(maps1[r], labels[r]) for r in refs}
+
+    learned = {}
+    Q, pi, maps = res1.Q, res1.pi, dict(maps1)
+    credibility = dict(agreement)
+
+    if anchors is not None:
+        anchor_set = set(int(a) for a in anchors)
+    elif refine and len(refs) >= 2:
+        n_anchor = min(len(refs) - 1, max(1, int(round(anchor_frac * len(refs)))))
+        ranked = sorted(refs, key=lambda r: (agreement[r] if np.isfinite(agreement[r]) else -1.0),
+                        reverse=True)
+        anchor_set = set(ranked[:n_anchor])
+    else:
+        anchor_set = set(refs)
+    soft = set(refs) - anchor_set
+
+    if soft:
+        res2 = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False,
+                   soft_refs=soft, alpha=alpha, beta=beta)
+        em2 = build_emissions(ts, labels, res2.w, res2.pi)
+        maps2 = loo_posterior_table(ts, res2.Q, res2.pi, em2, focal=sorted(soft))
+        Q, pi = res2.Q, res2.pi
+        for r in soft:
+            learned[r] = float(res2.w.get(r, 1.0))
+            credibility[r] = learned[r]
+            maps[r] = maps2[r]
+
+    return ReferenceQC(labels=labels, credibility=credibility, loo_agreement=agreement,
+                       learned_w=learned, anchors=anchor_set, maps=maps, Q=Q, pi=pi,
+                       _length=float(ts.sequence_length))
