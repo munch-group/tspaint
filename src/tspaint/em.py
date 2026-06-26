@@ -159,7 +159,7 @@ def build_emissions(ts, labels, w, pi):
 
 
 def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
-        soft_refs=None, alpha=20.0, beta=1.0, w0=0.9, estimate_pi=True):
+        soft_refs=None, alpha=20.0, beta=1.0, priors=None, w0=0.9, estimate_pi=True):
     """Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
 
     The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient
@@ -190,7 +190,17 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         At least one anchor is required when ``soft_refs`` is non-empty — never let
         the whole panel float (CLAUDE.md §6).
     alpha, beta : float, optional
-        Beta prior on credibility (default mass near 1).
+        Default ``Beta(alpha, beta)`` prior on credibility (mass near 1), applied to
+        every soft ref not named in ``priors``.
+    priors : dict[int, tuple[float, float]], optional
+        Per-tip ``Beta`` prior overrides ``{tip: (alpha_i, beta_i)}`` for the
+        graded-trust setting — give the references believed purer a stronger prior
+        (mass closer to 1) than the rest. Keys must be a subset of ``soft_refs``
+        (hard-clamped anchors have no learned ``w``); a key outside ``soft_refs``
+        raises ``ValueError``. Note at genome scale the span-weighted credibility
+        evidence typically swamps the prior, so ``w_i`` converges to the reference's
+        empirical purity almost regardless of prior strength — the prior's role is the
+        identifiability backstop and short/low-info-region regularisation (CLAUDE.md §6).
     w0 : float, optional
         Initial credibility for soft refs. Default ``0.9``.
     estimate_pi : bool, optional
@@ -225,6 +235,12 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             raise ValueError(
                 "keep a hard-clamped anchor set; never let the whole panel float "
                 "(CLAUDE.md §6)")
+    tip_priors = {int(k): (float(a), float(b)) for k, (a, b) in priors.items()} if priors else {}
+    extra = set(tip_priors) - soft
+    if extra:
+        raise ValueError(
+            f"priors given for non-soft tips {sorted(extra)}; a per-tip Beta prior "
+            "applies only to soft_refs (hard-clamped anchors have no learned w)")
     w = {s: float(w0) for s in soft}   # anchors stay at w = 1 implicitly
 
     history = []
@@ -257,7 +273,8 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         for s in soft:
             if s in S_cred:
                 agree, disagree = S_cred[s]
-                w[s] = m_step_w(agree, disagree, alpha, beta)
+                a, b = tip_priors.get(s, (alpha, beta))
+                w[s] = m_step_w(agree, disagree, a, b)
 
         if len(history) > 1 and abs(loglik - prev) < tol:
             break

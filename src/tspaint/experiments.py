@@ -11,18 +11,20 @@ import time
 
 import numpy as np
 
-from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+from .sim import (simulate_admixture, simulate_admixture_impure_refs, local_ancestry_truth,
+                  SOURCE_A, SOURCE_B, ADMIXED, REF_A_IMPURE, REF_B_IMPURE)
 from .em import fit, build_emissions
 from .model import make_generator_2state
-from .output import posterior_table, hard_segments
+from .output import posterior_table, loo_posterior_table, hard_segments, MISSING_INFO
 from .ensemble import merge_posterior_tables
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
-                       tract_boundary_error, breakpoint_precision_recall, switch_density)
+                       tract_boundary_error, breakpoint_precision_recall, switch_density,
+                       _walk_overlap)
 
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
            "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment",
-           "fragmentation_experiment"]
+           "fragmentation_experiment", "impure_reference_experiment"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -560,4 +562,181 @@ def flicker_vs_true_boundaries(tracks, truth_states, sample, state=0, eps=0.0):
         "mean_flicker_at_true": float(np.mean(at_true)) if at_true else float("nan"),
         "n_off_true": len(off_true),
         "n_at_true": len(at_true),
+    }
+
+
+def _ref_purity(truth_segs, label, length):
+    """Span fraction of a reference's census truth sitting in its nominal (label) source."""
+    own = sum((r - l) for (l, r, st) in truth_segs if st == label)
+    return own / length if length > 0 else float("nan")
+
+
+def _foreign_recall(track, truth_segs, label):
+    """Span-weighted recall of a reference's FOREIGN (non-label) ancestry tracts.
+
+    Identically zero under a hard clamp — the tip posterior is pinned one-hot to its
+    label, so it can never call the foreign state — and positive only when a soft
+    emission lets the genealogy override the label over a genuinely foreign tract (the
+    §2.3 introgression map, quantified). ``nan`` if the reference has no foreign span.
+    """
+    foreign = 1 - int(label)
+    tot = hit = 0.0
+    for lo, hi, seg, tstate in _walk_overlap(track, truth_segs):
+        if seg.status == MISSING_INFO or tstate != foreign:
+            continue
+        w = hi - lo
+        tot += w
+        if int(np.argmax(seg.posterior)) == foreign:
+            hit += w
+    return hit / tot if tot > 0 else float("nan")
+
+
+def _impure_config(ts, labels, queries, impure_refs, query_truth, ref_truth, length, *,
+                   soft_refs, alpha, beta, priors, Q0, max_iter):
+    """Fit one credibility configuration; score queries + impure-ref introgression recovery."""
+    res = fit(ts, labels, K=2, Q0=Q0, max_iter=max_iter, soft_refs=soft_refs,
+              alpha=alpha, beta=beta, priors=priors)
+    emissions = build_emissions(ts, labels, res.w, res.pi)
+    tracks = posterior_table(ts, res.Q, res.pi, emissions,
+                             focal=list(queries) + list(impure_refs))
+    loo = loo_posterior_table(ts, res.Q, res.pi, emissions, focal=list(impure_refs))
+    self_bal = [balanced_accuracy(tracks, ref_truth, samples=[r]) for r in impure_refs]
+    foreign = [_foreign_recall(tracks[r], ref_truth[r], labels[r]) for r in impure_refs]
+    foreign_loo = [_foreign_recall(loo[r], ref_truth[r], labels[r]) for r in impure_refs]
+    learned = {int(r): float(res.w.get(r, 1.0)) for r in impure_refs}
+    return {
+        "query_balanced_accuracy": balanced_accuracy(tracks, query_truth, samples=queries),
+        "query_confidence": mean_confidence(tracks, samples=queries),
+        "impure_self_balanced_accuracy": float(np.nanmean(self_bal)),
+        "impure_self_foreign_recall": float(np.nanmean(foreign)),
+        "impure_self_foreign_recall_loo": float(np.nanmean(foreign_loo)),
+        "mean_learned_w": float(np.mean(list(learned.values()))),
+        "learned_w_per_ref": learned,
+        "Q": res.Q, "pi": res.pi,
+    }
+
+
+def impure_reference_experiment(*, T_admix=300.0, n_admix=10, n_pure=6, n_impure=8,
+                                sequence_length=5e6, recombination_rate=1e-8, Ne=1000,
+                                T_split=5000.0, f_A=0.5, ref_impurity=0.15, seed=1,
+                                max_iter=10, alpha=20.0, beta=1.0,
+                                alpha_grid=(2.0, 20.0, 200.0, 2000.0), Q0=None):
+    """Hard-clamp vs strong-Beta-soft credibility for **slightly impure references**.
+
+    Tests the CLAUDE.md §2.2/§2.3/§6 design question: when reference panels carry a bit
+    of admixture (here a known ``ref_impurity`` minority of foreign tracts), is it better
+    to hard-clamp them (``w ≡ 1``) or to soften them with a strong ``Beta`` prior (``w``
+    learned)? The mechanism under test: a hard clamp makes the tip emission a one-hot
+    delta, so the tip posterior is **pinned to its label and can never dissent** over a
+    foreign tract; any ``w < 1`` restores the genealogy's ability to override the label
+    locally. So the decisive contrast is the impure references' **self-painting
+    foreign-tract recall** — identically ~0 under a hard clamp, positive under soft.
+
+    On one true-ARG simulation (admixed queries, a pure-source anchor core, two impure
+    reference panels) it fits and scores:
+
+    * ``hard_clamp`` — every reference hard-clamped (the impure ones inject
+      confident-wrong votes and hide their own introgression);
+    * ``soft_strong`` — impure refs softened with a strong ``Beta(alpha, beta)`` prior,
+      the pure refs kept as the hard anchor core (never let the whole panel float, §6);
+    * ``graded`` — exercises the per-tip prior API (:func:`tspaint.fit` ``priors``):
+      half the impure refs "trusted" ``Beta(200, 1)``, half "suspect" ``Beta(2, 1)``;
+    * an ``alpha`` sweep — is the benefit from *un-clamping* (≈flat in ``alpha``, the
+      genome-scale span-weighted evidence swamping the prior) rather than prior strength?
+
+    Parameters
+    ----------
+    T_admix, n_admix, n_pure, n_impure, sequence_length, recombination_rate, Ne, T_split, f_A : optional
+        msprime scenario (see :func:`tspaint.sim.simulate_admixture_impure_refs`). The
+        default (``T_admix=300``, ``sequence_length=5e6``) is the mosaic-impure-ref regime
+        — enough recombination since the pulse that each impure reference haplotype is a
+        majority-native mosaic with distributed foreign tracts (not a whole-haplotype
+        mislabel), while the query↔reference signal is still strong on the true ARG.
+    ref_impurity : float, optional
+        Minority foreign fraction of each impure reference panel.
+    seed : int, optional
+        Random seed.
+    max_iter : int, optional
+        Maximum EM iterations per fit.
+    alpha, beta : float, optional
+        Default ``Beta`` prior for the ``soft_strong`` and ``graded`` configs.
+    alpha_grid : iterable of float, optional
+        ``alpha`` values (paired with ``beta``) for the sweep.
+    Q0 : numpy.ndarray, optional
+        Initial generator (defaults to a symmetric ``1e-3`` 2-state generator).
+
+    Returns
+    -------
+    dict
+        ``T_admix``, ``ref_impurity``, ``seed``, ``n_queries``, ``n_impure_refs``,
+        ``n_pure_anchors``, ``mean_true_purity`` and ``true_purity_per_ref`` (census
+        truth), ``configs`` (``hard_clamp``/``soft_strong``/``graded`` -> metrics with
+        ``query_balanced_accuracy``, ``query_confidence``,
+        ``impure_self_balanced_accuracy``, ``impure_self_foreign_recall`` (down-pass) and
+        ``impure_self_foreign_recall_loo`` (the stronger leave-one-out introgression map,
+        :func:`tspaint.output.loo_posterior_table`, *not* suppressed by the tip's own
+        emission), ``mean_learned_w``, ``learned_w_per_ref``), ``alpha_sweep`` and
+        ``graded_priors``.
+    """
+    ts = simulate_admixture_impure_refs(
+        n_admix=n_admix, n_pure=n_pure, n_impure=n_impure, sequence_length=sequence_length,
+        recombination_rate=recombination_rate, random_seed=seed, ref_impurity=ref_impurity,
+        Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    L = ts.sequence_length
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    pid = {n: p for p, n in names.items()}
+    state_of_pop = {pid[SOURCE_A]: 0, pid[SOURCE_B]: 1}
+
+    def of_pop(name):
+        return [int(s) for s in ts.samples() if node_pop[s] == pid[name]]
+
+    queries = of_pop(ADMIXED)
+    pure_refs = of_pop(SOURCE_A) + of_pop(SOURCE_B)         # the hard-clamped anchor core
+    impure_A, impure_B = of_pop(REF_A_IMPURE), of_pop(REF_B_IMPURE)
+    impure_refs = impure_A + impure_B
+
+    # labels: pure refs by their source; impure refs by their NOMINAL (majority) source
+    labels = {s: state_of_pop[node_pop[s]] for s in pure_refs}
+    labels.update({s: 0 for s in impure_A})
+    labels.update({s: 1 for s in impure_B})
+
+    truth, _ = local_ancestry_truth(ts)
+    query_truth = map_truth({q: truth[q] for q in queries}, state_of_pop)
+    ref_truth = map_truth({r: truth[r] for r in impure_refs}, state_of_pop)
+    true_purity = {int(r): _ref_purity(ref_truth[r], labels[r], L) for r in impure_refs}
+
+    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    soft = set(impure_refs)
+    common = dict(Q0=Q0, max_iter=max_iter)
+    args = (ts, labels, queries, impure_refs, query_truth, ref_truth, L)
+
+    configs = {}
+    configs["hard_clamp"] = _impure_config(*args, soft_refs=None, alpha=alpha, beta=beta,
+                                           priors=None, **common)
+    configs["soft_strong"] = _impure_config(*args, soft_refs=soft, alpha=alpha, beta=beta,
+                                            priors=None, **common)
+    # graded per-tip priors: first half "trusted" (strong), second half "suspect" (weak)
+    half = len(impure_refs) // 2
+    graded_priors = {int(r): (200.0, 1.0) for r in impure_refs[:half]}
+    graded_priors.update({int(r): (2.0, 1.0) for r in impure_refs[half:]})
+    configs["graded"] = _impure_config(*args, soft_refs=soft, alpha=alpha, beta=beta,
+                                       priors=graded_priors, **common)
+
+    sweep = []
+    for a in alpha_grid:
+        c = _impure_config(*args, soft_refs=soft, alpha=float(a), beta=beta, priors=None, **common)
+        sweep.append({"alpha": float(a), "mean_learned_w": c["mean_learned_w"],
+                      "query_balanced_accuracy": c["query_balanced_accuracy"],
+                      "impure_self_foreign_recall": c["impure_self_foreign_recall"]})
+
+    return {
+        "T_admix": T_admix, "ref_impurity": ref_impurity, "seed": seed,
+        "n_queries": len(queries), "n_impure_refs": len(impure_refs),
+        "n_pure_anchors": len(pure_refs),
+        "mean_true_purity": float(np.mean(list(true_purity.values()))),
+        "true_purity_per_ref": true_purity,
+        "configs": configs,
+        "alpha_sweep": sweep,
+        "graded_priors": graded_priors,
     }

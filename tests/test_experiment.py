@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from tspaint.experiments import (admixture_experiment, flicker_vs_true_boundaries,
-                               age_sweep, scaling_sweep)
+                               age_sweep, scaling_sweep, impure_reference_experiment)
 
 
 @pytest.mark.slow
@@ -54,3 +54,47 @@ def test_scaling_sweep_structure_and_timing():
         assert r["t_fit"] > 0.0 and r["n_trees"] >= 1
         assert 0.0 <= r["balanced_accuracy"] <= 1.0
     assert rows[1]["n_haplotypes"] > rows[0]["n_haplotypes"]     # sweep increases sample size
+
+
+@pytest.mark.slow
+def test_impure_reference_softening_un_clamps_introgression():
+    # CLAUDE.md §2.2/§2.3/§6: for slightly impure references, hard-clamping (w≡1) pins the
+    # tip posterior to its label so it can NEVER reveal its own foreign tracts; softening
+    # with a strong Beta prior un-clamps it. Decisive contrast = the impure refs' own
+    # foreign-tract recall (identically 0 when hard-clamped). The benefit is from
+    # un-clamping, not prior strength (genome-scale evidence swamps the prior -> w ~flat
+    # in alpha); and a pure anchor core keeps the query painting identifiable / unhurt.
+    r = impure_reference_experiment(T_admix=300, sequence_length=1.5e6, n_admix=6, n_pure=4,
+                                    n_impure=5, ref_impurity=0.15, max_iter=6, seed=1,
+                                    alpha_grid=(2.0, 2000.0))
+    hard = r["configs"]["hard_clamp"]
+    soft = r["configs"]["soft_strong"]
+    graded = r["configs"]["graded"]
+
+    # hard clamp: impure refs carry no learned credibility and cannot reveal foreign tracts
+    assert hard["mean_learned_w"] == 1.0
+    assert hard["impure_self_foreign_recall"] == 0.0
+
+    # softening un-clamps them: w learned below 1 (≈ genealogy-agree fraction, not collapsed),
+    # and the down-pass foreign-tract recovery becomes nonzero (the hard clamp is exactly 0)
+    assert 0.4 < soft["mean_learned_w"] < 0.98
+    assert soft["impure_self_foreign_recall"] > hard["impure_self_foreign_recall"]
+
+    # the leave-one-out introgression map (output.loo_posterior_table) is the stronger lens:
+    # it surfaces the impure refs' foreign tracts even under the hard clamp (where the
+    # down-pass posterior is pinned to the label), and softening does not degrade it
+    assert hard["impure_self_foreign_recall_loo"] > hard["impure_self_foreign_recall"]
+    assert hard["impure_self_foreign_recall_loo"] > 0.1
+    assert soft["impure_self_foreign_recall_loo"] >= hard["impure_self_foreign_recall_loo"] - 0.05
+
+    # benefit is from UN-CLAMPING, not prior strength: learned w ~flat across alpha
+    # (span-weighted genome-scale evidence swamps the Beta prior, CLAUDE.md §6)
+    ws = [s["mean_learned_w"] for s in r["alpha_sweep"]]
+    assert max(ws) - min(ws) < 0.05
+
+    # softening the impure refs does not hurt query painting (pure anchor core holds it)
+    assert soft["query_balanced_accuracy"] >= hard["query_balanced_accuracy"] - 0.05
+
+    # the per-tip graded-prior path runs over every impure ref and yields valid credibilities
+    assert set(r["graded_priors"]) == set(soft["learned_w_per_ref"])
+    assert all(0.0 <= v <= 1.0 for v in graded["learned_w_per_ref"].values())

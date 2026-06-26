@@ -4,8 +4,8 @@ import tskit
 
 import tspaint
 from tspaint.model import make_generator_2state, query_emission
-from tspaint.output import (posterior_table, missing_info_mask, posterior_at,
-                          INFORMATIVE, MISSING_INFO)
+from tspaint.output import (posterior_table, loo_posterior_table, missing_info_mask,
+                          posterior_at, INFORMATIVE, MISSING_INFO)
 
 
 def _build_ts(parents, times, samples, L=10.0):
@@ -70,3 +70,27 @@ def test_posterior_status_matches_mask():
     for s, segs in tracks.items():
         mi_from_tracks = [(seg.left, seg.right) for seg in segs if seg.status == MISSING_INFO]
         assert mi_from_tracks == mask[s]
+
+
+def test_loo_posterior_is_the_outside_message():
+    # samples 0 (hard A) and 1 (hard B) under a common root: the DOWN-PASS pins each tip to
+    # its own one-hot emission, but the LEAVE-ONE-OUT map reports what the REST of the tree
+    # says (sibling 1 is B), so loo[0] dissents from 0's own A label (CLAUDE.md §2.3, §9).
+    ts = _build_ts({0: 2, 1: 2, 2: -1}, [0.0, 0.0, 1.0], {0, 1})
+    Q = make_generator_2state(0.3, 0.3)
+    pi = np.array([0.5, 0.5])
+    em = {0: np.array([1.0, 0.0]), 1: np.array([0.0, 1.0])}   # hard clamps: A, B
+
+    gamma = posterior_table(ts, Q, pi, em)
+    loo = loo_posterior_table(ts, Q, pi, em)
+    L = ts.sequence_length
+
+    for tr in (gamma, loo):                                   # both cover [0, L) with valid probs
+        for segs in tr.values():
+            assert segs[0].left == 0.0 and segs[-1].right == L
+            for seg in segs:
+                assert np.isclose(seg.posterior.sum(), 1.0) and np.all(seg.posterior >= 0)
+
+    assert np.argmax(gamma[0][0].posterior) == 0             # down-pass pins tip 0 to its A label
+    assert loo[0][0].posterior[0] < 0.5                      # outside message dissents toward B
+    assert loo[0][0].posterior[0] < gamma[0][0].posterior[0]  # strictly less A than the down-pass

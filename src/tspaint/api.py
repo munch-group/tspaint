@@ -133,7 +133,7 @@ class Painting:
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
           smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,
-          w0=0.9):
+          priors=None, w0=0.9):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -153,7 +153,10 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         Number of ancestry states (2 by default; pass a ``K×K`` ``Q0`` for K-way).
     soft_refs : set[int], optional
         Reference tips whose credibility ``w_i`` is *learned* (the rest stay hard-clamped
-        anchors — never let the whole panel float, CLAUDE.md §6).
+        anchors — never let the whole panel float, CLAUDE.md §6). Softening a slightly
+        impure reference (rather than hard-clamping it) lets the genealogy override its
+        label over its foreign tracts — both painting queries there correctly and mapping
+        the reference's own introgression (CLAUDE.md §2.3).
     estimate_pi : bool
         Estimate root frequencies ``π`` rather than holding them uniform. Default ``False``:
         ``π`` is a prior on the arbitrary GMRCA state and estimating it from washing deep
@@ -169,6 +172,9 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         Per-breakpoint switch penalty for ``smooth`` (smaller ⇒ more smoothing).
     Q0 : (K, K) array, optional
         Initial generator (default a slow symmetric 2-state generator).
+    priors : dict[int, tuple[float, float]], optional
+        Per-tip ``Beta(alpha_i, beta_i)`` prior overrides for the graded-trust setting
+        (keys ⊆ ``soft_refs``); see :func:`tspaint.fit`.
     max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tspaint.fit`).
 
     Returns
@@ -197,7 +203,7 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         queries = [int(q) for q in queries]
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
     res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
-              estimate_pi=estimate_pi, alpha=alpha, beta=beta, w0=w0)
+              estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     posteriors = posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
     if smooth:

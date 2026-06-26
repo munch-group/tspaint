@@ -5,11 +5,14 @@ import pytest
 
 from tspaint.sim import (
     simulate_admixture,
+    simulate_admixture_impure_refs,
     local_ancestry_truth,
     _census_mask,
     SOURCE_A,
     SOURCE_B,
     ADMIXED,
+    REF_A_IMPURE,
+    REF_B_IMPURE,
 )
 from tspaint.diagnostics import persistence_summary, edge_span_summary
 
@@ -78,3 +81,34 @@ def test_persistence_premise_met(ts):
     assert summ["max"] > 1                       # clades persist across many trees
     assert summ["frac_singletons"] < 0.95
     assert edge_span_summary(ts)["n_edges"] > 0
+
+
+def test_impure_refs_carry_known_minority_ancestry():
+    # impure reference panels (CLAUDE.md §2.2): majority their nominal source with a known
+    # minority foreign, each haplotype a genuine mosaic, census truth still only in sources
+    rho = 0.15
+    ts = simulate_admixture_impure_refs(n_admix=4, n_pure=4, n_impure=8, sequence_length=4e6,
+                                        recombination_rate=1e-8, random_seed=3,
+                                        ref_impurity=rho, Ne=1000, T_admix=300, T_split=5000)
+    names = _names(ts)
+    pid = {n: p for p, n in names.items()}
+    node_pop = ts.tables.nodes.population
+    tracts, _ = local_ancestry_truth(ts)
+    A_id, B_id = pid[SOURCE_A], pid[SOURCE_B]
+    L = ts.sequence_length
+
+    for panel, host in [(REF_A_IMPURE, A_id), (REF_B_IMPURE, B_id)]:
+        refs = [int(s) for s in ts.samples() if node_pop[s] == pid[panel]]
+        assert refs
+        foreign_frac, mosaics = [], 0
+        for s in refs:
+            oth = sum(r - l for (l, r, p) in tracts[s] if p != host)
+            foreign_frac.append(oth / L)
+            if 0.0 < oth < L:                    # both ancestries present -> a genuine mosaic
+                mosaics += 1
+        # majority-native on average, with a real (sub-half) minority foreign present
+        assert 0.02 < np.mean(foreign_frac) < 0.5
+        assert mosaics >= 1                      # at least one haplotype carries foreign tracts
+    # census truth lands only in the two sources, impure references included
+    src = {A_id, B_id}
+    assert all(p in src for s in ts.samples() for (_, _, p) in tracts[int(s)])
