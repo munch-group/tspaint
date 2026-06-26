@@ -25,7 +25,7 @@ from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
 __all__ = ["admixture_experiment", "flicker_vs_true_boundaries", "age_sweep",
            "scaling_sweep", "arg_ensemble_experiment", "singer_ensemble_experiment",
            "fragmentation_experiment", "impure_reference_experiment",
-           "impure_reference_sweep"]
+           "impure_reference_sweep", "archaic_detection_experiment"]
 
 
 def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
@@ -804,3 +804,96 @@ def impure_reference_sweep(regimes, *, seeds=(1,), **kwargs):
             "mean_learned_w": float(w),
         })
     return out
+
+
+def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, sequence_length=2e6,
+                                 T_admix=100.0, T_split_AB=2000.0, T_split_ABC=20000.0, Ne=1000,
+                                 seed=1, max_iter=40, threshold=0.5):
+    """Head-to-head: reference-free learned HMM vs the fixed-threshold flag (Plan B go/no-go).
+
+    Compares :func:`tspaint.detect_archaic` (the Plan B generative depth-emission HMM, which
+    learns the archaic depth and gives a calibrated posterior) against :func:`tspaint.detect_ghost`
+    (the Plan A fixed-threshold flag) on one archaic-like ghost simulation plus a matched no-ghost
+    control. Both run **reference-free** (no archaic reference). Per-locus ghost tracts are scored
+    against the census truth.
+
+    Parameters
+    ----------
+    ghost_fraction : float, optional
+        Fraction of the admixed population from the unsampled ghost source.
+    n_admix, n_ref, sequence_length, T_admix, T_split_AB, T_split_ABC, Ne : optional
+        msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the
+        archaic divergence depth).
+    seed : int, optional
+        Random seed.
+    max_iter : int, optional
+        Baum–Welch iteration cap for the HMM.
+    threshold : float, optional
+        ``P(archaic)`` threshold for the HMM's hard tracts.
+
+    Returns
+    -------
+    dict
+        ``ghost_fraction``, ``seed``, ``n_queries``, ``true_burden`` and two detector blocks
+        ``archaic`` / ``ghost`` each with ``recall``, ``precision``, ``burden`` and ``control_fp``
+        (no-ghost false-positive burden); ``archaic`` also reports the learned ``mu_archaic`` /
+        ``mu_modern`` (log-depth).
+    """
+    from .sim import (simulate_admixture_with_ghost, local_ancestry_truth,
+                      SOURCE_A, SOURCE_B, GHOST, ADMIXED)
+    from .archaic import detect_archaic
+    from .introgression import detect_ghost
+
+    def setup(gf, sd):
+        ts = simulate_admixture_with_ghost(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
+                recombination_rate=1e-8, random_seed=sd, ghost_fraction=gf, T_admix=T_admix,
+                T_split_AB=T_split_AB, T_split_ABC=T_split_ABC, Ne=Ne)
+        names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+        pid = {n: p for p, n in names.items()}
+        node_pop = ts.tables.nodes.population
+        of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+        q = of(ADMIXED)
+        lab = {s: 0 for s in of(SOURCE_A)}
+        lab.update({s: 1 for s in of(SOURCE_B)})
+        tr, _ = local_ancestry_truth(ts)
+        gid = pid[GHOST]
+        true_g = {x: [(l, r) for (l, r, p) in tr[x] if p == gid] for x in q}
+        return ts, lab, q, true_g
+
+    def _ov(l, r, ivs):
+        return sum(max(0.0, min(r, b) - max(l, a)) for (a, b) in ivs)
+
+    def _score(tracts, true_g, q, L):
+        det = tg = hit = 0.0
+        for x in q:
+            for (l, r) in tracts[x]:
+                det += r - l
+                hit += _ov(l, r, true_g[x])
+            tg += sum(r - l for (l, r) in true_g[x])
+        rec = hit / tg if tg else float("nan")
+        prec = hit / det if det else float("nan")
+        burden = (det / (L * len(q))) if q else float("nan")
+        return rec, prec, burden, ((tg / (L * len(q))) if q else float("nan"))
+
+    ts, lab, q, true_g = setup(ghost_fraction, seed)
+    L = ts.sequence_length
+    ar = detect_archaic(ts, lab, q, max_iter=max_iter)
+    ar_tracts = {x: ar.tracts(x, threshold) for x in q}
+    gh = detect_ghost(ts, lab, q)
+    a_rec, a_prec, a_burden, true_burden = _score(ar_tracts, true_g, q, L)
+    g_rec, g_prec, g_burden, _ = _score(gh["tracts"], true_g, q, L)
+
+    ts0, lab0, q0, _ = setup(0.0, seed)
+    L0 = ts0.sequence_length
+    ar0 = detect_archaic(ts0, lab0, q0, max_iter=max_iter)
+    gh0 = detect_ghost(ts0, lab0, q0)
+    a_fp = float(np.mean([ar0.burden[x] for x in q0]))
+    g_fp = sum(r - l for x in q0 for (l, r) in gh0["tracts"][x]) / (L0 * len(q0))
+
+    return {
+        "ghost_fraction": ghost_fraction, "seed": seed, "n_queries": len(q),
+        "true_burden": true_burden,
+        "archaic": {"recall": a_rec, "precision": a_prec, "burden": a_burden, "control_fp": a_fp,
+                    "mu_archaic": float(ar.mu[1]), "mu_modern": float(ar.mu[0])},
+        "ghost": {"recall": g_rec, "precision": g_prec, "burden": g_burden, "control_fp": float(g_fp)},
+    }

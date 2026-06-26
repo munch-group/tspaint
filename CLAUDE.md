@@ -809,8 +809,24 @@ directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [lab
     Detection (*that* a tract is foreign-to-panel), not attribution; the depth threshold scales
     with ghost prevalence (tune vs your own no-ghost control). Plans:
     `plans/PLAN_A_workflows.md` (shipped) and `plans/PLAN_B_archaic_detector.md`
-    (depth-as-a-generative-state — reference-free archaic, deferred). Tests:
+    (depth-as-a-generative-state — reference-free archaic). Tests:
     `tests/test_introgression.py`.
+  - **[MEASURED — Plan B: reference-free archaic detector is a GO]** The "depth-as-a-generative-state"
+    path is **built and beats the Plan A flag** (`tspaint.archaic`, top-level `detect_archaic`): a
+    per-sample 2-state genome-axis HMM on nearest-modern-ref `log`-depth — modern emission anchored
+    by the panel, **archaic emission learned with no archaic reference** but constrained ABOVE the
+    panel's deepest coalescence (a high quantile of the reference depths). That floor — plus widening
+    modern to cover its own deep (cross-source) tail and capping the archaic σ tight — is the §6
+    identifiability fix; the naive version collapsed (no-ghost control → 0.92 archaic). Head-to-head
+    vs `detect_ghost` on the archaic-like ghost sim (`experiments.archaic_detection_experiment`,
+    reference-free): the HMM gives **per-locus recall 0.99–1.00 vs the flag's 0.38–0.54 at equal
+    precision 1.0**, recovers the ghost **burden near-exactly** (vs the flag's fixed-quantile
+    under-detection), keeps a **lower control false-positive** (~0.002 vs ~0.009), is **calibrated**,
+    needs **no manual threshold**, and **learns μ_archaic = the true source-divergence depth**
+    (recovers `log T_split_ABC` across 6k/10k/20k). Caveats: tested on the msprime true ARG (clean
+    times) — raw depth is branch-length-calibration-sensitive (§6; the rank-variant / Relate test is
+    outstanding), and the posterior is near-hard in this clean-signal regime. Plan:
+    `plans/PLAN_B_archaic_detector.md`. Tests: `tests/test_archaic.py`.
 
 ---
 
