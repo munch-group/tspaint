@@ -25,14 +25,18 @@ import glob
 import os
 import random
 import subprocess
+import sys
 import tempfile
 import warnings
 
 import numpy as np
 
-__all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences"]
+__all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences",
+           "singer_window", "build_merge_table", "run_merge_arg"]
 
 DEFAULT_SINGER = os.environ.get("TSPAINT_SINGER", "/Users/kmt/SINGER/SINGER/SINGER/singer")
+DEFAULT_MERGE_ARG = os.environ.get("TSPAINT_MERGE_ARG",
+                                   "/Users/kmt/SINGER/SINGER/SINGER/merge_ARG.py")
 
 
 def write_haploid_vcf(ts, path):
@@ -113,6 +117,52 @@ def _read_singer_arg(node_file, branch_file, mut_file=None):
     return tables.tree_sequence()
 
 
+def _write_singer_vcf(source, prefix, sequence_length=None):
+    """Write the haploid VCF SINGER reads as ``prefix.vcf``; return the sequence length."""
+    from .io_genotypes import source_kind, resolve_variants
+    from .io_genotypes import write_haploid_vcf as _write_variants_vcf
+    if source_kind(source) == "ts":
+        write_haploid_vcf(source, prefix + ".vcf")
+        return int(source.sequence_length)
+    v = resolve_variants(source)
+    _write_variants_vcf(v, prefix + ".vcf")
+    return int(sequence_length or v.sequence_length)
+
+
+def _singer_indices(out_prefix):
+    """The MCMC sample indices SINGER wrote at ``{out_prefix}_nodes_<i>.txt`` (sorted)."""
+    return sorted(int(f.split("_nodes_")[1].split(".txt")[0])
+                  for f in glob.glob(out_prefix + "_nodes_*.txt"))
+
+
+def _run_singer(prefix, out, *, start, end, Ne, mutation_rate, recombination_rate, n_samples,
+                thin, ploidy=1, seed=42, polar=0.5, max_retries=50, singer_bin=None):
+    """Invoke the bare SINGER binary on ``[start, end)`` with the ``singer_master`` retry loop.
+
+    Reads ``prefix.vcf``, writes ``{out}_nodes_<i>.txt`` / ``_branches_<i>.txt`` / ``_muts_<i>.txt``;
+    returns the indices written. On a nonzero exit it re-invokes ``-debug`` with fresh seeds.
+    """
+    singer_bin = singer_bin or DEFAULT_SINGER
+    if not os.path.exists(singer_bin):
+        raise FileNotFoundError(
+            f"SINGER binary not found at {singer_bin}; set TSPAINT_SINGER or pass singer_bin")
+    base = [singer_bin, "-Ne", str(Ne), "-m", str(mutation_rate), "-r", str(recombination_rate),
+            "-ploidy", str(ploidy), "-input", prefix, "-output", out,
+            "-start", str(int(start)), "-end", str(int(end)), "-polar", str(polar),
+            "-n", str(n_samples), "-thin", str(thin)]
+    rng = random.Random(seed)
+    seeds = [seed] + [rng.randint(0, 2 ** 30 - 1) for _ in range(max_retries)]
+    last = None
+    for k, sd in enumerate(seeds):
+        cmd = base + (["-debug"] if k > 0 else []) + ["-seed", str(sd)]
+        last = subprocess.run(cmd, capture_output=True, text=True)
+        if last.returncode == 0:
+            break
+    else:
+        raise RuntimeError(f"SINGER failed after {max_retries} retries:\n{(last.stderr or '')[-1000:]}")
+    return _singer_indices(out)
+
+
 def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=20,
            thin=10, burn_in=5, seed=42, ploidy=1, workdir=None,
            singer_bin=None, with_mutations=True, max_retries=50, sequence_length=None):
@@ -174,50 +224,123 @@ def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=20,
     Mirrors SINGER's ``singer_master`` retry loop: on a nonzero exit it re-invokes
     ``-debug`` with fresh seeds.
     """
-    singer_bin = singer_bin or DEFAULT_SINGER
-    if not os.path.exists(singer_bin):
-        raise FileNotFoundError(
-            f"SINGER binary not found at {singer_bin}; set TSPAINT_SINGER or pass singer_bin")
-
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
-    from .io_genotypes import source_kind, resolve_variants
-    from .io_genotypes import write_haploid_vcf as _write_variants_vcf
-    if source_kind(source) == "ts":
-        write_haploid_vcf(source, prefix + ".vcf")
-        L = int(source.sequence_length)
-    else:
-        v = resolve_variants(source)
-        _write_variants_vcf(v, prefix + ".vcf")
-        L = int(sequence_length or v.sequence_length)
+    L = _write_singer_vcf(source, prefix, sequence_length)
     out = os.path.join(tmp, "arg")
+    _run_singer(prefix, out, start=0, end=L, Ne=Ne, mutation_rate=mutation_rate,
+                recombination_rate=recombination_rate, n_samples=n_samples, thin=thin,
+                ploidy=ploidy, seed=seed, max_retries=max_retries, singer_bin=singer_bin)
 
-    base = [singer_bin, "-Ne", str(Ne), "-m", str(mutation_rate), "-r", str(recombination_rate),
-            "-ploidy", str(ploidy), "-input", prefix, "-output", out,
-            "-start", "0", "-end", str(L), "-polar", "0.5",
-            "-n", str(n_samples), "-thin", str(thin)]
-
-    rng = random.Random(seed)
-    seeds = [seed] + [rng.randint(0, 2 ** 30 - 1) for _ in range(max_retries)]
-    last = None
-    for k, sd in enumerate(seeds):
-        cmd = base + (["-debug"] if k > 0 else []) + ["-seed", str(sd)]
-        last = subprocess.run(cmd, capture_output=True, text=True)
-        if last.returncode == 0:
-            break
-    else:
-        raise RuntimeError(f"SINGER failed after {max_retries} retries:\n{last.stderr[-1000:]}")
-
-    idxs = sorted(int(f.split("_nodes_")[1].split(".txt")[0])
-                  for f in glob.glob(out + "_nodes_*.txt"))
     samples = []
-    for i in idxs:
+    for i in _singer_indices(out):
         if i < burn_in:
             continue
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
         samples.append(_read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf))
     return samples
+
+
+def singer_window(source, *, start, end, out_prefix, Ne, mutation_rate, recombination_rate,
+                  n_samples=20, thin=10, ploidy=1, seed=42, polar=0.5, max_retries=50,
+                  singer_bin=None):
+    """Run SINGER on ONE genomic window ``[start, end)``, leaving the raw node/branch/mut tables.
+
+    The per-window unit of a GWF window × member parallelisation: run this for each window, then
+    stitch the per-window tables for each MCMC member into a chromosome-length ARG with
+    :func:`build_merge_table` + :func:`run_merge_arg`. Uses the **bare SINGER binary** (not
+    ``singer_master``, whose ``-m`` rate path is broken in the bundled copy — an ``arggs.ploidy``
+    typo and a dead ``-mut_map`` branch).
+
+    Parameters
+    ----------
+    source : tskit.TreeSequence or str
+        Genotypes: a tree sequence (a haploid VCF is written next to ``out_prefix``), or a VCF
+        path (used directly — SINGER reads ``<prefix>.vcf``; no rewrite, so a GWF grid shares it).
+    start, end : float
+        Window bounds passed to SINGER ``-start`` / ``-end``.
+    out_prefix : str
+        Output prefix; SINGER writes ``{out_prefix}_nodes_<i>.txt`` etc.
+    Ne, mutation_rate, recombination_rate, n_samples, thin, ploidy, seed, polar, max_retries, singer_bin
+        As for :func:`singer` / SINGER's flags.
+
+    Returns
+    -------
+    list[int]
+        The MCMC sample indices written for this window.
+    """
+    from .io_genotypes import source_kind
+    if source_kind(source) == "vcf":
+        s = str(source)
+        vcf_prefix = s[:-4] if s.endswith(".vcf") else s
+    else:
+        vcf_prefix = out_prefix + "_input"
+        _write_singer_vcf(source, vcf_prefix)
+    return _run_singer(vcf_prefix, out_prefix, start=start, end=end, Ne=Ne,
+                       mutation_rate=mutation_rate, recombination_rate=recombination_rate,
+                       n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed, polar=polar,
+                       max_retries=max_retries, singer_bin=singer_bin)
+
+
+def build_merge_table(windows, member, *, skip_gaps=None, coords="local"):
+    """Build the ``merge_ARG.py`` file-table rows for one MCMC ``member`` across ``windows``.
+
+    Parameters
+    ----------
+    windows : iterable of (window_index, start, end, out_prefix)
+        One entry per genomic window (as produced by the :func:`singer_window` jobs).
+    member : int
+        The MCMC sample index to stitch (the ``<i>`` in ``{out_prefix}_nodes_<i>.txt``).
+    skip_gaps : list[tuple[float, float]], optional
+        ``(lo, hi)`` regions to skip (e.g. a centromere) — windows overlapping any are dropped.
+    coords : {"local", "absolute"}
+        ``merge_ARG.py`` adds the 4th column to every coordinate, so for SINGER's window-local
+        outputs the block coordinate is the window **start** (``"local"``, the default). Use
+        ``"absolute"`` (block coordinate 0) only if your SINGER emits absolute coordinates.
+
+    Returns
+    -------
+    list[tuple[str, str, str, float]]
+        ``(nodes_file, branches_file, muts_file, block_coordinate)`` rows in genome order.
+    """
+    gaps = skip_gaps or []
+    rows = []
+    for (_widx, s, e, prefix) in sorted(windows, key=lambda r: float(r[1])):
+        s, e = float(s), float(e)
+        if any(not (e <= lo or s >= hi) for (lo, hi) in gaps):    # overlaps a skip gap
+            continue
+        block = s if coords == "local" else 0.0
+        rows.append((f"{prefix}_nodes_{member}.txt", f"{prefix}_branches_{member}.txt",
+                     f"{prefix}_muts_{member}.txt", block))
+    return rows
+
+
+def run_merge_arg(rows, out, *, script=None, python=None):
+    """Stitch per-window ARG tables into ``out`` by shelling out to SINGER's ``merge_ARG.py``.
+
+    ``rows`` come from :func:`build_merge_table`. ``script`` defaults to ``DEFAULT_MERGE_ARG``
+    (env ``TSPAINT_MERGE_ARG``); ``python`` to the current interpreter — note ``merge_ARG.py``
+    imports ``tszip``, so that interpreter needs ``tskit + numpy + tszip``.
+    """
+    script = script or DEFAULT_MERGE_ARG
+    python = python or sys.executable
+    if not os.path.exists(script):
+        raise FileNotFoundError(
+            f"merge_ARG.py not found at {script}; set TSPAINT_MERGE_ARG or pass script")
+    fd, table = tempfile.mkstemp(suffix="_file_table.txt")
+    os.close(fd)
+    try:
+        with open(table, "w") as f:
+            for (n, b, m, blk) in rows:
+                f.write(f"{n} {b} {m} {int(blk)}\n")
+        r = subprocess.run([python, script, "--file_table", table, "--output", out],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"merge_ARG.py failed:\n{(r.stderr or '')[-2000:]}")
+    finally:
+        os.remove(table)
+    return out
 
 
 def singer_tree_sequences(ts, **kwargs):

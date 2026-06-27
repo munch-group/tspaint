@@ -374,6 +374,80 @@ def trees_add_mutations(trees_path, rate, seed, out):
     _echo(f"add-mutations rate={rate} -> {out}")
 
 
+@trees.command("singer-window")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--start", type=float, required=True)
+@click.option("--end", type=float, required=True)
+@click.option("--out-prefix", required=True, help="SINGER writes {out_prefix}_{nodes,branches,muts}_<i>.txt.")
+@click.option("--ne", "Ne", type=float, required=True)
+@click.option("--mut-rate", "mutation_rate", type=float, required=True)
+@click.option("--recomb-rate", "recombination_rate", type=float, required=True)
+@click.option("--n", "n_samples", type=int, default=20, show_default=True)
+@click.option("--thin", type=int, default=10, show_default=True)
+@click.option("--ploidy", type=int, default=1, show_default=True)
+@click.option("--seed", type=int, default=42, show_default=True)
+def trees_singer_window(source, start, end, out_prefix, Ne, mutation_rate, recombination_rate,
+                        n_samples, thin, ploidy, seed):
+    """Run SINGER on ONE genomic window (the GWF per-window unit; bare-singer engine)."""
+    from .io_singer import singer_window
+    src = _load_ts(source) if str(source).endswith(".trees") else source
+    idxs = singer_window(src, start=start, end=end, out_prefix=out_prefix, Ne=Ne,
+                         mutation_rate=mutation_rate, recombination_rate=recombination_rate,
+                         n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed)
+    _echo(f"singer-window [{start:g},{end:g}): {len(idxs)} samples -> {out_prefix}_*_<i>.txt")
+
+
+@trees.command("merge-arg")
+@click.option("--manifest", required=True, type=click.Path(exists=True),
+              help="TSV rows: window_index start end out_prefix.")
+@click.option("--member", type=int, required=True, help="MCMC sample index to stitch.")
+@click.option("--skip-gaps", default=None, help="regions to skip, e.g. '5e6-8e6,12e6-13e6'.")
+@click.option("--coords", type=click.Choice(["local", "absolute"]), default="local", show_default=True)
+@click.option("--merge-arg-script", default=None, type=click.Path(), help="path to merge_ARG.py.")
+@click.option("--python", "python_bin", default=None, help="interpreter for merge_ARG.py (needs tszip).")
+@click.option("--dry-run", is_flag=True, help="print the file_table; do not run merge_ARG.py.")
+@click.option("-o", "--out", default=None, type=click.Path(), help="merged member .trees.")
+def trees_merge_arg(manifest, member, skip_gaps, coords, merge_arg_script, python_bin, dry_run, out):
+    """Stitch per-window SINGER tables into one chromosome-length ARG (wraps merge_ARG.py)."""
+    from .io_singer import build_merge_table, run_merge_arg
+    windows = _read_manifest(manifest)
+    rows = build_merge_table(windows, member, skip_gaps=_parse_gaps(skip_gaps), coords=coords)
+    if dry_run:
+        for (n, b, m, blk) in rows:
+            click.echo(f"{n} {b} {m} {int(blk)}")
+        return
+    if not out:
+        raise click.UsageError("merge-arg needs -o/--out (or --dry-run).")
+    run_merge_arg(rows, out, script=merge_arg_script, python=python_bin)
+    _echo(f"merge-arg member {member}: {len(rows)} windows -> {out}")
+
+
+def _read_manifest(path):
+    """Read a windows manifest TSV: rows ``window_index start end out_prefix`` (# comments ok)."""
+    windows = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split()
+            windows.append((int(parts[0]), float(parts[1]), float(parts[2]), parts[3]))
+    return windows
+
+
+def _parse_gaps(spec):
+    """Parse ``--skip-gaps`` ``"lo-hi,lo-hi"`` into ``[(lo, hi), ...]``."""
+    if not spec:
+        return []
+    gaps = []
+    for part in str(spec).split(","):
+        part = part.strip()
+        if part:
+            lo, hi = part.split("-")
+            gaps.append((float(lo), float(hi)))
+    return gaps
+
+
 def main():
     cli()
 
