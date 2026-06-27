@@ -163,8 +163,8 @@ def _run_singer(prefix, out, *, start, end, Ne, mutation_rate, recombination_rat
     return _singer_indices(out)
 
 
-def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=20,
-           thin=10, burn_in=5, seed=42, ploidy=1, workdir=None,
+def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=21,
+           thin=10, burn_in=20, seed=42, ploidy=1, workdir=None,
            singer_bin=None, with_mutations=True, max_retries=50, sequence_length=None):
     """Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4).
 
@@ -239,6 +239,8 @@ def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=20,
             continue
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
         samples.append(_read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf))
+    if len(samples) == 1:
+        return samples[0]
     return samples
 
 

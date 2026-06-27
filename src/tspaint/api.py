@@ -225,12 +225,15 @@ class Painting:
                 f"Q={np.array2string(self.Q, precision=2)}, "
                 f"pi={np.array2string(self.pi, precision=2)})")
 
-    def plot(self, truth=None, title=None):
+    def plot(self, truth=None, title=None, cmap='coolwarm', colors=None, return_plot=False):
         
         qs = self.queries
         segments = self.segments(deadband=0.4)
 
-        sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap='coolwarm')
+        if colors:
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("custom_diverging", colors, N=256)
+
+        sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap=cmap)
         fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))
         gs = fig.add_gridspec(len(qs), 2, width_ratios=[1,0.03], hspace=0)
         axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]
@@ -238,13 +241,16 @@ class Painting:
         for i, q in enumerate(qs):
             ymin, ymax = 0, 1.5
             if truth:
-                ymin = -0.5
+                ymin = -0.25
                 for (l, r, s) in truth[q]:
                     axes[i].barh(-0.25, r - l, left=l, height=0.5,
-                            color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")
+                            color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")                                 
+                            # color= 'gray' if s == 0 else 'white', edgecolor="none")
             for (l, r, s) in segments[q]:
                 axes[i].barh(0.25, r - l, left=l, height=0.5,
                         color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")
+            axes[i].axhline(0.25, c='black', lw=0.25)
+            axes[i].axhline(0.5, c='black', lw=0.25)
             for seg in self.posteriors[q]:
                 axes[i].barh(1, seg.right - seg.left, left=seg.left, height=1,
                         color=sm.to_rgba(seg.posterior[0]), edgecolor="none")
@@ -275,6 +281,8 @@ class Painting:
         if title:
             axes[0].set_title(title)
         plt.tight_layout()
+        if return_plot:
+            return fig, axes
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
           smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,

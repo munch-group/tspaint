@@ -76,6 +76,8 @@ vscodenb = "*"
 r-rsvg = "*"
 tsinfer = ">=0.5.1,<0.6"
 demesdraw = ">=0.4.1,<0.5"
+tszip = ">=0.3.1,<0.4"
+matplotlib = "*"
 
 [tool.pixi.pypi-dependencies]
 tspaint = { path = ".", editable = true }
