@@ -262,6 +262,39 @@ class ReferenceQC:
                  "foreign_fraction": self.foreign_fraction(r, deadband)}
                 for r in sorted(self.labels, key=lambda r: self.credibility[r])]
 
+    def soft_refs(self, max_credibility=None):
+        """References to soften when re-painting — feed straight to ``paint(..., soft_refs=...)``.
+
+        The Task-1 action: down-weight the contaminated references so they stop anchoring the
+        painting where they carry foreign ancestry. With ``max_credibility=None`` (default) returns
+        the suspect set the QC already softened (the non-anchor references); pass a cutoff to take
+        every reference with ``credibility < max_credibility`` instead. Keep the trusted anchors
+        hard-clamped — never let the whole panel float (CLAUDE.md §6).
+
+        Returns
+        -------
+        set[int]
+            Reference sample ids to pass as ``soft_refs``.
+        """
+        if max_credibility is None:
+            return {int(r) for r in self.labels if r not in self.anchors}
+        return {int(r) for r, c in self.credibility.items() if c < max_credibility}
+
+    def mask(self, deadband=0.3):
+        """Per-reference foreign spans to **mask** out before re-painting.
+
+        The alternative Task-1 action to :meth:`soft_refs`: rather than down-weight a whole
+        reference, drop only its contaminated spans. Returns ``{ref: [(left, right), ...]}`` from
+        :meth:`flagged_tracts` (foreign state dropped) for the references that have at least one
+        flagged tract.
+        """
+        out = {}
+        for r in self.labels:
+            spans = [(l, rr) for (l, rr, _s) in self.flagged_tracts(r, deadband)]
+            if spans:
+                out[int(r)] = spans
+        return out
+
 
 def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2, Q0=None,
                  max_iter=8, alpha=20.0, beta=1.0):

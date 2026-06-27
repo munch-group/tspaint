@@ -5,7 +5,7 @@ import tskit
 
 from tspaint.model import make_generator_2state, tip_emission, query_emission
 from tspaint.introgression import (foreignness_track, ForeignnessSegment, reference_qc,
-                                 foreign_tracts)
+                                 foreign_tracts, ReferenceQC)
 from tspaint.output import INFORMATIVE, MISSING_INFO
 
 
@@ -171,6 +171,28 @@ def test_deep_foreign_flag_finds_unsampled_source():
     total_ghost = sum(r - l for q in queries for (l, r) in true_ghost[q])
     assert det_ghost / total_ghost > 0.4               # recall
     assert det_ghost / det > 0.7                        # precision
+
+
+def test_reference_qc_soft_refs_and_mask():
+    # Task 1: reference_qc's result is actionable — .soft_refs() feeds paint(soft_refs=...) and
+    # .mask() gives the per-reference foreign spans to drop.
+    from tspaint.output import Segment, INFORMATIVE as INF
+    qc = ReferenceQC(
+        labels={0: 0, 1: 0, 2: 1, 3: 1},
+        credibility={0: 0.95, 1: 0.55, 2: 0.97, 3: 0.60},
+        loo_agreement={0: 0.95, 1: 0.55, 2: 0.97, 3: 0.60},
+        learned_w={1: 0.55, 3: 0.60}, anchors={0, 2},
+        maps={0: [Segment(0.0, 100.0, np.array([0.9, 0.1]), INF)],
+              1: [Segment(0.0, 50.0, np.array([0.2, 0.8]), INF),       # foreign on [0,50)
+                  Segment(50.0, 100.0, np.array([0.95, 0.05]), INF)],
+              2: [Segment(0.0, 100.0, np.array([0.05, 0.95]), INF)],
+              3: [Segment(0.0, 100.0, np.array([0.1, 0.9]), INF)]},
+        Q=np.eye(2), pi=np.array([0.5, 0.5]), _length=100.0)
+
+    assert qc.soft_refs() == {1, 3}                      # the softened (non-anchor) suspects
+    assert qc.soft_refs(max_credibility=0.6) == {1}      # cred < 0.6 -> only ref 1 (0.55)
+    m = qc.mask(deadband=0.3)
+    assert m == {1: [(0.0, 50.0)]}                        # only ref 1's confidently-foreign span
 
 
 @pytest.mark.slow
