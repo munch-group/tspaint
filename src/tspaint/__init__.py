@@ -24,11 +24,12 @@ Simulation (examples / benchmarks)
     simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 Dating (admixture rate through time — an optional, separate deliverable)
     fit_rate_through_time, RateThroughTime; also ``Painting.rate_through_time()``
-Reference QC & introgression (Plan A workflows)
-    reference_qc, foreign_tracts, detect_ghost, loo_posterior_table; also
+Reference QC — control panel contamination via soft_refs / masking (Task 1)
+    reference_qc (``.soft_refs`` / ``.mask``), foreign_tracts, loo_posterior_table; also
     ``Painting.introgression_map()``
-Reference-free archaic detection (Plan B)
-    detect_archaic — a depth-emission HMM that learns the archaic state with no archaic reference
+Ghost / archaic introgression search — accurate calibrated segments (Task 2)
+    detect_ghost — a depth-emission HMM that learns the ghost (deep/archaic) state with no ghost
+    reference; accepts a SINGER ensemble for accuracy. (``detect_archaic`` is a deprecated alias.)
 Namespaces
     tspaint.metrics      accuracy, calibration, fragmentation / tract-length metrics
     tspaint.compare      painters (tspaint_paint, nearest_reference_paint, rfmix_paint) + head_to_head
@@ -36,8 +37,8 @@ Namespaces
     tspaint.bp           horizontal BP/EP smoother (helps on inferred ARGs; CLAUDE.md §7)
     tspaint.dating       time-inhomogeneous directional mugration EM (admixture dating)
     tspaint.experiments  end-to-end benchmark drivers
-    tspaint.introgression  reference QC, anonymous foreign tracts, ghost detection
-    tspaint.archaic      reference-free archaic / ghost detection (depth-emission HMM, Plan B)
+    tspaint.introgression  reference QC, anonymous foreign tracts (+ the deep ghost flag)
+    tspaint.archaic      detect_ghost — reference-free ghost / archaic HMM (depth emission)
 Lower-level machinery lives in the named submodules (``tspaint.model``, ``tspaint.pruning``,
 ``tspaint.accumulate``, ``tspaint.em``, ``tspaint.output``, ``tspaint.ensemble``, ``tspaint.ranked``,
 ``tspaint.diagnostics``).
@@ -52,8 +53,8 @@ from .output import (posterior_table, loo_posterior_table, hard_segments, Segmen
 from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from .dating import fit_rate_through_time, RateThroughTime, EnsembleRateThroughTime
-from .introgression import reference_qc, foreign_tracts, detect_ghost
-from .archaic import detect_archaic
+from .introgression import reference_qc, foreign_tracts
+from .archaic import detect_ghost, GhostResult, detect_archaic
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
@@ -81,10 +82,10 @@ __all__ = [
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
     # dating (admixture rate through time)
     "fit_rate_through_time", "RateThroughTime", "EnsembleRateThroughTime",
-    # reference QC & introgression (Plan A workflows)
-    "reference_qc", "foreign_tracts", "detect_ghost", "loo_posterior_table",
-    # reference-free archaic detection (Plan B)
-    "detect_archaic",
+    # Task 1 — reference QC (control panel contamination via soft_refs / masking)
+    "reference_qc", "foreign_tracts", "loo_posterior_table",
+    # Task 2 — dedicated ghost / archaic introgression search (depth-emission HMM)
+    "detect_ghost", "GhostResult", "detect_archaic",
     # namespaces
     "metrics", "compare", "io", "bp", "dating", "experiments", "introgression", "archaic",
     "__version__",

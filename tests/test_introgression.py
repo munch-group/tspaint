@@ -5,7 +5,7 @@ import tskit
 
 from tspaint.model import make_generator_2state, tip_emission, query_emission
 from tspaint.introgression import (foreignness_track, ForeignnessSegment, reference_qc,
-                                 foreign_tracts, detect_ghost)
+                                 foreign_tracts, ReferenceQC)
 from tspaint.output import INFORMATIVE, MISSING_INFO
 
 
@@ -128,9 +128,11 @@ def test_reference_qc_flags_impure_minority():
 
 
 @pytest.mark.slow
-def test_detect_ghost_finds_unsampled_source():
-    # Plan A Workflow 3: an unsampled ghost source is detectable (low fit + deep), with a low
-    # false-positive burden on the matched no-ghost control (the honesty gate; CLAUDE.md §9).
+def test_deep_foreign_flag_finds_unsampled_source():
+    # The deep foreign-tract FLAG — foreign_tracts(mode="fit", min_score, min_depth) — detects an
+    # unsampled ghost source (low fit + deep), with a low false-positive burden on the matched
+    # no-ghost control. This is the former detect_ghost flag, now folded into foreign_tracts; the
+    # accurate generative detector is the detect_ghost HMM (tests/test_archaic.py). CLAUDE.md §9.
     from tspaint.sim import (simulate_admixture_with_ghost, local_ancestry_truth,
                              SOURCE_A, SOURCE_B, GHOST, ADMIXED)
     common = dict(n_admix=12, n_ref=8, sequence_length=2e6, recombination_rate=1e-8,
@@ -145,26 +147,52 @@ def test_detect_ghost_finds_unsampled_source():
         queries = of(ADMIXED)
         labels = {s: 0 for s in of(SOURCE_A)}
         labels.update({s: 1 for s in of(SOURCE_B)})
-        tracts, _ = local_ancestry_truth(ts)
+        tr, _ = local_ancestry_truth(ts)
         gid = pid[GHOST]
-        true_ghost = {q: [(l, r) for (l, r, p) in tracts[q] if p == gid] for q in queries}
-        return queries, true_ghost, detect_ghost(ts, labels, queries, max_iter=8)
+        true_ghost = {q: [(l, r) for (l, r, p) in tr[q] if p == gid] for q in queries}
+        L = float(ts.sequence_length)
+        flagged = foreign_tracts(ts, labels, queries, mode="fit", min_score=0.8, min_depth=0.9)
+        tracts = {q: [(l, r) for (l, r, _s) in flagged[q]] for q in queries}     # fit < 0.6 AND deep
+        burden = {q: sum(r - l for (l, r) in tracts[q]) / L for q in queries}
+        return queries, true_ghost, tracts, burden
 
-    queries, true_ghost, gh = run(0.25, 1)
-    q0, _, gh0 = run(0.0, 1)
+    queries, true_ghost, gh, burden_d = run(0.25, 1)
+    q0, _, _gh0, burden0_d = run(0.0, 1)
 
-    # detection: the genome-wide ghost burden is far above the no-ghost control (measured ~10x)
-    burden = float(np.mean([gh.burden[q] for q in queries]))
-    burden0 = float(np.mean([gh0.burden[q] for q in q0]))
+    # detection: the genome-wide ghost burden is far above the no-ghost control
+    burden = float(np.mean([burden_d[q] for q in queries]))
+    burden0 = float(np.mean([burden0_d[q] for q in q0]))
     assert burden > 3 * burden0
     assert burden0 < 0.05                              # false-positive floor (measured ~0.01)
 
-    # localisation: the flagged tracts overlap the true ghost tracts (measured recall 0.58 / prec 1.0)
-    det = sum(r - l for q in queries for (l, r) in gh.tracts(q))
-    det_ghost = sum(_span_overlap(l, r, true_ghost[q]) for q in queries for (l, r) in gh.tracts(q))
+    # localisation: the flagged tracts overlap the true ghost tracts (measured recall ~0.58 / prec ~1.0)
+    det = sum(r - l for q in queries for (l, r) in gh[q])
+    det_ghost = sum(_span_overlap(l, r, true_ghost[q]) for q in queries for (l, r) in gh[q])
     total_ghost = sum(r - l for q in queries for (l, r) in true_ghost[q])
     assert det_ghost / total_ghost > 0.4               # recall
     assert det_ghost / det > 0.7                        # precision
+
+
+def test_reference_qc_soft_refs_and_mask():
+    # Task 1: reference_qc's result is actionable — .soft_refs() feeds paint(soft_refs=...) and
+    # .mask() gives the per-reference foreign spans to drop.
+    from tspaint.output import Segment, INFORMATIVE as INF
+    qc = ReferenceQC(
+        labels={0: 0, 1: 0, 2: 1, 3: 1},
+        credibility={0: 0.95, 1: 0.55, 2: 0.97, 3: 0.60},
+        loo_agreement={0: 0.95, 1: 0.55, 2: 0.97, 3: 0.60},
+        learned_w={1: 0.55, 3: 0.60}, anchors={0, 2},
+        maps={0: [Segment(0.0, 100.0, np.array([0.9, 0.1]), INF)],
+              1: [Segment(0.0, 50.0, np.array([0.2, 0.8]), INF),       # foreign on [0,50)
+                  Segment(50.0, 100.0, np.array([0.95, 0.05]), INF)],
+              2: [Segment(0.0, 100.0, np.array([0.05, 0.95]), INF)],
+              3: [Segment(0.0, 100.0, np.array([0.1, 0.9]), INF)]},
+        Q=np.eye(2), pi=np.array([0.5, 0.5]), _length=100.0)
+
+    assert qc.soft_refs() == {1, 3}                      # the softened (non-anchor) suspects
+    assert qc.soft_refs(max_credibility=0.6) == {1}      # cred < 0.6 -> only ref 1 (0.55)
+    m = qc.mask(deadband=0.3)
+    assert m == {1: [(0.0, 50.0)]}                        # only ref 1's confidently-foreign span
 
 
 @pytest.mark.slow

@@ -7,8 +7,8 @@ from tspaint import serialize
 from tspaint.output import Segment, INFORMATIVE, MISSING_INFO
 from tspaint.ensemble import MergedSegment
 from tspaint.dating.em import RateThroughTime
-from tspaint.introgression import ReferenceQC, GhostResult
-from tspaint.archaic import ArchaicResult
+from tspaint.introgression import ReferenceQC
+from tspaint.archaic import GhostResult, ArchaicResult
 
 
 def _seg_table():
@@ -131,12 +131,16 @@ def test_reference_qc_round_trip(tmp_path):
 
 def test_ghost_round_trip(tmp_path):
     p = tmp_path / "ghost.npz"
-    g = GhostResult(burden={5: 0.1, 6: 0.0}, tracts_by_sample={5: [(10.0, 20.0), (40.0, 55.0)], 6: []})
+    g = GhostResult(posteriors={5: [(0.0, 100.0, 0.03), (100.0, 200.0, 0.95)]},
+                    burden={5: 0.49}, mu=np.array([1.0, 3.2]), sd=np.array([0.5, 0.4]),
+                    A=np.array([[0.98, 0.02], [0.05, 0.95]]), pi0=np.array([0.9, 0.1]),
+                    loglik_history=[-6.0, -5.0])
     serialize.save_ghost(p, g)
     d = serialize.load_ghost(p)
+    assert d["posteriors"][5] == [(0.0, 100.0, 0.03), (100.0, 200.0, 0.95)]
     assert d["burden"] == g.burden
-    assert d["tracts_by_sample"][5] == [(10.0, 20.0), (40.0, 55.0)]
-    assert d["tracts_by_sample"].get(6, []) == []
+    np.testing.assert_array_equal(d["mu"], g.mu)
+    np.testing.assert_array_equal(d["A"], g.A)
 
 
 def test_archaic_round_trip(tmp_path):

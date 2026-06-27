@@ -191,9 +191,15 @@ def date(trees, labels_path, n_cells, n_iter, estimate_pi, out):
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
 @click.option("--anchors", default=None, help="trusted hard-clamped refs (inline or @file).")
 @click.option("--deadband", type=float, default=0.3, show_default=True)
+@click.option("--soft-refs-out", default=None, type=click.Path(),
+              help="write the suspect reference ids (one per line) for `paint --soft-refs @file`.")
 @click.option("-o", "--out", required=True, type=click.Path(), help="QC table .npz.")
-def qc(trees, labels_path, anchors, deadband, out):
-    """Audit a reference panel for admixture / mislabelling → qc.npz."""
+def qc(trees, labels_path, anchors, deadband, soft_refs_out, out):
+    """Audit a reference panel for admixture / mislabelling → qc.npz.
+
+    Task 1: re-paint with the flagged references down-weighted —
+    ``tspaint qc ... --soft-refs-out suspects.txt`` then ``tspaint paint ... --soft-refs @suspects.txt``.
+    """
     from .introgression import reference_qc
     from .serialize import save_reference_qc
     anc = read_id_list(anchors)
@@ -201,6 +207,11 @@ def qc(trees, labels_path, anchors, deadband, out):
                           anchors=set(anc) if anc else None)
     save_reference_qc(out, result, deadband=deadband)
     _echo(f"qc: {len(result.labels)} refs -> {out}")
+    if soft_refs_out:
+        suspects = sorted(result.soft_refs())
+        with open(soft_refs_out, "w") as f:
+            f.write("\n".join(str(s) for s in suspects) + ("\n" if suspects else ""))
+        _echo(f"  {len(suspects)} suspect refs -> {soft_refs_out}")
 
 
 @cli.command()
@@ -208,47 +219,65 @@ def qc(trees, labels_path, anchors, deadband, out):
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
 @click.option("--samples", required=True, help="samples to scan (inline or @file).")
 @click.option("--min-score", type=float, default=0.5, show_default=True)
+@click.option("--min-depth", type=float, default=None,
+              help="deep-only (ghost) flag: also require rank-depth >= this (e.g. 0.9).")
+@click.option("--mode", type=click.Choice(["auto", "label", "fit"]), default="auto", show_default=True)
 @click.option("-o", "--out", required=True, type=click.Path(), help="foreign-tracts .npz.")
-def introgress(trees, labels_path, samples, min_score, out):
-    """Anonymous foreign-tract detection (label dissent / fits-nothing) → foreign.npz."""
+def introgress(trees, labels_path, samples, min_score, min_depth, mode, out):
+    """Anonymous foreign-tract detection (label dissent / fits-nothing) → foreign.npz.
+
+    Add ``--min-depth 0.9 --mode fit`` for the fast deterministic deep-ghost flag (the accurate
+    ghost detector is ``tspaint ghost``).
+    """
     from .introgression import foreign_tracts
     from .serialize import save_foreign_tracts
     tracts = foreign_tracts(_load_ts(trees), read_labels(labels_path), read_id_list(samples),
-                            min_score=min_score)
+                            min_score=min_score, min_depth=min_depth, mode=mode)
     save_foreign_tracts(out, tracts)
     _echo(f"introgress: {len(tracts)} samples -> {out}")
 
 
-@cli.command()
-@click.argument("trees", type=click.Path(exists=True, dir_okay=False))
-@click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
-@click.option("--samples", required=True, help="samples to scan (inline or @file).")
-@click.option("--fit-thresh", type=float, default=0.6, show_default=True)
-@click.option("--depth-thresh", type=float, default=0.9, show_default=True)
-@click.option("-o", "--out", required=True, type=click.Path(), help="ghost tracts .npz.")
-def ghost(trees, labels_path, samples, fit_thresh, depth_thresh, out):
-    """Detect introgression from an unsampled ('ghost') source → ghost.npz."""
-    from .introgression import detect_ghost
+def _run_ghost(trees, labels_path, samples, depth, max_iter, out):
+    from .archaic import detect_ghost
     from .serialize import save_ghost
-    result = detect_ghost(_load_ts(trees), read_labels(labels_path), read_id_list(samples),
-                          fit_thresh=fit_thresh, depth_thresh=depth_thresh)
+    members = [_load_ts(t) for t in trees]
+    result = detect_ghost(members if len(members) > 1 else members[0],
+                          read_labels(labels_path), read_id_list(samples),
+                          depth=depth, max_iter=max_iter)
     save_ghost(out, result)
-    _echo(f"ghost: burden over {len(result.burden)} samples -> {out}")
+    _echo(f"ghost: {len(members)} member(s), depth={depth}, "
+          f"P(ghost) over {len(result.burden)} samples -> {out}")
 
 
 @cli.command()
-@click.argument("trees", type=click.Path(exists=True, dir_okay=False))
+@click.argument("trees", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False))
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True),
               help="modern reference ids (a {ref: state} labels JSON; only the ids are used).")
 @click.option("--samples", default=None, help="samples to scan (inline or @file; default: non-refs).")
-@click.option("-o", "--out", required=True, type=click.Path(), help="archaic posteriors .npz.")
-def archaic(trees, labels_path, samples, out):
-    """Reference-free archaic detection (depth-emission HMM) → archaic.npz."""
-    from .archaic import detect_archaic
-    from .serialize import save_archaic
-    result = detect_archaic(_load_ts(trees), read_labels(labels_path), read_id_list(samples))
-    save_archaic(out, result)
-    _echo(f"archaic: {len(result.burden)} samples -> {out}")
+@click.option("--depth", type=click.Choice(["time", "rank"]), default="time", show_default=True,
+              help="depth observation: log-time, or calibration-robust rank (e.g. for a Relate ARG).")
+@click.option("--max-iter", type=int, default=50, show_default=True)
+@click.option("-o", "--out", required=True, type=click.Path(), help="ghost P(ghost) .npz.")
+def ghost(trees, labels_path, samples, depth, max_iter, out):
+    """Reference-free ghost / archaic introgression search (depth-emission HMM) → ghost.npz.
+
+    Pass several TREES (e.g. SINGER posterior members) to fit once pooled and average P(ghost)
+    across members for accuracy.
+    """
+    _run_ghost(trees, labels_path, samples, depth, max_iter, out)
+
+
+@cli.command(hidden=True)
+@click.argument("trees", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False))
+@click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
+@click.option("--samples", default=None)
+@click.option("--depth", type=click.Choice(["time", "rank"]), default="time")
+@click.option("--max-iter", type=int, default=50)
+@click.option("-o", "--out", required=True, type=click.Path())
+def archaic(trees, labels_path, samples, depth, max_iter, out):
+    """Deprecated alias for `tspaint ghost`."""
+    _echo("note: `tspaint archaic` is deprecated; use `tspaint ghost`")
+    _run_ghost(trees, labels_path, samples, depth, max_iter, out)
 
 
 # --- simulate (validation / examples) -------------------------------------------------------

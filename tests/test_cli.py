@@ -141,11 +141,21 @@ def test_date_and_qc_run(tmp_path):
          "-o", t, "--labels-out", labels)
     rtt = tmp_path / "rtt.npz"
     qc_out = tmp_path / "qc.npz"
+    suspects = tmp_path / "suspects.txt"
+    ghost_out = tmp_path / "ghost.npz"
+    foreign_out = tmp_path / "foreign.npz"
     _run("date", t, "--labels", labels, "--n-cells", 12, "--n-iter", 5, "-o", rtt)
-    _run("qc", t, "--labels", labels, "-o", qc_out)
+    _run("qc", t, "--labels", labels, "--soft-refs-out", suspects, "-o", qc_out)
+    _run("ghost", t, "--labels", labels, "--depth", "rank", "--max-iter", 15, "-o", ghost_out)
+    _run("introgress", t, "--labels", labels, "--samples", "@" + str(suspects),
+         "--min-depth", 0.9, "--mode", "fit", "-o", foreign_out)
 
     from tspaint import serialize
     d = serialize.load_rate_through_time(rtt)
     assert d["centers"].shape == d["q_AB"].shape
     q = serialize.load_reference_qc(qc_out)
     assert len(q["summary"]) == len(read_labels(labels))
+    assert suspects.exists()                                # qc emitted the soft-refs id-list
+    g = serialize.load_ghost(ghost_out)                     # the HMM result round-trips
+    assert "posteriors" in g and "mu" in g
+    serialize.load_foreign_tracts(foreign_out)              # the deep-flag output round-trips

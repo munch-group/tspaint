@@ -264,57 +264,37 @@ def load_reference_qc(path):
 # --- ghost / archaic / foreign tracts -------------------------------------------------------
 
 def save_ghost(path, ghost):
-    """Write a :class:`~tspaint.introgression.GhostResult` (per-sample burden + ghost tracts)."""
+    """Write a :class:`~tspaint.GhostResult` — per-locus ``P(ghost)`` + the learned depth-HMM."""
+    samp, left, right, p = [], [], [], []
+    for s in sorted(ghost.posteriors):
+        for (a, b, pg) in ghost.posteriors[s]:
+            samp.append(int(s)); left.append(float(a)); right.append(float(b)); p.append(float(pg))
     nodes = sorted(ghost.burden)
-    samp, left, right = [], [], []
-    for s in sorted(ghost.tracts_by_sample):
-        for (a, b) in ghost.tracts_by_sample[s]:
-            samp.append(int(s)); left.append(float(a)); right.append(float(b))
     _savez(path, _format="tspaint-ghost", _version=1,
+           sample=np.array(samp, np.int64), left=np.array(left, float),
+           right=np.array(right, float), p_ghost=np.array(p, float),
            burden_nodes=np.array(nodes, np.int64),
            burden_vals=np.array([ghost.burden[k] for k in nodes], float),
-           sample=np.array(samp, np.int64), left=np.array(left, float),
-           right=np.array(right, float))
+           mu=np.asarray(ghost.mu, float), sd=np.asarray(ghost.sd, float),
+           A=np.asarray(ghost.A, float), pi0=np.asarray(ghost.pi0, float),
+           loglik_history=np.asarray(list(ghost.loglik_history), float))
 
 
 def load_ghost(path):
-    """Reload :func:`save_ghost` as ``{burden: dict, tracts_by_sample: dict}``."""
+    """Reload :func:`save_ghost` as a dict (``posteriors, burden, mu, sd, A, pi0, loglik_history``)."""
     d = _loadz(path)
     _check_format(d, "tspaint-ghost")
-    burden = {int(n): float(v) for n, v in zip(d["burden_nodes"], d["burden_vals"])}
-    tracts = {}
-    for s, a, b in zip(d["sample"], d["left"], d["right"]):
-        tracts.setdefault(int(s), []).append((float(a), float(b)))
-    return dict(burden=burden, tracts_by_sample=tracts)
-
-
-def save_archaic(path, archaic):
-    """Write a :class:`~tspaint.archaic.ArchaicResult` (per-locus ``P(archaic)`` + learned HMM)."""
-    samp, left, right, p = [], [], [], []
-    for s in sorted(archaic.posteriors):
-        for (a, b, pa) in archaic.posteriors[s]:
-            samp.append(int(s)); left.append(float(a)); right.append(float(b)); p.append(float(pa))
-    nodes = sorted(archaic.burden)
-    _savez(path, _format="tspaint-archaic", _version=1,
-           sample=np.array(samp, np.int64), left=np.array(left, float),
-           right=np.array(right, float), p_archaic=np.array(p, float),
-           burden_nodes=np.array(nodes, np.int64),
-           burden_vals=np.array([archaic.burden[k] for k in nodes], float),
-           mu=np.asarray(archaic.mu, float), sd=np.asarray(archaic.sd, float),
-           A=np.asarray(archaic.A, float), pi0=np.asarray(archaic.pi0, float),
-           loglik_history=np.asarray(list(archaic.loglik_history), float))
-
-
-def load_archaic(path):
-    """Reload :func:`save_archaic` as a dict (``posteriors, burden, mu, sd, A, pi0, loglik_history``)."""
-    d = _loadz(path)
-    _check_format(d, "tspaint-archaic")
     post = {}
-    for s, a, b, pa in zip(d["sample"], d["left"], d["right"], d["p_archaic"]):
-        post.setdefault(int(s), []).append((float(a), float(b), float(pa)))
+    for s, a, b, pg in zip(d["sample"], d["left"], d["right"], d["p_ghost"]):
+        post.setdefault(int(s), []).append((float(a), float(b), float(pg)))
     burden = {int(n): float(v) for n, v in zip(d["burden_nodes"], d["burden_vals"])}
     return dict(posteriors=post, burden=burden, mu=d["mu"], sd=d["sd"], A=d["A"], pi0=d["pi0"],
                 loglik_history=d["loglik_history"].tolist())
+
+
+# detect_archaic was renamed detect_ghost; keep the old serializer names as aliases.
+save_archaic = save_ghost
+load_archaic = load_ghost
 
 
 def save_foreign_tracts(path, tracts):
