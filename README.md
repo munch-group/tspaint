@@ -56,8 +56,11 @@ caching); at a fixed region length #trees is region-bounded, so runtime is rough
 linear in sample size. Measured (true ARG, 0.1 Mb region): ~480 haplotypes fits in
 ~5 s (4 iterations), ~1.2 s/iteration; tsinfer inference adds ~1–3 s. **~500
 haplotypes is comfortable for region/chromosome-scale analyses**, with accuracy and
-flicker unaffected by sample size; whole-genome at that size is hours per fit — the
-incremental-forest / vectorized-pruning lever (CLAUDE.md §3.3).
+flicker unaffected by sample size. The genome E-step is an exact map-reduce over
+independent trees, so it parallelises near-linearly across cores: `paint(..., n_jobs=N)`
+/ `tspaint.fit(..., n_jobs=N)` (and the `tspaint --cores` CLI) split it bit-exactly over
+a process pool (`tspaint.parallel`; see [`paral-assess.md`](paral-assess.md)), and across
+the cluster each `tspaint` subcommand is a GWF job over SINGER windows × ensemble members.
 
 **Outstanding:** the remaining external comparators (**RFMix is wired** via
 `tspaint.compare.rfmix_paint`; MOSAIC/FLARE and the ARG-native ARGMix / Pearson & Durbin need
@@ -100,6 +103,27 @@ painting.posteriors[painting.queries[0]]    # soft per-position posterior over a
 painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-length / dating)
 ```
 
+## Command-line interface (GWF / cluster)
+
+The `tspaint` command wraps the library so a pipeline runs as file-in/file-out jobs (e.g. under
+[GWF](https://gwf.app)) with no glue Python. Computed results are `.npz`; hand-authored inputs are
+text (labels JSON `{"<node>": <state>}`; id-lists inline `3,4,5` or `@file`). `--cores/-j` defaults
+to `$SLURM_JOB_CPUS_PER_NODE`.
+
+```bash
+tspaint simulate --n-admix 8 --n-ref 8 -o sim.trees --labels-out labels.json   # or your own data
+tspaint fit   sim.trees --labels labels.json -j 8 -o params.npz                 # one pooled fit
+tspaint paint sim.trees --params params.npz -j 8 -o painting.npz                # paint (per member)
+tspaint merge painting.npz -o merged.npz                                        # ensemble mean + band
+tspaint date  sim.trees --labels labels.json -o rtt.npz                         # also qc/introgress/ghost/archaic
+```
+
+For a large chromosome, build the SINGER posterior ensemble window-by-window
+(`tspaint trees singer-window` per 5 Mb window, then `tspaint trees merge-arg` per member) and
+feed the members to `fit` / `paint` / `merge`. See [`examples/workflow.py`](examples/workflow.py)
+for a runnable GWF `Workflow` and [`paral-assess.md`](paral-assess.md) for the parallelism design
+and the bit-exactness contract.
+
 ## Public API
 
 **Core** — `tspaint.paint(ts, labels, queries=None, *, deadband=…)` returns a `Painting` with
@@ -126,7 +150,9 @@ gain — the paths stay side by side).
 | `tspaint.introgression` | reference QC (`reference_qc`), anonymous foreign tracts (`foreign_tracts`), ghost-source detection (`detect_ghost`) — built on the `loo_posterior_table` introgression lens |
 
 Lower-level machinery is in the named submodules (`tspaint.model`, `tspaint.pruning`,
-`tspaint.accumulate`, `tspaint.em`, `tspaint.output`, `tspaint.ensemble`, `tspaint.ranked`).
+`tspaint.accumulate`, `tspaint.em`, `tspaint.output`, `tspaint.ensemble`, `tspaint.ranked`);
+`tspaint.parallel` (bit-exact multi-core E-step), `tspaint.serialize` (`.npz` save/load), and
+`tspaint.cli` (the `tspaint` command).
 
 See `notebooks/` for the persistence go/no-go (00), accuracy / calibration /
 accuracy-vs-age (01), the flicker / `bp/` decision (02), and haplotype paintings +
