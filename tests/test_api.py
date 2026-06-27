@@ -122,3 +122,27 @@ def test_painting_ensemble_methods():
     assert hasattr(m[0], "posterior_std")                     # merged leave-one-out map
     with pytest.raises(ValueError, match="ensemble"):
         p.rate_through_time()
+
+
+# --- Painting.length / Painting.plot ---------------------------------------------------------
+
+def test_painting_length():
+    ts, _, _, _ = _admixture(L=1e5)
+    base = dict(posteriors={}, Q=np.eye(2), pi=np.array([0.5, 0.5]), w={}, loglik_history=[],
+                queries=[])
+    assert tspaint.Painting(**base, ts=ts).length == ts.sequence_length
+    assert tspaint.Painting(**base, ts=[ts, ts]).length == ts.sequence_length   # ensemble -> member 0
+    assert tspaint.Painting(**base, ts=None).length is None
+
+
+@pytest.mark.slow
+def test_painting_plot_runs():
+    import matplotlib.pyplot as plt
+    plt.switch_backend("Agg")
+    from tspaint.ranked import ranked_tree_sequence
+    ts, labels, queries, truth = _admixture(L=1e5)
+    p = tspaint.paint(ts, labels, queries)
+    p.plot(truth=truth, title="t"); plt.close("all")          # single, with truth
+    p.plot(); plt.close("all")                                # single, no truth
+    pe = tspaint.paint([ts, ranked_tree_sequence(ts)], labels, queries)
+    pe.plot(truth=truth); plt.close("all")                    # ensemble mean
