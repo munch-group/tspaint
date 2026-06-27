@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>A worked example: from genotypes to local ancestry, panel QC, and hidden sources – tspaint</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../notebooks/painting.html" rel="next">
+<link href="../pages/code_paths.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../pages/overview.html" aria-current="page"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/showcase.html">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inference: structured (blocked) EM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/assumptions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Assumptions, identifiability &amp; limitations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/code_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code organization and data flow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Notebooks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/showcase.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Haplotype painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calibration &amp; accuracy vs admixture age</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/fragmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fragmentation &amp; tract-length fidelity</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/bp_smoother.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Horizontal BP smoother on inferred ARGs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/introgression_qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reference QC, foreign tracts &amp; ghost detection</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Results</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#setup" id="toc-setup" class="nav-link active" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#from-genotypes-to-a-tree-sequence" id="toc-from-genotypes-to-a-tree-sequence" class="nav-link" data-scroll-target="#from-genotypes-to-a-tree-sequence">1. From genotypes to a tree sequence</a></li>
+  <li><a href="#paint-with-tsinfer-and-with-singer-and-compare" id="toc-paint-with-tsinfer-and-with-singer-and-compare" class="nav-link" data-scroll-target="#paint-with-tsinfer-and-with-singer-and-compare">2. Paint with tsinfer and with SINGER, and compare</a>
+  <ul class="collapse">
+  <li><a href="#singers-posterior-gives-a-calibrated-uncertainty-band" id="toc-singers-posterior-gives-a-calibrated-uncertainty-band" class="nav-link" data-scroll-target="#singers-posterior-gives-a-calibrated-uncertainty-band">SINGER’s posterior gives a calibrated uncertainty band</a></li>
+  </ul></li>
+  <li><a href="#audit-the-reference-panel-reference-qc" id="toc-audit-the-reference-panel-reference-qc" class="nav-link" data-scroll-target="#audit-the-reference-panel-reference-qc">3. Audit the reference panel (reference QC)</a></li>
+  <li><a href="#detect-admixture-from-a-source-that-is-not-in-the-panel" id="toc-detect-admixture-from-a-source-that-is-not-in-the-panel" class="nav-link" data-scroll-target="#detect-admixture-from-a-source-that-is-not-in-the-panel">4. Detect admixture from a source that is <em>not in the panel</em></a>
+  <ul class="collapse">
+  <li><a href="#with-no-reference-at-all-detect_archaic" id="toc-with-no-reference-at-all-detect_archaic" class="nav-link" data-scroll-target="#with-no-reference-at-all-detect_archaic">With no reference at all: <code>detect_archaic</code></a></li>
+  </ul></li>
+  <li><a href="#recap" id="toc-recap" class="nav-link" data-scroll-target="#recap">Recap</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/showcase.html">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This notebook follows one analysis end to end, using the pieces a real study touches in order. We start from <strong>genotypes</strong> (a VCF / VCF-Zarr — simulated here so we have ground truth), build a tree sequence two different ways, <strong>paint</strong> local ancestry from each and compare them, then turn the same machinery on two questions every admixture study eventually asks:</p>
+<ol type="1">
+<li><strong>From genotypes to a tree sequence</strong> — <code>tspaint.io.tsinfer</code> / <code>tspaint.io.singer</code> take a VCF, a VCF-Zarr, or a tree sequence through one unified interface.</li>
+<li><strong>Paint and compare</strong> — <code>tspaint.paint</code> on a fast <strong>tsinfer</strong> point-estimate ARG vs.&nbsp;a Bayesian <strong>SINGER</strong> posterior ARG; where they agree, where SINGER’s posterior is more robust, and the <strong>calibrated uncertainty band</strong> that averaging SINGER samples buys you.</li>
+<li><strong>Reference QC</strong> — <code>tspaint.reference_qc</code> audits the reference panel itself for admixed / mislabelled individuals.</li>
+<li><strong>Hidden (non-reference) admixture</strong> — <code>tspaint.detect_ghost</code> flags tracts from a source that is <em>not in the panel</em>, and <code>tspaint.detect_archaic</code> does it with <strong>no reference at all</strong>.</li>
+</ol>
+<p>Each capability needs a slightly different cohort, so we simulate a fresh one at each step — but read it as one analyst’s progression: <em>get data → paint it → check whether you can trust your references → check whether something unsampled is hiding in the admixture.</em></p>
+<p>Everything is simulated with <a href="https://tskit.dev/msprime/docs/stable/"><code>msprime</code></a> so a <strong>census event</strong> records the true local ancestry of every haplotype, which we score against.</p>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>A few imports and small helpers: <code>pops</code> maps sample nodes to their (simulated) source population, <code>write_vcz</code> lays out a minimal VCF-Zarr the way <code>bio2zarr</code>’s <code>vcf2zarr</code> would, and two plotting helpers draw a painted posterior against the shaded truth.</p>
+<div id="bc02e71f" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:43:50.985325Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:43:50.985105Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:43:52.879905Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:43:52.879191Z&quot;}}" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, tempfile, warnings</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>warnings.simplefilter(<span class="st">"ignore"</span>)          <span class="co"># quiet tsinfer/Numba provenance chatter</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint <span class="im">import</span> io</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.validate <span class="im">import</span> map_truth, balanced_accuracy, mean_confidence, per_base_accuracy</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>plt.rcParams.update({<span class="st">"figure.dpi"</span>: <span class="dv">110</span>, <span class="st">"font.size"</span>: <span class="dv">10</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"axes.spines.top"</span>: <span class="va">False</span>, <span class="st">"axes.spines.right"</span>: <span class="va">False</span>})</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>WORK <span class="op">=</span> tempfile.mkdtemp(prefix<span class="op">=</span><span class="st">"tspaint_showcase_"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pops(ts):</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''sample-node -&gt; source name, and a {name: pop_id} lookup.'''</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    npop <span class="op">=</span> ts.tables.nodes.population</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> {p: ts.population(p).metadata.get(<span class="st">"name"</span>, <span class="bu">str</span>(p)) <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">range</span>(ts.num_populations)}</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    pid <span class="op">=</span> {n: p <span class="cf">for</span> p, n <span class="kw">in</span> name.items()}</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    samples_of <span class="op">=</span> <span class="kw">lambda</span> nm: [<span class="bu">int</span>(s) <span class="cf">for</span> s <span class="kw">in</span> ts.samples() <span class="cf">if</span> npop[s] <span class="op">==</span> pid[nm]]</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> name, pid, samples_of</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> write_vcz(ts, path):</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''Write a minimal VCF-Zarr (vcz) store from a mutated ts (stand-in for vcf2zarr output).'''</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> zarr</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    G <span class="op">=</span> ts.genotype_matrix()                       <span class="co"># (sites, samples), biallelic 0/1</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    V, N <span class="op">=</span> G.shape</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    root <span class="op">=</span> zarr.<span class="bu">open</span>(path, mode<span class="op">=</span><span class="st">"w"</span>)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> arr(nm, data, dims):</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        root[nm] <span class="op">=</span> data</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        root[nm].attrs[<span class="st">"_ARRAY_DIMENSIONS"</span>] <span class="op">=</span> dims</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_position"</span>, np.asarray(ts.tables.sites.position).astype(<span class="st">"i8"</span>), [<span class="st">"variants"</span>])</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"call_genotype"</span>, G[:, :, <span class="va">None</span>].astype(<span class="st">"i1"</span>), [<span class="st">"variants"</span>, <span class="st">"samples"</span>, <span class="st">"ploidy"</span>])</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_allele"</span>, np.array([[<span class="st">"0"</span>, <span class="st">"1"</span>]] <span class="op">*</span> V), [<span class="st">"variants"</span>, <span class="st">"alleles"</span>])</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_contig"</span>, np.zeros(V, <span class="st">"i4"</span>), [<span class="st">"variants"</span>])</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"contig_id"</span>, np.array([<span class="st">"1"</span>]), [<span class="st">"contigs"</span>])</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"sample_id"</span>, np.array([<span class="ss">f"n</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N)]), [<span class="st">"samples"</span>])</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_ancestral_allele"</span>, np.array([<span class="st">"0"</span>] <span class="op">*</span> V), [<span class="st">"variants"</span>])</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> path</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> track_xy(track, state):</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''Step coordinates (x, P(state)) for a list of soft Segments.'''</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    xs, ys <span class="op">=</span> [], []</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> seg <span class="kw">in</span> track:</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>        xs <span class="op">+=</span> [seg.left, seg.right]</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>        ys <span class="op">+=</span> [<span class="bu">float</span>(seg.posterior[state])] <span class="op">*</span> <span class="dv">2</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.asarray(xs), np.asarray(ys)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_painting(ax, tracks, truth_segs, L, title, state<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''Shade the true `state` (B) tracts; overlay each painter's P(state=B).'''</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, r, st) <span class="kw">in</span> truth_segs:</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> st <span class="op">==</span> state:</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>            ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, color<span class="op">=</span><span class="st">"0.85"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> label, track <span class="kw">in</span> tracks.items():</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>        xs, ys <span class="op">=</span> track_xy(track, state)</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>        ax.plot(xs <span class="op">/</span> <span class="fl">1e3</span>, ys, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span>label)</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>    ax.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.02</span>, <span class="fl">1.02</span>), xlim<span class="op">=</span>(<span class="dv">0</span>, L <span class="op">/</span> <span class="fl">1e3</span>), title<span class="op">=</span>title,</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>           xlabel<span class="op">=</span><span class="st">"position (kb)"</span>, ylabel<span class="op">=</span><span class="st">"P(ancestry = B)"</span>)</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    ax.axhline(<span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"0.6"</span>, lw<span class="op">=</span><span class="fl">0.6</span>, ls<span class="op">=</span><span class="st">":"</span>)</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="from-genotypes-to-a-tree-sequence" class="level2">
+<h2 class="anchored" data-anchor-id="from-genotypes-to-a-tree-sequence">1. From genotypes to a tree sequence</h2>
+<p>Real input is genotypes — a phased <strong>VCF</strong> or, at scale, a chunked <strong>VCF-Zarr</strong>. <code>tspaint</code> never asks you to build the tree sequence by hand: the two inference front ends take any of the three sources through one interface (<code>source</code> = a tree sequence, a <code>.vcf[.gz]</code>, or a <code>.zarr</code> store) and hand back a tspaint-ready tree sequence.</p>
+<p>Here we <em>simulate</em> an admixed cohort so we know the truth — 8 admixed individuals (the queries) plus pure <code>A</code> and <code>B</code> reference panels — overlay mutations, and write it out as a VCF (and a VCF-Zarr) exactly as if it had come off a sequencing pipeline.</p>
+<div id="d5089287" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:43:52.885810Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:43:52.885583Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:43:53.142025Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:43:53.141318Z&quot;}}" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate a deliberately data-sparse cohort: a moderate-age pulse on a short region, so the</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># point-estimate ARG is imperfect and there is something for a better ARG to improve on.</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>SEQLEN <span class="op">=</span> <span class="fl">7e4</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>ts_true <span class="op">=</span> tspaint.simulate_admixture(n_admix<span class="op">=</span><span class="dv">8</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span>SEQLEN,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                                     recombination_rate<span class="op">=</span><span class="fl">1e-8</span>, random_seed<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                                     Ne<span class="op">=</span><span class="dv">1000</span>, T_admix<span class="op">=</span><span class="dv">500</span>, T_split<span class="op">=</span><span class="dv">5000</span>, f_A<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>ts_true <span class="op">=</span> io.add_mutations(ts_true, rate<span class="op">=</span><span class="fl">5e-8</span>, random_seed<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>name, pid, samples_of <span class="op">=</span> pops(ts_true)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>queries <span class="op">=</span> samples_of(<span class="st">"ADMIX"</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>labels  <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(<span class="st">"A"</span>)}</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>labels.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(<span class="st">"B"</span>)})</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>ts_true<span class="sc">.</span>num_samples<span class="sc">}</span><span class="ss"> haplotypes, </span><span class="sc">{</span>ts_true<span class="sc">.</span>num_sites<span class="sc">}</span><span class="ss"> sites; "</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span><span class="bu">len</span>(queries)<span class="sc">}</span><span class="ss"> query haplotypes, </span><span class="sc">{</span><span class="bu">len</span>(labels)<span class="sc">}</span><span class="ss"> labelled references (A=0, B=1)"</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Write the genotypes as a VCF and as a VCF-Zarr (what you would actually start from).</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>vcf <span class="op">=</span> os.path.join(WORK, <span class="st">"cohort.vcf"</span>)<span class="op">;</span> io.write_haploid_vcf(ts_true, vcf)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>vcz <span class="op">=</span> write_vcz(ts_true, os.path.join(WORK, <span class="st">"cohort.vcz"</span>))</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># One interface, three source kinds -- dispatched automatically:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.io_genotypes <span class="im">import</span> source_kind</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"source_kind:"</span>, {k: source_kind(v) <span class="cf">for</span> k, v <span class="kw">in</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>                        {<span class="st">"tree sequence"</span>: ts_true, <span class="st">"VCF"</span>: vcf, <span class="st">"VCF-Zarr"</span>: vcz}.items()})</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Ground truth (from the census event) for scoring later.</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>truth, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_true)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>state_of_pop <span class="op">=</span> {pid[<span class="st">"A"</span>]: <span class="dv">0</span>, pid[<span class="st">"B"</span>]: <span class="dv">1</span>}</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>truth_states <span class="op">=</span> map_truth({q: truth[q] <span class="cf">for</span> q <span class="kw">in</span> queries}, state_of_pop)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>48 haplotypes, 123 sites; 16 query haplotypes, 32 labelled references (A=0, B=1)
+source_kind: {'tree sequence': 'ts', 'VCF': 'vcf', 'VCF-Zarr': 'zarr'}</code></pre>
+</div>
+</div>
+</section>
+<section id="paint-with-tsinfer-and-with-singer-and-compare" class="level2">
+<h2 class="anchored" data-anchor-id="paint-with-tsinfer-and-with-singer-and-compare">2. Paint with tsinfer and with SINGER, and compare</h2>
+<p><code>tspaint.io.tsinfer</code> builds a single best-guess ARG; <code>tspaint.io.singer</code> runs SINGER’s MCMC and returns a <strong>list of posterior ARG samples</strong>. Both accept the same <code>source</code> — we hand both the VCF we just wrote. (<code>io.tsinfer(vcz)</code> would read the Zarr chunked via <code>tsinfer.VariantData</code>, the scalable path for whole-genome data.)</p>
+<p>We then <code>paint</code> each. On an inferred ARG we enable <code>smooth=True</code> (the genome-axis BP smoother) to suppress switches that are artifacts of tree-inference noise.</p>
+<div id="650cbdaf" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:43:53.144294Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:43:53.143814Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:43:58.709463Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:43:58.708721Z&quot;}}" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Same VCF source -&gt; two different ARGs.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ts_tsi   <span class="op">=</span> io.tsinfer(vcf)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>ensemble <span class="op">=</span> io.singer(vcf, Ne<span class="op">=</span><span class="dv">1000</span>, mutation_rate<span class="op">=</span><span class="fl">5e-8</span>, recombination_rate<span class="op">=</span><span class="fl">1e-8</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                     n_samples<span class="op">=</span><span class="dv">14</span>, thin<span class="op">=</span><span class="dv">8</span>, burn_in<span class="op">=</span><span class="dv">4</span>, seed<span class="op">=</span><span class="dv">42</span>, sequence_length<span class="op">=</span>SEQLEN)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"tsinfer: </span><span class="sc">{</span>ts_tsi<span class="sc">.</span>num_trees<span class="sc">}</span><span class="ss"> trees    SINGER: </span><span class="sc">{</span><span class="bu">len</span>(ensemble)<span class="sc">}</span><span class="ss"> posterior ARGs "</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(</span><span class="sc">{</span>ensemble[<span class="dv">0</span>]<span class="sc">.</span>num_trees<span class="sc">}</span><span class="ss"> trees in the first)"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Paint the queries from each (smooth=True: these are inferred ARGs).</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>paint_tsi  <span class="op">=</span> tspaint.paint(ts_tsi,      labels, queries, smooth<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>paint_sing <span class="op">=</span> tspaint.paint(ensemble[<span class="dv">0</span>], labels, queries, smooth<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> tag, p <span class="kw">in</span> [(<span class="st">"tsinfer (point estimate)"</span>, paint_tsi), (<span class="st">"SINGER (one posterior sample)"</span>, paint_sing)]:</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    bal  <span class="op">=</span> balanced_accuracy(p.posteriors, truth_states, samples<span class="op">=</span>queries)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    conf <span class="op">=</span> mean_confidence(p.posteriors, samples<span class="op">=</span>queries)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>tag<span class="sc">:32s}</span><span class="ss">  balanced acc </span><span class="sc">{</span>bal<span class="sc">:.3f}</span><span class="ss">   mean confidence </span><span class="sc">{</span>conf<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>tsinfer: 9 trees    SINGER: 10 posterior ARGs (26 trees in the first)
+tsinfer (point estimate)          balanced acc 0.950   mean confidence 0.979
+SINGER (one posterior sample)     balanced acc 0.998   mean confidence 0.998</code></pre>
+</div>
+</div>
+<p>Plotting the most ancestry-mixed query against the shaded truth makes the gap concrete. In the true <code>B</code> tract (grey), <strong>SINGER</strong> jumps cleanly to <code>P(B) ≈ 1</code>, while the <strong>tsinfer</strong> point estimate only edges up to ≈0.15 — it under-calls the very tract SINGER resolves. That one mis-resolved tract <em>is</em> the 0.95-vs-0.998 difference made visible; on a better-sampled region the two converge.</p>
+<div id="3cf744da" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:43:58.711387Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:43:58.711260Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:43:58.866610Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:43:58.848762Z&quot;}}" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show the most ancestry-balanced query -- a real A-&gt;B switch is the interesting case to look at</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>bfrac <span class="op">=</span> <span class="kw">lambda</span> segs: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, st <span class="kw">in</span> segs <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>) <span class="op">/</span> <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, _ <span class="kw">in</span> segs)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> <span class="bu">max</span>(queries, key<span class="op">=</span><span class="kw">lambda</span> x: <span class="bu">min</span>(bfrac(truth_states[x]), <span class="dv">1</span> <span class="op">-</span> bfrac(truth_states[x])))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>plot_painting(ax, {<span class="st">"tsinfer"</span>: paint_tsi.posteriors[q], <span class="st">"SINGER"</span>: paint_sing.posteriors[q]},</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>              truth_states[q], SEQLEN, <span class="ss">f"Query haplotype </span><span class="sc">{</span>q<span class="sc">}</span><span class="ss">: painted P(B) vs. true B tracts (grey)"</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-5-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="showcase_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="singers-posterior-gives-a-calibrated-uncertainty-band" class="level3">
+<h3 class="anchored" data-anchor-id="singers-posterior-gives-a-calibrated-uncertainty-band">SINGER’s posterior gives a calibrated uncertainty band</h3>
+<p>A single ARG cannot tell you how much to trust itself. Averaging the per-position posteriors across SINGER’s posterior samples marginalises <em>which ARG</em> — the binding uncertainty on real data — and the spread across samples is an <strong>ARG-uncertainty band</strong> (<code>tspaint.ensemble.merge_posterior_tables</code>). The θ fit is pooled across the ensemble in one EM.</p>
+<div id="08e299c5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:43:58.882534Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:43:58.882307Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:44:08.730794Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:44:08.729370Z&quot;}}" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.em <span class="im">import</span> fit, build_emissions</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.output <span class="im">import</span> posterior_table</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.ensemble <span class="im">import</span> merge_posterior_tables</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>res <span class="op">=</span> fit(ensemble, [labels] <span class="op">*</span> <span class="bu">len</span>(ensemble), K<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>          Q0<span class="op">=</span>tspaint.make_generator_2state(<span class="fl">1e-3</span>, <span class="fl">1e-3</span>), max_iter<span class="op">=</span><span class="dv">6</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>tables <span class="op">=</span> [posterior_table(g, res.Q, res.pi, build_emissions(g, labels, res.w, res.pi),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                          focal<span class="op">=</span>queries) <span class="cf">for</span> g <span class="kw">in</span> ensemble]</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>merged <span class="op">=</span> merge_posterior_tables(tables)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"merged over </span><span class="sc">{</span><span class="bu">len</span>(ensemble)<span class="sc">}</span><span class="ss"> SINGER ARGs:  balanced acc "</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span>balanced_accuracy(merged, truth_states, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"mean confidence </span><span class="sc">{</span>mean_confidence(merged, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the mean painting +/- 1 sd across the ensemble for one query.</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>seg <span class="op">=</span> merged[q]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>xs <span class="op">=</span> np.array([x <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> x <span class="kw">in</span> (s.left, s.right)]) <span class="op">/</span> <span class="fl">1e3</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>mu <span class="op">=</span> np.array([s.posterior[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>sd <span class="op">=</span> np.array([s.posterior_std[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r, st) <span class="kw">in</span> truth_states[q]:</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>: ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, color<span class="op">=</span><span class="st">"0.85"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>ax.fill_between(xs, np.clip(mu <span class="op">-</span> sd, <span class="dv">0</span>, <span class="dv">1</span>), np.clip(mu <span class="op">+</span> sd, <span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"C1"</span>, alpha<span class="op">=</span><span class="fl">0.30</span>, label<span class="op">=</span><span class="st">"±1 sd across ARGs"</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>ax.plot(xs, mu, color<span class="op">=</span><span class="st">"C1"</span>, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"ensemble-mean P(B)"</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.02</span>, <span class="fl">1.02</span>), xlim<span class="op">=</span>(<span class="dv">0</span>, SEQLEN <span class="op">/</span> <span class="fl">1e3</span>),</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>q<span class="sc">}</span><span class="ss">: SINGER ensemble mean painting with ARG-uncertainty band"</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>       xlabel<span class="op">=</span><span class="st">"position (kb)"</span>, ylabel<span class="op">=</span><span class="st">"P(ancestry = B)"</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>merged over 10 SINGER ARGs:  balanced acc 0.998   mean confidence 0.755</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-6-output-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="showcase_files/figure-html/cell-6-output-2.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Where the SINGER samples agree the band is tight (this query is confidently painted); it widens wherever they disagree — calibrated honesty a single ARG (or an overconfident segment method) does not provide. Averaging buys <em>calibration</em> rather than raw accuracy: a single SINGER sample is already near the ceiling here, and on some seeds averaging-then-argmax even dilutes a confidently-correct call. The number of SINGER samples is therefore a knob you spend on <strong>uncertainty quantification</strong>, not on accuracy.</p>
+<blockquote class="blockquote">
+<p><strong>Honest caveat.</strong> Both methods are bounded by the genealogy, not by their own cleverness. On an unlucky region where the admixed haplotypes coalesce among themselves before the pulse, the query↔︎reference link is severed and <em>both</em> paintings fall to ~0.5 — the ancestry simply is not recoverable there (CLAUDE.md §9). The painting’s job is to report that as <code>P ≈ 0.5</code>, not to guess.</p>
+</blockquote>
+</section>
+</section>
+<section id="audit-the-reference-panel-reference-qc" class="level2">
+<h2 class="anchored" data-anchor-id="audit-the-reference-panel-reference-qc">3. Audit the reference panel (reference QC)</h2>
+<p>Painting trusts the labels on the reference panel. Real panels are imperfect — some “reference” individuals are themselves admixed or mislabelled. <code>tspaint.reference_qc</code> audits the panel <em>from the genealogy</em>: it reads each reference’s <strong>leave-one-out</strong> posterior (what the rest of the tree says about it, ignoring its own label), ranks references by <strong>credibility</strong>, and maps each one’s own foreign tracts.</p>
+<p>We simulate a panel where two nominal <code>A</code>/<code>B</code> sub-panels carry a 30% minority of foreign ancestry, mixed in with pure anchors.</p>
+<div id="c05ee61f" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:44:08.737515Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:44:08.737281Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:45:07.322871Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:45:07.321600Z&quot;}}" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ts_qc <span class="op">=</span> tspaint.sim.simulate_admixture_impure_refs(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    n_admix<span class="op">=</span><span class="dv">2</span>, n_pure<span class="op">=</span><span class="dv">8</span>, n_impure<span class="op">=</span><span class="dv">4</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    ref_impurity<span class="op">=</span><span class="fl">0.3</span>, Ne<span class="op">=</span><span class="dv">1000</span>, T_admix<span class="op">=</span><span class="dv">150</span>, T_split<span class="op">=</span><span class="dv">5000</span>, random_seed<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>name_qc, pid_qc, of_qc <span class="op">=</span> pops(ts_qc)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>labels_qc <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"RA"</span>)}        <span class="co"># RA/RB: impure panels, nominally A/B</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>labels_qc.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"B"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>)})</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>pure   <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"B"</span>))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>impure <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"RA"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>))</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts_qc, labels_qc)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>cred <span class="op">=</span> qc.credibility</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"pure-anchor credibility  : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> pure])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"impure-panel credibility : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> impure])<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(lower = the genealogy disagrees with the label)"</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">least-credible references (the audit surfaces the impure panels first):"</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row <span class="kw">in</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[:<span class="dv">6</span>]:</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    tag <span class="op">=</span> <span class="st">"impure"</span> <span class="cf">if</span> row[<span class="st">"ref"</span>] <span class="kw">in</span> impure <span class="cf">else</span> <span class="st">"pure  "</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  ref </span><span class="sc">{</span>row[<span class="st">'ref'</span>]<span class="sc">:&gt;3}</span><span class="ss"> [</span><span class="sc">{</span>tag<span class="sc">}</span><span class="ss">]  label </span><span class="sc">{</span>row[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">  "</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"credibility </span><span class="sc">{</span>row[<span class="st">'credibility'</span>]<span class="sc">:.2f}</span><span class="ss">  foreign_fraction </span><span class="sc">{</span>row[<span class="st">'foreign_fraction'</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>pure-anchor credibility  : mean 0.938
+impure-panel credibility : mean 0.705   (lower = the genealogy disagrees with the label)
+
+least-credible references (the audit surfaces the impure panels first):
+  ref  51 [impure]  label 1  credibility 0.20  foreign_fraction 0.91
+  ref  39 [impure]  label 0  credibility 0.39  foreign_fraction 0.60
+  ref  38 [impure]  label 0  credibility 0.45  foreign_fraction 0.58
+  ref  48 [impure]  label 1  credibility 0.46  foreign_fraction 0.59
+  ref  37 [impure]  label 0  credibility 0.55  foreign_fraction 0.38
+  ref  36 [impure]  label 0  credibility 0.57  foreign_fraction 0.43</code></pre>
+</div>
+</div>
+<p>The impure references float to the top of the audit (lowest credibility). For any flagged reference, its <strong>introgression map</strong> — the leave-one-out posterior — recovers <em>where</em> on the genome it is foreign, which we can check against the census truth.</p>
+<div id="15065cd8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:45:07.331358Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:45:07.331088Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:45:07.453386Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:45:07.452387Z&quot;}}" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[<span class="dv">0</span>][<span class="st">"ref"</span>]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>lab <span class="op">=</span> labels_qc[suspect]</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.3</span>)             <span class="co"># (left, right, foreign_state)</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>truth_qc, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_qc)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>s_of <span class="op">=</span> {pid_qc[<span class="st">"A"</span>]: <span class="dv">0</span>, pid_qc[<span class="st">"B"</span>]: <span class="dv">1</span>}</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>true_foreign <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_qc[suspect] <span class="cf">if</span> s_of.get(p, lab) <span class="op">!=</span> lab]</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"suspect reference </span><span class="sc">{</span>suspect<span class="sc">}</span><span class="ss"> (nominal label </span><span class="sc">{</span>lab<span class="sc">}</span><span class="ss">):"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  flagged foreign tracts : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r, _ <span class="kw">in</span> flagged]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  true foreign tracts    : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r <span class="kw">in</span> true_foreign]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>suspect reference 51 (nominal label 1):
+  flagged foreign tracts : [(83207, 1030583), (1121687, 2000000)]
+  true foreign tracts    : [(83207, 2000000)]</code></pre>
+</div>
+</div>
+<p>The flagged span lands on the true foreign tract. The auto-bootstrap assumes the <strong>clean references are the majority</strong> (it picks the most self-consistent half as a trusted anchor core); when you already know which individuals are clean, pass them as <code>anchors=...</code>.</p>
+</section>
+<section id="detect-admixture-from-a-source-that-is-not-in-the-panel" class="level2">
+<h2 class="anchored" data-anchor-id="detect-admixture-from-a-source-that-is-not-in-the-panel">4. Detect admixture from a source that is <em>not in the panel</em></h2>
+<p>The hardest case: some of the admixture comes from a population you never sampled — an archaic “ghost”. It cannot match any reference, but it also is not merely <em>ambiguous</em>: a ghost tract sits on an anomalously <strong>deep</strong> branch relative to every labelled reference. <code>tspaint.detect_ghost</code> keys on exactly that conjunction (fits no panel source <strong>and</strong> deep), so it separates a genuine unsampled source from an ordinary uninformative region.</p>
+<p>We simulate admixed queries drawing 25% from an unsampled deep-outgroup ghost, plus a matched <strong>no-ghost control</strong>, and compare the genome-wide ghost <strong>burden</strong>.</p>
+<div id="b63e633e" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:45:07.457240Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:45:07.457085Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:46:03.835489Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:46:03.834717Z&quot;}}" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ghost_cohort(ghost_fraction, seed<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> tspaint.sim.simulate_admixture_with_ghost(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span><span class="dv">12</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span><span class="dv">100</span>, T_split_AB<span class="op">=</span><span class="dv">2000</span>, T_split_ABC<span class="op">=</span><span class="dv">20000</span>, Ne<span class="op">=</span><span class="dv">1000</span>, random_seed<span class="op">=</span>seed)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    nm, pd, of <span class="op">=</span> pops(ts)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> of(<span class="st">"ADMIX"</span>)<span class="op">;</span> lab <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"A"</span>)}<span class="op">;</span> lab.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"B"</span>)})</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ts, pd, q, lab</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>ts_g, pid_g, q_g, lab_g <span class="op">=</span> ghost_cohort(<span class="fl">0.25</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>ts_c, pid_c, q_c, lab_c <span class="op">=</span> ghost_cohort(<span class="fl">0.00</span>)        <span class="co"># matched no-ghost control</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>gh   <span class="op">=</span> tspaint.detect_ghost(ts_g, lab_g, q_g)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>ctrl <span class="op">=</span> tspaint.detect_ghost(ts_c, lab_c, q_c)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>b_ghost <span class="op">=</span> <span class="bu">float</span>(np.mean([gh.burden[x]   <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>b_ctrl  <span class="op">=</span> <span class="bu">float</span>(np.mean([ctrl.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_c]))</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"mean ghost burden  : 25% ghost cohort </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"no-ghost control </span><span class="sc">{</span>b_ctrl<span class="sc">:.3f}</span><span class="ss">   (</span><span class="sc">{</span>b_ghost <span class="op">/</span> <span class="bu">max</span>(b_ctrl, <span class="fl">1e-6</span>)<span class="sc">:.0f}</span><span class="ss">x separation)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>mean ghost burden  : 25% ghost cohort 0.101   no-ghost control 0.010   (10x separation)</code></pre>
+</div>
+</div>
+<p>The burden separates the ghost cohort from the control roughly ten-fold — a clean genome-wide alarm. We can also localise it: shading one query’s true ghost tracts and overlaying the detected ones.</p>
+<div id="41dc1ef3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:46:03.846093Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:46:03.845860Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:46:03.931278Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:46:03.930664Z&quot;}}" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>truth_g, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_g)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>GHOST <span class="op">=</span> pid_g[<span class="st">"GHOST"</span>]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># show a query with a genuine mix of ghost and non-ghost ancestry (recall *and* specificity)</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>ghost_frac <span class="op">=</span> <span class="kw">lambda</span> s: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[s] <span class="cf">if</span> p <span class="op">==</span> GHOST) <span class="op">/</span> ts_g.sequence_length</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="bu">min</span>(q_g, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">abs</span>(ghost_frac(s) <span class="op">-</span> <span class="fl">0.5</span>))</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>true_ghost <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST]</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>det_ghost  <span class="op">=</span> gh.tracts(x)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">1.7</span>))</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost:</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, ymin<span class="op">=</span><span class="fl">0.55</span>, ymax<span class="op">=</span><span class="fl">1.0</span>, color<span class="op">=</span><span class="st">"0.8"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> det_ghost:</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, ymin<span class="op">=</span><span class="fl">0.0</span>, ymax<span class="op">=</span><span class="fl">0.45</span>, color<span class="op">=</span><span class="st">"C3"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(xlim<span class="op">=</span>(<span class="dv">0</span>, ts_g.sequence_length <span class="op">/</span> <span class="fl">1e3</span>), ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">1</span>), yticks<span class="op">=</span>[<span class="fl">0.22</span>, <span class="fl">0.78</span>],</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>       yticklabels<span class="op">=</span>[<span class="st">"detected"</span>, <span class="st">"true ghost"</span>], xlabel<span class="op">=</span><span class="st">"position (kb)"</span>,</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">: detected ghost tracts vs. true ghost ancestry"</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-10-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="showcase_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="with-no-reference-at-all-detect_archaic" class="level3">
+<h3 class="anchored" data-anchor-id="with-no-reference-at-all-detect_archaic">With no reference at all: <code>detect_archaic</code></h3>
+<p><code>detect_ghost</code> still needs the <code>A</code>/<code>B</code> panel to define “deep”. When you have <strong>no archaic reference whatsoever</strong>, <code>tspaint.detect_archaic</code> fits a genome-axis HMM on each haplotype’s nearest-reference coalescence depth, <em>learning</em> the archaic state above the panel’s deepest coalescence. It recovers the genome-wide burden more faithfully than the fixed-quantile flag above.</p>
+<div id="de7a3ae9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-26T22:46:03.933458Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-26T22:46:03.933333Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-26T22:46:04.527415Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-26T22:46:04.526796Z&quot;}}" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>arch <span class="op">=</span> tspaint.detect_archaic(ts_g, lab_g, q_g)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>true_burden <span class="op">=</span> <span class="bu">float</span>(np.mean([<span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                             <span class="op">/</span> ts_g.sequence_length <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"true ghost burden            : </span><span class="sc">{</span>true_burden<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_archaic (no ref)      : </span><span class="sc">{</span>np<span class="sc">.</span>mean([arch.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_g])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_ghost   (panel-deep)  : </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>true ghost burden            : 0.173
+detect_archaic (no ref)      : 0.173
+detect_ghost   (panel-deep)  : 0.101</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="recap" class="level2">
+<h2 class="anchored" data-anchor-id="recap">Recap</h2>
+<p>One toolkit, one progression:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 23%">
+<col style="width: 53%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Call</th>
+<th>What you get</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Genotypes → ARG</td>
+<td><code>io.tsinfer</code> / <code>io.singer</code> (VCF / Zarr / ts)</td>
+<td>a tspaint-ready tree sequence (or a posterior ensemble)</td>
+</tr>
+<tr class="even">
+<td>Paint &amp; compare</td>
+<td><code>paint(ts, labels, smooth=True)</code></td>
+<td>calibrated soft <code>P(ancestry)</code> per haplotype per position</td>
+</tr>
+<tr class="odd">
+<td>Quantify ARG uncertainty</td>
+<td><code>ensemble.merge_posterior_tables</code></td>
+<td>ensemble-mean painting <strong>+ uncertainty band</strong></td>
+</tr>
+<tr class="even">
+<td>Trust the panel</td>
+<td><code>reference_qc</code></td>
+<td>per-reference credibility + introgression maps</td>
+</tr>
+<tr class="odd">
+<td>Hidden source (panel-relative)</td>
+<td><code>detect_ghost</code></td>
+<td>foreign-to-panel tracts + genome-wide burden</td>
+</tr>
+<tr class="even">
+<td>Hidden source (reference-free)</td>
+<td><code>detect_archaic</code></td>
+<td>deep archaic tracts with no archaic reference</td>
+</tr>
+</tbody>
+</table>
+<p>The throughline is <strong>calibration</strong>: every output is a soft, honest posterior, so where the genealogy cannot decide you get <code>P ≈ 0.5</code> and a wide band rather than a confident mistake — and the same leave-one-out machinery that paints queries audits references and surfaces sources that are not in the panel at all.</p>
+<p><strong>See also</strong> — the focused notebooks: <em>painting</em> (accuracy vs.&nbsp;admixture age), <em>calibration</em> (reliability diagrams), <em>fragmentation</em> (the dead-band for tract-length / dating), <em>bp_smoother</em> (the §7 horizontal smoother), <em>dating</em> (admixture rate through time), and <em>introgression_qc</em> (the QC / ghost workflows in depth). Full signatures are in the <a href="../api/">API reference</a>.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/munch-group\.github\.io\/tspaint\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../pages/code_paths.html" class="pagination-link" aria-label="Code organization and data flow">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Code organization and data flow</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../notebooks/painting.html" class="pagination-link" aria-label="Haplotype painting">
+        <span class="nav-page-text">Haplotype painting</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>

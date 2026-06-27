@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>Admixture dating: cross-ancestry rate through time – tspaint</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -65,19 +68,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../pages/results.html" rel="next">
+<link href="../notebooks/introgression_qc.html" rel="next">
 <link href="../notebooks/bp_smoother.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-1c33c0780a01951c1c2d77b4a45239a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
 <link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
 <link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
@@ -161,7 +163,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/painting.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/dating.html">Admixture dating: cross-ancestry rate through time</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/dating.html">Admixture dating: cross-ancestry rate through time</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -231,6 +233,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../notebooks/showcase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Haplotype painting</span></a>
   </div>
@@ -257,6 +265,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/introgression_qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reference QC, foreign tracts &amp; ghost detection</span></a>
   </div>
 </li>
       </ul>
@@ -289,7 +303,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/painting.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/dating.html">Admixture dating: cross-ancestry rate through time</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/dating.html">Admixture dating: cross-ancestry rate through time</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Admixture dating: cross-ancestry rate through time</h1>
 </div>
@@ -311,7 +325,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="admixture-dating-cross-ancestry-rate-through-time" class="level1">
 <h1>Admixture dating: cross-ancestry rate through time</h1>
 <p>A <strong>separate, optional deliverable</strong> from painting. Making the ancestry CTMC <em>time-inhomogeneous</em> and fitting the cross-ancestry transition rate as a function of (backward) time gives a profile <code>q_AB(t)</code>, <code>q_BA(t)</code> that locates <strong>when</strong> the two labelled ancestries diverged or exchanged genes — directionally. It rides the same EM engine (<a href="../api/fit_rate_through_time.html"><code>fit_rate_through_time</code></a>) and can reuse a <code>paint</code> fit via <code>Painting.rate_through_time()</code>, leaving the painting itself untouched.</p>
-<div id="c20cef8d" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:05.765280Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:05.765056Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:07.541842Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:07.541364Z&quot;}}" data-execution_count="1">
+<div id="c20cef8d" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:05.765280Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:05.765056Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:07.541842Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:07.541364Z&quot;}}" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> cm, colors</span>
@@ -375,14 +389,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="paint-then-date-reusing-the-fit" class="level2">
 <h2 class="anchored" data-anchor-id="paint-then-date-reusing-the-fit">Paint, then date — reusing the fit</h2>
 <p>A clean split at <code>T_split</code>: the cross-ancestry rate must be ~0 more recently than the split (the two ancestries cannot share ancestry yet) and rise once <code>t</code> exceeds it. <code>Painting.rate_through_time()</code> warm-starts from the painting’s fitted <code>(Q, π, w)</code> and returns a <strong>new</strong> profile — <code>painting.posteriors</code> is not modified.</p>
-<div id="78464379" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:07.543539Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:07.543381Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:37.351266Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:37.350864Z&quot;}}" data-execution_count="2">
+<div id="78464379" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:07.543539Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:07.543381Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:37.351266Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:37.350864Z&quot;}}" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>T_split <span class="op">=</span> <span class="dv">3000</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ts, labels, queries, truth <span class="op">=</span> admixture(n_admix<span class="op">=</span><span class="dv">6</span>, n_ref<span class="op">=</span><span class="dv">8</span>, L<span class="op">=</span><span class="fl">5e5</span>, T_admix<span class="op">=</span><span class="dv">200</span>, T_split<span class="op">=</span>T_split,</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                                       Ne<span class="op">=</span><span class="dv">1000</span>, seed<span class="op">=</span><span class="dv">1</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>painting <span class="op">=</span> tspaint.paint(ts, labels)</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>rtt <span class="op">=</span> painting.rate_through_time(n_iter<span class="op">=</span><span class="dv">10</span>)     <span class="co"># reuses the painting's fit; posteriors untouched</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>rtt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="2">
+<div class="cell-output cell-output-display" data-execution_count="3">
 <pre><code>RateThroughTime(centers=array([  12.66799536,   15.02422958,   17.81872097,   21.1329849 ,
          25.06369855,   29.72552093,   35.25443752,   41.81172697,
          49.58866556,   58.8121068 ,   69.75109871,   82.72473197,
@@ -574,14 +588,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-profile" class="level2">
 <h2 class="anchored" data-anchor-id="the-profile">The profile</h2>
 <p><code>q_AB(t)</code> and <code>q_BA(t)</code> vs (backward) time on a log axis. The rise marks the divergence epoch; recent time carries ~no cross-ancestry rate. (Convention: a jump is parent→child = old→young = forward in time, so a <em>backward</em>-time A→B admixture shows in <code>q_BA</code>.)</p>
-<div id="cell-fig-dating-profile" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:37.352913Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:37.352797Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:37.577483Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:37.576982Z&quot;}}" data-execution_count="3">
+<div id="cell-fig-dating-profile" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-25T17:52:37.352913Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-25T17:52:37.352797Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-25T17:52:37.577483Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-25T17:52:37.576982Z&quot;}}" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.2</span>, <span class="dv">4</span>))</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>rtt.plot(ax<span class="op">=</span>ax)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>ax.axvline(T_split, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="ss">f"true split (</span><span class="sc">{</span>T_split<span class="sc">}</span><span class="ss">)"</span>)</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Cross-ancestry rate through time"</span>)<span class="op">;</span> ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)<span class="op">;</span> fig.tight_layout()</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>fig.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>/var/folders/s6/srs8qkh52w1_h32d65z95tth0000gn/T/ipykernel_27056/1392532580.py:7: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown
+<pre><code>/var/folders/s6/srs8qkh52w1_h32d65z95tth0000gn/T/ipykernel_98776/1392532580.py:7: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown
   fig.show()</code></pre>
 </div>
 <div class="cell-output cell-output-display">
@@ -688,7 +702,7 @@ Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs b
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/munch-group\.github\.io\/tspaint\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -1022,8 +1036,8 @@ Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs b
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../pages/results.html" class="pagination-link" aria-label="Results">
-        <span class="nav-page-text">Results</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../notebooks/introgression_qc.html" class="pagination-link" aria-label="Reference QC, foreign tracts &amp; ghost detection">
+        <span class="nav-page-text">Reference QC, foreign tracts &amp; ghost detection</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>Code organization and data flow – tspaint</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -65,19 +68,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../notebooks/painting.html" rel="next">
+<link href="../notebooks/showcase.html" rel="next">
 <link href="../pages/assumptions.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-1c33c0780a01951c1c2d77b4a45239a1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -232,6 +234,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../notebooks/showcase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Haplotype painting</span></a>
   </div>
@@ -258,6 +266,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/introgression_qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reference QC, foreign tracts &amp; ghost detection</span></a>
   </div>
 </li>
       </ul>
@@ -438,7 +452,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="walkthrough" class="level3">
 <h3 class="anchored" data-anchor-id="walkthrough">Walkthrough</h3>
-<p><strong>0. Get a tree sequence.</strong> <code>tspaint</code> paints <em>any</em> <code>tskit.TreeSequence</code> whose nodes keep stable IDs across marginal trees (§5). The <a href="../api/io.infer_tree_sequence.html"><code>tspaint.io</code></a> namespace gathers the supported ways to obtain one from genotypes; a true/simulated ARG works directly.</p>
+<p><strong>0. Get a tree sequence.</strong> <code>tspaint</code> paints <em>any</em> <code>tskit.TreeSequence</code> whose nodes keep stable IDs across marginal trees (§5). The <a href="../api/io.infer_tree_sequence.qmd"><code>tspaint.io</code></a> namespace gathers the supported ways to obtain one from genotypes; a true/simulated ARG works directly.</p>
 <p><strong>1. Emissions (§2.2).</strong> <a href="../api/em.build_emissions.html"><code>build_emissions</code></a> (in <code>em.py</code>) turns the labels into per-sample Felsenstein emission vectors. A labelled reference tip <code>i</code> gets the <strong>soft clamp</strong> <code>w_i · 1[label] + (1 − w_i) · π</code> (anchors default to <code>w = 1</code>, a hard clamp); every other sample gets the <strong>query</strong> emission <code>π</code> (flat / root-frequency). This is rebuilt each EM iteration because <code>w</code> and <code>π</code> move.</p>
 <p><strong>2. E-step: pruning, per tree, per root (§3.1).</strong> <a href="../api/pruning.prune_tree.html"><code>pruning.py</code></a> runs exact two-pass sum-product message passing on each marginal tree. The up-pass (post-order) accumulates partial likelihoods <code>L_u(s)</code> as a product over <strong>all</strong> children (polytomy-safe); the down-pass (pre-order) yields the posterior marginal <code>γ_u</code>, the joint parent–child posterior <code>ξ_{(p,c)}</code> (a <code>K×K</code> object per branch), a <strong>leave-one-out</strong> marginal <code>loo_u</code> (the outside message excluding a tip’s own emission — credibility evidence that cannot self-confirm), and the exact tree log-likelihood. A marginal tree may be a <strong>forest</strong>, so this runs once <em>per root</em> and aggregates.</p>
 <p><strong>3. Edge-blocked, span-weighted sufficient statistics (§3.3 — the correctness core).</strong> <a href="../api/accumulate.accumulate_sufficient_statistics.html"><code>accumulate.py</code></a> drives the genome with <code>zip(ts.edge_diffs(), ts.trees())</code>. For each marginal tree it prunes once, then <strong>banks each entering edge’s contribution exactly once, on entry, weighted by that edge’s own span</strong> <code>(right − left)</code>. A clade persisting across many trees is one set of wide-span edges, so summing by span partitions the genome without double-counting (the edge-table invariant: the intervals on which a node is a <em>child</em> are disjoint). Root-state mass is accumulated <em>per interval</em>, not per edge. The accumulators are <code>S_dwell</code>, <code>S_jumps</code>, <code>S_root</code>, per-tip <code>S_cred</code> (agree/disagree for the credibility update), and a span-integrated <code>loglik</code>.</p>
@@ -561,7 +575,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td style="text-align: left;"><code>tspaint.io</code></td>
 <td style="text-align: left;"><code>io_tsinfer</code>, <code>io_singer</code></td>
-<td style="text-align: left;"><a href="../api/io.infer_tree_sequence.html"><code>infer_tree_sequence</code></a>, <a href="../api/io.add_mutations.html"><code>add_mutations</code></a>, <a href="../api/io.singer_tree_sequences.html"><code>singer_tree_sequences</code></a>, <a href="../api/io.write_haploid_vcf.html"><code>write_haploid_vcf</code></a></td>
+<td style="text-align: left;"><a href="../api/io.infer_tree_sequence.qmd"><code>infer_tree_sequence</code></a>, <a href="../api/io.add_mutations.html"><code>add_mutations</code></a>, <a href="../api/io.singer_tree_sequences.qmd"><code>singer_tree_sequences</code></a>, <a href="../api/io.write_haploid_vcf.html"><code>write_haploid_vcf</code></a></td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><code>tspaint.bp</code></td>
@@ -597,12 +611,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td style="text-align: left;"><strong>tsinfer</strong></td>
-<td style="text-align: left;"><a href="../api/io.infer_tree_sequence.html"><code>io_tsinfer</code></a></td>
+<td style="text-align: left;"><a href="../api/io.infer_tree_sequence.qmd"><code>io_tsinfer</code></a></td>
 <td style="text-align: left;"><code>infer_tree_sequence</code> runs tsinfer on genotypes → a point-estimate ARG with native node-ID stability. <code>add_mutations</code> overlays variants on a bare ARG first. The realistic substrate where tree accuracy becomes the binding constraint (§9).</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>SINGER</strong></td>
-<td style="text-align: left;"><a href="../api/io.singer_tree_sequences.html"><code>io_singer</code></a></td>
+<td style="text-align: left;"><a href="../api/io.singer_tree_sequences.qmd"><code>io_singer</code></a></td>
 <td style="text-align: left;"><code>singer_tree_sequences</code> shells out to the SINGER binary (haploid VCF → <code>singer -ploidy 1</code>, with a retry loop → tskit), returning <strong>posterior ARG samples</strong>. These represent genuine ARG uncertainty, so they are the input to the ensemble merge (§7.4). Sample order preserved; times in generations.</td>
 </tr>
 <tr class="odd">
@@ -908,7 +922,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/munch-group\.github\.io\/tspaint\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -1242,8 +1256,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../notebooks/painting.html" class="pagination-link" aria-label="Haplotype painting">
-        <span class="nav-page-text">Haplotype painting</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../notebooks/showcase.html" class="pagination-link" aria-label="A worked example: from genotypes to local ancestry, panel QC, and hidden sources">
+        <span class="nav-page-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
