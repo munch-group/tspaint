@@ -61,14 +61,38 @@ class Painting:
     ts: object = None
     labels: dict = None
     default_deadband: float = 0.0
+    _seqlen: float = None    # sequence length carried by a reloaded painting (ts is None then)
 
     @property
     def length(self):
         """Sequence length of the painted genome (the first member, for an ensemble)."""
         if self.ts is None:
-            return None
+            return self._seqlen
         t = self.ts[0] if isinstance(self.ts, (list, tuple)) else self.ts
         return float(t.sequence_length)
+
+    def save(self, path):
+        """Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model).
+
+        Reload with :meth:`load`. The painted tree sequence itself is **not** stored (keep the
+        ``.trees`` file); a reloaded painting therefore has ``ts=None`` but retains
+        :attr:`length`, the posteriors, ``Q``/``π``/``w`` and the labels.
+        """
+        from .serialize import save_painting
+        save_painting(path, self.posteriors, Q=self.Q, pi=self.pi, w=self.w,
+                      queries=self.queries, labels=self.labels, seqlen=self.length,
+                      deadband=self.default_deadband)
+
+    @staticmethod
+    def load(path):
+        """Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`)."""
+        from .serialize import load_painting, load_painting_meta
+        tracks = load_painting(path)
+        m = load_painting_meta(path)
+        return Painting(posteriors=tracks, Q=m.get("Q"), pi=m.get("pi"), w=m.get("w", {}),
+                        loglik_history=[], queries=m.get("queries", []), ts=None,
+                        labels=m.get("labels"), default_deadband=m.get("deadband", 0.0) or 0.0,
+                        _seqlen=m.get("seqlen"))
 
     def segments(self, deadband=None):
         """Hard ancestry segments for downstream tract-length / dating analysis.
