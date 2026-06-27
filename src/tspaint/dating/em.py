@@ -20,7 +20,8 @@ from .grid import cell_centers, log_time_grid
 from .estep import accumulate_time_binned_tv
 from .mstep import directional_rate_splines
 
-__all__ = ["RateThroughTime", "make_Q_of_cell", "fit_rate_through_time"]
+__all__ = ["RateThroughTime", "make_Q_of_cell", "fit_rate_through_time",
+           "split_time", "EnsembleRateThroughTime"]
 
 
 @dataclass
@@ -63,6 +64,118 @@ class RateThroughTime:
         ax.set_ylabel("rate" + (" × scale" if scale != 1.0 else ""))
         ax.legend()
         return ax
+
+
+def split_time(rtt, exposure_frac=0.01):
+    """Estimate the split / divergence time from a :class:`RateThroughTime` profile.
+
+    The combined cross-ancestry rate ``q_AB(t) + q_BA(t)`` is ~0 below the split (the two
+    ancestries are still separate looking backward) and **rises** once ``t`` exceeds it (they
+    coalesce) — the split shows up as the *onset*, not a peak. Returns the smallest cell centre
+    (generations ago) at which the combined cross-rate first reaches **half** its
+    exposure-guarded maximum (cells with negligible occupation ``D`` are ignored, so a deep
+    no-data cell cannot masquerade as the onset).
+
+    Parameters
+    ----------
+    rtt : RateThroughTime
+        A fitted directional rate profile.
+    exposure_frac : float, optional
+        Ignore cells whose total occupation ``D`` is below this fraction of the max. Default 0.01.
+
+    Returns
+    -------
+    float
+        The split-time estimate (generations ago), or ``nan`` if the cross-rate never rises.
+    """
+    c = np.asarray(rtt.centers, float)
+    r = np.asarray(rtt.q_AB, float) + np.asarray(rtt.q_BA, float)
+    expo = np.asarray(rtt.D, float).sum(axis=1)
+    emax = float(np.nanmax(expo)) if expo.size else 0.0
+    if emax > 0:
+        r = np.where(expo >= exposure_frac * emax, r, np.nan)
+    rmax = float(np.nanmax(r)) if np.isfinite(r).any() else float("nan")
+    if not np.isfinite(rmax) or rmax <= 0:
+        return float("nan")
+    idx = np.where(r >= 0.5 * rmax)[0]
+    return float(c[idx[0]]) if idx.size else float("nan")
+
+
+@dataclass
+class EnsembleRateThroughTime:
+    """Rate through time across an ARG ensemble — one :class:`RateThroughTime` per member, with a
+    **confidence interval on the split time** from the ensemble spread.
+
+    Returned by :meth:`tspaint.Painting.rate_through_time` when the painting was built from an
+    ensemble of tree sequences (e.g. SINGER posterior samples): each member is dated on the shared
+    fit, and the per-member split-time estimates (:func:`split_time`) become an interval — the
+    ARG-uncertainty band on *when* the ancestries diverged.
+
+    Attributes
+    ----------
+    members : list[RateThroughTime]
+        Per-member directional rate profiles, on a shared time grid (so they average).
+    split_times : numpy.ndarray
+        ``(M,)`` per-member split-time estimates (generations ago).
+    """
+    members: list
+    split_times: np.ndarray
+
+    @property
+    def centers(self):
+        return self.members[0].centers
+
+    @property
+    def q_AB(self):
+        """Ensemble-mean ``q_AB(t)``."""
+        return np.nanmean(np.vstack([m.q_AB for m in self.members]), axis=0)
+
+    @property
+    def q_BA(self):
+        """Ensemble-mean ``q_BA(t)``."""
+        return np.nanmean(np.vstack([m.q_BA for m in self.members]), axis=0)
+
+    def split_time(self, statistic="median"):
+        """Point estimate of the split time over members (``"median"`` or ``"mean"``)."""
+        v = self.split_times[np.isfinite(self.split_times)]
+        if v.size == 0:
+            return float("nan")
+        return float(np.mean(v) if statistic == "mean" else np.median(v))
+
+    def split_time_ci(self, level=0.95):
+        """Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread."""
+        v = self.split_times[np.isfinite(self.split_times)]
+        if v.size == 0:
+            return (float("nan"), float("nan"))
+        a = (1.0 - level) / 2.0 * 100.0
+        return (float(np.percentile(v, a)), float(np.percentile(v, 100.0 - a)))
+
+    def plot(self, ax=None, scale=1.0, level=0.95):
+        """Per-member rate curves (faint) + the ensemble mean + the split-time CI band."""
+        import matplotlib.pyplot as plt
+        if ax is None:
+            _f, ax = plt.subplots(figsize=(7, 4.2))
+        for m in self.members:
+            ax.plot(m.centers, np.asarray(m.q_AB) * scale, "-", color="C2", lw=0.6, alpha=0.3)
+            ax.plot(m.centers, np.asarray(m.q_BA) * scale, "--", color="C1", lw=0.6, alpha=0.3)
+        ax.plot(self.centers, self.q_AB * scale, "-", color="C2", lw=2.5, label="q_AB(t) mean")
+        ax.plot(self.centers, self.q_BA * scale, "--", color="C1", lw=2.5, label="q_BA(t) mean")
+        lo, hi = self.split_time_ci(level)
+        if np.isfinite(lo) and np.isfinite(hi):
+            ax.axvspan(lo, hi, color="0.5", alpha=0.2, label=f"split {int(level * 100)}% CI")
+        st = self.split_time()
+        if np.isfinite(st):
+            ax.axvline(st, color="k", lw=1.0, ls=":")
+        ax.set_xscale("log")
+        ax.set_xlabel("time (generations ago)")
+        ax.set_ylabel("rate" + (" × scale" if scale != 1.0 else ""))
+        ax.legend()
+        return ax
+
+    def __repr__(self):
+        lo, hi = self.split_time_ci()
+        return (f"EnsembleRateThroughTime(M={len(self.members)}, "
+                f"split_time={self.split_time():.0f} [{lo:.0f}, {hi:.0f}] gen)")
 
 
 def make_Q_of_cell(q_AB, q_BA):

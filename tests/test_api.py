@@ -114,14 +114,56 @@ def test_paint_ensemble_band_from_distinct_args():
 
 @pytest.mark.slow
 def test_painting_ensemble_methods():
-    """introgression_map merges across the ensemble; rate_through_time is guarded."""
+    """introgression_map merges across the ensemble; member posteriors are retained."""
     ts, labels, queries, _ = _admixture(L=1e5)
     p = tspaint.paint([ts, ts], labels, queries)
     m = p.introgression_map(queries[0])
     assert m[0].left == 0.0 and m[-1].right == ts.sequence_length
     assert hasattr(m[0], "posterior_std")                     # merged leave-one-out map
-    with pytest.raises(ValueError, match="ensemble"):
-        p.rate_through_time()
+    assert isinstance(p._member_posteriors, list) and len(p._member_posteriors) == 2
+
+
+def test_split_time_is_the_cross_rate_onset():
+    """split_time finds the onset (half-max rise) of the combined cross-ancestry rate."""
+    from tspaint.dating import RateThroughTime, split_time
+    centers = np.geomspace(10.0, 1e4, 60)
+    rise = np.where(centers >= 2000.0, 1e-3, 1e-6)            # ~0 below the split, high above
+    rtt = RateThroughTime(centers=centers, q_AB=rise, q_BA=np.zeros_like(rise),
+                          D=np.ones((60, 2)), J=np.zeros((60, 2, 2)), loglik_history=[])
+    assert 1500.0 <= split_time(rtt) <= 2700.0                # the onset, not a peak
+    flat = RateThroughTime(centers=centers, q_AB=np.zeros_like(centers), q_BA=np.zeros_like(centers),
+                           D=np.ones((60, 2)), J=np.zeros((60, 2, 2)), loglik_history=[])
+    assert np.isnan(split_time(flat))                         # no rise -> nan
+
+
+@pytest.mark.slow
+def test_painting_ensemble_member_posteriors_and_dating():
+    """An ensemble painting keeps per-member posteriors; rate_through_time -> split-time CI."""
+    from tspaint.dating import EnsembleRateThroughTime, RateThroughTime
+    ts, labels, queries, _ = _admixture(L=1.5e5)
+    kw = dict(n_admix=6, n_ref=6, sequence_length=1.5e5, recombination_rate=1e-8,
+              Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    members = [ts] + [tspaint.simulate_admixture(random_seed=s, **kw) for s in (2, 3)]
+
+    single = tspaint.paint(ts, labels, queries)
+    assert single._member_posteriors is None                  # single ts: no member tables
+    assert isinstance(single.rate_through_time(n_cells=15, n_iter=4), RateThroughTime)
+
+    ens = tspaint.paint(members, labels, queries)
+    assert isinstance(ens._member_posteriors, list) and len(ens._member_posteriors) == 3
+    for tab in ens._member_posteriors:                        # each member covers [0, L)
+        assert tab[queries[0]][0].left == 0.0 and tab[queries[0]][-1].right == ts.sequence_length
+
+    er = ens.rate_through_time(n_cells=20, n_iter=6)
+    assert isinstance(er, EnsembleRateThroughTime)
+    assert len(er.members) == 3 and er.split_times.shape == (3,)
+    assert all(isinstance(m, RateThroughTime) for m in er.members)
+    assert er.q_AB.shape == er.centers.shape                  # shared grid -> averageable mean
+    assert np.isfinite(er.split_times).any()                  # at least one member resolves a split
+    lo, hi = er.split_time_ci()
+    st = er.split_time()
+    assert lo <= st <= hi                                     # the CI brackets the point estimate
+    assert er.centers.min() <= st <= er.centers.max()
 
 
 # --- Painting.length / Painting.plot ---------------------------------------------------------

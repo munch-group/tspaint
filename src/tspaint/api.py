@@ -51,6 +51,10 @@ class Painting:
         The reference labels used for the fit (retained for :meth:`rate_through_time`).
     default_deadband : float
         Default dead-band passed to :meth:`segments`. Default ``0.0``.
+    _member_posteriors : list[dict] or None
+        For an **ensemble** painting, the individual per-member posterior tables (each a
+        ``dict[int, list[Segment]]``) whose per-position mean is :attr:`posteriors`; ``None`` for a
+        single tree sequence. Drives the per-member :meth:`rate_through_time` split-time interval.
     """
     posteriors: dict
     Q: np.ndarray
@@ -62,6 +66,7 @@ class Painting:
     labels: dict = None
     default_deadband: float = 0.0
     _seqlen: float = None    # sequence length carried by a reloaded painting (ts is None then)
+    _member_posteriors: list = None    # per-member posterior tables for an ensemble (else None)
 
     @property
     def length(self):
@@ -151,21 +156,33 @@ class Painting:
 
         Returns
         -------
-        tspaint.dating.RateThroughTime
-            The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``,
-            ``.plot()``).
+        tspaint.dating.RateThroughTime or tspaint.dating.EnsembleRateThroughTime
+            For a single tree sequence, the directional rate-through-time profile (``.centers``,
+            ``.q_AB``, ``.q_BA``, ``.plot()``). For an **ensemble** painting, an
+            :class:`~tspaint.dating.EnsembleRateThroughTime`: every member is dated on the shared
+            fit and grid, and the per-member split-time estimates form a **confidence interval on
+            the split time** (``.split_time()``, ``.split_time_ci()``) — the ARG-uncertainty band
+            on *when* the ancestries diverged.
         """
         if self.ts is None or self.labels is None:
             raise ValueError("Painting was constructed without ts/labels; cannot date. Use "
                              "tspaint.fit_rate_through_time(ts, labels) directly.")
-        if isinstance(self.ts, (list, tuple)):
-            raise ValueError(
-                "rate_through_time is not defined for an ensemble painting; call "
-                "tspaint.fit_rate_through_time(member, labels) on a single tree sequence "
-                "(e.g. painting.ts[0]).")
         from .em import FitResult
         from .dating import fit_rate_through_time
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
+        if isinstance(self.ts, (list, tuple)):
+            # ensemble: date each member on the shared fit/grid; the per-member split-time
+            # estimates become a confidence interval (the ARG-uncertainty band on the split).
+            from .dating import log_time_grid, split_time, EnsembleRateThroughTime
+            members = list(self.ts)
+            if edges is None:                       # one shared grid so the member profiles align
+                nt = np.concatenate([np.asarray(g.tables.nodes.time, float) for g in members])
+                pos = nt[nt > 0]
+                n_cells = kwargs.pop("n_cells", 40)
+                edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
+            rtts = [fit_rate_through_time(g, self.labels, edges, fit_result=warm, **kwargs)
+                    for g in members]
+            return EnsembleRateThroughTime(rtts, np.array([split_time(r) for r in rtts], float))
         return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, **kwargs)
 
     def introgression_map(self, sample):
@@ -377,12 +394,15 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
             table = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in table.items()}
         return table
 
+    member_tables = None
     if members is None:
         posteriors = _paint_member(ts)
     else:
         from .ensemble import merge_posterior_tables
-        posteriors = merge_posterior_tables([_paint_member(g) for g in members], samples=queries)
+        member_tables = [_paint_member(g) for g in members]      # kept for the per-member CI
+        posteriors = merge_posterior_tables(member_tables, samples=queries)
 
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
-                    ts=ts, labels=labels, default_deadband=deadband)
+                    ts=ts, labels=labels, default_deadband=deadband,
+                    _member_posteriors=member_tables)
