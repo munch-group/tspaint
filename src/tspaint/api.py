@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 
 from .em import fit, build_emissions
 from .model import make_generator_2state
@@ -183,14 +185,11 @@ class Painting:
                 f"pi={np.array2string(self.pi, precision=2)})")
 
     def plot(self, truth=None, title=None):
-        # matplotlib is imported lazily (an optional viz dep, not required to import tspaint).
-        import matplotlib.pyplot as plt
-        from matplotlib import cm, colors, ticker
-
+        
         qs = self.queries
         segments = self.segments(deadband=0.4)
 
-        sm = cm.ScalarMappable(norm=colors.Normalize(0, 1), cmap='coolwarm')
+        sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap='coolwarm')
         fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))
         gs = fig.add_gridspec(len(qs), 2, width_ratios=[1,0.03], hspace=0)
         axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]
@@ -208,13 +207,25 @@ class Painting:
             for seg in self.posteriors[q]:
                 axes[i].barh(1, seg.right - seg.left, left=seg.left, height=1,
                         color=sm.to_rgba(seg.posterior[0]), edgecolor="none")
+            # for state in [0, 1]:
+            #     xs, ys = [], []
+            #     for seg in self.posteriors[q]:
+            #         xs += [seg.left, seg.right]
+            #         ys += [float(seg.posterior[state])] * 2
+            #     axes[i].plot(xs, ys, color=sm.to_rgba(1.0 if state == 0 else 0.0))
+
             axes[i].set_ylim(ymin, ymax)
             axes[i].set_xlim(0, self.length)
             axes[i].set_ylabel(f'hapl. {i}', rotation=0, fontsize=7, color="0.0", horizontalalignment="right")
-            axes[i].yaxis.set_major_locator(ticker.NullLocator())
+            axes[i].yaxis.set_major_locator(matplotlib.ticker.NullLocator())
             if i < len(axes)-1:
-                axes[i].xaxis.set_major_locator(ticker.NullLocator())
+                axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())
             axes[i].tick_params(axis='x', bottom=True)
+            axes[i].spines['top'].set_visible(True)
+            axes[i].spines['bottom'].set_visible(True)
+            axes[i].spines['left'].set_visible(True)
+            axes[i].spines['right'].set_visible(True)
+            axes[i].grid(False)
 
         ax = fig.add_subplot(gs[:, 1])
         ax.set_axis_off()
