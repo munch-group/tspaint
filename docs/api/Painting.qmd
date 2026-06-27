@@ -11,6 +11,9 @@ tspaint.Painting(
     ts=None,
     labels=None,
     default_deadband=0.0,
+    n_jobs=1,
+    _seqlen=None,
+    _member_posteriors=None,
 )
 ```
 
@@ -20,7 +23,7 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 <code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
 
-:   Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:`~tspaint.output.Segment`\ s covering ``[0, L)`` (the soft, calibrated deliverable).
+:   Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:`~tspaint.output.Segment`\ s covering ``[0, L)`` (the soft, calibrated deliverable). When :func:`paint` was given an **ensemble** of tree sequences these are :class:`~tspaint.ensemble.MergedSegment`\ s — the ensemble-mean posterior plus a ``posterior_std`` ARG-uncertainty band — but otherwise behave identically (same ``left``/``right``/``posterior``/``status``).
 
 <code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
 
@@ -42,9 +45,9 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 :   The painted sample-node ids.
 
-<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [list](`list`)\[[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)\]]{.parameter-annotation}</code>
 
-:   The tree sequence painted (retained so :meth:`rate_through_time` can reuse the fit; already in memory, so no extra cost).
+:   The tree sequence painted — or the ensemble of them — retained so :meth:`introgression_map` / :meth:`rate_through_time` can reuse the fit (already in memory, so no extra cost).
 
 <code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
 
@@ -54,13 +57,20 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 :   Default dead-band passed to :meth:`segments`. Default ``0.0``.
 
+<code>[**_member_posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\] or None]{.parameter-annotation}</code>
+
+:   For an **ensemble** painting, the individual per-member posterior tables (each a ``dict[int, list[Segment]]``) whose per-position mean is :attr:`posteriors`; ``None`` for a single tree sequence. Drives the per-member :meth:`rate_through_time` split-time interval.
+
 ## Methods
 
 | Name | Description |
 | --- | --- |
 | [introgression_map](#tspaint.Painting.introgression_map) | Leave-one-out introgression map for ``sample``, reusing this painting's fit. |
+| [load](#tspaint.Painting.load) | Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`). |
+| [plot](#tspaint.Painting.plot) | Stacked strip plot of the painting — one row per query haplotype. |
 | [posterior_at](#tspaint.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
 | [rate_through_time](#tspaint.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
+| [save](#tspaint.Painting.save) | Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model). |
 | [segments](#tspaint.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
 
 ### introgression_map { #tspaint.Painting.introgression_map }
@@ -87,7 +97,64 @@ reference's own foreign tracts — the reference-introgression / mislabel lens
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tspaint](`tspaint`).[output](`tspaint.output`).[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
 
-:   The leave-one-out posterior as contiguous segments covering ``[0, L)``.
+:   The leave-one-out posterior as contiguous segments covering ``[0, L)`` (for an ensemble painting, the ensemble-mean leave-one-out map as :class:`~tspaint.ensemble.MergedSegment`\ s).
+
+### load { #tspaint.Painting.load }
+
+```python
+tspaint.Painting.load(path)
+```
+
+Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`).
+
+### plot { #tspaint.Painting.plot }
+
+```python
+tspaint.Painting.plot(
+    truth=None,
+    title=None,
+    cmap='coolwarm',
+    colors=None,
+    return_plot=False,
+)
+```
+
+Stacked strip plot of the painting — one row per query haplotype.
+
+Each haplotype row shows, top to bottom: the **soft** per-position posterior
+``P(ancestry A)`` as a colour gradient (the calibrated deliverable), the **hard**
+ancestry segments (:meth:`segments` at ``deadband=0.4``), and — when ``truth`` is given —
+the true ancestry tracts as a reference track beneath. A shared colour bar maps
+``P(ancestry A)`` (state A at the top of ``cmap``, state B at the bottom). Works for an
+ensemble painting too (the rows show the ensemble-mean posterior). Requires matplotlib.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Ground-truth ancestry tracts ``(left, right, state)`` per query — e.g. from :func:`tspaint.local_ancestry_truth` mapped to states ``0``/``1`` — drawn as a reference track below each haplotype. No truth track is drawn when ``None`` (default).
+
+<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Title placed on the top haplotype axes.
+
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [matplotlib](`matplotlib`).[colors](`matplotlib.colors`).[Colormap](`matplotlib.colors.Colormap`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   Diverging colormap mapping ``P(ancestry A) ∈ [0, 1]`` (state A → ``1.0``, state B → ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g. ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
+
+<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save the plot, instead of ``None``. Default ``False``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
 
 ### posterior_at { #tspaint.Painting.posterior_at }
 
@@ -116,7 +183,7 @@ Posterior vector for ``sample`` at a genomic ``position``.
 ### rate_through_time { #tspaint.Painting.rate_through_time }
 
 ```python
-tspaint.Painting.rate_through_time(edges=None, **kwargs)
+tspaint.Painting.rate_through_time(edges=None, *, n_jobs=None, **kwargs)
 ```
 
 Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
@@ -136,15 +203,31 @@ paths stay side by side).
 
 :   Log-time grid edges; an auto grid is built from the node ages when ``None``.
 
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   For an **ensemble** painting, worker processes dating the members **in parallel** (one per member — they are independent). Defaults to the painting's own :attr:`n_jobs` (so a painting fit in parallel dates in parallel); pass an explicit value to override. Ignored for a single tree sequence (the dating E-step is not yet tree-parallel).
+
 <code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
 
 :   Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``).
 
 #### Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[dating](`tspaint.dating`).[RateThroughTime](`tspaint.dating.RateThroughTime`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[dating](`tspaint.dating`).[RateThroughTime](`tspaint.dating.RateThroughTime`) or [tspaint](`tspaint`).[dating](`tspaint.dating`).[EnsembleRateThroughTime](`tspaint.dating.EnsembleRateThroughTime`)]{.parameter-annotation}</code>
 
-:   The directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``, ``.plot()``).
+:   For a single tree sequence, the directional rate-through-time profile (``.centers``, ``.q_AB``, ``.q_BA``, ``.plot()``). For an **ensemble** painting, an :class:`~tspaint.dating.EnsembleRateThroughTime`: every member is dated on the shared fit and grid, and the per-member split-time estimates form a **confidence interval on the split time** (``.split_time()``, ``.split_time_ci()``) — the ARG-uncertainty band on *when* the ancestries diverged.
+
+### save { #tspaint.Painting.save }
+
+```python
+tspaint.Painting.save(path)
+```
+
+Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model).
+
+Reload with :meth:`load`. The painted tree sequence itself is **not** stored (keep the
+``.trees`` file); a reloaded painting therefore has ``ts=None`` but retains
+:attr:`length`, the posteriors, ``Q``/``π``/``w`` and the labels.
 
 ### segments { #tspaint.Painting.segments }
 

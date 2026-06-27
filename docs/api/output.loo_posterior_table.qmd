@@ -8,6 +8,7 @@ tspaint.output.loo_posterior_table(
     emissions,
     focal=None,
     merge_tol=1e-12,
+    tree_range=None,
 )
 ```
 

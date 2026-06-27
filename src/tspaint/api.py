@@ -234,7 +234,38 @@ class Painting:
                 f"pi={np.array2string(self.pi, precision=2)})")
 
     def plot(self, truth=None, title=None, cmap='coolwarm', colors=None, return_plot=False):
-        
+        """Stacked strip plot of the painting — one row per query haplotype.
+
+        Each haplotype row shows, top to bottom: the **soft** per-position posterior
+        ``P(ancestry A)`` as a colour gradient (the calibrated deliverable), the **hard**
+        ancestry segments (:meth:`segments` at ``deadband=0.4``), and — when ``truth`` is given —
+        the true ancestry tracts as a reference track beneath. A shared colour bar maps
+        ``P(ancestry A)`` (state A at the top of ``cmap``, state B at the bottom). Works for an
+        ensemble painting too (the rows show the ensemble-mean posterior). Requires matplotlib.
+
+        Parameters
+        ----------
+        truth : dict[int, list[tuple[float, float, int]]], optional
+            Ground-truth ancestry tracts ``(left, right, state)`` per query — e.g. from
+            :func:`tspaint.local_ancestry_truth` mapped to states ``0``/``1`` — drawn as a
+            reference track below each haplotype. No truth track is drawn when ``None`` (default).
+        title : str, optional
+            Title placed on the top haplotype axes.
+        cmap : str or matplotlib.colors.Colormap, optional
+            Diverging colormap mapping ``P(ancestry A) ∈ [0, 1]`` (state A → ``1.0``, state B →
+            ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
+        colors : list, optional
+            Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g.
+            ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
+        return_plot : bool, optional
+            Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save
+            the plot, instead of ``None``. Default ``False``.
+
+        Returns
+        -------
+        tuple or None
+            ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
+        """
         qs = self.queries
         segments = self.segments(deadband=0.4)
 

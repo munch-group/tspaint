@@ -19,6 +19,7 @@ tspaint.paint(
     beta=1.0,
     priors=None,
     w0=0.9,
+    n_jobs=1,
 )
 ```
 
@@ -30,13 +31,13 @@ query haplotype as a :class:`Painting`.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [list](`list`)\[[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)\]]{.parameter-annotation}</code>
 
-:   An inferred (tsinfer / Relate ``--compress``) or true tree sequence; sample nodes are haplotypes. Use :mod:`tspaint.io` to obtain one from genotypes.
+:   An inferred (tsinfer / Relate ``--compress``) or true tree sequence; sample nodes are haplotypes. Use :mod:`tspaint.io` to obtain one from genotypes. **Pass a list of tree sequences** — e.g. the posterior ARG ensemble from :func:`tspaint.io.singer` — to paint from the ensemble: one ``(Q, π, w)`` is fit pooled across all members (the M-step is scale-invariant), each member is painted with it, and the per-position posteriors are **averaged**. This marginalises ARG uncertainty — the binding constraint on real data — and the spread becomes a calibrated uncertainty band (CLAUDE.md §7.4). All members must share the same sample ids (true of a SINGER ensemble, where sample order is preserved).
 
 <code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
 
-:   Reference sample-node id → ancestry-state index in ``0..K-1``.
+:   Reference sample-node id → ancestry-state index in ``0..K-1``. Applied to every member of an ensemble.
 
 <code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -94,16 +95,21 @@ query haplotype as a :class:`Painting`.
 
 :   
 
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Worker processes for the genome E-step and painting. ``1`` (default) is serial and byte-identical to single-core; ``>1`` saturates the node via a process pool (:mod:`tspaint.parallel`) — the painting is *exactly* equal to serial, the fit ``allclose`` (floating-point reduction order). The CLI resolves this from ``$SLURM_JOB_CPUS_PER_NODE``.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Painting](`tspaint.api.Painting`)]{.parameter-annotation}</code>
 
-:   The soft per-position ancestry posteriors for each query plus the fitted ``(Q, π, w)`` and EM log-likelihood history.
+:   The soft per-position ancestry posteriors for each query plus the fitted ``(Q, π, w)`` and EM log-likelihood history. For an ensemble input the posteriors are the ensemble mean with an ARG-uncertainty band (:class:`~tspaint.ensemble.MergedSegment`, with a ``posterior_std``).
 
 ## See Also {.doc-section .doc-section-see-also}
 
 tspaint.fit : The underlying blocked-EM fit.
 tspaint.output.hard_segments : Collapse the soft posteriors into hard tracts.
+tspaint.ensemble.merge_posterior_tables : The per-position averaging used for an ensemble.
 
 ## Examples {.doc-section .doc-section-examples}
 
@@ -113,4 +119,12 @@ tspaint.output.hard_segments : Collapse the soft posteriors into hard tracts.
 >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}   # reference sample-node -> ancestry state
 >>> painting = tspaint.paint(ts, labels)
 >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
+```
+
+Paint from a SINGER posterior ensemble — the mean painting carries an uncertainty band:
+
+```python
+>>> ensemble = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
+>>> painting = tspaint.paint(ensemble, labels)            # one pooled fit; averaged posteriors
+>>> painting.posteriors[q][0].posterior_std               # per-position ARG-uncertainty band
 ```

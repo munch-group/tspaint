@@ -9,6 +9,7 @@ tspaint.accumulate.accumulate_sufficient_statistics(
     *,
     labels=None,
     soft_refs=None,
+    tree_range=None,
 )
 ```
 
@@ -46,6 +47,10 @@ reused across edges. Root-state mass is accumulated per interval, not per edge.
 <code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   Restrict credibility accumulation to these tips (default: all labelled).
+
+<code>[**tree_range**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ``(lo, hi)`` half-open marginal-tree-index range to process; the rest of the genome is iterated but skipped. Default (``None``) processes every tree. The per-tree arithmetic is **unchanged** by this gate, so a partition of ``[0, num_trees)`` into contiguous ranges sums (per :func:`tspaint.parallel.add_suffstats`) to the full-genome result with the same in-range addition order — the basis of the bit-exact parallel E-step (:mod:`tspaint.parallel`).
 
 ## Returns {.doc-section .doc-section-returns}
 

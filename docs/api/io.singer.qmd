@@ -7,9 +7,9 @@ tspaint.io.singer(
     Ne,
     mutation_rate,
     recombination_rate,
-    n_samples=20,
+    n_samples=21,
     thin=10,
-    burn_in=5,
+    burn_in=20,
     seed=42,
     ploidy=1,
     workdir=None,
@@ -44,7 +44,7 @@ since they represent genuine ARG uncertainty (§7.4).
 
 :   Per-base recombination rate (``-r``).
 
-<code>[**n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+<code>[**n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [21]{.parameter-default}</code>
 
 :   Number of MCMC samples SINGER draws (``-n``, default 20).
 
@@ -52,7 +52,7 @@ since they represent genuine ARG uncertainty (§7.4).
 
 :   MCMC thinning interval (``-thin``, default 10).
 
-<code>[**burn_in**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [5]{.parameter-default}</code>
+<code>[**burn_in**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
 
 :   Number of leading samples to discard as burn-in (default 5).
 

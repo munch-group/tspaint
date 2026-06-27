@@ -16,6 +16,7 @@ tspaint.fit(
     priors=None,
     w0=0.9,
     estimate_pi=True,
+    n_jobs=1,
 )
 ```
 
@@ -79,6 +80,10 @@ tolerance or ``max_iter``.
 <code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 
 :   Re-estimate ``π`` each M-step rather than holding ``pi0`` fixed. Default ``True``. See Notes.
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Worker processes for the E-step (the dominant cost). ``1`` (default) is the serial path, **byte-identical** to single-core. ``>1`` runs the genome E-step over member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor` (reused across EM iterations); the result is ``allclose`` to serial, differing only by floating-point reduction order (:mod:`tspaint.parallel`).
 
 ## Returns {.doc-section .doc-section-returns}
 
