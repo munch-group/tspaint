@@ -44,7 +44,7 @@ from .accumulate import accumulate_sufficient_statistics, SuffStats
 from .output import posterior_table
 
 __all__ = ["resolve_cores", "genome_chunks", "add_suffstats", "accumulate_parallel",
-           "posterior_table_parallel", "make_pool", "as_path"]
+           "posterior_table_parallel", "date_members_parallel", "make_pool", "as_path"]
 
 _BLAS_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
               "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS")
@@ -142,6 +142,12 @@ def _paint_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol):
     emissions = build_emissions(ts, labels, w, pi)
     return posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
                            tree_range=(lo, hi))
+
+
+def _date_member(path, labels, warm, edges, kwargs):
+    from .dating import fit_rate_through_time
+    ts = _load_cached(path)
+    return fit_rate_through_time(ts, labels, edges, fit_result=warm, **kwargs)
 
 
 # --- pool & temp-path management (parent side) ----------------------------------------------
@@ -258,6 +264,27 @@ def _stitch_tracks(chunk_tracks, merge_tol):
                 else:
                     dst.append(seg)
     return out
+
+
+def date_members_parallel(members, labels, warm, edges, kwargs=None, *, n_jobs=1):
+    """Fit the rate-through-time of each ensemble member in parallel (one worker per member).
+
+    The coarse axis of :meth:`tspaint.Painting.rate_through_time` for an ensemble: each member is
+    dated independently on the shared warm fit and time grid, so this is a plain fan-out (no
+    cross-member reduction — results are deterministic and order-preserving). ``n_jobs <= 1`` runs
+    serially in-process (no pool, no temp dump). Returns the list of
+    :class:`~tspaint.dating.RateThroughTime` in member order.
+    """
+    from .dating import fit_rate_through_time
+    kwargs = kwargs or {}
+    if resolve_to_int(n_jobs) <= 1:
+        return [fit_rate_through_time(g, labels, edges, fit_result=warm, **kwargs) for g in members]
+    from contextlib import ExitStack
+    with ExitStack() as stack:
+        paths = [stack.enter_context(as_path(g)) for g in members]   # dump in-memory members once
+        ex = stack.enter_context(make_pool(n_jobs))
+        futures = [ex.submit(_date_member, p, labels, warm, edges, kwargs) for p in paths]
+        return [f.result() for f in futures]                         # member order; blocks in-context
 
 
 def resolve_to_int(n_jobs):
