@@ -61,7 +61,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -80,6 +80,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -107,6 +110,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
 <link rel="stylesheet" href="../api/_styles-quartodoc.css">
@@ -320,7 +326,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="model" class="level2">
 <h2 class="anchored" data-anchor-id="model">Model</h2>
-<div id="7cc34cac" class="cell" data-execution_count="2">
+<div id="7cc34cac" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.sim <span class="im">import</span> SOURCE_A, SOURCE_B, ADMIXED, ANCESTRAL</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib</span>
@@ -364,190 +370,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> vscode_theme(style<span class="op">=</span><span class="st">'ticks'</span>):</span>
 <span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">4</span>, <span class="dv">3</span>))</span>
 <span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    demesdraw.tubes(graph, ax<span class="op">=</span>ax, seed<span class="op">=</span><span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-error">
-<div class="ansi-escaped-output">
-<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">AttributeError</span>                            Traceback (most recent call last)
-<span class="ansi-red-fg">AttributeError</span>: partially initialized module 'pandas' from '/Users/kmt/tspaint/.pixi/envs/default/lib/python3.13/site-packages/pandas/__init__.py' has no attribute '_pandas_datetime_CAPI' (most likely due to a circular import)
+<div class="cell-output cell-output-display">
 
-The above exception was the direct cause of the following exception:
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }  
+        </style>                          
+        
+</div>
+<div class="cell-output cell-output-display">
 
-<span class="ansi-red-fg">SystemError</span>                               Traceback (most recent call last)
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">../../_build_env/venv/lib/python3.13/site-packages/numpy/__init__.cython-30.pxd:1008</span>, in <span class="ansi-cyan-fg">numpy.import_array</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-red-fg">SystemError</span>: &lt;built-in function __import__&gt; returned a result with an exception set
-
-During handling of the above exception, another exception occurred:
-
-<span class="ansi-red-fg">ImportError</span>                               Traceback (most recent call last)
-<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[2]</span><span class="ansi-green-fg">, line 6</span>
-<span class="ansi-green-fg">      4</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">pyplot</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">plt</span>
-<span class="ansi-green-fg">      5</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">ticker</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">ticker</span>
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">6</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">seaborn</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">sns</span>
-<span class="ansi-green-fg">      7</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">demesdraw</span>
-<span class="ansi-green-fg">      8</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">msprime</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/seaborn/__init__.py:2</span>
-<span class="ansi-green-fg">      1</span> <span style="font-style:italic;color:rgb(95,135,135)"># Import seaborn objects</span>
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">2</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">rcmod</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> *  <span style="font-style:italic;color:rgb(95,135,135)"># noqa: F401,F403</span>
-<span class="ansi-green-fg">      3</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">utils</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> *  <span style="font-style:italic;color:rgb(95,135,135)"># noqa: F401,F403</span>
-<span class="ansi-green-fg">      4</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">palettes</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> *  <span style="font-style:italic;color:rgb(95,135,135)"># noqa: F401,F403</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/seaborn/rcmod.py:5</span>
-<span class="ansi-green-fg">      3</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">mpl</span>
-<span class="ansi-green-fg">      4</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">cycler</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> cycler
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">5</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> palettes
-<span class="ansi-green-fg">      8</span> __all__ = [<span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">set_theme</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">set</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">reset_defaults</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">reset_orig</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">      9</span>            <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">axes_style</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">set_style</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">plotting_context</span><span class="ansi-yellow-fg">"</span>, <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">set_context</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">     10</span>            <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">set_palette</span><span class="ansi-yellow-fg">"</span>]
-<span class="ansi-green-fg">     13</span> _style_keys = [
-<span class="ansi-green-fg">     14</span> 
-<span class="ansi-green-fg">     15</span>     <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">axes.facecolor</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">   (...)</span><span class="ansi-green-fg">     50</span> 
-<span class="ansi-green-fg">     51</span> ]
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/seaborn/palettes.py:9</span>
-<span class="ansi-green-fg">      5</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">mpl</span>
-<span class="ansi-green-fg">      7</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">external</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> husl
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">9</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">utils</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> desaturate, get_color_cycle
-<span class="ansi-green-fg">     10</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">colors</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> xkcd_rgb, crayons
-<span class="ansi-green-fg">     11</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_compat</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> get_colormap
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/seaborn/utils.py:11</span>
-<span class="ansi-green-fg">      8</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">types</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> ModuleType
-<span class="ansi-green-fg">     10</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">numpy</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">np</span>
-<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">11</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pd</span>
-<span class="ansi-green-fg">     12</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">as</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">mpl</span>
-<span class="ansi-green-fg">     13</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">matplotlib</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">colors</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> to_rgb
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/pandas/__init__.py:49</span>
-<span class="ansi-green-fg">     46</span> <span style="font-style:italic;color:rgb(95,135,135)"># let init-time option registration happen</span>
-<span class="ansi-green-fg">     47</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">core</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">config_init</span>  <span style="font-style:italic;color:rgb(95,135,135)"># pyright: ignore[reportUnusedImport] # noqa: F401</span>
-<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">49</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">core</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">api</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> (
-<span class="ansi-green-fg">     50</span>     <span style="font-style:italic;color:rgb(95,135,135)"># dtype</span>
-<span class="ansi-green-fg">     51</span>     ArrowDtype,
-<span class="ansi-green-fg">     52</span>     Int8Dtype,
-<span class="ansi-green-fg">     53</span>     Int16Dtype,
-<span class="ansi-green-fg">     54</span>     Int32Dtype,
-<span class="ansi-green-fg">     55</span>     Int64Dtype,
-<span class="ansi-green-fg">     56</span>     UInt8Dtype,
-<span class="ansi-green-fg">     57</span>     UInt16Dtype,
-<span class="ansi-green-fg">     58</span>     UInt32Dtype,
-<span class="ansi-green-fg">     59</span>     UInt64Dtype,
-<span class="ansi-green-fg">     60</span>     Float32Dtype,
-<span class="ansi-green-fg">     61</span>     Float64Dtype,
-<span class="ansi-green-fg">     62</span>     CategoricalDtype,
-<span class="ansi-green-fg">     63</span>     PeriodDtype,
-<span class="ansi-green-fg">     64</span>     IntervalDtype,
-<span class="ansi-green-fg">     65</span>     DatetimeTZDtype,
-<span class="ansi-green-fg">     66</span>     StringDtype,
-<span class="ansi-green-fg">     67</span>     BooleanDtype,
-<span class="ansi-green-fg">     68</span>     <span style="font-style:italic;color:rgb(95,135,135)"># missing</span>
-<span class="ansi-green-fg">     69</span>     NA,
-<span class="ansi-green-fg">     70</span>     isna,
-<span class="ansi-green-fg">     71</span>     isnull,
-<span class="ansi-green-fg">     72</span>     notna,
-<span class="ansi-green-fg">     73</span>     notnull,
-<span class="ansi-green-fg">     74</span>     <span style="font-style:italic;color:rgb(95,135,135)"># indexes</span>
-<span class="ansi-green-fg">     75</span>     Index,
-<span class="ansi-green-fg">     76</span>     CategoricalIndex,
-<span class="ansi-green-fg">     77</span>     RangeIndex,
-<span class="ansi-green-fg">     78</span>     MultiIndex,
-<span class="ansi-green-fg">     79</span>     IntervalIndex,
-<span class="ansi-green-fg">     80</span>     TimedeltaIndex,
-<span class="ansi-green-fg">     81</span>     DatetimeIndex,
-<span class="ansi-green-fg">     82</span>     PeriodIndex,
-<span class="ansi-green-fg">     83</span>     IndexSlice,
-<span class="ansi-green-fg">     84</span>     <span style="font-style:italic;color:rgb(95,135,135)"># tseries</span>
-<span class="ansi-green-fg">     85</span>     NaT,
-<span class="ansi-green-fg">     86</span>     Period,
-<span class="ansi-green-fg">     87</span>     period_range,
-<span class="ansi-green-fg">     88</span>     Timedelta,
-<span class="ansi-green-fg">     89</span>     timedelta_range,
-<span class="ansi-green-fg">     90</span>     Timestamp,
-<span class="ansi-green-fg">     91</span>     date_range,
-<span class="ansi-green-fg">     92</span>     bdate_range,
-<span class="ansi-green-fg">     93</span>     Interval,
-<span class="ansi-green-fg">     94</span>     interval_range,
-<span class="ansi-green-fg">     95</span>     DateOffset,
-<span class="ansi-green-fg">     96</span>     <span style="font-style:italic;color:rgb(95,135,135)"># conversion</span>
-<span class="ansi-green-fg">     97</span>     to_numeric,
-<span class="ansi-green-fg">     98</span>     to_datetime,
-<span class="ansi-green-fg">     99</span>     to_timedelta,
-<span class="ansi-green-fg">    100</span>     <span style="font-style:italic;color:rgb(95,135,135)"># misc</span>
-<span class="ansi-green-fg">    101</span>     Flags,
-<span class="ansi-green-fg">    102</span>     Grouper,
-<span class="ansi-green-fg">    103</span>     factorize,
-<span class="ansi-green-fg">    104</span>     unique,
-<span class="ansi-green-fg">    105</span>     value_counts,
-<span class="ansi-green-fg">    106</span>     NamedAgg,
-<span class="ansi-green-fg">    107</span>     array,
-<span class="ansi-green-fg">    108</span>     Categorical,
-<span class="ansi-green-fg">    109</span>     set_eng_float_format,
-<span class="ansi-green-fg">    110</span>     Series,
-<span class="ansi-green-fg">    111</span>     DataFrame,
-<span class="ansi-green-fg">    112</span> )
-<span class="ansi-green-fg">    114</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">core</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">dtypes</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">dtypes</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> SparseDtype
-<span class="ansi-green-fg">    116</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">tseries</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">api</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> infer_freq
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/pandas/core/api.py:1</span>
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">1</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> (
-<span class="ansi-green-fg">      2</span>     NaT,
-<span class="ansi-green-fg">      3</span>     Period,
-<span class="ansi-green-fg">      4</span>     Timedelta,
-<span class="ansi-green-fg">      5</span>     Timestamp,
-<span class="ansi-green-fg">      6</span> )
-<span class="ansi-green-fg">      7</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">missing</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> NA
-<span class="ansi-green-fg">      9</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">core</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">dtypes</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">dtypes</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> (
-<span class="ansi-green-fg">     10</span>     ArrowDtype,
-<span class="ansi-green-fg">     11</span>     CategoricalDtype,
-<span class="ansi-green-fg">   (...)</span><span class="ansi-green-fg">     14</span>     PeriodDtype,
-<span class="ansi-green-fg">     15</span> )
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/pandas/_libs/__init__.py:18</span>
-<span class="ansi-green-fg">     16</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">pandas_parser</span>  <span style="font-style:italic;color:rgb(95,135,135)"># isort: skip # type: ignore[reportUnusedImport]</span>
-<span class="ansi-green-fg">     17</span> <span style="font-weight:bold;color:rgb(0,135,0)">import</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">pandas_datetime</span>  <span style="font-style:italic;color:rgb(95,135,135)"># noqa: F401 # isort: skip # type: ignore[reportUnusedImport]</span>
-<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">18</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">interval</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> Interval
-<span class="ansi-green-fg">     19</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">tslibs</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> (
-<span class="ansi-green-fg">     20</span>     NaT,
-<span class="ansi-green-fg">     21</span>     NaTType,
-<span class="ansi-green-fg">   (...)</span><span class="ansi-green-fg">     26</span>     iNaT,
-<span class="ansi-green-fg">     27</span> )
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">pandas/_libs/interval.pyx:1</span>, in <span class="ansi-cyan-fg">init pandas._libs.interval</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">pandas/_libs/hashtable.pyx:1</span>, in <span class="ansi-cyan-fg">init pandas._libs.hashtable</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">pandas/_libs/missing.pyx:1</span>, in <span class="ansi-cyan-fg">init pandas._libs.missing</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/pandas/_libs/tslibs/__init__.py:39</span>
-<span class="ansi-green-fg">      1</span> __all__ = [
-<span class="ansi-green-fg">      2</span>     <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">dtypes</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">      3</span>     <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">localize_pydatetime</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">   (...)</span><span class="ansi-green-fg">     36</span>     <span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">is_supported_dtype</span><span class="ansi-yellow-fg">"</span>,
-<span class="ansi-green-fg">     37</span> ]
-<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">39</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">tslibs</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> dtypes  <span style="font-style:italic;color:rgb(95,135,135)"># pylint: disable=import-self</span>
-<span class="ansi-green-fg">     40</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">tslibs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">conversion</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> localize_pydatetime
-<span class="ansi-green-fg">     41</span> <span style="font-weight:bold;color:rgb(0,135,0)">from</span><span style="color:rgb(188,188,188)"> </span><span class="ansi-blue-fg ansi-bold">pandas</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">_libs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">tslibs</span><span class="ansi-blue-fg ansi-bold">.</span><span class="ansi-blue-fg ansi-bold">dtypes</span><span style="color:rgb(188,188,188)"> </span><span style="font-weight:bold;color:rgb(0,135,0)">import</span> (
-<span class="ansi-green-fg">     42</span>     Resolution,
-<span class="ansi-green-fg">     43</span>     periods_per_day,
-<span class="ansi-green-fg">     44</span>     periods_per_second,
-<span class="ansi-green-fg">     45</span> )
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">pandas/_libs/tslibs/dtypes.pyx:1</span>, in <span class="ansi-cyan-fg">init pandas._libs.tslibs.dtypes</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">pandas/_libs/tslibs/np_datetime.pyx:32</span>, in <span class="ansi-cyan-fg">init pandas._libs.tslibs.np_datetime</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">../../_build_env/venv/lib/python3.13/site-packages/numpy/__init__.cython-30.pxd:1010</span>, in <span class="ansi-cyan-fg">numpy.import_array</span><span class="ansi-blue-fg">()</span>
-
-<span class="ansi-red-fg">ImportError</span>: numpy._core.multiarray failed to import</pre>
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }  
+        </style>                          
+        
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="painting_files/figure-html/cell-2-output-3.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="painting_files/figure-html/cell-2-output-3.png" width="403" height="275" class="figure-img"></a></p>
+</figure>
 </div>
 </div>
 </div>
 </section>
 <section id="simulate" class="level2">
 <h2 class="anchored" data-anchor-id="simulate">Simulate</h2>
-<div id="b95bdcb0" class="cell">
+<div id="b95bdcb0" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ts <span class="op">=</span> msprime.sim_ancestry(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>        samples<span class="op">=</span>{ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        demography<span class="op">=</span>d,</span>
@@ -2919,6 +2779,38 @@ Figure&nbsp;1
   </div>
 </nav>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 

@@ -61,7 +61,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -110,6 +110,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
 <link rel="stylesheet" href="../api/_styles-quartodoc.css">
@@ -348,9 +351,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint <span class="im">import</span> io</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.validate <span class="im">import</span> map_truth, balanced_accuracy, mean_confidence, per_base_accuracy</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>plt.rcParams.update({<span class="st">"figure.dpi"</span>: <span class="dv">110</span>, <span class="st">"font.size"</span>: <span class="dv">10</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"axes.spines.top"</span>: <span class="va">False</span>, <span class="st">"axes.spines.right"</span>: <span class="va">False</span>})</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> vscodenb <span class="im">import</span> set_vscode_theme</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>set_vscode_theme()</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>WORK <span class="op">=</span> tempfile.mkdtemp(prefix<span class="op">=</span><span class="st">"tspaint_showcase_"</span>)</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
@@ -402,7 +405,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>    ax.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.02</span>, <span class="fl">1.02</span>), xlim<span class="op">=</span>(<span class="dv">0</span>, L <span class="op">/</span> <span class="fl">1e3</span>), title<span class="op">=</span>title,</span>
 <span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>           xlabel<span class="op">=</span><span class="st">"position (kb)"</span>, ylabel<span class="op">=</span><span class="st">"P(ancestry = B)"</span>)</span>
 <span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    ax.axhline(<span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"0.6"</span>, lw<span class="op">=</span><span class="fl">0.6</span>, ls<span class="op">=</span><span class="st">":"</span>)</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }  
+        </style>                          
+        
+</div>
 </div>
 </section>
 <section id="from-genotypes-to-a-tree-sequence" class="level2">
@@ -452,76 +468,159 @@ source_kind: {'tree sequence': 'ts', 'VCF': 'vcf', 'VCF-Zarr': 'zarr'}</code></p
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Same VCF source -&gt; two different ARGs.</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ts_tsi   <span class="op">=</span> io.tsinfer(vcf)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>ensemble <span class="op">=</span> io.singer(vcf, Ne<span class="op">=</span><span class="dv">1000</span>, mutation_rate<span class="op">=</span><span class="fl">5e-8</span>, recombination_rate<span class="op">=</span><span class="fl">1e-8</span>,</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                     n_samples<span class="op">=</span><span class="dv">14</span>, thin<span class="op">=</span><span class="dv">8</span>, burn_in<span class="op">=</span><span class="dv">4</span>, seed<span class="op">=</span><span class="dv">42</span>, sequence_length<span class="op">=</span>SEQLEN)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                     n_samples<span class="op">=</span><span class="dv">120</span>, thin<span class="op">=</span><span class="dv">10</span>, burn_in<span class="op">=</span><span class="dv">10</span>, seed<span class="op">=</span><span class="dv">42</span>, sequence_length<span class="op">=</span>SEQLEN)</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"tsinfer: </span><span class="sc">{</span>ts_tsi<span class="sc">.</span>num_trees<span class="sc">}</span><span class="ss"> trees    SINGER: </span><span class="sc">{</span><span class="bu">len</span>(ensemble)<span class="sc">}</span><span class="ss"> posterior ARGs "</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(</span><span class="sc">{</span>ensemble[<span class="dv">0</span>]<span class="sc">.</span>num_trees<span class="sc">}</span><span class="ss"> trees in the first)"</span>)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Paint the queries from each (smooth=True: these are inferred ARGs).</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>paint_tsi  <span class="op">=</span> tspaint.paint(ts_tsi,      labels, queries, smooth<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>paint_sing <span class="op">=</span> tspaint.paint(ensemble[<span class="dv">0</span>], labels, queries, smooth<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> tag, p <span class="kw">in</span> [(<span class="st">"tsinfer (point estimate)"</span>, paint_tsi), (<span class="st">"SINGER (one posterior sample)"</span>, paint_sing)]:</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    bal  <span class="op">=</span> balanced_accuracy(p.posteriors, truth_states, samples<span class="op">=</span>queries)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    conf <span class="op">=</span> mean_confidence(p.posteriors, samples<span class="op">=</span>queries)</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>tag<span class="sc">:32s}</span><span class="ss">  balanced acc </span><span class="sc">{</span>bal<span class="sc">:.3f}</span><span class="ss">   mean confidence </span><span class="sc">{</span>conf<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>paint_tsi  <span class="op">=</span> tspaint.paint(ts_tsi, labels, queries,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                           smooth<span class="op">=</span><span class="va">True</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                           )</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>paint_sing <span class="op">=</span> tspaint.paint(ensemble[<span class="dv">0</span>], labels, queries, </span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                           smooth<span class="op">=</span><span class="va">True</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                           )</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> tag, p <span class="kw">in</span> [(<span class="st">"tsinfer (point estimate)"</span>, paint_tsi), (<span class="st">"SINGER (one posterior sample)"</span>, paint_sing)]:</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    bal  <span class="op">=</span> balanced_accuracy(p.posteriors, truth_states, samples<span class="op">=</span>queries)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    conf <span class="op">=</span> mean_confidence(p.posteriors, samples<span class="op">=</span>queries)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>tag<span class="sc">:32s}</span><span class="ss">  balanced acc </span><span class="sc">{</span>bal<span class="sc">:.3f}</span><span class="ss">   mean confidence </span><span class="sc">{</span>conf<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>tsinfer: 9 trees    SINGER: 10 posterior ARGs (26 trees in the first)
+<pre><code>tsinfer: 9 trees    SINGER: 110 posterior ARGs (24 trees in the first)
 tsinfer (point estimate)          balanced acc 0.950   mean confidence 0.979
-SINGER (one posterior sample)     balanced acc 0.998   mean confidence 0.998</code></pre>
+SINGER (one posterior sample)     balanced acc 0.995   mean confidence 0.997</code></pre>
 </div>
 </div>
-<p>Plotting the most ancestry-mixed query against the shaded truth makes the gap concrete. In the true <code>B</code> tract (grey), <strong>SINGER</strong> jumps cleanly to <code>P(B) ≈ 1</code>, while the <strong>tsinfer</strong> point estimate only edges up to ≈0.15 — it under-calls the very tract SINGER resolves. That one mis-resolved tract <em>is</em> the 0.95-vs-0.998 difference made visible; on a better-sampled region the two converge.</p>
-<div id="3cf744da" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:42.909135Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:42.909017Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:45:42.995096Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:45:42.994564Z&quot;}}" data-execution_count="4">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show the most ancestry-balanced query -- a real A-&gt;B switch is the interesting case to look at</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>bfrac <span class="op">=</span> <span class="kw">lambda</span> segs: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, st <span class="kw">in</span> segs <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>) <span class="op">/</span> <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, _ <span class="kw">in</span> segs)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> <span class="bu">max</span>(queries, key<span class="op">=</span><span class="kw">lambda</span> x: <span class="bu">min</span>(bfrac(truth_states[x]), <span class="dv">1</span> <span class="op">-</span> bfrac(truth_states[x])))</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>plot_painting(ax, {<span class="st">"tsinfer"</span>: paint_tsi.posteriors[q], <span class="st">"SINGER"</span>: paint_sing.posteriors[q]},</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>              truth_states[q], SEQLEN, <span class="ss">f"Query haplotype </span><span class="sc">{</span>q<span class="sc">}</span><span class="ss">: painted P(B) vs. true B tracts (grey)"</span>)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="a27322da" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># import matplotlib</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># def plot(painting, truth=None, title=None):</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     # with sns.axes_style('ticks'):</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     qs = painting.queries</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     segments = painting.segments(deadband=0.4)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#     sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap='coolwarm')</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#     fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#     gs = fig.add_gridspec(len(qs), 2, width_ratios=[1,0.03], hspace=0)</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#     axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     for i, q in enumerate(qs):</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">#         ymin, ymax = 0, 1.5</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">#         if truth:</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#             ymin = -0.5</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#             for (l, r, s) in truth[q]:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#                 axes[i].barh(-0.25, r - l, left=l, height=0.5,</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co">#                         color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co">#         # for (l, r, s) in segments[q]:</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co">#         #     axes[i].barh(0.25, r - l, left=l, height=0.5,</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">#         #             color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co">#         # for seg in painting.posteriors[q]:</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co">#         #     axes[i].barh(1, seg.right - seg.left, left=seg.left, height=1,</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#         #             color=sm.to_rgba(seg.posterior[0]), edgecolor="none")</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="co">#         for state in [0, 1]:</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co">#             xs, ys = [], []</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co">#             for seg in painting.posteriors[q]:</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="co">#                 xs += [seg.left, seg.right]</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co">#                 ys += [float(seg.posterior[state])] * 2</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co">#             axes[i].plot(xs, ys, color=sm.to_rgba(1.0 if state == 0 else 0.0))</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].set_ylim(ymin, ymax)</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].set_xlim(0, painting.length)</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].set_ylabel(f'hapl. {i}', rotation=0, fontsize=7, color="0.0", horizontalalignment="right")</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].yaxis.set_major_locator(matplotlib.ticker.NullLocator())</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="co">#         if i &lt; len(axes)-1:</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="co">#             axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].tick_params(axis='x', bottom=True)</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].spines['top'].set_visible(True)</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].spines['bottom'].set_visible(True)</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].spines['left'].set_visible(True)</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].spines['right'].set_visible(True)</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[i].grid(False)</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="co">#     ax = fig.add_subplot(gs[:, 1])</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a><span class="co">#     ax.set_axis_off()</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="co">#     cb = fig.colorbar(sm, ax=ax, fraction=0.5, pad=0.01)</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a><span class="co">#     cb.set_label("P(ancestry A)")</span></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a><span class="co">#     if title:</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="co">#         axes[0].set_title(title)</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="co">#     plt.tight_layout()</span></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(paint_tsi, truth=truth, title='tsinfer')</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="0a4ee8e7" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>paint_tsi.plot(truth<span class="op">=</span>truth, title<span class="op">=</span><span class="st">'tsinfer'</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>paint_sing.plot(truth<span class="op">=</span>truth, title<span class="op">=</span><span class="st">'SINGER'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="showcase_files/figure-html/cell-5-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="showcase_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></a></p>
+<p><a href="showcase_files/figure-html/cell-6-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="showcase_files/figure-html/cell-6-output-1.png" width="889" height="571" class="figure-img"></a></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-6-output-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="showcase_files/figure-html/cell-6-output-2.png" width="889" height="571" class="figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Plotting the most ancestry-mixed query against the shaded truth makes the gap concrete. In the true <code>B</code> tract (grey), <strong>SINGER</strong> jumps cleanly to <code>P(B) ≈ 1</code>, while the <strong>tsinfer</strong> point estimate only edges up to ≈0.15 — it under-calls the very tract SINGER resolves. That one mis-resolved tract <em>is</em> the 0.95-vs-0.998 difference made visible; on a better-sampled region the two converge.</p>
+<div id="3cf744da" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:42.909135Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:42.909017Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:45:42.995096Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:45:42.994564Z&quot;}}" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show the most ancestry-balanced query -- a real A-&gt;B switch is the interesting case to look at</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>bfrac <span class="op">=</span> <span class="kw">lambda</span> segs: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, st <span class="kw">in</span> segs <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>) <span class="op">/</span> <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> l, r, _ <span class="kw">in</span> segs)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> <span class="bu">max</span>(queries, key<span class="op">=</span><span class="kw">lambda</span> x: <span class="bu">min</span>(bfrac(truth_states[x]), <span class="dv">1</span> <span class="op">-</span> bfrac(truth_states[x])))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>plot_painting(ax, {<span class="st">"tsinfer"</span>: paint_tsi.posteriors[q], <span class="st">"SINGER"</span>: paint_sing.posteriors[q]},</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>              truth_states[q], SEQLEN, <span class="ss">f"Query haplotype </span><span class="sc">{</span>q<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="ss">painted P(B) vs. true B tracts (grey)"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-7-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="showcase_files/figure-html/cell-7-output-1.png" width="488" height="362" class="figure-img"></a></p>
 </figure>
 </div>
 </div>
 </div>
 <section id="singers-posterior-gives-a-calibrated-uncertainty-band" class="level3">
 <h3 class="anchored" data-anchor-id="singers-posterior-gives-a-calibrated-uncertainty-band">SINGER’s posterior gives a calibrated uncertainty band</h3>
-<p>A single ARG cannot tell you how much to trust itself. Pass the <strong>whole ensemble</strong> to <code>paint</code> — it fits one pooled <code>(Q, π, w)</code>, paints every member, and <strong>averages</strong> the per-position posteriors, marginalising <em>which ARG</em> (the binding uncertainty on real data). The returned posteriors are <code>MergedSegment</code>s carrying the ensemble mean <strong>and</strong> a <code>posterior_std</code> ARG-uncertainty band (the <code>tspaint.ensemble.merge_posterior_tables</code> machinery, now in one call).</p>
-<div id="08e299c5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:42.996609Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:42.996503Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:45:58.739050Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:45:58.738406Z&quot;}}" data-execution_count="5">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># paint() takes the whole ensemble directly: one pooled fit, paint each member, then average</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the per-position posteriors into MergedSegments (the mean painting + a posterior_std band).</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>merged <span class="op">=</span> tspaint.paint(ensemble, labels, queries).posteriors</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"merged over </span><span class="sc">{</span><span class="bu">len</span>(ensemble)<span class="sc">}</span><span class="ss"> SINGER ARGs:  balanced acc "</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span>balanced_accuracy(merged, truth_states, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">   "</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"mean confidence </span><span class="sc">{</span>mean_confidence(merged, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the mean painting +/- 1 sd across the ensemble for the query whose ARGs disagree most.</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>qb <span class="op">=</span> <span class="bu">max</span>(queries, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">max</span>((sg.posterior_std[<span class="dv">1</span>] <span class="cf">for</span> sg <span class="kw">in</span> merged[s]), default<span class="op">=</span><span class="fl">0.0</span>))</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>seg <span class="op">=</span> merged[qb]</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>xs <span class="op">=</span> np.array([x <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> x <span class="kw">in</span> (s.left, s.right)]) <span class="op">/</span> <span class="fl">1e3</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>mu <span class="op">=</span> np.array([s.posterior[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>sd <span class="op">=</span> np.array([s.posterior_std[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r, st) <span class="kw">in</span> truth_states[qb]:</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>: ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, color<span class="op">=</span><span class="st">"0.85"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>ax.fill_between(xs, np.clip(mu <span class="op">-</span> sd, <span class="dv">0</span>, <span class="dv">1</span>), np.clip(mu <span class="op">+</span> sd, <span class="dv">0</span>, <span class="dv">1</span>),</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"C1"</span>, alpha<span class="op">=</span><span class="fl">0.30</span>, label<span class="op">=</span><span class="st">"±1 sd across ARGs"</span>)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>ax.plot(xs, mu, color<span class="op">=</span><span class="st">"C1"</span>, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"ensemble-mean P(B)"</span>)</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.02</span>, <span class="fl">1.02</span>), xlim<span class="op">=</span>(<span class="dv">0</span>, SEQLEN <span class="op">/</span> <span class="fl">1e3</span>),</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>qb<span class="sc">}</span><span class="ss">: SINGER ensemble mean painting with ARG-uncertainty band"</span>,</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>       xlabel<span class="op">=</span><span class="st">"position (kb)"</span>, ylabel<span class="op">=</span><span class="st">"P(ancestry = B)"</span>)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A single ARG cannot tell you how much to trust itself. Pass the <strong>whole ensemble</strong> to <code>paint</code> — it fits one pooled <code>(Q, π, w)</code>, paints every member, and <strong>averages</strong> the per-position posteriors, marginalising <em>which ARG</em> (the binding uncertainty on real data). The returned posteriors are <code>MergedSegment</code>s carrying the ensemble mean <strong>and</strong> a <code>posterior_std</code>ARG-uncertainty band (the <code>tspaint.ensemble.merge_posterior_tables</code> machinery, now in one call).</p>
+<div id="08e299c5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:42.996609Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:42.996503Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:45:58.739050Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:45:58.738406Z&quot;}}" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># paint() takes the whole ensemble directly: one pooled fit, paint each member, then average</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># the per-position posteriors into MergedSegments (the mean painting + a posterior_std band).</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>merged <span class="op">=</span> tspaint.paint(ensemble, labels, queries).posteriors</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"merged over </span><span class="sc">{</span><span class="bu">len</span>(ensemble)<span class="sc">}</span><span class="ss"> SINGER ARGs:  balanced acc "</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span>balanced_accuracy(merged, truth_states, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"mean confidence </span><span class="sc">{</span>mean_confidence(merged, samples<span class="op">=</span>queries)<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the mean painting +/- 1 sd across the ensemble for the query whose ARGs disagree most.</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>qb <span class="op">=</span> <span class="bu">max</span>(queries, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">max</span>((sg.posterior_std[<span class="dv">1</span>] <span class="cf">for</span> sg <span class="kw">in</span> merged[s]), default<span class="op">=</span><span class="fl">0.0</span>))</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>seg <span class="op">=</span> merged[qb]</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>xs <span class="op">=</span> np.array([x <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> x <span class="kw">in</span> (s.left, s.right)]) <span class="op">/</span> <span class="fl">1e3</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>mu <span class="op">=</span> np.array([s.posterior[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>sd <span class="op">=</span> np.array([s.posterior_std[<span class="dv">1</span>] <span class="cf">for</span> s <span class="kw">in</span> seg <span class="cf">for</span> _ <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>)])</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">2.6</span>))</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r, st) <span class="kw">in</span> truth_states[qb]:</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> st <span class="op">==</span> <span class="dv">1</span>: ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, color<span class="op">=</span><span class="st">"0.85"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>ax.fill_between(xs, np.clip(mu <span class="op">-</span> sd, <span class="dv">0</span>, <span class="dv">1</span>), np.clip(mu <span class="op">+</span> sd, <span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                color<span class="op">=</span><span class="st">"C1"</span>, alpha<span class="op">=</span><span class="fl">0.30</span>, label<span class="op">=</span><span class="st">"±1 sd across ARGs"</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>ax.plot(xs, mu, color<span class="op">=</span><span class="st">"C1"</span>, lw<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"ensemble-mean P(B)"</span>)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.02</span>, <span class="fl">1.02</span>), xlim<span class="op">=</span>(<span class="dv">0</span>, SEQLEN <span class="op">/</span> <span class="fl">1e3</span>),</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>qb<span class="sc">}</span><span class="ss">: SINGER ensemble mean painting with ARG-uncertainty band"</span>,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>       xlabel<span class="op">=</span><span class="st">"position (kb)"</span>, ylabel<span class="op">=</span><span class="st">"P(ancestry = B)"</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"center left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, framealpha<span class="op">=</span><span class="fl">0.9</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>merged over 10 SINGER ARGs:  balanced acc 0.998   mean confidence 0.945</code></pre>
+<pre><code>merged over 110 SINGER ARGs:  balanced acc 0.999   mean confidence 0.948</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="showcase_files/figure-html/cell-6-output-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="showcase_files/figure-html/cell-6-output-2.png" class="img-fluid figure-img"></a></p>
+<p><a href="showcase_files/figure-html/cell-8-output-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="showcase_files/figure-html/cell-8-output-2.png" width="897" height="250" class="figure-img"></a></p>
 </figure>
 </div>
 </div>
@@ -534,28 +633,28 @@ SINGER (one posterior sample)     balanced acc 0.998   mean confidence 0.998</co
 </section>
 <section id="audit-the-reference-panel-reference-qc" class="level2">
 <h2 class="anchored" data-anchor-id="audit-the-reference-panel-reference-qc">3. Audit the reference panel (reference QC)</h2>
-<p>Painting trusts the labels on the reference panel. Real panels are imperfect — some “reference” individuals are themselves admixed or mislabelled. <code>tspaint.reference_qc</code> audits the panel <em>from the genealogy</em>: it reads each reference’s <strong>leave-one-out</strong> posterior (what the rest of the tree says about it, ignoring its own label), ranks references by <strong>credibility</strong>, and maps each one’s own foreign tracts.</p>
+<p>Painting trusts the labels on the reference panel. Real panels are imperfect — some “reference” individuals are themselves admixed or mislabelled. <code>tspaint.reference_qc</code> audits the panel <em>from the genealogy</em>: it reads each reference’s <strong>leave-one-out</strong> osterior (what the rest of the tree says about it, ignoring its own label), ranks references by <strong>credibility</strong>, and maps each one’s own foreign tracts.</p>
 <p>We simulate a panel where two nominal <code>A</code>/<code>B</code> sub-panels carry a 30% minority of foreign ancestry, mixed in with pure anchors.</p>
-<div id="c05ee61f" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:58.741760Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:58.741630Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:46:54.336373Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:46:54.335053Z&quot;}}" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ts_qc <span class="op">=</span> tspaint.sim.simulate_admixture_impure_refs(</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    n_admix<span class="op">=</span><span class="dv">2</span>, n_pure<span class="op">=</span><span class="dv">8</span>, n_impure<span class="op">=</span><span class="dv">4</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>,</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    ref_impurity<span class="op">=</span><span class="fl">0.3</span>, Ne<span class="op">=</span><span class="dv">1000</span>, T_admix<span class="op">=</span><span class="dv">150</span>, T_split<span class="op">=</span><span class="dv">5000</span>, random_seed<span class="op">=</span><span class="dv">3</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>name_qc, pid_qc, of_qc <span class="op">=</span> pops(ts_qc)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>labels_qc <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"RA"</span>)}        <span class="co"># RA/RB: impure panels, nominally A/B</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>labels_qc.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"B"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>)})</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>pure   <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"B"</span>))</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>impure <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"RA"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>))</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts_qc, labels_qc)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>cred <span class="op">=</span> qc.credibility</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"pure-anchor credibility  : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> pure])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"impure-panel credibility : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> impure])<span class="sc">:.3f}</span><span class="ss">   "</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(lower = the genealogy disagrees with the label)"</span>)</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">least-credible references (the audit surfaces the impure panels first):"</span>)</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row <span class="kw">in</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[:<span class="dv">6</span>]:</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    tag <span class="op">=</span> <span class="st">"impure"</span> <span class="cf">if</span> row[<span class="st">"ref"</span>] <span class="kw">in</span> impure <span class="cf">else</span> <span class="st">"pure  "</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  ref </span><span class="sc">{</span>row[<span class="st">'ref'</span>]<span class="sc">:&gt;3}</span><span class="ss"> [</span><span class="sc">{</span>tag<span class="sc">}</span><span class="ss">]  label </span><span class="sc">{</span>row[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">  "</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"credibility </span><span class="sc">{</span>row[<span class="st">'credibility'</span>]<span class="sc">:.2f}</span><span class="ss">  foreign_fraction </span><span class="sc">{</span>row[<span class="st">'foreign_fraction'</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="c05ee61f" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:45:58.741760Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:45:58.741630Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:46:54.336373Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:46:54.335053Z&quot;}}" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ts_qc <span class="op">=</span> tspaint.sim.simulate_admixture_impure_refs(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    n_admix<span class="op">=</span><span class="dv">2</span>, n_pure<span class="op">=</span><span class="dv">8</span>, n_impure<span class="op">=</span><span class="dv">4</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    ref_impurity<span class="op">=</span><span class="fl">0.3</span>, Ne<span class="op">=</span><span class="dv">1000</span>, T_admix<span class="op">=</span><span class="dv">150</span>, T_split<span class="op">=</span><span class="dv">5000</span>, random_seed<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>name_qc, pid_qc, of_qc <span class="op">=</span> pops(ts_qc)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>labels_qc <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"RA"</span>)}        <span class="co"># RA/RB: impure panels, nominally A/B</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>labels_qc.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of_qc(<span class="st">"B"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>)})</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>pure   <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"A"</span>) <span class="op">+</span> of_qc(<span class="st">"B"</span>))</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>impure <span class="op">=</span> <span class="bu">set</span>(of_qc(<span class="st">"RA"</span>) <span class="op">+</span> of_qc(<span class="st">"RB"</span>))</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts_qc, labels_qc)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>cred <span class="op">=</span> qc.credibility</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"pure-anchor credibility  : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> pure])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"impure-panel credibility : mean </span><span class="sc">{</span>np<span class="sc">.</span>mean([cred[r] <span class="cf">for</span> r <span class="kw">in</span> impure])<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(lower = the genealogy disagrees with the label)"</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">least-credible references (the audit surfaces the impure panels first):"</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row <span class="kw">in</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[:<span class="dv">6</span>]:</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    tag <span class="op">=</span> <span class="st">"impure"</span> <span class="cf">if</span> row[<span class="st">"ref"</span>] <span class="kw">in</span> impure <span class="cf">else</span> <span class="st">"pure  "</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  ref </span><span class="sc">{</span>row[<span class="st">'ref'</span>]<span class="sc">:&gt;3}</span><span class="ss"> [</span><span class="sc">{</span>tag<span class="sc">}</span><span class="ss">]  label </span><span class="sc">{</span>row[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">  "</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"credibility </span><span class="sc">{</span>row[<span class="st">'credibility'</span>]<span class="sc">:.2f}</span><span class="ss">  foreign_fraction </span><span class="sc">{</span>row[<span class="st">'foreign_fraction'</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>pure-anchor credibility  : mean 0.938
 impure-panel credibility : mean 0.705   (lower = the genealogy disagrees with the label)
@@ -570,71 +669,76 @@ least-credible references (the audit surfaces the impure panels first):
 </div>
 </div>
 <p>The impure references float to the top of the audit (lowest credibility). For any flagged reference, its <strong>introgression map</strong> — the leave-one-out posterior — recovers <em>where</em> on the genome it is foreign, which we can check against the census truth.</p>
-<div id="15065cd8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:46:54.343004Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:46:54.342789Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:46:54.454483Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:46:54.454008Z&quot;}}" data-execution_count="7">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[<span class="dv">0</span>][<span class="st">"ref"</span>]</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>lab <span class="op">=</span> labels_qc[suspect]</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.3</span>)             <span class="co"># (left, right, foreign_state)</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>truth_qc, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_qc)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>s_of <span class="op">=</span> {pid_qc[<span class="st">"A"</span>]: <span class="dv">0</span>, pid_qc[<span class="st">"B"</span>]: <span class="dv">1</span>}</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>true_foreign <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_qc[suspect] <span class="cf">if</span> s_of.get(p, lab) <span class="op">!=</span> lab]</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"suspect reference </span><span class="sc">{</span>suspect<span class="sc">}</span><span class="ss"> (nominal label </span><span class="sc">{</span>lab<span class="sc">}</span><span class="ss">):"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  flagged foreign tracts : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r, _ <span class="kw">in</span> flagged]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  true foreign tracts    : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r <span class="kw">in</span> true_foreign]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="15065cd8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:46:54.343004Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:46:54.342789Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:46:54.454483Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:46:54.454008Z&quot;}}" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary(deadband<span class="op">=</span><span class="fl">0.3</span>)[<span class="dv">0</span>][<span class="st">"ref"</span>]</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>lab <span class="op">=</span> labels_qc[suspect]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.3</span>)             <span class="co"># (left, right, foreign_state)</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>truth_qc, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_qc)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>s_of <span class="op">=</span> {pid_qc[<span class="st">"A"</span>]: <span class="dv">0</span>, pid_qc[<span class="st">"B"</span>]: <span class="dv">1</span>}</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>true_foreign <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_qc[suspect] <span class="cf">if</span> s_of.get(p, lab) <span class="op">!=</span> lab]</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"suspect reference </span><span class="sc">{</span>suspect<span class="sc">}</span><span class="ss"> (nominal label </span><span class="sc">{</span>lab<span class="sc">}</span><span class="ss">):"</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  flagged foreign tracts : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r, _ <span class="kw">in</span> flagged]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  true foreign tracts    : </span><span class="sc">{</span>[(<span class="bu">round</span>(l), <span class="bu">round</span>(r)) <span class="cf">for</span> l, r <span class="kw">in</span> true_foreign]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>suspect reference 51 (nominal label 1):
   flagged foreign tracts : [(83207, 1030583), (1121687, 2000000)]
   true foreign tracts    : [(83207, 2000000)]</code></pre>
 </div>
 </div>
-<p>The flagged span lands on the true foreign tract. The auto-bootstrap assumes the <strong>clean references are the majority</strong> (it picks the most self-consistent half as a trusted anchor core); when you already know which individuals are clean, pass them as <code>anchors=...</code>.</p>
+<p>The flagged span lands on the true foreign tract. The auto-bootstrap assumes the <strong>clean references are the majority</strong> (it picks the most self-consistent half as a trusted anchor core); when you already know which individuals are clean, pass them as anchors=…`.</p>
 </section>
 <section id="detect-admixture-from-a-source-that-is-not-in-the-panel" class="level2">
 <h2 class="anchored" data-anchor-id="detect-admixture-from-a-source-that-is-not-in-the-panel">4. Detect admixture from a source that is <em>not in the panel</em></h2>
 <p>The hardest case: some of the admixture comes from a population you never sampled — an archaic “ghost”. It cannot match any reference, but it also is not merely <em>ambiguous</em>: a ghost tract sits on an anomalously <strong>deep</strong> branch relative to every labelled reference. <code>tspaint.detect_ghost</code> keys on exactly that conjunction (fits no panel source <strong>and</strong> deep), so it separates a genuine unsampled source from an ordinary uninformative region.</p>
 <p>We simulate admixed queries drawing 25% from an unsampled deep-outgroup ghost, plus a matched <strong>no-ghost control</strong>, and compare the genome-wide ghost <strong>burden</strong>.</p>
-<div id="b63e633e" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:46:54.456412Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:46:54.456285Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:46.306632Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:46.305682Z&quot;}}" data-execution_count="8">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ghost_cohort(ghost_fraction, seed<span class="op">=</span><span class="dv">1</span>):</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> tspaint.sim.simulate_admixture_with_ghost(</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span><span class="dv">12</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span><span class="dv">100</span>, T_split_AB<span class="op">=</span><span class="dv">2000</span>, T_split_ABC<span class="op">=</span><span class="dv">20000</span>, Ne<span class="op">=</span><span class="dv">1000</span>, random_seed<span class="op">=</span>seed)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    nm, pd, of <span class="op">=</span> pops(ts)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> of(<span class="st">"ADMIX"</span>)<span class="op">;</span> lab <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"A"</span>)}<span class="op">;</span> lab.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"B"</span>)})</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ts, pd, q, lab</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>ts_g, pid_g, q_g, lab_g <span class="op">=</span> ghost_cohort(<span class="fl">0.25</span>)</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>ts_c, pid_c, q_c, lab_c <span class="op">=</span> ghost_cohort(<span class="fl">0.00</span>)        <span class="co"># matched no-ghost control</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>gh   <span class="op">=</span> tspaint.detect_ghost(ts_g, lab_g, q_g)</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>ctrl <span class="op">=</span> tspaint.detect_ghost(ts_c, lab_c, q_c)</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>b_ghost <span class="op">=</span> <span class="bu">float</span>(np.mean([gh.burden[x]   <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>b_ctrl  <span class="op">=</span> <span class="bu">float</span>(np.mean([ctrl.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_c]))</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"mean ghost burden  : 25% ghost cohort </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">   "</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"no-ghost control </span><span class="sc">{</span>b_ctrl<span class="sc">:.3f}</span><span class="ss">   (</span><span class="sc">{</span>b_ghost <span class="op">/</span> <span class="bu">max</span>(b_ctrl, <span class="fl">1e-6</span>)<span class="sc">:.0f}</span><span class="ss">x separation)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="b63e633e" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:46:54.456412Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:46:54.456285Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:46.306632Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:46.305682Z&quot;}}" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ghost_cohort(ghost_fraction, seed<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> tspaint.sim.simulate_admixture_with_ghost(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span><span class="dv">12</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span><span class="dv">100</span>, T_split_AB<span class="op">=</span><span class="dv">2000</span>, T_split_ABC<span class="op">=</span><span class="dv">20000</span>, Ne<span class="op">=</span><span class="dv">1000</span>, random_seed<span class="op">=</span>seed)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    nm, pd, of <span class="op">=</span> pops(ts)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> of(<span class="st">"ADMIX"</span>)<span class="op">;</span> lab <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"A"</span>)}<span class="op">;</span> lab.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">"B"</span>)})</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ts, pd, q, lab</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>ts_g, pid_g, q_g, lab_g <span class="op">=</span> ghost_cohort(<span class="fl">0.25</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>ts_c, pid_c, q_c, lab_c <span class="op">=</span> ghost_cohort(<span class="fl">0.00</span>)        <span class="co"># matched no-ghost control</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>gh   <span class="op">=</span> tspaint.detect_ghost(ts_g, lab_g, q_g)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>ctrl <span class="op">=</span> tspaint.detect_ghost(ts_c, lab_c, q_c)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>b_ghost <span class="op">=</span> <span class="bu">float</span>(np.mean([gh.burden[x]   <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>b_ctrl  <span class="op">=</span> <span class="bu">float</span>(np.mean([ctrl.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_c]))</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"mean ghost burden  : 25% ghost cohort </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">   "</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"no-ghost control </span><span class="sc">{</span>b_ctrl<span class="sc">:.3f}</span><span class="ss">   (</span><span class="sc">{</span>b_ghost <span class="op">/</span> <span class="bu">max</span>(b_ctrl, <span class="fl">1e-6</span>)<span class="sc">:.0f}</span><span class="ss">x separation)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>mean ghost burden  : 25% ghost cohort 0.101   no-ghost control 0.010   (10x separation)</code></pre>
 </div>
 </div>
-<p>The burden separates the ghost cohort from the control roughly ten-fold — a clean genome-wide alarm. We can also localise it: shading one query’s true ghost tracts and overlaying the detected ones.</p>
-<div id="41dc1ef3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:47:46.310397Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:47:46.310196Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:46.530484Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:46.529978Z&quot;}}" data-execution_count="9">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>truth_g, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_g)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>GHOST <span class="op">=</span> pid_g[<span class="st">"GHOST"</span>]</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># show a query with a genuine mix of ghost and non-ghost ancestry (recall *and* specificity)</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>ghost_frac <span class="op">=</span> <span class="kw">lambda</span> s: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[s] <span class="cf">if</span> p <span class="op">==</span> GHOST) <span class="op">/</span> ts_g.sequence_length</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="bu">min</span>(q_g, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">abs</span>(ghost_frac(s) <span class="op">-</span> <span class="fl">0.5</span>))</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>true_ghost <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST]</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>det_ghost  <span class="op">=</span> gh.tracts(x)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">1.7</span>))</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost:</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, ymin<span class="op">=</span><span class="fl">0.55</span>, ymax<span class="op">=</span><span class="fl">1.0</span>, color<span class="op">=</span><span class="st">"0.8"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> det_ghost:</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    ax.axvspan(l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>, ymin<span class="op">=</span><span class="fl">0.0</span>, ymax<span class="op">=</span><span class="fl">0.45</span>, color<span class="op">=</span><span class="st">"C3"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(xlim<span class="op">=</span>(<span class="dv">0</span>, ts_g.sequence_length <span class="op">/</span> <span class="fl">1e3</span>), ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">1</span>), yticks<span class="op">=</span>[<span class="fl">0.22</span>, <span class="fl">0.78</span>],</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>       yticklabels<span class="op">=</span>[<span class="st">"detected"</span>, <span class="st">"true ghost"</span>], xlabel<span class="op">=</span><span class="st">"position (kb)"</span>,</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">: detected ghost tracts vs. true ghost ancestry"</span>)</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The burden separates the ghost cohort from the control roughly ten-fold — a clean genome-wide alarm. We can also localise it: shading one query’s true ghost tracts (gray) and overlaying the detected ones (red).</p>
+<div id="41dc1ef3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:47:46.310397Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:47:46.310196Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:46.530484Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:46.529978Z&quot;}}" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>truth_g, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_g)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>GHOST <span class="op">=</span> pid_g[<span class="st">"GHOST"</span>]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># show a query with a genuine mix of ghost and non-ghost ancestry (recall *and* specificity)</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>ghost_frac <span class="op">=</span> <span class="kw">lambda</span> s: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[s] <span class="cf">if</span> p <span class="op">==</span> GHOST) <span class="op">/</span> ts_g.sequence_length</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="bu">min</span>(q_g, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">abs</span>(ghost_frac(s) <span class="op">-</span> <span class="fl">0.5</span>))</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>true_ghost <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST]</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>det_ghost  <span class="op">=</span> gh.tracts(x)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">1.7</span>))</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>width <span class="op">=</span> <span class="fl">0.25</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost:</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    ax.plot([l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>], [<span class="fl">2.5</span>, <span class="fl">2.5</span>], lw<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"0.8"</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> det_ghost:</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    ax.plot([l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>], [<span class="fl">1.5</span>, <span class="fl">1.5</span>], lw<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"C3"</span>)</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(xlim<span class="op">=</span>(<span class="dv">0</span>, ts_g.sequence_length <span class="op">/</span> <span class="fl">1e3</span>), </span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>       ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">3</span>), </span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>       yticks<span class="op">=</span>[<span class="fl">1.5</span>, <span class="fl">2.5</span>],</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>       yticklabels<span class="op">=</span>[<span class="st">"detected"</span>, <span class="st">"true ghost"</span>], </span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>       xlabel<span class="op">=</span><span class="st">"position (kb)"</span>,</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">: detected ghost tracts vs. true ghost ancestry"</span>)</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="showcase_files/figure-html/cell-10-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="showcase_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></a></p>
+<p><a href="showcase_files/figure-html/cell-12-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="showcase_files/figure-html/cell-12-output-1.png" width="889" height="161" class="figure-img"></a></p>
 </figure>
 </div>
 </div>
@@ -642,17 +746,51 @@ least-credible references (the audit surfaces the impure panels first):
 <section id="with-no-reference-at-all-detect_archaic" class="level3">
 <h3 class="anchored" data-anchor-id="with-no-reference-at-all-detect_archaic">With no reference at all: <code>detect_archaic</code></h3>
 <p><code>detect_ghost</code> still needs the <code>A</code>/<code>B</code> panel to define “deep”. When you have <strong>no archaic reference whatsoever</strong>, <code>tspaint.detect_archaic</code> fits a genome-axis HMM on each haplotype’s nearest-reference coalescence depth, <em>learning</em> the archaic state above the panel’s deepest coalescence. It recovers the genome-wide burden more faithfully than the fixed-quantile flag above.</p>
-<div id="de7a3ae9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:47:46.532945Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:47:46.532811Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:47.130115Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:47.129595Z&quot;}}" data-execution_count="10">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>arch <span class="op">=</span> tspaint.detect_archaic(ts_g, lab_g, q_g)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>true_burden <span class="op">=</span> <span class="bu">float</span>(np.mean([<span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                             <span class="op">/</span> ts_g.sequence_length <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"true ghost burden            : </span><span class="sc">{</span>true_burden<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_archaic (no ref)      : </span><span class="sc">{</span>np<span class="sc">.</span>mean([arch.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_g])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_ghost   (panel-deep)  : </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="de7a3ae9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T07:47:46.532945Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T07:47:46.532811Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T07:47:47.130115Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T07:47:47.129595Z&quot;}}" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>arch <span class="op">=</span> tspaint.detect_archaic(ts_g, lab_g, q_g)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>true_burden <span class="op">=</span> <span class="bu">float</span>(np.mean([<span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                             <span class="op">/</span> ts_g.sequence_length <span class="cf">for</span> x <span class="kw">in</span> q_g]))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"true ghost burden            : </span><span class="sc">{</span>true_burden<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_archaic (no ref)      : </span><span class="sc">{</span>np<span class="sc">.</span>mean([arch.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q_g])<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"detect_ghost   (panel-deep)  : </span><span class="sc">{</span>b_ghost<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>true ghost burden            : 0.173
 detect_archaic (no ref)      : 0.173
 detect_ghost   (panel-deep)  : 0.101</code></pre>
+</div>
+</div>
+<div id="3f24fa30" class="cell" data-execution_count="13">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>truth_g, _ <span class="op">=</span> tspaint.local_ancestry_truth(ts_g)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>GHOST <span class="op">=</span> pid_g[<span class="st">"GHOST"</span>]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># show a query with a genuine mix of ghost and non-ghost ancestry (recall *and* specificity)</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>ghost_frac <span class="op">=</span> <span class="kw">lambda</span> s: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[s] <span class="cf">if</span> p <span class="op">==</span> GHOST) <span class="op">/</span> ts_g.sequence_length</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="bu">min</span>(q_g, key<span class="op">=</span><span class="kw">lambda</span> s: <span class="bu">abs</span>(ghost_frac(s) <span class="op">-</span> <span class="fl">0.5</span>))</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>true_ghost <span class="op">=</span> [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> truth_g[x] <span class="cf">if</span> p <span class="op">==</span> GHOST]</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>det_ghost  <span class="op">=</span> gh.tracts(x)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">1.7</span>))</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>width <span class="op">=</span> <span class="fl">0.25</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost:</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    ax.plot([l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>], [<span class="fl">2.5</span>, <span class="fl">2.5</span>], lw<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"0.8"</span>)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> det_ghost:</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    ax.plot([l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>], [<span class="fl">1.5</span>, <span class="fl">1.5</span>], lw<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"C3"</span>)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>det_arch  <span class="op">=</span> arch.tracts(x)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (l, r) <span class="kw">in</span> det_arch:</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    ax.plot([l <span class="op">/</span> <span class="fl">1e3</span>, r <span class="op">/</span> <span class="fl">1e3</span>], [<span class="fl">0.5</span>, <span class="fl">0.5</span>], lw<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"C0"</span>)</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>ax.<span class="bu">set</span>(xlim<span class="op">=</span>(<span class="dv">0</span>, ts_g.sequence_length <span class="op">/</span> <span class="fl">1e3</span>), </span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>       ylim<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">3</span>), </span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>       yticks<span class="op">=</span>[<span class="fl">0.5</span>, <span class="fl">1.5</span>, <span class="fl">2.5</span>],</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>       yticklabels<span class="op">=</span>[<span class="st">"arch"</span>, <span class="st">"detected"</span>, <span class="st">"true ghost"</span>], </span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>       xlabel<span class="op">=</span><span class="st">"position (kb)"</span>,</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>       title<span class="op">=</span><span class="ss">f"Query </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">: detected ghost tracts vs. true ghost ancestry"</span>)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-14-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6"><img src="showcase_files/figure-html/cell-14-output-1.png" width="889" height="161" class="figure-img"></a></p>
+</figure>
+</div>
 </div>
 </div>
 </section>
