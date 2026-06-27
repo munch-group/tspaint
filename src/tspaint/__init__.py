@@ -51,7 +51,7 @@ from .output import (posterior_table, loo_posterior_table, hard_segments, Segmen
                      INFORMATIVE, MISSING_INFO)
 from .model import make_generator_2state
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
-from .dating import fit_rate_through_time, RateThroughTime
+from .dating import fit_rate_through_time, RateThroughTime, EnsembleRateThroughTime
 from .introgression import reference_qc, foreign_tracts, detect_ghost
 from .archaic import detect_archaic
 
@@ -80,7 +80,7 @@ __all__ = [
     # simulation
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
     # dating (admixture rate through time)
-    "fit_rate_through_time", "RateThroughTime",
+    "fit_rate_through_time", "RateThroughTime", "EnsembleRateThroughTime",
     # reference QC & introgression (Plan A workflows)
     "reference_qc", "foreign_tracts", "detect_ghost", "loo_posterior_table",
     # reference-free archaic detection (Plan B)

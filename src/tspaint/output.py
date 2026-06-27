@@ -44,20 +44,31 @@ class Segment:
     status: str             # INFORMATIVE or MISSING_INFO
 
 
-def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick):
+def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None):
     """Shared engine for the per-sample segment painters.
 
     Runs the down-pass per marginal tree and records, for each focal sample, the
     posterior selected by ``pick(res, sample, prior)`` — ``γ`` for
     :func:`posterior_table`, the leave-one-out outside message for
     :func:`loo_posterior_table` — merging adjacent identical segments.
+
+    ``tree_range=(lo, hi)`` restricts painting to that half-open marginal-tree-index range
+    (the rest is skipped); since each segment's posterior comes from its own tree's pruning
+    — independent of which trees a chunk covers — concatenating the per-range tracks in
+    genome order and re-merging at the seams reproduces the full-genome result exactly
+    (:func:`tspaint.parallel.posterior_table_parallel`).
     """
     pi = np.asarray(pi, float)
     node_time = ts.tables.nodes.time
     samples = [int(s) for s in (ts.samples() if focal is None else focal)]
     tracks = {s: [] for s in samples}
 
-    for tree in ts.trees():
+    lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
+    for ti, tree in enumerate(ts.trees()):
+        if ti < lo:
+            continue
+        if ti >= hi:
+            break
         left = tree.interval.left
         right = tree.interval.right
         res = prune_tree(tree, emissions, Q, node_time, pi)
@@ -73,7 +84,7 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick):
     return tracks
 
 
-def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
+def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None):
     """Per-sample ancestry posterior as contiguous segments covering ``[0, L)``.
 
     Runs the down-pass per marginal tree and records each focal sample's posterior
@@ -102,10 +113,10 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
         :class:`Segment`\\ s covering ``[0, L)``.
     """
     return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
-                         lambda res, s, prior: res.gamma[s])
+                         lambda res, s, prior: res.gamma[s], tree_range=tree_range)
 
 
-def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
+def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None):
     """Per-sample **leave-one-out** ancestry posterior as contiguous segments.
 
     Like :func:`posterior_table` but paints the *outside message* — what the rest of
@@ -128,7 +139,7 @@ def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12):
         :class:`Segment`\\ s covering ``[0, L)``.
     """
     return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
-                         lambda res, s, prior: res.loo.get(s, prior))
+                         lambda res, s, prior: res.loo.get(s, prior), tree_range=tree_range)
 
 
 def missing_info_mask(ts, focal=None):

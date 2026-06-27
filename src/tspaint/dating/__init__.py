@@ -30,7 +30,8 @@ from .grid import log_time_grid, cell_centers, split_branch
 from .estep import (branch_cell_stats, accumulate_time_binned, rate_through_time_binned,
                     composite_transition, accumulate_time_binned_tv, paint_qt)
 from .mstep import fit_poisson_spline, select_lambda_gcv, directional_rate_splines
-from .em import RateThroughTime, make_Q_of_cell, fit_rate_through_time
+from .em import (RateThroughTime, make_Q_of_cell, fit_rate_through_time,
+                 split_time, EnsembleRateThroughTime)
 
 __all__ = [
     "log_time_grid", "cell_centers", "split_branch",
@@ -38,4 +39,5 @@ __all__ = [
     "composite_transition", "accumulate_time_binned_tv", "paint_qt",
     "fit_poisson_spline", "select_lambda_gcv", "directional_rate_splines",
     "RateThroughTime", "make_Q_of_cell", "fit_rate_through_time",
+    "split_time", "EnsembleRateThroughTime",
 ]
