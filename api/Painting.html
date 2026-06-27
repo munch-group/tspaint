@@ -877,8 +877,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
   <ul class="collapse">
   <li><a href="#tspaint.Painting.introgression_map" id="toc-tspaint.Painting.introgression_map" class="nav-link" data-scroll-target="#tspaint.Painting.introgression_map">introgression_map</a></li>
+  <li><a href="#tspaint.Painting.load" id="toc-tspaint.Painting.load" class="nav-link" data-scroll-target="#tspaint.Painting.load">load</a></li>
+  <li><a href="#tspaint.Painting.plot" id="toc-tspaint.Painting.plot" class="nav-link" data-scroll-target="#tspaint.Painting.plot">plot</a></li>
   <li><a href="#tspaint.Painting.posterior_at" id="toc-tspaint.Painting.posterior_at" class="nav-link" data-scroll-target="#tspaint.Painting.posterior_at">posterior_at</a></li>
   <li><a href="#tspaint.Painting.rate_through_time" id="toc-tspaint.Painting.rate_through_time" class="nav-link" data-scroll-target="#tspaint.Painting.rate_through_time">rate_through_time</a></li>
+  <li><a href="#tspaint.Painting.save" id="toc-tspaint.Painting.save" class="nav-link" data-scroll-target="#tspaint.Painting.save">save</a></li>
   <li><a href="#tspaint.Painting.segments" id="toc-tspaint.Painting.segments" class="nav-link" data-scroll-target="#tspaint.Painting.segments">segments</a></li>
   </ul></li>
   </ul></li>
@@ -903,14 +906,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    ts<span class="op">=</span><span class="va">None</span>,</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    labels<span class="op">=</span><span class="va">None</span>,</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    default_deadband<span class="op">=</span><span class="fl">0.0</span>,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    _seqlen<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    _member_posteriors<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Result of :func:<code>paint</code>: the soft local-ancestry posteriors plus the fitted model.</p>
 <section id="attributes" class="level2 doc-section doc-section-attributes">
 <h2 class="doc-section doc-section-attributes anchored" data-anchor-id="attributes">Attributes</h2>
 <dl>
 <dt><code><span class="parameter-name"><strong>posteriors</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a href="../api/output.Segment.html#tspaint.output.Segment">Segment</a>]]</span></code></dt>
 <dd>
-<p>Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:<code>~tspaint.output.Segment</code>&nbsp;s covering <code>[0, L)</code> (the soft, calibrated deliverable).</p>
+<p>Per query haplotype, the down-pass posterior over ancestry states as contiguous :class:<code>~tspaint.output.Segment</code>&nbsp;s covering <code>[0, L)</code> (the soft, calibrated deliverable). When :func:<code>paint</code> was given an <strong>ensemble</strong> of tree sequences these are :class:<code>~tspaint.ensemble.MergedSegment</code>&nbsp;s — the ensemble-mean posterior plus a <code>posterior_std</code> ARG-uncertainty band — but otherwise behave identically (same <code>left</code>/<code>right</code>/<code>posterior</code>/<code>status</code>).</p>
 </dd>
 <dt><code><span class="parameter-name"><strong>Q</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://numpy.org/doc/stable/reference/index.html#module-numpy">numpy</a>.<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray">ndarray</a></span></code></dt>
 <dd>
@@ -932,9 +938,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The painted sample-node ids.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>ts</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tskit</code>.<code>TreeSequence</code></span></code></dt>
+<dt><code><span class="parameter-name"><strong>ts</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tskit</code>.<code>TreeSequence</code> or <a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<code>tskit</code>.<code>TreeSequence</code>]</span></code></dt>
 <dd>
-<p>The tree sequence painted (retained so :meth:<code>rate_through_time</code> can reuse the fit; already in memory, so no extra cost).</p>
+<p>The tree sequence painted — or the ensemble of them — retained so :meth:<code>introgression_map</code> / :meth:<code>rate_through_time</code> can reuse the fit (already in memory, so no extra cost).</p>
 </dd>
 <dt><code><span class="parameter-name"><strong>labels</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span></code></dt>
 <dd>
@@ -943,6 +949,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code><span class="parameter-name"><strong>default_deadband</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span></code></dt>
 <dd>
 <p>Default dead-band passed to :meth:<code>segments</code>. Default <code>0.0</code>.</p>
+</dd>
+<dt><code><span class="parameter-name">**_member_posteriors**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>] or None</span></code></dt>
+<dd>
+<p>For an <strong>ensemble</strong> painting, the individual per-member posterior tables (each a <code>dict[int, list[Segment]]</code>) whose per-position mean is :attr:<code>posteriors</code>; <code>None</code> for a single tree sequence. Drives the per-member :meth:<code>rate_through_time</code> split-time interval.</p>
 </dd>
 </dl>
 </section>
@@ -961,6 +971,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Leave-one-out introgression map for <code>sample</code>, reusing this painting’s fit.</td>
 </tr>
 <tr class="even">
+<td><a href="#tspaint.Painting.load">load</a></td>
+<td>Reload a painting written by :meth:<code>save</code> (<code>ts</code> is <code>None</code>; see :meth:<code>save</code>).</td>
+</tr>
+<tr class="odd">
+<td><a href="#tspaint.Painting.plot">plot</a></td>
+<td>Stacked strip plot of the painting — one row per query haplotype.</td>
+</tr>
+<tr class="even">
 <td><a href="#tspaint.Painting.posterior_at">posterior_at</a></td>
 <td>Posterior vector for <code>sample</code> at a genomic <code>position</code>.</td>
 </tr>
@@ -969,6 +987,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Estimate the admixture (cross-ancestry) rate through time, reusing this fit.</td>
 </tr>
 <tr class="even">
+<td><a href="#tspaint.Painting.save">save</a></td>
+<td>Write this painting to <code>path</code> as <code>.npz</code> (the segment table plus the fitted model).</td>
+</tr>
+<tr class="odd">
 <td><a href="#tspaint.Painting.segments">segments</a></td>
 <td>Hard ancestry segments for downstream tract-length / dating analysis.</td>
 </tr>
@@ -993,17 +1015,68 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dl>
 <dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<code>tspaint</code>.<code>output</code>.<a href="../api/output.Segment.html#tspaint.output.Segment">Segment</a>]</span></code></dt>
 <dd>
-<p>The leave-one-out posterior as contiguous segments covering <code>[0, L)</code>.</p>
+<p>The leave-one-out posterior as contiguous segments covering <code>[0, L)</code> (for an ensemble painting, the ensemble-mean leave-one-out map as :class:<code>~tspaint.ensemble.MergedSegment</code>&nbsp;s).</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="tspaint.Painting.load" class="level3">
+<h3 class="anchored" data-anchor-id="tspaint.Painting.load">load</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.load(path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Reload a painting written by :meth:<code>save</code> (<code>ts</code> is <code>None</code>; see :meth:<code>save</code>).</p>
+</section>
+<section id="tspaint.Painting.plot" class="level3">
+<h3 class="anchored" data-anchor-id="tspaint.Painting.plot">plot</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.plot(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    truth<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    cmap<span class="op">=</span><span class="st">'coolwarm'</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    colors<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    return_plot<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Stacked strip plot of the painting — one row per query haplotype.</p>
+<p>Each haplotype row shows, top to bottom: the <strong>soft</strong> per-position posterior <code>P(ancestry A)</code> as a colour gradient (the calibrated deliverable), the <strong>hard</strong> ancestry segments (:meth:<code>segments</code> at <code>deadband=0.4</code>), and — when <code>truth</code> is given — the true ancestry tracts as a reference track beneath. A shared colour bar maps <code>P(ancestry A)</code> (state A at the top of <code>cmap</code>, state B at the bottom). Works for an ensemble painting too (the rows show the ensemble-mean posterior). Requires matplotlib.</p>
+<section id="parameters-1" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-1">Parameters</h4>
+<dl>
+<dt><code><span class="parameter-name"><strong>truth</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a href="https://docs.python.org/3/library/functions.html#float">float</a>, <a href="https://docs.python.org/3/library/functions.html#float">float</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>]]]</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>Ground-truth ancestry tracts <code>(left, right, state)</code> per query — e.g.&nbsp;from :func:<code>tspaint.local_ancestry_truth</code> mapped to states <code>0</code>/<code>1</code> — drawn as a reference track below each haplotype. No truth track is drawn when <code>None</code> (default).</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>title</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>Title placed on the top haplotype axes.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>cmap</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> or <code>matplotlib</code>.<code>colors</code>.<code>Colormap</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">'coolwarm'</span></code></dt>
+<dd>
+<p>Diverging colormap mapping <code>P(ancestry A) ∈ [0, 1]</code> (state A → <code>1.0</code>, state B → <code>0.0</code>). Default <code>'coolwarm'</code>. Ignored when <code>colors</code> is given.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>colors</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>Colours to build a custom diverging colormap from, overriding <code>cmap</code> — e.g.&nbsp;<code>["#2c7bb6", "#ffffbf", "#d7191c"]</code>.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>return_plot</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">False</span></code></dt>
+<dd>
+<p>Return the Matplotlib <code>(figure, axes)</code> so the caller can further customise or save the plot, instead of <code>None</code>. Default <code>False</code>.</p>
+</dd>
+</dl>
+</section>
+<section id="returns-1" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-1">Returns</h4>
+<dl>
+<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a> or None</span></code></dt>
+<dd>
+<p><code>(figure, list_of_axes)</code> if <code>return_plot</code> is <code>True</code>, else <code>None</code>.</p>
 </dd>
 </dl>
 </section>
 </section>
 <section id="tspaint.Painting.posterior_at" class="level3">
 <h3 class="anchored" data-anchor-id="tspaint.Painting.posterior_at">posterior_at</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.posterior_at(sample, position)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.posterior_at(sample, position)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Posterior vector for <code>sample</code> at a genomic <code>position</code>.</p>
-<section id="parameters-1" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-1">Parameters</h4>
+<section id="parameters-2" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-2">Parameters</h4>
 <dl>
 <dt><code><span class="parameter-name"><strong>sample</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span></code></dt>
 <dd>
@@ -1015,8 +1088,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
-<section id="returns-1" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-1">Returns</h4>
+<section id="returns-2" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-2">Returns</h4>
 <dl>
 <dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://numpy.org/doc/stable/reference/index.html#module-numpy">numpy</a>.<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray">ndarray</a> or None</span></code></dt>
 <dd>
@@ -1027,15 +1100,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="tspaint.Painting.rate_through_time" class="level3">
 <h3 class="anchored" data-anchor-id="tspaint.Painting.rate_through_time">rate_through_time</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.rate_through_time(edges<span class="op">=</span><span class="va">None</span>, <span class="op">**</span>kwargs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.rate_through_time(edges<span class="op">=</span><span class="va">None</span>, <span class="op">*</span>, n_jobs<span class="op">=</span><span class="va">None</span>, <span class="op">**</span>kwargs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Estimate the admixture (cross-ancestry) rate through time, reusing this fit.</p>
 <p>Fits the time-inhomogeneous directional mugration EM (:func:<code>tspaint.fit_rate_through_time</code>) <strong>warm-started from this painting’s fitted <code>(Q, π, w)</code></strong>, so the homogeneous fit is not repeated. This is a <em>different deliverable</em> from the painting — the cross-ancestry transition rates <code>q_AB(t)</code>, <code>q_BA(t)</code> as functions of (backward) time, locating divergence / gene-flow epochs and their direction. It returns a <strong>new</strong> :class:<code>~tspaint.dating.RateThroughTime</code> and does <strong>not</strong> modify :attr:<code>posteriors</code> (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the paths stay side by side).</p>
-<section id="parameters-2" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-2">Parameters</h4>
+<section id="parameters-3" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-3">Parameters</h4>
 <dl>
 <dt><code><span class="parameter-name"><strong>edges</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>array_like</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
 <p>Log-time grid edges; an auto grid is built from the node ages when <code>None</code>.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>n_jobs</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>For an <strong>ensemble</strong> painting, worker processes dating the members <strong>in parallel</strong> (one per member — they are independent). Defaults to the painting’s own :attr:<code>n_jobs</code> (so a painting fit in parallel dates in parallel); pass an explicit value to override. Ignored for a single tree sequence (the dating E-step is not yet tree-parallel).</p>
 </dd>
 <dt><code><span class="parameter-name">****kwargs**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">{}</span></code></dt>
 <dd>
@@ -1043,22 +1120,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
-<section id="returns-2" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-2">Returns</h4>
+<section id="returns-3" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-3">Returns</h4>
 <dl>
-<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tspaint</code>.<code>dating</code>.<code>RateThroughTime</code></span></code></dt>
+<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tspaint</code>.<code>dating</code>.<code>RateThroughTime</code> or <code>tspaint</code>.<code>dating</code>.<code>EnsembleRateThroughTime</code></span></code></dt>
 <dd>
-<p>The directional rate-through-time profile (<code>.centers</code>, <code>.q_AB</code>, <code>.q_BA</code>, <code>.plot()</code>).</p>
+<p>For a single tree sequence, the directional rate-through-time profile (<code>.centers</code>, <code>.q_AB</code>, <code>.q_BA</code>, <code>.plot()</code>). For an <strong>ensemble</strong> painting, an :class:<code>~tspaint.dating.EnsembleRateThroughTime</code>: every member is dated on the shared fit and grid, and the per-member split-time estimates form a <strong>confidence interval on the split time</strong> (<code>.split_time()</code>, <code>.split_time_ci()</code>) — the ARG-uncertainty band on <em>when</em> the ancestries diverged.</p>
 </dd>
 </dl>
 </section>
 </section>
+<section id="tspaint.Painting.save" class="level3">
+<h3 class="anchored" data-anchor-id="tspaint.Painting.save">save</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.save(path)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Write this painting to <code>path</code> as <code>.npz</code> (the segment table plus the fitted model).</p>
+<p>Reload with :meth:<code>load</code>. The painted tree sequence itself is <strong>not</strong> stored (keep the <code>.trees</code> file); a reloaded painting therefore has <code>ts=None</code> but retains :attr:<code>length</code>, the posteriors, <code>Q</code>/<code>π</code>/<code>w</code> and the labels.</p>
+</section>
 <section id="tspaint.Painting.segments" class="level3">
 <h3 class="anchored" data-anchor-id="tspaint.Painting.segments">segments</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.segments(deadband<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>tspaint.Painting.segments(deadband<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Hard ancestry segments for downstream tract-length / dating analysis.</p>
-<section id="parameters-3" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-3">Parameters</h4>
+<section id="parameters-4" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-4">Parameters</h4>
 <dl>
 <dt><code><span class="parameter-name"><strong>deadband</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
@@ -1066,8 +1149,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </dd>
 </dl>
 </section>
-<section id="returns-3" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-3">Returns</h4>
+<section id="returns-4" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-4">Returns</h4>
 <dl>
 <dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a href="https://docs.python.org/3/library/functions.html#float">float</a>, <a href="https://docs.python.org/3/library/functions.html#float">float</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>]]]</span></code></dt>
 <dd>

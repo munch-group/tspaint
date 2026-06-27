@@ -904,7 +904,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    priors<span class="op">=</span><span class="va">None</span>,</span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    w0<span class="op">=</span><span class="fl">0.9</span>,</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    estimate_pi<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Blocked EM for <code>(Q, π, {w_i})</code> (CLAUDE.md §3, §11.1.5-6).</p>
 <p>The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient statistics are accumulated per edge, span-weighted; the M-step is the closed forms :func:<code>m_step_Q</code>, :func:<code>m_step_pi</code>, :func:<code>m_step_w</code>. Iterates to a log-likelihood tolerance or <code>max_iter</code>.</p>
 <section id="parameters" class="level2 doc-section doc-section-parameters">
@@ -961,6 +962,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dt><code><span class="parameter-name"><strong>estimate_pi</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">True</span></code></dt>
 <dd>
 <p>Re-estimate <code>π</code> each M-step rather than holding <code>pi0</code> fixed. Default <code>True</code>. See Notes.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>n_jobs</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1</span></code></dt>
+<dd>
+<p>Worker processes for the E-step (the dominant cost). <code>1</code> (default) is the serial path, <strong>byte-identical</strong> to single-core. <code>&gt;1</code> runs the genome E-step over member × tree-range chunks on a persistent :class:<code>~concurrent.futures.ProcessPoolExecutor</code> (reused across EM iterations); the result is <code>allclose</code> to serial, differing only by floating-point reduction order (:mod:<code>tspaint.parallel</code>).</p>
 </dd>
 </dl>
 </section>
