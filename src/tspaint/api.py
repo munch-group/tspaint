@@ -65,6 +65,7 @@ class Painting:
     ts: object = None
     labels: dict = None
     default_deadband: float = 0.0
+    n_jobs: int = 1          # worker processes used to paint; the default for rate_through_time
     _seqlen: float = None    # sequence length carried by a reloaded painting (ts is None then)
     _member_posteriors: list = None    # per-member posterior tables for an ensemble (else None)
 
@@ -134,7 +135,7 @@ class Painting:
         """
         return posterior_at(self.posteriors, sample, position)
 
-    def rate_through_time(self, edges=None, **kwargs):
+    def rate_through_time(self, edges=None, *, n_jobs=None, **kwargs):
         """Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
 
         Fits the time-inhomogeneous directional mugration EM
@@ -150,6 +151,12 @@ class Painting:
         ----------
         edges : array_like, optional
             Log-time grid edges; an auto grid is built from the node ages when ``None``.
+        n_jobs : int, optional
+            For an **ensemble** painting, worker processes dating the members **in parallel**
+            (one per member — they are independent). Defaults to the painting's own
+            :attr:`n_jobs` (so a painting fit in parallel dates in parallel); pass an explicit
+            value to override. Ignored for a single tree sequence (the dating E-step is not yet
+            tree-parallel).
         **kwargs
             Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``,
             ``n_knots``).
@@ -171,17 +178,18 @@ class Painting:
         from .dating import fit_rate_through_time
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
         if isinstance(self.ts, (list, tuple)):
-            # ensemble: date each member on the shared fit/grid; the per-member split-time
-            # estimates become a confidence interval (the ARG-uncertainty band on the split).
+            # ensemble: date each member on the shared fit/grid (in parallel across members);
+            # the per-member split-time estimates become a confidence interval on the split.
             from .dating import log_time_grid, split_time, EnsembleRateThroughTime
+            from .parallel import date_members_parallel
             members = list(self.ts)
             if edges is None:                       # one shared grid so the member profiles align
                 nt = np.concatenate([np.asarray(g.tables.nodes.time, float) for g in members])
                 pos = nt[nt > 0]
                 n_cells = kwargs.pop("n_cells", 40)
                 edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
-            rtts = [fit_rate_through_time(g, self.labels, edges, fit_result=warm, **kwargs)
-                    for g in members]
+            nj = self.n_jobs if n_jobs is None else n_jobs
+            rtts = date_members_parallel(members, self.labels, warm, edges, kwargs, n_jobs=nj)
             return EnsembleRateThroughTime(rtts, np.array([split_time(r) for r in rtts], float))
         return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, **kwargs)
 
@@ -404,5 +412,5 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
 
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
-                    ts=ts, labels=labels, default_deadband=deadband,
+                    ts=ts, labels=labels, default_deadband=deadband, n_jobs=n_jobs,
                     _member_posteriors=member_tables)

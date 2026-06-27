@@ -166,6 +166,38 @@ def test_painting_ensemble_member_posteriors_and_dating():
     assert er.centers.min() <= st <= er.centers.max()
 
 
+def test_painting_n_jobs_field():
+    base = dict(posteriors={}, Q=np.eye(2), pi=np.array([0.5, 0.5]), w={}, loglik_history=[],
+                queries=[])
+    assert tspaint.Painting(**base, ts=None).n_jobs == 1              # default serial
+    assert tspaint.Painting(**base, ts=None, n_jobs=4).n_jobs == 4    # stored from paint(n_jobs=)
+
+
+@pytest.mark.slow
+def test_ensemble_rate_through_time_parallel_matches_serial():
+    """Dating the ensemble members in parallel gives the same result as serial, and the painting's
+    n_jobs is the default (so a parallel-painted ensemble dates in parallel)."""
+    from tspaint.dating import EnsembleRateThroughTime
+    ts, labels, queries, _ = _admixture(L=1.5e5)
+    kw = dict(n_admix=6, n_ref=6, sequence_length=1.5e5, recombination_rate=1e-8,
+              Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    members = [ts] + [tspaint.simulate_admixture(random_seed=s, **kw) for s in (2, 3)]
+    p = tspaint.paint(members, labels, queries)
+    assert p.n_jobs == 1
+
+    er1 = p.rate_through_time(n_cells=18, n_iter=5, n_jobs=1)         # serial
+    er3 = p.rate_through_time(n_cells=18, n_iter=5, n_jobs=3)         # parallel across members
+    assert isinstance(er3, EnsembleRateThroughTime) and len(er3.members) == 3
+    np.testing.assert_allclose(er3.split_times, er1.split_times, rtol=0, atol=1e-6, equal_nan=True)
+    for m1, m3 in zip(er1.members, er3.members):
+        np.testing.assert_allclose(m3.q_AB, m1.q_AB, rtol=1e-9, atol=0)
+        np.testing.assert_allclose(m3.q_BA, m1.q_BA, rtol=1e-9, atol=0)
+
+    p.n_jobs = 3                                                      # inherited when n_jobs omitted
+    er_inh = p.rate_through_time(n_cells=18, n_iter=5)
+    np.testing.assert_allclose(er_inh.split_times, er1.split_times, rtol=0, atol=1e-6, equal_nan=True)
+
+
 # --- Painting.length / Painting.plot ---------------------------------------------------------
 
 def test_painting_length():
