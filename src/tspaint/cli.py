@@ -219,21 +219,13 @@ def introgress(trees, labels_path, samples, min_score, out):
     _echo(f"introgress: {len(tracts)} samples -> {out}")
 
 
-@cli.command()
-@click.argument("trees", type=click.Path(exists=True, dir_okay=False))
-@click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
-@click.option("--samples", required=True, help="samples to scan (inline or @file).")
-@click.option("--fit-thresh", type=float, default=0.6, show_default=True)
-@click.option("--depth-thresh", type=float, default=0.9, show_default=True)
-@click.option("-o", "--out", required=True, type=click.Path(), help="ghost tracts .npz.")
-def ghost(trees, labels_path, samples, fit_thresh, depth_thresh, out):
-    """Detect introgression from an unsampled ('ghost') source → ghost.npz."""
-    from .introgression import detect_ghost
+def _run_ghost(trees, labels_path, samples, max_iter, out):
+    from .archaic import detect_ghost
     from .serialize import save_ghost
     result = detect_ghost(_load_ts(trees), read_labels(labels_path), read_id_list(samples),
-                          fit_thresh=fit_thresh, depth_thresh=depth_thresh)
+                          max_iter=max_iter)
     save_ghost(out, result)
-    _echo(f"ghost: burden over {len(result.burden)} samples -> {out}")
+    _echo(f"ghost: P(ghost) over {len(result.burden)} samples -> {out}")
 
 
 @cli.command()
@@ -241,14 +233,23 @@ def ghost(trees, labels_path, samples, fit_thresh, depth_thresh, out):
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True),
               help="modern reference ids (a {ref: state} labels JSON; only the ids are used).")
 @click.option("--samples", default=None, help="samples to scan (inline or @file; default: non-refs).")
-@click.option("-o", "--out", required=True, type=click.Path(), help="archaic posteriors .npz.")
-def archaic(trees, labels_path, samples, out):
-    """Reference-free archaic detection (depth-emission HMM) → archaic.npz."""
-    from .archaic import detect_archaic
-    from .serialize import save_archaic
-    result = detect_archaic(_load_ts(trees), read_labels(labels_path), read_id_list(samples))
-    save_archaic(out, result)
-    _echo(f"archaic: {len(result.burden)} samples -> {out}")
+@click.option("--max-iter", type=int, default=50, show_default=True)
+@click.option("-o", "--out", required=True, type=click.Path(), help="ghost P(ghost) .npz.")
+def ghost(trees, labels_path, samples, max_iter, out):
+    """Reference-free ghost / archaic introgression search (depth-emission HMM) → ghost.npz."""
+    _run_ghost(trees, labels_path, samples, max_iter, out)
+
+
+@cli.command(hidden=True)
+@click.argument("trees", type=click.Path(exists=True, dir_okay=False))
+@click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
+@click.option("--samples", default=None)
+@click.option("--max-iter", type=int, default=50)
+@click.option("-o", "--out", required=True, type=click.Path())
+def archaic(trees, labels_path, samples, max_iter, out):
+    """Deprecated alias for `tspaint ghost`."""
+    _echo("note: `tspaint archaic` is deprecated; use `tspaint ghost`")
+    _run_ghost(trees, labels_path, samples, max_iter, out)
 
 
 # --- simulate (validation / examples) -------------------------------------------------------

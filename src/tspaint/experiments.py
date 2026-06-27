@@ -811,11 +811,12 @@ def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, se
                                  seed=1, max_iter=40, threshold=0.5):
     """Head-to-head: reference-free learned HMM vs the fixed-threshold flag (Plan B go/no-go).
 
-    Compares :func:`tspaint.detect_archaic` (the Plan B generative depth-emission HMM, which
-    learns the archaic depth and gives a calibrated posterior) against :func:`tspaint.detect_ghost`
-    (the Plan A fixed-threshold flag) on one archaic-like ghost simulation plus a matched no-ghost
-    control. Both run **reference-free** (no archaic reference). Per-locus ghost tracts are scored
-    against the census truth.
+    Compares :func:`tspaint.detect_ghost` (the generative depth-emission HMM, which learns the
+    ghost depth and gives a calibrated posterior) against the fixed-threshold deep **flag**
+    (:func:`tspaint.foreign_tracts` with ``mode="fit", min_depth=...``) on one archaic-like ghost
+    simulation plus a matched no-ghost control. Both run **reference-free** (no ghost reference).
+    Per-locus ghost tracts are scored against the census truth. (The ``archaic`` result block is
+    the HMM; the ``ghost`` block is the flag — names kept for back-compatibility.)
 
     Parameters
     ----------
@@ -841,8 +842,8 @@ def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, se
     """
     from .sim import (simulate_admixture_with_ghost, local_ancestry_truth,
                       SOURCE_A, SOURCE_B, GHOST, ADMIXED)
-    from .archaic import detect_archaic
-    from .introgression import detect_ghost
+    from .archaic import detect_ghost
+    from .introgression import foreign_tracts
 
     def setup(gf, sd):
         ts = simulate_admixture_with_ghost(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
@@ -877,18 +878,19 @@ def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, se
 
     ts, lab, q, true_g = setup(ghost_fraction, seed)
     L = ts.sequence_length
-    ar = detect_archaic(ts, lab, q, max_iter=max_iter)
+    ar = detect_ghost(ts, lab, q, max_iter=max_iter)             # the generative depth-emission HMM
     ar_tracts = {x: ar.tracts(x, threshold) for x in q}
-    gh = detect_ghost(ts, lab, q)
+    gh = foreign_tracts(ts, lab, q, mode="fit", min_score=0.8, min_depth=0.9)   # the deep flag
+    gh_tracts = {x: [(l, r) for (l, r, _s) in gh[x]] for x in q}
     a_rec, a_prec, a_burden, true_burden = _score(ar_tracts, true_g, q, L)
-    g_rec, g_prec, g_burden, _ = _score(gh.tracts_by_sample, true_g, q, L)
+    g_rec, g_prec, g_burden, _ = _score(gh_tracts, true_g, q, L)
 
     ts0, lab0, q0, _ = setup(0.0, seed)
     L0 = ts0.sequence_length
-    ar0 = detect_archaic(ts0, lab0, q0, max_iter=max_iter)
-    gh0 = detect_ghost(ts0, lab0, q0)
+    ar0 = detect_ghost(ts0, lab0, q0, max_iter=max_iter)
+    gh0 = foreign_tracts(ts0, lab0, q0, mode="fit", min_score=0.8, min_depth=0.9)
     a_fp = float(np.mean([ar0.burden[x] for x in q0]))
-    g_fp = sum(r - l for x in q0 for (l, r) in gh0.tracts(x)) / (L0 * len(q0))
+    g_fp = sum(r - l for x in q0 for (l, r, _s) in gh0[x]) / (L0 * len(q0))
 
     return {
         "ghost_fraction": ghost_fraction, "seed": seed, "n_queries": len(q),

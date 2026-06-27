@@ -29,7 +29,7 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-__all__ = ["ArchaicResult", "detect_archaic"]
+__all__ = ["GhostResult", "detect_ghost", "ArchaicResult", "detect_archaic"]
 
 _SQRT2PI = np.sqrt(2.0 * np.pi)
 
@@ -133,15 +133,20 @@ def _forward_backward(B, A, pi0):
 
 
 @dataclass
-class ArchaicResult:
-    """Result of :func:`detect_archaic`.
+class GhostResult:
+    """Result of :func:`detect_ghost` — per-locus ``P(ghost)`` from the depth-emission HMM.
+
+    "Ghost" = ancestry from a population not in the reference panel; the signal is *depth*, so the
+    detector targets **deep** (archaic-like) ghosts specifically (a shallow recent ghost will not
+    trip it). For an ensemble input the posteriors are the per-member mean with a ``posterior_std``
+    band.
 
     Attributes
     ----------
     posteriors : dict[int, list[tuple[float, float, float]]]
-        Per sample, contiguous ``(left, right, P(archaic))`` over the genome.
+        Per sample, contiguous ``(left, right, P(ghost))`` over the genome.
     burden : dict[int, float]
-        Per sample, the span-weighted mean ``P(archaic)`` (the genome-wide archaic burden).
+        Per sample, the span-weighted mean ``P(ghost)`` (the genome-wide ghost burden).
     mu, sd : numpy.ndarray
         ``(2,)`` learned emission means / stds on log-depth (index 0 modern, 1 archaic).
     A : numpy.ndarray
@@ -160,7 +165,7 @@ class ArchaicResult:
     loglik_history: list
 
     def tracts(self, sample, threshold=0.5):
-        """Merged archaic tracts ``[(left, right)]`` where ``P(archaic) >= threshold``."""
+        """Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``."""
         out = []
         for (l, r, p) in self.posteriors[int(sample)]:
             if p >= threshold:
@@ -171,14 +176,16 @@ class ArchaicResult:
         return out
 
 
-def detect_archaic(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
-                   init_archaic_burden=0.1, init_switch=0.02):
-    """Reference-free archaic / ghost detection via a depth-emission HMM (Plan B).
+def detect_ghost(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
+                 init_archaic_burden=0.1, init_switch=0.02):
+    """Reference-free ghost / archaic introgression detection via a depth-emission HMM.
 
-    Fits a per-sample 2-state (modern / archaic) HMM along the genome on nearest-modern-reference
-    coalescence depth, the modern emission anchored by the panel, the archaic emission learned and
-    constrained deeper. Returns a **calibrated** per-locus ``P(archaic)`` — no archaic reference
-    required.
+    The dedicated ghost-search tool (CLAUDE.md §9 Plan B): a per-sample 2-state (modern / ghost)
+    HMM along the genome on nearest-modern-reference coalescence depth — the modern emission
+    anchored by the panel, the **ghost** emission learned and constrained deeper. Returns a
+    **calibrated** per-locus ``P(ghost)`` with no ghost/archaic reference required. The signal is
+    depth, so it targets **deep (archaic-like)** ghosts. (Renamed from ``detect_archaic``, which
+    remains a deprecated alias.)
 
     Parameters
     ----------
@@ -199,8 +206,8 @@ def detect_archaic(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=Non
 
     Returns
     -------
-    ArchaicResult
-        Per-sample ``P(archaic)`` posteriors / tracts / burden plus the learned HMM parameters.
+    GhostResult
+        Per-sample ``P(ghost)`` posteriors / tracts / burden plus the learned HMM parameters.
 
     Raises
     ------
@@ -296,5 +303,18 @@ def detect_archaic(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=Non
         tot = span.sum()
         burden[s] = float((pa * span).sum() / tot) if tot > 0 else float("nan")
 
-    return ArchaicResult(posteriors=posteriors, burden=burden, mu=mu, sd=sd, A=A, pi0=pi0,
-                         loglik_history=history)
+    return GhostResult(posteriors=posteriors, burden=burden, mu=mu, sd=sd, A=A, pi0=pi0,
+                       loglik_history=history)
+
+
+# --- deprecated aliases (the detector was renamed detect_archaic -> detect_ghost) ------------
+
+ArchaicResult = GhostResult
+
+
+def detect_archaic(*args, **kwargs):
+    """Deprecated alias for :func:`detect_ghost`."""
+    import warnings
+    warnings.warn("tspaint.detect_archaic is deprecated; use tspaint.detect_ghost",
+                  DeprecationWarning, stacklevel=2)
+    return detect_ghost(*args, **kwargs)

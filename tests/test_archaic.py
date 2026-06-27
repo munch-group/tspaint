@@ -7,7 +7,7 @@ identifiability guard — anchor the archaic state beyond the modern panel's dee
 import numpy as np
 import pytest
 
-from tspaint.archaic import detect_archaic, ArchaicResult
+from tspaint.archaic import detect_ghost, GhostResult, detect_archaic, ArchaicResult
 from tspaint.archaic import _anchor_modern, _forward_backward, _emission
 
 
@@ -45,13 +45,23 @@ def _ghost_setup(gf, seed, L=1.2e6, n_admix=8, n_ref=8):
     return ts, labels, queries, true_ghost
 
 
+def test_detect_ghost_aliases():
+    # detect_archaic / ArchaicResult remain as deprecated aliases of detect_ghost / GhostResult.
+    assert ArchaicResult is GhostResult
+    with pytest.warns(DeprecationWarning):
+        try:
+            detect_archaic(None)            # emits the deprecation warning, then errors on the bad arg
+        except Exception:
+            pass
+
+
 @pytest.mark.slow
-def test_detect_archaic_recovers_burden_reference_free():
-    # with a ghost source (and no archaic reference) the learned burden tracks the truth and
-    # the model recovers a DEEP archaic component; the matched no-ghost control stays ~0.
+def test_detect_ghost_recovers_burden_reference_free():
+    # with a ghost source (and no ghost reference) the learned burden tracks the truth and
+    # the model recovers a DEEP ghost component; the matched no-ghost control stays ~0.
     ts, labels, queries, true_ghost = _ghost_setup(0.25, seed=1)
-    res = detect_archaic(ts, labels, queries, max_iter=40)
-    assert isinstance(res, ArchaicResult)
+    res = detect_ghost(ts, labels, queries, max_iter=40)
+    assert isinstance(res, GhostResult)
     assert all(0.0 <= p <= 1.0 for q in queries for (_l, _r, p) in res.posteriors[q])
     assert res.posteriors[queries[0]][0][0] == 0.0                      # covers from 0
     assert res.mu[1] > res.mu[0] + 1.0                                  # archaic state is deep
@@ -66,9 +76,9 @@ def test_detect_archaic_recovers_burden_reference_free():
     assert np.corrcoef(bs, tg)[0, 1] > 0.6
 
     ts0, labels0, q0, _ = _ghost_setup(0.0, seed=1)
-    res0 = detect_archaic(ts0, labels0, q0, max_iter=40)
+    res0 = detect_ghost(ts0, labels0, q0, max_iter=40)
     control = float(np.mean([res0.burden[q] for q in q0]))
-    assert control < 0.05                                              # identifiability: no false archaic
+    assert control < 0.05                                              # identifiability: no false ghost
     assert burden > 3 * control
 
 
