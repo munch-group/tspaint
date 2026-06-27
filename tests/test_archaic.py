@@ -119,7 +119,14 @@ def test_detect_ghost_rank_is_calibration_invariant():
         p1 = np.array([p for (_l, _r, p) in r1.posteriors[q]])
         p2 = np.array([p for (_l, _r, p) in r2.posteriors[q]])
         np.testing.assert_allclose(p1, p2, atol=1e-9)        # identical under time rescaling
-    # and it still detects the ghost (burden well above the matched no-ghost control)
+    # and it ACTUALLY detects the ghost -- not a vacuously-near-zero posterior. In rank space the
+    # depth is bounded in [0, 1], so the unbounded log-time floor (q_ref + sd_m) overshoots the
+    # ceiling and parks the ghost emission above every observation: P(ghost) then collapses to ~0
+    # and the burden-ratio check below still passes on two near-zero numbers. Require a confident
+    # call and a substantial burden so that regression is caught.
+    maxp = max(p for q in queries for (_l, _r, p) in r1.posteriors[q])
+    assert maxp > 0.9                                     # some locus is confidently ghost (was ~0.02 when broken)
+    assert np.mean([r1.burden[q] for q in queries]) > 0.05
     ts0, labels0, q0, _ = _ghost_setup(0.0, seed=1)
     c = detect_ghost(ts0, labels0, q0, depth="rank", max_iter=30)
     assert np.mean([r1.burden[q] for q in queries]) > 3 * np.mean([c.burden[q] for q in q0])

@@ -841,7 +841,22 @@ in one call and returns a `Painting` whose `posteriors` carry the mean + `poster
     per-member decode, averaged P(ghost), like `paint(ensemble)`) and (b) takes **`depth="rank"`**, a
     monotonic (calibration-invariant) depth transform that closes the raw-`log`-depth
     calibration-sensitivity caveat above — **[MEASURED]** ×7 node-time rescaling leaves rank-mode
-    P(ghost) identical; only the Relate end-to-end test is still outstanding. The former Plan-A
+    P(ghost) identical; only the Relate end-to-end test is still outstanding.
+  - **[BUGFIX — rank floor overshoot; was silently non-functional].** The above "identical under
+    rescaling" was originally **vacuous**: in the bounded `[0,1]` rank space the log-time rule
+    `archaic_floor = q_ref + sd_m` overshoots the ceiling (q_ref→1, sd_m~0.25 ⇒ floor>1), parking the
+    ghost emission *above every observation* so P(ghost)≈0 — **no detection** — in **both** the
+    human-Ne (gf=0.02, Ne=10⁴) and the original gf=0.25/Ne=10³ regimes (the old test passed on a ratio
+    of two ≈0 burdens; max P(ghost) was ~0.02). **Fix:** a rank-specific **bounded floor**
+    `floor = q_ref + ½(1−q_ref)` with a `ghost_scale = ½(1−q_ref)` decoupled from `sd_m` (new
+    `_baum_welch(ghost_scale=…)` arg, used for the ghost init and σ-cap); **`depth="time"` is
+    byte-identical**. Rank now actually detects (recall 0→1.0, AUC≈0.97) *and* stays exactly invariant
+    (×7 rescale ⇒ max|ΔP|=0); the test now asserts a confident call (max P>0.9) so the vacuous pass
+    can't recur. **Caveat:** at human Ne rank's *fixed-threshold* precision is below `depth="time"`
+    (the rank transform compresses the modern↔ghost separation, and a ref-anchored floor under-covers
+    the deeper admixed-query loci in the separate-ADMIX-pop sim) — threshold higher or prefer SINGER
+    calibrated times. Driver `experiments.archaic_detection_experiment`; tests `tests/test_archaic.py`.
+    The former Plan-A
     `detect_ghost` *flag* (low fit AND deep) is **folded into `foreign_tracts(mode="fit",
     min_depth=)`** (the fast, deterministic, rank-depth alternative); `archaic_detection_experiment`
     still scores the HMM against it (recall 0.99–1.00 vs ~0.4–0.5). CLI: `tspaint qc` / `ghost`

@@ -213,15 +213,19 @@ class GhostResult:
 
 
 def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol,
-                init_archaic_burden, init_switch):
+                init_archaic_burden, init_switch, ghost_scale=None):
     """Pooled Baum–Welch: modern emission fixed at the anchor, ghost emission learned (deeper).
 
     ``obs_list`` / ``span_list`` are the per-sequence observation / span arrays — pooled across an
-    ensemble's members × samples so one shared ``(mu, sd, A, pi0)`` is learned. Returns
-    ``(mu, sd, A, pi0, loglik_history)``.
+    ensemble's members × samples so one shared ``(mu, sd, A, pi0)`` is learned. ``ghost_scale`` sets
+    the ghost emission's initial offset above the floor and the cap on its learned std; it defaults
+    to ``sd_m`` (the unbounded log-time behaviour) but is set smaller for the bounded rank scale.
+    Returns ``(mu, sd, A, pi0, loglik_history)``.
     """
-    mu = np.array([mu_m, archaic_floor + sd_m])
-    sd = np.array([sd_m, sd_m])
+    if ghost_scale is None:
+        ghost_scale = sd_m
+    mu = np.array([mu_m, archaic_floor + ghost_scale])
+    sd = np.array([sd_m, ghost_scale])
     A = np.array([[1.0 - init_switch, init_switch], [init_switch, 1.0 - init_switch]])
     pi0 = np.array([1.0 - init_archaic_burden, init_archaic_burden])
     history, prev = [], -np.inf
@@ -264,7 +268,7 @@ def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol
             var = max(gxx[1] / g_sum[1] - mu[1] ** 2, 1e-6)
             sd[1] = np.sqrt(var)
         mu[1] = max(mu[1], archaic_floor)      # keep the ghost state beyond the modern panel's range
-        sd[1] = min(sd[1], sd_m)               # keep ghost tight (not a wide deep background)
+        sd[1] = min(sd[1], ghost_scale)        # keep ghost tight (not a wide deep background)
         if len(history) > 1 and abs(ll - prev) < tol:
             break
         prev = ll
@@ -366,9 +370,19 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
     if not np.isfinite(mu_m):
         raise ValueError("could not anchor the modern depth distribution (no informative references)")
     sd_m = max(sd_m, (q_ref - mu_m) / 2.0)   # widen modern to cover its own deep (cross-source) tail
-    if delta is None:
-        delta = sd_m                  # margin above the panel's deepest coalescence (§6 guard)
-    archaic_floor = q_ref + delta      # ghost must be DEEPER than any modern (cross-source) coalescence
+    if depth == "rank":
+        # Rank space is bounded in [0, 1]: the unbounded log-time rule ``floor = q_ref + sd_m``
+        # overshoots the ceiling (q_ref -> 1, sd_m ~ 0.25), centring the ghost state *above* every
+        # observation so P(ghost) collapses to 0 (no detection). Place the floor in the room that
+        # remains above the panel's deepest rank, and scale the ghost emission to that room.
+        room = max(1.0 - q_ref, 1e-3)
+        ghost_scale = 0.5 * room
+        archaic_floor = q_ref + (0.5 * room if delta is None else min(delta, 0.5 * room))
+    else:
+        ghost_scale = sd_m
+        if delta is None:
+            delta = sd_m              # margin above the panel's deepest coalescence (§6 guard)
+        archaic_floor = q_ref + delta  # ghost must be DEEPER than any modern (cross-source) coalescence
 
     # pooled Baum-Welch over all (member, sample) observation sequences
     obs_list, span_list = [], []
@@ -380,7 +394,7 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
     mu, sd, A, pi0, history = _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor,
                                           max_iter=max_iter, tol=tol,
                                           init_archaic_burden=init_archaic_burden,
-                                          init_switch=init_switch)
+                                          init_switch=init_switch, ghost_scale=ghost_scale)
 
     # decode per member, then merge each sample across members (mean P(ghost))
     per_member_post = []
