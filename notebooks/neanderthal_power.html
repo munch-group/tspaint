@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>How much power does detect_ghost have to find Neanderthal segments? – tspaint</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../pages/results.html" rel="next">
+<link href="../notebooks/introgression_qc.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../pages/overview.html" aria-current="page"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/neanderthal_power.html">How much power does <code>detect_ghost</code> have to find Neanderthal segments?</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/overview.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Inference: structured (blocked) EM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/assumptions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Assumptions, identifiability &amp; limitations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/code_paths.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code organization and data flow</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Notebooks</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/showcase.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/painting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Haplotype painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Calibration &amp; accuracy vs admixture age</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/fragmentation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fragmentation &amp; tract-length fidelity</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/bp_smoother.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Horizontal BP smoother on inferred ARGs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/dating.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Admixture dating: cross-ancestry rate through time</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/introgression_qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reference QC, foreign tracts &amp; ghost detection</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../notebooks/neanderthal_power.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">How much power does <code>detect_ghost</code> have to find Neanderthal segments?</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pages/results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Results</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-scenario-scaled-to-a-humanneanderthal-history" id="toc-the-scenario-scaled-to-a-humanneanderthal-history" class="nav-link active" data-scroll-target="#the-scenario-scaled-to-a-humanneanderthal-history">1. The scenario, scaled to a human–Neanderthal history</a></li>
+  <li><a href="#what-a-detection-looks-like" id="toc-what-a-detection-looks-like" class="nav-link" data-scroll-target="#what-a-detection-looks-like">2. What a detection looks like</a></li>
+  <li><a href="#why-precision-not-sensitivity-is-the-binding-limit" id="toc-why-precision-not-sensitivity-is-the-binding-limit" class="nav-link" data-scroll-target="#why-precision-not-sensitivity-is-the-binding-limit">3. Why precision — not sensitivity — is the binding limit</a></li>
+  <li><a href="#power-vs.-the-introgression-fraction" id="toc-power-vs.-the-introgression-fraction" class="nav-link" data-scroll-target="#power-vs.-the-introgression-fraction">4. Power vs.&nbsp;the introgression fraction</a></li>
+  <li><a href="#discrimination-operating-point-and-calibration" id="toc-discrimination-operating-point-and-calibration" class="nav-link" data-scroll-target="#discrimination-operating-point-and-calibration">5. Discrimination, operating point, and calibration</a></li>
+  <li><a href="#what-changes-on-real-inferred-data" id="toc-what-changes-on-real-inferred-data" class="nav-link" data-scroll-target="#what-changes-on-real-inferred-data">6. What changes on real (inferred) data</a></li>
+  <li><a href="#bottom-line" id="toc-bottom-line" class="nav-link" data-scroll-target="#bottom-line">7. Bottom line</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../notebooks/showcase.html">Notebooks</a></li><li class="breadcrumb-item"><a href="../notebooks/neanderthal_power.html">How much power does <code>detect_ghost</code> have to find Neanderthal segments?</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">How much power does <code>detect_ghost</code> have to find Neanderthal segments?</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Modern non-African genomes carry ~2% Neanderthal ancestry, introduced by a pulse of gene flow ~50–60 thousand years ago (kya) from a lineage that had split from modern humans ~550–765 kya (<a href="https://doi.org/10.1126/science.1188021">Green et al., 2010</a>; <a href="https://doi.org/10.1038/nature12886">Prüfer et al., 2014</a>; <a href="https://doi.org/10.1038/nature12961">Sankararaman et al., 2014</a>). Neanderthals are the canonical <strong>“ghost”</strong> for a reference-free detector: a <em>deeply diverged, unsampled</em> source.</p>
+<p><code>tspaint.detect_ghost</code> is exactly a reference-free ghost detector (CLAUDE.md §9, Plan B). It runs a per-haplotype, 2-state hidden Markov model <strong>along the genome</strong> whose observation is the coalescence depth to the nearest <em>modern</em> reference. A Neanderthal tract coalesces with the modern panel only at the deep human–Neanderthal split, so it shows up as an anomalously <strong>deep</strong> run — no Neanderthal reference required. The modern state is <em>anchored</em> by the panel; the ghost (archaic) state is <em>learned</em>, constrained to lie below the panel’s deepest coalescence.</p>
+<p><strong>This notebook simulates the human–Neanderthal scenario and measures the power of <code>detect_ghost</code></strong> — sensitivity, specificity, precision, discrimination (ROC) and calibration — as a function of the introgression fraction and the operating point, with the honest caveats.</p>
+<blockquote class="blockquote">
+<p><strong>Scope.</strong> We run on the <strong>true</strong> (simulated) ARG, so node times are exact. This is the <em>upper bound</em> on power: it isolates the coalescent signal from tree-inference error. On real data the genealogy must be inferred (tsinfer / Relate / SINGER), which only degrades things — the final section addresses what changes and how to be robust.</p>
+</blockquote>
+<div id="da6778a1" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:06:14.895353Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:06:14.895127Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:06:16.469947Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:06:16.469430Z&quot;}}" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> collections</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.sim <span class="im">import</span> (simulate_admixture_with_ghost, admixture_demography_with_ghost,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                         local_ancestry_truth, SOURCE_A, SOURCE_B, GHOST, ADMIXED)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.archaic <span class="im">import</span> detect_ghost</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>plt.rcParams.update({<span class="st">"figure.dpi"</span>: <span class="dv">110</span>, <span class="st">"axes.grid"</span>: <span class="va">True</span>, <span class="st">"grid.alpha"</span>: <span class="fl">0.25</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"axes.spines.top"</span>: <span class="va">False</span>, <span class="st">"axes.spines.right"</span>: <span class="va">False</span>, <span class="st">"font.size"</span>: <span class="dv">10</span>})</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>GEN <span class="op">=</span> <span class="dv">29</span>                       <span class="co"># years per generation (Fenner, 2005)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>C_MODERN, C_GHOST <span class="op">=</span> <span class="st">"#3B6BA5"</span>, <span class="st">"#C0392B"</span>   <span class="co"># modern (human) / ghost (Neanderthal)</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>trapz <span class="op">=</span> <span class="bu">getattr</span>(np, <span class="st">"trapezoid"</span>, np.trapz)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> nean_scenario(ghost_fraction<span class="op">=</span><span class="fl">0.02</span>, seed<span class="op">=</span><span class="dv">1</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, n_admix<span class="op">=</span><span class="dv">8</span>, n_ref<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>                  Ne<span class="op">=</span><span class="dv">10_000</span>, T_admix<span class="op">=</span><span class="dv">2000</span>, T_split_AB<span class="op">=</span><span class="dv">8000</span>, T_split_ABC<span class="op">=</span><span class="dv">20_000</span>):</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""One human-Neanderthal admixture simulation (true ARG).</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Two modern reference groups A, B (the panel, with internal structure at T_split_AB) plus an</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co">    unsampled deeply-diverged ghost C = Neanderthal (split at T_split_ABC). The admixed queries</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co">    carry a ``ghost_fraction`` of Neanderthal tracts. Returns the tree sequence, the modern</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co">    reference labels, the query ids and the true Neanderthal tracts per query.</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> simulate_admixture_with_ghost(</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span>n_admix, n_ref<span class="op">=</span>n_ref, sequence_length<span class="op">=</span>sequence_length, recombination_rate<span class="op">=</span><span class="fl">1e-8</span>,</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        random_seed<span class="op">=</span>seed, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span>T_admix, T_split_AB<span class="op">=</span>T_split_AB, T_split_ABC<span class="op">=</span>T_split_ABC, Ne<span class="op">=</span>Ne)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    names <span class="op">=</span> {p: ts.population(p).metadata.get(<span class="st">"name"</span>, <span class="bu">str</span>(p)) <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">range</span>(ts.num_populations)}</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    pid <span class="op">=</span> {n: p <span class="cf">for</span> p, n <span class="kw">in</span> names.items()}</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    npop <span class="op">=</span> ts.tables.nodes.population</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    of <span class="op">=</span> <span class="kw">lambda</span> nm: [<span class="bu">int</span>(s) <span class="cf">for</span> s <span class="kw">in</span> ts.samples() <span class="cf">if</span> npop[s] <span class="op">==</span> pid[nm]]</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    queries <span class="op">=</span> of(ADMIXED)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(SOURCE_A)}</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    labels.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(SOURCE_B)})</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    tracts, _ <span class="op">=</span> local_ancestry_truth(ts)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    gid <span class="op">=</span> pid[GHOST]</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    true_ghost <span class="op">=</span> {x: [(l, r) <span class="cf">for</span> (l, r, p) <span class="kw">in</span> tracts[x] <span class="cf">if</span> p <span class="op">==</span> gid] <span class="cf">for</span> x <span class="kw">in</span> queries}</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ts, labels, queries, true_ghost</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _ov(l, r, ivs):</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(<span class="bu">max</span>(<span class="fl">0.0</span>, <span class="bu">min</span>(r, b) <span class="op">-</span> <span class="bu">max</span>(l, a)) <span class="cf">for</span> (a, b) <span class="kw">in</span> ivs)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score(detected, true_ghost, queries, L):</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Per-base recall / precision / burden of detected vs. true Neanderthal tracts."""</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    det <span class="op">=</span> tg <span class="op">=</span> hit <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> x <span class="kw">in</span> queries:</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (l, r) <span class="kw">in</span> detected[x]:</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>            det <span class="op">+=</span> r <span class="op">-</span> l</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>            hit <span class="op">+=</span> _ov(l, r, true_ghost[x])</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>        tg <span class="op">+=</span> <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost[x])</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">dict</span>(recall<span class="op">=</span>(hit <span class="op">/</span> tg <span class="cf">if</span> tg <span class="cf">else</span> np.nan),</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>                precision<span class="op">=</span>(hit <span class="op">/</span> det <span class="cf">if</span> det <span class="cf">else</span> np.nan),</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>                est_burden<span class="op">=</span>det <span class="op">/</span> (L <span class="op">*</span> <span class="bu">len</span>(queries)),</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>                true_burden<span class="op">=</span>tg <span class="op">/</span> (L <span class="op">*</span> <span class="bu">len</span>(queries)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="the-scenario-scaled-to-a-humanneanderthal-history" class="level2">
+<h2 class="anchored" data-anchor-id="the-scenario-scaled-to-a-humanneanderthal-history">1. The scenario, scaled to a human–Neanderthal history</h2>
+<p>Converting the established dates to generations at <strong>29 yr/gen</strong> (<a href="https://doi.org/10.1002/ajpa.20188">Fenner, 2005</a>):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>event</th>
+<th>years</th>
+<th>generations</th>
+<th>parameter</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>human–Neanderthal split</td>
+<td>~580 kya</td>
+<td><strong>20,000</strong></td>
+<td><code>T_split_ABC</code></td>
+</tr>
+<tr class="even">
+<td>deepest modern-human panel structure</td>
+<td>~230 kya</td>
+<td><strong>8,000</strong></td>
+<td><code>T_split_AB</code></td>
+</tr>
+<tr class="odd">
+<td>Neanderthal introgression pulse</td>
+<td>~58 kya</td>
+<td><strong>2,000</strong></td>
+<td><code>T_admix</code></td>
+</tr>
+<tr class="even">
+<td>Neanderthal ancestry fraction</td>
+<td>—</td>
+<td>—</td>
+<td><code>ghost_fraction = 0.02</code></td>
+</tr>
+<tr class="odd">
+<td>effective size</td>
+<td>—</td>
+<td><span class="math inline">\(N_e=10{,}000\)</span></td>
+<td><code>Ne</code></td>
+</tr>
+</tbody>
+</table>
+<p>The reference panel is deliberately given <strong>internal structure</strong> (two modern groups A and B splitting at <code>T_split_AB</code>), because a real modern-human panel is diverse: its deepest <em>within-human</em> coalescences (e.g.&nbsp;African vs.&nbsp;non-African ancestry) are what the detector must out-distance to call a tract “Neanderthal”. Neanderthal (the ghost C) coalesces with the panel only at the much deeper <code>T_split_ABC</code>. The gap between those two depths is the entire signal.</p>
+<div id="0b620e31" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:06:16.471734Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:06:16.471568Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:06:16.939051Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:06:16.938649Z&quot;}}" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Draw the demography, then simulate the baseline (2% Neanderthal) tree sequence.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">7</span>, <span class="fl">5.5</span>))</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>demog <span class="op">=</span> admixture_demography_with_ghost(Ne<span class="op">=</span><span class="dv">10_000</span>, T_admix<span class="op">=</span><span class="dv">2000</span>, T_split_AB<span class="op">=</span><span class="dv">8000</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                                        T_split_ABC<span class="op">=</span><span class="dv">20_000</span>, ghost_fraction<span class="op">=</span><span class="fl">0.02</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> demesdraw</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> demog.to_demes()</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        demesdraw.tubes(g, ax<span class="op">=</span>ax, log_time<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">TypeError</span>:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        demesdraw.tubes(g, ax<span class="op">=</span>ax)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">"Human–Neanderthal admixture (msprime); GHOST = Neanderthal"</span>)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="ss">f"demesdraw unavailable:</span><span class="ch">\n</span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">"</span>, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>ts, lab, q, true_ghost <span class="op">=</span> nean_scenario()    <span class="co"># baseline: 2% Neanderthal, true ARG, seed 1</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>true_b <span class="op">=</span> np.mean([<span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost[x]) <span class="cf">for</span> x <span class="kw">in</span> q]) <span class="op">/</span> ts.sequence_length</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"trees=</span><span class="sc">{</span>ts<span class="sc">.</span>num_trees<span class="sc">:,}</span><span class="ss">  nodes=</span><span class="sc">{</span>ts<span class="sc">.</span>num_nodes<span class="sc">:,}</span><span class="ss">  query haplotypes=</span><span class="sc">{</span><span class="bu">len</span>(q)<span class="sc">}</span><span class="ss">  "</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"reference haplotypes=</span><span class="sc">{</span><span class="bu">len</span>(lab)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"true mean Neanderthal burden per query = </span><span class="sc">{</span>true_b<span class="sc">:.2%}</span><span class="ss">  "</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"(target ~2%; the ground truth we try to recover)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="neanderthal_power_files/figure-html/cell-3-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="neanderthal_power_files/figure-html/cell-3-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>trees=5,064  nodes=4,897  query haplotypes=16  reference haplotypes=40
+true mean Neanderthal burden per query = 1.39%  (target ~2%; the ground truth we try to recover)</code></pre>
+</div>
+</div>
+</section>
+<section id="what-a-detection-looks-like" class="level2">
+<h2 class="anchored" data-anchor-id="what-a-detection-looks-like">2. What a detection looks like</h2>
+<p>Run the detector (no Neanderthal reference) and plot, for the four query haplotypes carrying the most Neanderthal, the posterior <code>P(Neanderthal)</code> along the genome (red) against the <strong>true</strong> Neanderthal tracts (grey). The detector returns a <em>calibrated soft</em> posterior, not a hard call.</p>
+<div id="b7cec760" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:06:16.940588Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:06:16.940481Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:06:22.344387Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:06:22.343869Z&quot;}}" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>res <span class="op">=</span> detect_ghost(ts, lab, q, max_iter<span class="op">=</span><span class="dv">40</span>)         <span class="co"># reference-free; modern anchored, ghost learned</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"learned emission means (log gen):  modern μ=</span><span class="sc">{</span>res<span class="sc">.</span>mu[<span class="dv">0</span>]<span class="sc">:.2f}</span><span class="ss">   Neanderthal μ=</span><span class="sc">{</span>res<span class="sc">.</span>mu[<span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  mean coalescence depth:  modern ~</span><span class="sc">{</span>np<span class="sc">.</span>exp(res.mu[<span class="dv">0</span>])<span class="sc">:,.0f}</span><span class="ss"> gen   "</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"Neanderthal ~</span><span class="sc">{</span>np<span class="sc">.</span>exp(res.mu[<span class="dv">1</span>])<span class="sc">:,.0f}</span><span class="ss"> gen"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"  (the Neanderthal state sits far below the modern panel; coalescence is deeper than the"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"   ~580 kya / 20,000-gen split because the lineages then share the ancestral population.)"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="bu">sorted</span>(q, key<span class="op">=</span><span class="kw">lambda</span> x: <span class="bu">sum</span>(r <span class="op">-</span> l <span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost[x]), reverse<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>show <span class="op">=</span> order[:<span class="dv">4</span>]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="bu">len</span>(show), <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="fl">1.9</span> <span class="op">*</span> <span class="bu">len</span>(show)), sharex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax, x <span class="kw">in</span> <span class="bu">zip</span>(axes, show):</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    segs <span class="op">=</span> res.posteriors[x]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    xs <span class="op">=</span> np.array([s[<span class="dv">0</span>] <span class="cf">for</span> s <span class="kw">in</span> segs] <span class="op">+</span> [segs[<span class="op">-</span><span class="dv">1</span>][<span class="dv">1</span>]]) <span class="op">/</span> <span class="fl">1e6</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    ys <span class="op">=</span> [s[<span class="dv">2</span>] <span class="cf">for</span> s <span class="kw">in</span> segs] <span class="op">+</span> [segs[<span class="op">-</span><span class="dv">1</span>][<span class="dv">2</span>]]</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    ax.fill_between(xs, <span class="dv">0</span>, ys, step<span class="op">=</span><span class="st">"post"</span>, color<span class="op">=</span>C_GHOST, alpha<span class="op">=</span><span class="fl">0.35</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    ax.step(xs, ys, where<span class="op">=</span><span class="st">"post"</span>, color<span class="op">=</span>C_GHOST, lw<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, r) <span class="kw">in</span> true_ghost[x]:</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        ax.axvspan(l <span class="op">/</span> <span class="fl">1e6</span>, r <span class="op">/</span> <span class="fl">1e6</span>, color<span class="op">=</span><span class="st">"k"</span>, alpha<span class="op">=</span><span class="fl">0.20</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="ss">f"hap </span><span class="sc">{</span>x<span class="sc">}</span><span class="ch">\n</span><span class="ss">P(Nean)"</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"P(Neanderthal) posterior (red)  vs  true Neanderthal tracts (grey)"</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>axes[<span class="op">-</span><span class="dv">1</span>].set_xlabel(<span class="st">"genomic position (Mb)"</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>learned emission means (log gen):  modern μ=6.70   Neanderthal μ=10.70
+  mean coalescence depth:  modern ~813 gen   Neanderthal ~44,328 gen
+  (the Neanderthal state sits far below the modern panel; coalescence is deeper than the
+   ~580 kya / 20,000-gen split because the lineages then share the ancestral population.)</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="neanderthal_power_files/figure-html/cell-4-output-2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="neanderthal_power_files/figure-html/cell-4-output-2.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The red posterior spikes essentially wherever there is a grey tract — <strong>sensitivity is high</strong>. But there are also red excursions with no grey underneath: <strong>false positives</strong>. The next figure shows exactly where they come from.</p>
+</section>
+<section id="why-precision-not-sensitivity-is-the-binding-limit" class="level2">
+<h2 class="anchored" data-anchor-id="why-precision-not-sensitivity-is-the-binding-limit">3. Why precision — not sensitivity — is the binding limit</h2>
+<p>The detector’s only observation is <em>log nearest-modern-reference coalescence time</em>. Below we split every query locus by its <strong>true</strong> ancestry and histogram that depth, span-weighted. The two distributions separate cleanly — Neanderthal loci pile up well above the modern ones (this is why the ROC AUC later is ≈1.0). The catch is twofold, and it shows up as <strong>false positives, not misses</strong>:</p>
+<ul>
+<li>The modern <strong>anchor</strong> μ (dotted) is the <em>reference-to-reference</em> depth, which is shallow; the modern <em>query</em> loci sit deeper, and a thin <strong>tail</strong> of ordinary within-human coalescences (large <span class="math inline">\(N_e\)</span> sends lineages up into the ancestral population) crosses the learned Neanderthal floor.</li>
+<li>Because true Neanderthal is only ~2% of the genome, even that thin tail contributes a false-positive burden <strong>comparable to the true signal</strong> — a base-rate effect. Specificity, not sensitivity, is the binding constraint.</li>
+</ul>
+<div id="10af8aef" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:06:22.345746Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:06:22.345641Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:06:26.876941Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:06:26.876488Z&quot;}}" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.archaic <span class="im">import</span> _depth_track, _make_transform, _anchor_modern</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>refs <span class="op">=</span> <span class="bu">list</span>(lab.keys())</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>ref_t <span class="op">=</span> _depth_track(ts, refs, refs)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>samp_t <span class="op">=</span> _depth_track(ts, refs, q)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>tfm <span class="op">=</span> _make_transform(<span class="st">"time"</span>, ref_t, samp_t)        <span class="co"># log-time transform used by the detector</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>ref_log <span class="op">=</span> {s: [(l, r, tfm(t)) <span class="cf">for</span> (l, r, t) <span class="kw">in</span> segs] <span class="cf">for</span> s, segs <span class="kw">in</span> ref_t.items()}</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>mu_m, sd_m, q_ref <span class="op">=</span> _anchor_modern(ref_log)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>sd_m <span class="op">=</span> <span class="bu">max</span>(sd_m, (q_ref <span class="op">-</span> mu_m) <span class="op">/</span> <span class="fl">2.0</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>floor <span class="op">=</span> q_ref <span class="op">+</span> sd_m                                  <span class="co"># the learned "archaic floor" (ghost must be deeper)</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>gd, gw, md_, mw <span class="op">=</span> [], [], [], []                      <span class="co"># ghost/modern log-depths + span weights</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> q:</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, r, t) <span class="kw">in</span> samp_t[x]:</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        lt <span class="op">=</span> tfm(t)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> np.isfinite(lt):</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        g <span class="op">=</span> _ov(l, r, true_ghost[x])<span class="op">;</span> m <span class="op">=</span> (r <span class="op">-</span> l) <span class="op">-</span> g</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> g <span class="op">&gt;</span> <span class="dv">0</span>: gd.append(lt)<span class="op">;</span> gw.append(g)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> m <span class="op">&gt;</span> <span class="dv">0</span>: md_.append(lt)<span class="op">;</span> mw.append(m)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">4.6</span>))</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>bins <span class="op">=</span> np.linspace(<span class="bu">min</span>(md_ <span class="op">+</span> gd), <span class="bu">max</span>(md_ <span class="op">+</span> gd), <span class="dv">55</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>ax.hist(md_, bins<span class="op">=</span>bins, weights<span class="op">=</span>mw, density<span class="op">=</span><span class="va">True</span>, color<span class="op">=</span>C_MODERN, alpha<span class="op">=</span><span class="fl">0.6</span>,</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"modern (human) query loci"</span>)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>ax.hist(gd, bins<span class="op">=</span>bins, weights<span class="op">=</span>gw, density<span class="op">=</span><span class="va">True</span>, color<span class="op">=</span>C_GHOST, alpha<span class="op">=</span><span class="fl">0.6</span>,</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"true Neanderthal query loci"</span>)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>ax.axvline(res.mu[<span class="dv">0</span>], color<span class="op">=</span><span class="st">"navy"</span>, ls<span class="op">=</span><span class="st">":"</span>, lw<span class="op">=</span><span class="fl">1.6</span>,</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f"modern anchor μ = </span><span class="sc">{</span>res<span class="sc">.</span>mu[<span class="dv">0</span>]<span class="sc">:.1f}</span><span class="ss">  (reference-to-reference)"</span>)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>ax.axvline(floor, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="fl">1.6</span>,</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f"learned Neanderthal floor = </span><span class="sc">{</span>floor<span class="sc">:.1f}</span><span class="ss">"</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"log nearest-modern-reference coalescence time"</span>)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"span-weighted density"</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Depth signal: modern vs. Neanderthal loci"</span>)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>ax.legend(loc<span class="op">=</span><span class="st">"upper left"</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="neanderthal_power_files/figure-html/cell-5-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="neanderthal_power_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="power-vs.-the-introgression-fraction" class="level2">
+<h2 class="anchored" data-anchor-id="power-vs.-the-introgression-fraction">4. Power vs.&nbsp;the introgression fraction</h2>
+<p>Sweep the Neanderthal fraction from 1% to 10% (2 seeds). Two things to watch:</p>
+<ul>
+<li><strong>Recall (sensitivity)</strong> stays high across the range — the deep signal of an individual Neanderthal tract does not depend on how many of them there are.</li>
+<li><strong>Precision</strong> trends upward with the fraction (compare the 1% and 10% ends). The false-positive <em>burden</em> (grey line, right panel) is roughly <strong>fixed</strong> by the deep within-human tail, so precision is essentially a signal-to-background ratio — low when the true 2% sits near that background. It is noisy at low fractions (few, long tracts → high per-genome variance); the robust discrimination measure is the ROC AUC in §5.</li>
+</ul>
+<p>The dotted line marks the realistic ~2% level. Note the realized burden (black, right panel) scatters around the design fraction at low % for the same small-number reason.</p>
+<div id="52e70750" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:06:26.878556Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:06:26.878436Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:08:10.684963Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:08:10.683924Z&quot;}}" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>gfs <span class="op">=</span> [<span class="fl">0.01</span>, <span class="fl">0.02</span>, <span class="fl">0.03</span>, <span class="fl">0.05</span>, <span class="fl">0.10</span>]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>seeds <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>agg <span class="op">=</span> collections.defaultdict(<span class="bu">list</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> seed <span class="kw">in</span> seeds:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    ts0, lab0, q0, _ <span class="op">=</span> nean_scenario(ghost_fraction<span class="op">=</span><span class="fl">0.0</span>, seed<span class="op">=</span>seed, sequence_length<span class="op">=</span><span class="fl">1e6</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ctrl <span class="op">=</span> <span class="bu">float</span>(np.mean([detect_ghost(ts0, lab0, q0, max_iter<span class="op">=</span><span class="dv">30</span>).burden[x] <span class="cf">for</span> x <span class="kw">in</span> q0]))</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> gf <span class="kw">in</span> gfs:</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        tsg, labg, qg, tgg <span class="op">=</span> nean_scenario(ghost_fraction<span class="op">=</span>gf, seed<span class="op">=</span>seed, sequence_length<span class="op">=</span><span class="fl">1e6</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        rg <span class="op">=</span> detect_ghost(tsg, labg, qg, max_iter<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        s <span class="op">=</span> score({x: rg.tracts(x, <span class="fl">0.5</span>) <span class="cf">for</span> x <span class="kw">in</span> qg}, tgg, qg, tsg.sequence_length)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        s[<span class="st">"control_fp"</span>] <span class="op">=</span> ctrl</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> k, v <span class="kw">in</span> s.items():</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>            agg[(gf, k)].append(v)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>m <span class="op">=</span> <span class="kw">lambda</span> gf, k: np.nanmean(agg[(gf, k)])</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>pct <span class="op">=</span> [gf <span class="op">*</span> <span class="dv">100</span> <span class="cf">for</span> gf <span class="kw">in</span> gfs]</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>fig, (a1, a2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="fl">4.2</span>))</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>a1.plot(pct, [m(gf, <span class="st">"recall"</span>) <span class="cf">for</span> gf <span class="kw">in</span> gfs], <span class="st">"o-"</span>, color<span class="op">=</span>C_GHOST, label<span class="op">=</span><span class="st">"recall (sensitivity)"</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>a1.plot(pct, [m(gf, <span class="st">"precision"</span>) <span class="cf">for</span> gf <span class="kw">in</span> gfs], <span class="st">"s-"</span>, color<span class="op">=</span>C_MODERN, label<span class="op">=</span><span class="st">"precision"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>a1.axvline(<span class="dv">2</span>, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">":"</span>, alpha<span class="op">=</span><span class="fl">0.6</span>)<span class="op">;</span> a1.set_ylim(<span class="dv">0</span>, <span class="fl">1.02</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>a1.set_xlabel(<span class="st">"Neanderthal ancestry (%)"</span>)<span class="op">;</span> a1.set_ylabel(<span class="st">"score"</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>a1.set_title(<span class="st">"Detection power vs. introgression fraction"</span>)<span class="op">;</span> a1.legend()</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>a2.plot(pct, [m(gf, <span class="st">"true_burden"</span>) <span class="op">*</span> <span class="dv">100</span> <span class="cf">for</span> gf <span class="kw">in</span> gfs], <span class="st">"o-"</span>, color<span class="op">=</span><span class="st">"k"</span>, label<span class="op">=</span><span class="st">"true burden"</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>a2.plot(pct, [m(gf, <span class="st">"est_burden"</span>) <span class="op">*</span> <span class="dv">100</span> <span class="cf">for</span> gf <span class="kw">in</span> gfs], <span class="st">"s-"</span>, color<span class="op">=</span>C_GHOST, label<span class="op">=</span><span class="st">"estimated burden"</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>a2.plot(pct, [m(gf, <span class="st">"control_fp"</span>) <span class="op">*</span> <span class="dv">100</span> <span class="cf">for</span> gf <span class="kw">in</span> gfs], <span class="st">"--"</span>, color<span class="op">=</span><span class="st">"grey"</span>, label<span class="op">=</span><span class="st">"no-ghost control (FP floor)"</span>)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>a2.axvline(<span class="dv">2</span>, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">":"</span>, alpha<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>a2.set_xlabel(<span class="st">"Neanderthal ancestry (%)"</span>)<span class="op">;</span> a2.set_ylabel(<span class="st">"genome %"</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>a2.set_title(<span class="st">"Burden: estimate vs. truth vs. false-positive floor"</span>)<span class="op">;</span> a2.legend()</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="neanderthal_power_files/figure-html/cell-6-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="neanderthal_power_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="discrimination-operating-point-and-calibration" class="level2">
+<h2 class="anchored" data-anchor-id="discrimination-operating-point-and-calibration">5. Discrimination, operating point, and calibration</h2>
+<p>Three threshold-aware views of the baseline 2% run:</p>
+<ul>
+<li><strong>ROC</strong> (left): how well <code>P(Neanderthal)</code> <em>ranks</em> Neanderthal loci above modern ones — the base-rate-free measure of the signal. It is excellent.</li>
+<li><strong>Precision / recall vs.&nbsp;threshold</strong> (middle): the practical operating-point knob. Raising the threshold trades recall for precision — this is the practical lever for precision.</li>
+<li><strong>Calibration</strong> (right): does <code>P</code> mean what it says? In this rare-ghost regime the posterior is near-hard and <strong>over-confident</strong> — even the highest-confidence calls are truly Neanderthal only ~60% of the time (the base-rate limit again). So <em>threshold/segment</em> the posterior; don’t read it as a literal probability.</li>
+</ul>
+<div id="116ec9e2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:08:10.697117Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:08:10.696939Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:08:10.856202Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:08:10.855585Z&quot;}}" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>P, POS, SPAN <span class="op">=</span> [], [], []</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> x <span class="kw">in</span> q:</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, r, p) <span class="kw">in</span> res.posteriors[x]:</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        POS.append(_ov(l, r, true_ghost[x]))<span class="op">;</span> P.append(p)<span class="op">;</span> SPAN.append(r <span class="op">-</span> l)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>P, POS, SPAN <span class="op">=</span> <span class="bu">map</span>(np.array, (P, POS, SPAN))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>NEG <span class="op">=</span> SPAN <span class="op">-</span> POS</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>ths <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">101</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>tp <span class="op">=</span> np.array([POS[P <span class="op">&gt;=</span> t].<span class="bu">sum</span>() <span class="cf">for</span> t <span class="kw">in</span> ths])</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>fp <span class="op">=</span> np.array([NEG[P <span class="op">&gt;=</span> t].<span class="bu">sum</span>() <span class="cf">for</span> t <span class="kw">in</span> ths])</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>tpr <span class="op">=</span> tp <span class="op">/</span> POS.<span class="bu">sum</span>()</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>fpr <span class="op">=</span> fp <span class="op">/</span> NEG.<span class="bu">sum</span>()</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>recall_t <span class="op">=</span> tpr</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>precision_t <span class="op">=</span> np.where(tp <span class="op">+</span> fp <span class="op">&gt;</span> <span class="dv">0</span>, tp <span class="op">/</span> np.where(tp <span class="op">+</span> fp <span class="op">&gt;</span> <span class="dv">0</span>, tp <span class="op">+</span> fp, <span class="dv">1</span>), np.nan)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>auc <span class="op">=</span> <span class="bu">float</span>(trapz(tpr[::<span class="op">-</span><span class="dv">1</span>], fpr[::<span class="op">-</span><span class="dv">1</span>]))</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>edges <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">11</span>)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>cx, cy, cw <span class="op">=</span> [], [], []</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">10</span>):</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    sel <span class="op">=</span> (P <span class="op">&gt;=</span> edges[i]) <span class="op">&amp;</span> (P <span class="op">&lt;</span> edges[i <span class="op">+</span> <span class="dv">1</span>]) <span class="cf">if</span> i <span class="op">&lt;</span> <span class="dv">9</span> <span class="cf">else</span> (P <span class="op">&gt;=</span> edges[i]) <span class="op">&amp;</span> (P <span class="op">&lt;=</span> edges[i <span class="op">+</span> <span class="dv">1</span>])</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    w <span class="op">=</span> SPAN[sel].<span class="bu">sum</span>()</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> w <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>        cx.append(<span class="bu">float</span>(P[sel] <span class="op">@</span> SPAN[sel] <span class="op">/</span> w))<span class="op">;</span> cy.append(<span class="bu">float</span>(POS[sel].<span class="bu">sum</span>() <span class="op">/</span> w))<span class="op">;</span> cw.append(w)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>fig, (a1, a2, a3) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="fl">4.3</span>))</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>a1.plot(fpr, tpr, color<span class="op">=</span>C_GHOST, lw<span class="op">=</span><span class="dv">2</span>)<span class="op">;</span> a1.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">"k:"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>a1.set_xlabel(<span class="st">"false-positive rate (modern loci)"</span>)<span class="op">;</span> a1.set_ylabel(<span class="st">"true-positive rate"</span>)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>a1.set_title(<span class="ss">f"ROC (AUC = </span><span class="sc">{</span>auc<span class="sc">:.3f}</span><span class="ss">)"</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>a2.plot(ths, recall_t, color<span class="op">=</span>C_GHOST, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">"recall"</span>)</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>a2.plot(ths, precision_t, color<span class="op">=</span>C_MODERN, lw<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">"precision"</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>a2.axvline(<span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">":"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>a2.set_xlabel(<span class="st">"P(Neanderthal) threshold"</span>)<span class="op">;</span> a2.set_ylabel(<span class="st">"score"</span>)<span class="op">;</span> a2.set_ylim(<span class="dv">0</span>, <span class="fl">1.02</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>a2.set_title(<span class="st">"Precision / recall vs. threshold"</span>)<span class="op">;</span> a2.legend()</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>a3.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">"k:"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>a3.scatter(cx, cy, s<span class="op">=</span>np.array(cw) <span class="op">/</span> <span class="bu">max</span>(cw) <span class="op">*</span> <span class="dv">240</span> <span class="op">+</span> <span class="dv">12</span>, color<span class="op">=</span>C_MODERN, alpha<span class="op">=</span><span class="fl">0.8</span>, edgecolor<span class="op">=</span><span class="st">"navy"</span>)</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>a3.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)<span class="op">;</span> a3.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>a3.set_xlabel(<span class="st">"predicted P(Neanderthal)"</span>)<span class="op">;</span> a3.set_ylabel(<span class="st">"empirical Neanderthal fraction"</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>a3.set_title(<span class="st">"Calibration (bubble area ∝ genome mass)"</span>)</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()<span class="op">;</span> plt.show()</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"ROC AUC = </span><span class="sc">{</span>auc<span class="sc">:.3f}</span><span class="ss">  (1.0 = perfect ranking; 0.5 = chance)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="neanderthal_power_files/figure-html/cell-7-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="neanderthal_power_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ROC AUC = 0.997  (1.0 = perfect ranking; 0.5 = chance)</code></pre>
+</div>
+</div>
+</section>
+<section id="what-changes-on-real-inferred-data" class="level2">
+<h2 class="anchored" data-anchor-id="what-changes-on-real-inferred-data">6. What changes on real (inferred) data</h2>
+<p>Everything above used the <strong>true</strong> ARG, so it is an upper bound. On real genomes the genealogy is inferred (tsinfer / Relate / SINGER), which adds error on top of the coalescent limit shown here, and branch <em>times</em> may be miscalibrated — Relate uses a panmictic prior (CLAUDE.md §6). Two robustness options:</p>
+<ul>
+<li><strong><code>depth="rank"</code></strong> replaces depth by its genome-wide rank — a <em>monotonic</em> transform, hence <strong>exactly invariant</strong> to any branch-length rescaling (the cell below rescales all node times ×7 and gets identical posteriors), which is what you want on calibration-uncertain ARGs like Relate. It recovers the tracts (high recall, AUC≈0.97), but at human <span class="math inline">\(N_e\)</span> the rank transform compresses the modern↔︎ghost separation, so its <em>fixed-threshold</em> precision is lower than <code>depth="time"</code> — threshold it higher, or prefer calibrated times. (Rank needed a bounded-floor fix: the unbounded log-time floor <code>q_ref + σ</code> overshot the <code>[0,1]</code> rank ceiling and silently produced <em>no</em> calls.)</li>
+<li><strong>A SINGER posterior ensemble</strong> is the preferred route: <code>detect_ghost([G_1, …, G_M], labels)</code> does one pooled fit, per-member decode, and averages <code>P(ghost)</code> with an uncertainty band; SINGER’s Bayesian, coalescent-calibrated times both fix the calibration and largely lift the ARG-quality bound (CLAUDE.md §7.4), letting you stay in the better-calibrated <code>depth="time"</code>.</li>
+</ul>
+<div id="4a319678" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:08:10.858414Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:08:10.858299Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:08:20.213160Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:08:20.212778Z&quot;}}" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>res_rank <span class="op">=</span> detect_ghost(ts, lab, q, depth<span class="op">=</span><span class="st">"rank"</span>, max_iter<span class="op">=</span><span class="dv">40</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>s_time <span class="op">=</span> score({x: res.tracts(x, <span class="fl">0.5</span>) <span class="cf">for</span> x <span class="kw">in</span> q}, true_ghost, q, ts.sequence_length)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>s_rank <span class="op">=</span> score({x: res_rank.tracts(x, <span class="fl">0.5</span>) <span class="cf">for</span> x <span class="kw">in</span> q}, true_ghost, q, ts.sequence_length)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># exact calibration-invariance: rescale every node time x7 -&gt; identical rank-mode posteriors</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> ts.dump_tables()<span class="op">;</span> t.nodes.time <span class="op">=</span> t.nodes.time <span class="op">*</span> <span class="fl">7.0</span><span class="op">;</span> t.sort()</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>res_rank7 <span class="op">=</span> detect_ghost(t.tree_sequence(), lab, q, depth<span class="op">=</span><span class="st">"rank"</span>, max_iter<span class="op">=</span><span class="dv">40</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>dmax <span class="op">=</span> <span class="bu">max</span>(<span class="bu">abs</span>(a <span class="op">-</span> b) <span class="cf">for</span> x <span class="kw">in</span> q</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>           <span class="cf">for</span> (_l, _r, a), (_m, _n, b) <span class="kw">in</span> <span class="bu">zip</span>(res_rank.posteriors[x], res_rank7.posteriors[x]))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>fmt <span class="op">=</span> <span class="kw">lambda</span> v: <span class="ss">f"</span><span class="sc">{</span>v<span class="sc">:.2f}</span><span class="ss">"</span> <span class="cf">if</span> np.isfinite(v) <span class="cf">else</span> <span class="st">" n/a"</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"                 recall  precision"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"depth='time'     </span><span class="sc">{</span>fmt(s_time[<span class="st">'recall'</span>])<span class="sc">}</span><span class="ss">    </span><span class="sc">{</span>fmt(s_time[<span class="st">'precision'</span>])<span class="sc">}</span><span class="ss">     &lt;- best-calibrated (pair with SINGER times)"</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"depth='rank'     </span><span class="sc">{</span>fmt(s_rank[<span class="st">'recall'</span>])<span class="sc">}</span><span class="ss">    </span><span class="sc">{</span>fmt(s_rank[<span class="st">'precision'</span>])<span class="sc">}</span><span class="ss">     &lt;- calibration-robust; lower fixed-threshold precision"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">rank-mode P(ghost) under x7 node-time rescaling: max |Δ| = </span><span class="sc">{</span>dmax<span class="sc">:.1e}</span><span class="ss">  (exactly calibration-invariant)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 recall  precision
+depth='time'     0.97    0.50     &lt;- best-calibrated (pair with SINGER times)
+depth='rank'     1.00    0.08     &lt;- calibration-robust; lower fixed-threshold precision
+
+rank-mode P(ghost) under x7 node-time rescaling: max |Δ| = 0.0e+00  (exactly calibration-invariant)</code></pre>
+</div>
+</div>
+</section>
+<section id="bottom-line" class="level2">
+<h2 class="anchored" data-anchor-id="bottom-line">7. Bottom line</h2>
+<div id="ca553116" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-06-27T21:08:20.214789Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-06-27T21:08:20.214689Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-06-27T21:08:20.217295Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-06-27T21:08:20.216912Z&quot;}}" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"POWER OF detect_ghost ON THE HUMAN-NEANDERTHAL SCENARIO (true ARG)</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span> <span class="op">*</span> <span class="dv">65</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Baseline: ~2% Neanderthal, true ARG, 8 admixed + 10+10 modern references, L=2 Mb"</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  recall (sensitivity)       : </span><span class="sc">{</span>s_time[<span class="st">'recall'</span>]<span class="sc">:.2f}</span><span class="ss">   -&gt; finds almost every Neanderthal base"</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  precision @ P&gt;=0.5          : </span><span class="sc">{</span>s_time[<span class="st">'precision'</span>]<span class="sc">:.2f}</span><span class="ss">   -&gt; deep within-human loci are the false positives"</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  ROC AUC                     : </span><span class="sc">{</span>auc<span class="sc">:.3f}</span><span class="ss">   -&gt; excellent per-locus discrimination"</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  burden overestimate factor  : </span><span class="sc">{</span>s_time[<span class="st">'est_burden'</span>]<span class="op">/</span>s_time[<span class="st">'true_burden'</span>]<span class="sc">:.1f}</span><span class="ss">x   -&gt; threshold/control-correct it, don't report raw"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  no-ghost control FP burden  : </span><span class="sc">{</span>m(<span class="fl">0.02</span>,<span class="st">'control_fp'</span>)<span class="sc">:.1%}</span><span class="ss">   -&gt; the deep within-human background (sweep mean)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>POWER OF detect_ghost ON THE HUMAN-NEANDERTHAL SCENARIO (true ARG)
+=================================================================
+Baseline: ~2% Neanderthal, true ARG, 8 admixed + 10+10 modern references, L=2 Mb
+  recall (sensitivity)       : 0.97   -&gt; finds almost every Neanderthal base
+  precision @ P&gt;=0.5          : 0.50   -&gt; deep within-human loci are the false positives
+  ROC AUC                     : 0.997   -&gt; excellent per-locus discrimination
+  burden overestimate factor  : 1.9x   -&gt; threshold/control-correct it, don't report raw
+  no-ghost control FP burden  : 2.5%   -&gt; the deep within-human background (sweep mean)</code></pre>
+</div>
+</div>
+<p><strong><code>detect_ghost</code> is a high-sensitivity Neanderthal-segment finder, limited by specificity, not by the small introgression fraction.</strong></p>
+<ol type="1">
+<li><strong>Sensitivity is high (recall ≈ 0.97)</strong> even at the true ~2% level: a single Neanderthal tract is a deep genealogical outlier and is hard to miss.</li>
+<li><strong>Discrimination is excellent (ROC AUC ≈ 0.99).</strong> <code>P(Neanderthal)</code> ranks Neanderthal loci far above modern loci. The posterior itself is near-hard and <strong>over-confident</strong> at 2% (a P≈0.99 call is truly Neanderthal only ~60% of the time), so threshold/segment it — don’t read it as a literal probability.</li>
+<li><strong>Precision at a fixed threshold is the binding limit (~0.3–0.5 at 2%).</strong> With <span class="math inline">\(N_e=10{,}000\)</span>, deep <em>within-human</em> coalescences produce a false-positive burden comparable to the true 2% — a base-rate problem, not a discrimination failure. It is <em>not</em> set by tract length or admixture age (the depth signal survives recombination), which is the structural advantage of a tree-native detector over tract/copying methods at old admixture (CLAUDE.md §9).</li>
+<li><strong>Buy precision back at the operating point:</strong> raise the <code>P(ghost)</code> threshold (precision climbs toward ~0.8 at high confidence; §5) or work at the per-haplotype <em>burden</em> corrected against the matched no-ghost control — never report raw burden. Across the other axes we varied (reference panel 8–32 haplotypes/group; Neanderthal divergence ~320–870 kya), recall and AUC stayed high and the precision limit persisted — the dominant axis is the introgression fraction / base rate.</li>
+<li><strong>These are upper bounds.</strong> On inferred ARGs expect degradation from genealogy error on top of the coalescent limit characterised here; use a <strong>SINGER ensemble</strong> for calibrated times + accuracy + an uncertainty band. <code>depth="rank"</code> is the calibration-robust fallback (exactly invariant to branch-length rescaling) and recovers the tracts, though with lower fixed-threshold precision at high <span class="math inline">\(N_e\)</span>.</li>
+</ol>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/munch-group\.github\.io\/tspaint\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../notebooks/introgression_qc.html" class="pagination-link" aria-label="Reference QC, foreign tracts &amp; ghost detection">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Reference QC, foreign tracts &amp; ghost detection</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../pages/results.html" class="pagination-link" aria-label="Results">
+        <span class="nav-page-text">Results</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
