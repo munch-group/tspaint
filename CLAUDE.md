@@ -590,7 +590,10 @@ mitigate the §6 time-calibration bias and propagate its uncertainty.
 **Implemented (prototype):** `ensemble.merge_posterior_tables` (N-way breakpoint
 refinement → mean + std + status, duck-compatible with `Segment` so `validate` scores it
 directly); θ fit pooled across the ensemble **reuses** `em.fit([G_1..G_M], [labels]*M)`
-(scale-invariant M-step). Driver `experiments.arg_ensemble_experiment`.
+(scale-invariant M-step). Driver `experiments.arg_ensemble_experiment`. **Surfaced in the
+high-level API:** `paint([G_1..G_M], labels)` does the pooled fit → per-member paint → merge
+in one call and returns a `Painting` whose `posteriors` carry the mean + `posterior_std` band
+(`Painting.introgression_map` likewise merges the leave-one-out map across the ensemble).
 
 > **[MEASURED — prototype].** The merge layer is correct and, on **independent** noisy
 > inputs, averaging clearly improves accuracy (synthetic test: ~0.65 → >0.9). But a

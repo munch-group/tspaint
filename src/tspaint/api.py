@@ -27,7 +27,10 @@ class Painting:
     posteriors : dict[int, list[Segment]]
         Per query haplotype, the down-pass posterior over ancestry states as contiguous
         :class:`~tspaint.output.Segment`\\ s covering ``[0, L)`` (the soft, calibrated
-        deliverable).
+        deliverable). When :func:`paint` was given an **ensemble** of tree sequences these are
+        :class:`~tspaint.ensemble.MergedSegment`\\ s — the ensemble-mean posterior plus a
+        ``posterior_std`` ARG-uncertainty band — but otherwise behave identically (same
+        ``left``/``right``/``posterior``/``status``).
     Q : numpy.ndarray
         The fitted generator.
     pi : numpy.ndarray
@@ -38,9 +41,10 @@ class Painting:
         Observed-data log-likelihood per EM step (non-decreasing).
     queries : list
         The painted sample-node ids.
-    ts : tskit.TreeSequence
-        The tree sequence painted (retained so :meth:`rate_through_time` can reuse the fit;
-        already in memory, so no extra cost).
+    ts : tskit.TreeSequence or list[tskit.TreeSequence]
+        The tree sequence painted — or the ensemble of them — retained so
+        :meth:`introgression_map` / :meth:`rate_through_time` can reuse the fit (already in
+        memory, so no extra cost).
     labels : dict[int, int]
         The reference labels used for the fit (retained for :meth:`rate_through_time`).
     default_deadband : float
@@ -120,6 +124,11 @@ class Painting:
         if self.ts is None or self.labels is None:
             raise ValueError("Painting was constructed without ts/labels; cannot date. Use "
                              "tspaint.fit_rate_through_time(ts, labels) directly.")
+        if isinstance(self.ts, (list, tuple)):
+            raise ValueError(
+                "rate_through_time is not defined for an ensemble painting; call "
+                "tspaint.fit_rate_through_time(member, labels) on a single tree sequence "
+                "(e.g. painting.ts[0]).")
         from .em import FitResult
         from .dating import fit_rate_through_time
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
@@ -142,14 +151,23 @@ class Painting:
         Returns
         -------
         list[tspaint.output.Segment]
-            The leave-one-out posterior as contiguous segments covering ``[0, L)``.
+            The leave-one-out posterior as contiguous segments covering ``[0, L)`` (for an
+            ensemble painting, the ensemble-mean leave-one-out map as
+            :class:`~tspaint.ensemble.MergedSegment`\\ s).
         """
         if self.ts is None or self.labels is None:
             raise ValueError("Painting was constructed without ts/labels; cannot map "
                              "introgression. Use tspaint.output.loo_posterior_table directly.")
         from .output import loo_posterior_table
+        sample = int(sample)
+        if isinstance(self.ts, (list, tuple)):
+            from .ensemble import merge_posterior_tables
+            tables = [loo_posterior_table(g, self.Q, self.pi,
+                                          build_emissions(g, self.labels, self.w, self.pi),
+                                          focal=[sample]) for g in self.ts]
+            return merge_posterior_tables(tables, samples=[sample])[sample]
         emissions = build_emissions(self.ts, self.labels, self.w, self.pi)
-        return loo_posterior_table(self.ts, self.Q, self.pi, emissions, focal=[int(sample)])[int(sample)]
+        return loo_posterior_table(self.ts, self.Q, self.pi, emissions, focal=[sample])[sample]
 
     def __repr__(self):
         return (f"Painting(queries={len(self.queries)}, K={self.pi.shape[0]}, "
@@ -168,11 +186,18 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
 
     Parameters
     ----------
-    ts : tskit.TreeSequence
+    ts : tskit.TreeSequence or list[tskit.TreeSequence]
         An inferred (tsinfer / Relate ``--compress``) or true tree sequence; sample nodes are
-        haplotypes. Use :mod:`tspaint.io` to obtain one from genotypes.
+        haplotypes. Use :mod:`tspaint.io` to obtain one from genotypes. **Pass a list of tree
+        sequences** — e.g. the posterior ARG ensemble from :func:`tspaint.io.singer` — to paint
+        from the ensemble: one ``(Q, π, w)`` is fit pooled across all members (the M-step is
+        scale-invariant), each member is painted with it, and the per-position posteriors are
+        **averaged**. This marginalises ARG uncertainty — the binding constraint on real data —
+        and the spread becomes a calibrated uncertainty band (CLAUDE.md §7.4). All members must
+        share the same sample ids (true of a SINGER ensemble, where sample order is preserved).
     labels : dict[int, int]
-        Reference sample-node id → ancestry-state index in ``0..K-1``.
+        Reference sample-node id → ancestry-state index in ``0..K-1``. Applied to every member
+        of an ensemble.
     queries : iterable[int], optional
         Sample nodes to paint; defaults to every sample not in ``labels``.
     K : int
@@ -207,12 +232,15 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     -------
     Painting
         The soft per-position ancestry posteriors for each query plus the fitted
-        ``(Q, π, w)`` and EM log-likelihood history.
+        ``(Q, π, w)`` and EM log-likelihood history. For an ensemble input the posteriors are
+        the ensemble mean with an ARG-uncertainty band (:class:`~tspaint.ensemble.MergedSegment`,
+        with a ``posterior_std``).
 
     See Also
     --------
     tspaint.fit : The underlying blocked-EM fit.
     tspaint.output.hard_segments : Collapse the soft posteriors into hard tracts.
+    tspaint.ensemble.merge_posterior_tables : The per-position averaging used for an ensemble.
 
     Examples
     --------
@@ -221,20 +249,44 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}   # reference sample-node -> ancestry state
     >>> painting = tspaint.paint(ts, labels)
     >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
+
+    Paint from a SINGER posterior ensemble — the mean painting carries an uncertainty band:
+
+    >>> ensemble = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
+    >>> painting = tspaint.paint(ensemble, labels)            # one pooled fit; averaged posteriors
+    >>> painting.posteriors[q][0].posterior_std               # per-position ARG-uncertainty band
     """
     labels = {int(k): int(v) for k, v in labels.items()}
+    members = list(ts) if isinstance(ts, (list, tuple)) else None    # an ARG ensemble?
+    if members is not None and not members:
+        raise ValueError("paint() got an empty ensemble; pass at least one tree sequence")
+    ref_ts = members[0] if members is not None else ts
     if queries is None:
-        queries = [int(s) for s in ts.samples() if int(s) not in labels]
+        queries = [int(s) for s in ref_ts.samples() if int(s) not in labels]
     else:
         queries = [int(q) for q in queries]
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
-    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
+
+    # One pooled θ fit shared across the ensemble (the M-step is scale-invariant).
+    res = fit(members if members is not None else ts,
+              [labels] * len(members) if members is not None else labels,
+              K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
               estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0)
-    emissions = build_emissions(ts, labels, res.w, res.pi)
-    posteriors = posterior_table(ts, res.Q, res.pi, emissions, focal=queries)
-    if smooth:
-        from .bp import bp_smooth_track
-        posteriors = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in posteriors.items()}
+
+    def _paint_member(g):
+        emissions = build_emissions(g, labels, res.w, res.pi)
+        table = posterior_table(g, res.Q, res.pi, emissions, focal=queries)
+        if smooth:
+            from .bp import bp_smooth_track
+            table = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in table.items()}
+        return table
+
+    if members is None:
+        posteriors = _paint_member(ts)
+    else:
+        from .ensemble import merge_posterior_tables
+        posteriors = merge_posterior_tables([_paint_member(g) for g in members], samples=queries)
+
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
                     ts=ts, labels=labels, default_deadband=deadband)
