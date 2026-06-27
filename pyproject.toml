@@ -21,6 +21,7 @@ dependencies = [
     "msprime>=1.3",
     "numpy>=1.24",
     "scipy>=1.10",
+    "click>=8.0",
 ]
 
 [project.urls]
@@ -28,8 +29,8 @@ Homepage = "https://github.com/munch-group/tspaint"
 Repository = "https://github.com/munch-group/tspaint"
 Documentation = "https://munch-group.org/tspaint"
 
-# [project.scripts]
-# tspaint = "tspaint:cli"  # TODO: console entry point once a CLI exists
+[project.scripts]
+tspaint = "tspaint.cli:main"
 
 [tool.setuptools]
 include-package-data = true
@@ -56,6 +57,7 @@ tskit = "*"
 msprime = "*"
 numpy = "*"
 scipy = "*"
+click = "*"
 pytest = "*"
 jupyter = "*"
 quarto = "*"
