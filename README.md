@@ -35,7 +35,8 @@ implemented and validated on simulated truth:
 | Hard segmentation (deadband) + fragmentation metrics | `output.py`, `validate.py` | recovers the true tract-length distribution for dating (CLAUDE.md §9) |
 | High-level `paint()` API | `api.py` | one-call fit + paint → `Painting` |
 | Horizontal BP/EP smoother | `bp/` | wins on inferred ARGs (breakpoint F1 0.71→0.98), redundant on true ARG (CLAUDE.md §7) |
-| Reference QC / foreign tracts / ghost detection | `introgression.py`, `sim.py` | impure-ref discrimination + LOO introgression recall ~0.9; ghost detection recall 0.58 / precision 1.0 at ~1% no-ghost-control false-positive (CLAUDE.md §9) |
+| Reference QC + actionable soft_refs/mask (Task 1) | `introgression.py`, `sim.py` | impure-ref discrimination + LOO introgression recall ~0.9 (CLAUDE.md §9) |
+| Ghost / archaic search — depth-emission HMM (Task 2) | `archaic.py` (`detect_ghost`) | per-locus recall 0.99–1.00 at precision 1.0 reference-free; SINGER-ensemble + calibration-robust `depth="rank"` (CLAUDE.md §9) |
 
 On strong-structure msprime sims (the true ARG), painting accuracy is ~1.0 with good
 calibration, and breakpoint flicker is ~1000× below the true-tract discontinuity — so the
@@ -147,7 +148,8 @@ gain — the paths stay side by side).
 | `tspaint.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
 | `tspaint.dating` | admixture rate through time (time-inhomogeneous directional mugration EM): `fit_rate_through_time`, `RateThroughTime`, `paint_qt` |
 | `tspaint.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |
-| `tspaint.introgression` | reference QC (`reference_qc`), anonymous foreign tracts (`foreign_tracts`), ghost-source detection (`detect_ghost`) — built on the `loo_posterior_table` introgression lens |
+| `tspaint.introgression` | **Task 1 — reference QC**: `reference_qc` (with actionable `.soft_refs()` / `.mask()`), anonymous `foreign_tracts` (`min_depth=` → the fast deep-ghost flag) — built on the `loo_posterior_table` lens |
+| `tspaint.archaic` | **Task 2 — ghost search**: `detect_ghost` — reference-free depth-emission HMM for calibrated per-locus `P(ghost)`; accepts a SINGER ensemble and `depth="rank"` (calibration-robust). (`detect_archaic` is a deprecated alias) |
 
 Lower-level machinery is in the named submodules (`tspaint.model`, `tspaint.pruning`,
 `tspaint.accumulate`, `tspaint.em`, `tspaint.output`, `tspaint.ensemble`, `tspaint.ranked`);

@@ -830,6 +830,22 @@ in one call and returns a `Painting` whose `posteriors` carry the mean + `poster
     times) — raw depth is branch-length-calibration-sensitive (§6; the rank-variant / Relate test is
     outstanding), and the posterior is near-hard in this clean-signal regime. Plan:
     `plans/PLAN_B_archaic_detector.md`. Tests: `tests/test_archaic.py`.
+  - **[UPDATE — two-task UI consolidation + rename].** The introgression tools are now organised by
+    the two user tasks. **Task 1 (reference QC — *control* panel contamination):** `reference_qc`,
+    whose result is **actionable** — `ReferenceQC.soft_refs()` (the suspect set to down-weight) and
+    `.mask()` (per-reference foreign spans to drop) feed straight into `paint(..., soft_refs=...)`;
+    plus `foreign_tracts`. **Task 2 (dedicated ghost / archaic *search* — accurate segments):** the
+    depth-emission HMM is **renamed `detect_ghost`** (the obvious name for the accurate detector;
+    `detect_archaic`/`ArchaicResult` kept as deprecated aliases of `detect_ghost`/`GhostResult`). It
+    now (a) accepts a **SINGER ensemble** (`detect_ghost([G_1..G_M], labels)` — one pooled fit,
+    per-member decode, averaged P(ghost), like `paint(ensemble)`) and (b) takes **`depth="rank"`**, a
+    monotonic (calibration-invariant) depth transform that closes the raw-`log`-depth
+    calibration-sensitivity caveat above — **[MEASURED]** ×7 node-time rescaling leaves rank-mode
+    P(ghost) identical; only the Relate end-to-end test is still outstanding. The former Plan-A
+    `detect_ghost` *flag* (low fit AND deep) is **folded into `foreign_tracts(mode="fit",
+    min_depth=)`** (the fast, deterministic, rank-depth alternative); `archaic_detection_experiment`
+    still scores the HMM against it (recall 0.99–1.00 vs ~0.4–0.5). CLI: `tspaint qc` / `ghost`
+    (ensemble, `--depth`) / `introgress` (`--min-depth`).
 
 ---
 
