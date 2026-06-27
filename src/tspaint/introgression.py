@@ -30,7 +30,7 @@ from .em import fit, build_emissions
 from .model import make_generator_2state
 
 __all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc",
-           "foreign_tracts", "GhostResult", "detect_ghost"]
+           "foreign_tracts"]
 
 
 @dataclass
@@ -262,6 +262,39 @@ class ReferenceQC:
                  "foreign_fraction": self.foreign_fraction(r, deadband)}
                 for r in sorted(self.labels, key=lambda r: self.credibility[r])]
 
+    def soft_refs(self, max_credibility=None):
+        """References to soften when re-painting — feed straight to ``paint(..., soft_refs=...)``.
+
+        The Task-1 action: down-weight the contaminated references so they stop anchoring the
+        painting where they carry foreign ancestry. With ``max_credibility=None`` (default) returns
+        the suspect set the QC already softened (the non-anchor references); pass a cutoff to take
+        every reference with ``credibility < max_credibility`` instead. Keep the trusted anchors
+        hard-clamped — never let the whole panel float (CLAUDE.md §6).
+
+        Returns
+        -------
+        set[int]
+            Reference sample ids to pass as ``soft_refs``.
+        """
+        if max_credibility is None:
+            return {int(r) for r in self.labels if r not in self.anchors}
+        return {int(r) for r, c in self.credibility.items() if c < max_credibility}
+
+    def mask(self, deadband=0.3):
+        """Per-reference foreign spans to **mask** out before re-painting.
+
+        The alternative Task-1 action to :meth:`soft_refs`: rather than down-weight a whole
+        reference, drop only its contaminated spans. Returns ``{ref: [(left, right), ...]}`` from
+        :meth:`flagged_tracts` (foreign state dropped) for the references that have at least one
+        flagged tract.
+        """
+        out = {}
+        for r in self.labels:
+            spans = [(l, rr) for (l, rr, _s) in self.flagged_tracts(r, deadband)]
+            if spans:
+                out[int(r)] = spans
+        return out
+
 
 def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2, Q0=None,
                  max_iter=8, alpha=20.0, beta=1.0):
@@ -382,10 +415,10 @@ def _merge_intervals(intervals):
     return out
 
 
-def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=None,
-                   max_iter=8, soft_refs=None):
+def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="auto", K=2,
+                   Q0=None, max_iter=8, soft_refs=None):
     """Anonymous foreign-tract inference: where a haplotype is foreign to its expectation
-    (Plan A Workflow 2; CLAUDE.md §2.3, §9).
+    (CLAUDE.md §2.3, §9).
 
     Flags tracts **without attributing a donor**. The foreignness score is per segment:
 
@@ -394,6 +427,11 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
     * an **unlabelled** query — ``(1 - fit) / (1 - 1/K)`` where ``fit = max_s loo[s]``: how
       poorly it fits any panel source ("fits nothing"), normalised so a maximally-ambiguous
       tract scores 1.
+
+    With ``min_depth`` set, a segment must **also** sit on an anomalously deep branch (high
+    rank-normalised nearest-reference coalescence depth) to be flagged — the fast, deterministic,
+    calibration-robust **ghost flag** (this subsumes the former ``detect_ghost`` *flag*; the
+    accurate generative ghost detector is now :func:`tspaint.detect_ghost`, the depth-emission HMM).
 
     Parameters
     ----------
@@ -406,6 +444,11 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
     min_score : float, optional
         Flag segments whose foreignness score ``>= min_score`` (default ``0.5`` — the expected
         ancestry gets less than half the support).
+    min_depth : float, optional
+        If given, additionally require the rank-normalised nearest-reference depth ``>= min_depth``
+        (in ``[0, 1]``) — flag only *deep* foreign tracts (ghost-like; e.g. ``0.9`` for the
+        deepest 10%). Default ``None`` (no depth filter). Combined with ``mode="fit"`` /
+        ``min_score`` this reproduces the former ghost flag (``fit < f`` ⇔ ``score > 2(1-f)``).
     mode : {"auto", "label", "fit"}, optional
         ``"auto"`` (default) uses the label rule for labelled samples and the fit rule for
         queries; ``"label"`` / ``"fit"`` force one rule for all samples.
@@ -421,7 +464,7 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
         raise ValueError("mode must be 'auto', 'label' or 'fit'")
     labels = {int(k): int(v) for k, v in labels.items()}
     samples = [int(s) for s in samples]
-    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs)
+    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank")
     out = {}
     for s in samples:
         use_label = (mode == "label") or (mode == "auto" and s in labels)
@@ -429,6 +472,8 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
         for seg in ft[s]:
             if seg.status == MISSING_INFO:
                 continue
+            if min_depth is not None and not (np.isfinite(seg.depth) and seg.depth >= min_depth):
+                continue                       # deep-only (ghost) filter
             score = ((1.0 - float(seg.loo[labels[s]])) if use_label
                      else (1.0 - seg.fit) / (1.0 - 1.0 / K))
             if score >= min_score:
@@ -437,75 +482,6 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, mode="auto", K=2, Q0=N
     return out
 
 
-@dataclass
-class GhostResult:
-    """Result of :func:`detect_ghost` — per-sample ghost tracts + genome-wide burden.
-
-    Mirrors :class:`tspaint.archaic.ArchaicResult`'s accessor vocabulary (``.burden`` dict,
-    ``.tracts(sample)`` method) so the two detectors are used the same way.
-
-    Attributes
-    ----------
-    burden : dict[int, float]
-        Per sample, the fraction of the genome flagged ghost.
-    tracts_by_sample : dict[int, list[tuple[float, float]]]
-        Per sample, the merged ghost ``(left, right)`` tracts.
-    """
-    burden: dict
-    tracts_by_sample: dict
-
-    def tracts(self, sample):
-        """Ghost tracts ``[(left, right)]`` for one ``sample``."""
-        return self.tracts_by_sample[int(sample)]
-
-
-def detect_ghost(ts, labels, samples, *, fit_thresh=0.6, depth_thresh=0.9, K=2, Q0=None,
-                 max_iter=8, soft_refs=None):
-    """Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3).
-
-    A ghost / archaic tract fits **no** panel source (low ``fit``) **and** sits on an
-    anomalously **deep** branch relative to every labelled reference (high ``depth``). That
-    second criterion is what separates a genuine unsampled-source tract from a merely
-    uninformative (50/50, shallow) one. Detection, not attribution — it flags that a tract
-    descends from something outside the panel, not what (CLAUDE.md §9).
-
-    Parameters
-    ----------
-    ts : tskit.TreeSequence
-        Tree sequence to analyse.
-    labels : dict[int, int]
-        Reference sample id -> ancestry-state label.
-    samples : iterable[int]
-        Samples to scan (typically the queries).
-    fit_thresh : float, optional
-        Flag where ``fit < fit_thresh`` (fits no panel source). Default ``0.6``.
-    depth_thresh : float, optional
-        Flag where the rank-normalised nearest-reference ``depth >= depth_thresh`` (a deep
-        outlier). Default ``0.9`` (the deepest 10%) — measured on an archaic-like ghost sim:
-        recall 0.58 at precision 1.0 and a ~1% false-positive burden on the no-ghost control;
-        lower it to ``0.8`` for recall ~1.0 at precision ~0.86 (same control floor). The right
-        value scales with how prevalent the ghost ancestry is — tune against your own no-ghost
-        control. The genome-wide ghost **burden** separates ghost from no-ghost ~10x even when
-        per-tract recall is partial.
-    K, Q0, max_iter, soft_refs
-        Model / EM controls (see :func:`tspaint.fit`).
-
-    Returns
-    -------
-    GhostResult
-        ``.burden`` (per-sample flagged fraction) and ``.tracts(sample)`` (the merged ghost
-        ``(left, right)`` tracts) — the same accessors as :class:`tspaint.archaic.ArchaicResult`.
-    """
-    labels = {int(k): int(v) for k, v in labels.items()}
-    samples = [int(s) for s in samples]
-    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank")
-    L = float(ts.sequence_length)
-    tracts, burden = {}, {}
-    for s in samples:
-        flagged = [(seg.left, seg.right) for seg in ft[s]
-                   if seg.status != MISSING_INFO and np.isfinite(seg.depth)
-                   and seg.fit < fit_thresh and seg.depth >= depth_thresh]
-        merged = _merge_intervals(flagged)
-        tracts[s] = merged
-        burden[s] = (sum(r - l for (l, r) in merged) / L) if L else float("nan")
-    return GhostResult(burden=burden, tracts_by_sample=tracts)
+# NOTE: the former Plan-A ``detect_ghost`` *flag* (fit < t AND depth >= t) and its ``GhostResult``
+# have been folded into ``foreign_tracts(mode="fit", min_score=..., min_depth=...)`` above. The name
+# ``detect_ghost`` now refers to the accurate depth-emission HMM in :mod:`tspaint.archaic`.

@@ -128,24 +128,24 @@ quartodoc:
         - output.Segment
         - output.missing_info_mask
         - output.posterior_at
-    - title: Reference QC, introgression & archaic detection
+    - title: Reference QC & ghost / archaic introgression
       desc: |
-        Audit a reference panel for admixture / mislabelling, flag foreign tracts of any
-        haplotype without naming a donor, detect introgression from an unsampled ("ghost")
-        source, and — with no reference at all — detect deep archaic tracts (the
-        `tspaint.introgression` and `tspaint.archaic` namespaces). All read the leave-one-out
-        map, which surfaces a sample's own foreign tracts the down-pass posterior hides;
-        `detect_ghost` and `detect_archaic` return objects with a shared `.burden` / `.tracts()`.
+        Two user-facing tasks. **Task 1 — reference QC:** audit a panel for admixture /
+        mislabelling and control it, with `reference_qc` whose result yields the actionable
+        `.soft_refs()` / `.mask()` for a cleaned re-paint, plus `foreign_tracts` (anonymous foreign
+        tracts; `min_depth=` gives the fast deterministic deep-ghost flag). **Task 2 — ghost
+        search:** `detect_ghost`, the reference-free depth-emission HMM, for accurate calibrated
+        per-locus `P(ghost)` — accepts a SINGER ensemble and a calibration-robust `depth="rank"`.
+        Both read the leave-one-out map (`tspaint.introgression`, `tspaint.archaic`).
+        (`detect_archaic` is a deprecated alias of `detect_ghost`.)
       contents:
         - reference_qc
-        - foreign_tracts
-        - detect_ghost
-        - detect_archaic
-        - output.loo_posterior_table
         - introgression.ReferenceQC
-        - introgression.GhostResult
+        - foreign_tracts
+        - output.loo_posterior_table
         - introgression.foreignness_track
-        - archaic.ArchaicResult
+        - detect_ghost
+        - GhostResult
     - title: Validation metrics
       desc: |
         Accuracy, calibration, and fragmentation / tract-length metrics for simulated-truth
