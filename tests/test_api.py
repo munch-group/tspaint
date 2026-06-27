@@ -68,3 +68,57 @@ def test_paint_smooth_option_reduces_switches():
         return sum(sum(1 for k in range(1, len(v)) if v[k][2] != v[k - 1][2])
                    for v in P.segments().values())
     assert nsw(smoothed) <= nsw(plain)
+
+
+# --- ensemble input: paint() accepts a list of tree sequences -------------------------------
+
+def test_paint_empty_ensemble_raises():
+    ts, labels, _, _ = _admixture(L=1e5)
+    with pytest.raises(ValueError, match="empty ensemble"):
+        tspaint.paint([], labels)
+
+
+@pytest.mark.slow
+def test_paint_ensemble_mean_matches_single():
+    """A degenerate ensemble of identical members must equal the single-ts painting (the
+    M-step is scale-invariant) with a zero uncertainty band."""
+    ts, labels, queries, _ = _admixture(L=1e5)
+    single = tspaint.paint(ts, labels, queries)
+    ens = tspaint.paint([ts, ts, ts], labels, queries)        # list -> ensemble path
+
+    assert ens.queries == single.queries
+    assert isinstance(ens.ts, list) and len(ens.ts) == 3
+    for q in queries:
+        segs = ens.posteriors[q]
+        assert hasattr(segs[0], "posterior_std")              # MergedSegment carries the band
+        assert segs[0].left == 0.0 and segs[-1].right == ts.sequence_length
+        assert all(np.allclose(s.posterior_std, 0.0, atol=1e-9) for s in segs)   # identical -> no spread
+        for pos in np.linspace(0, ts.sequence_length, 7)[1:-1]:
+            np.testing.assert_allclose(ens.posterior_at(q, pos), single.posterior_at(q, pos),
+                                       atol=1e-8)
+
+
+@pytest.mark.slow
+def test_paint_ensemble_band_from_distinct_args():
+    """Distinct ARGs over the same samples produce a non-trivial uncertainty band and a valid
+    mean painting covering the genome."""
+    from tspaint.ranked import ranked_tree_sequence
+    ts, labels, queries, _ = _admixture(L=1e5)
+    ens = tspaint.paint([ts, ranked_tree_sequence(ts)], labels, queries)
+    assert any(s.posterior_std.sum() > 1e-6 for q in queries for s in ens.posteriors[q])
+    for q in queries:
+        segs = ens.posteriors[q]
+        assert segs[0].left == 0.0 and segs[-1].right == ts.sequence_length
+        assert all(np.isclose(s.posterior.sum(), 1.0) for s in segs)
+
+
+@pytest.mark.slow
+def test_painting_ensemble_methods():
+    """introgression_map merges across the ensemble; rate_through_time is guarded."""
+    ts, labels, queries, _ = _admixture(L=1e5)
+    p = tspaint.paint([ts, ts], labels, queries)
+    m = p.introgression_map(queries[0])
+    assert m[0].left == 0.0 and m[-1].right == ts.sequence_length
+    assert hasattr(m[0], "posterior_std")                     # merged leave-one-out map
+    with pytest.raises(ValueError, match="ensemble"):
+        p.rate_through_time()
