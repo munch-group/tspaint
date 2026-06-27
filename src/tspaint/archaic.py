@@ -49,8 +49,12 @@ def _nearest_modern_depth(tree, s, modern_ids, node_time):
     return float(best) if np.isfinite(best) else float("nan")
 
 
-def _log_depth_track(ts, modern_ids, samples):
-    """Per sample, contiguous ``(left, right, log_depth)`` of nearest-modern-ref coalescence."""
+def _depth_track(ts, modern_ids, samples):
+    """Per sample, contiguous ``(left, right, depth)`` of nearest-modern-ref coalescence **time**.
+
+    Raw coalescent time (``nan`` where no modern reference is reachable); the ``log`` (``depth="time"``)
+    or genome-wide ``rank`` (``depth="rank"``) transform is applied afterwards by :func:`_make_transform`.
+    """
     node_time = ts.tables.nodes.time
     mids = [int(r) for r in modern_ids]
     tracks = {int(s): [] for s in samples}
@@ -58,14 +62,46 @@ def _log_depth_track(ts, modern_ids, samples):
         left, right = tree.interval.left, tree.interval.right
         for s in samples:
             d = _nearest_modern_depth(tree, int(s), mids, node_time)
-            ld = float(np.log(d)) if (np.isfinite(d) and d > 0) else float("nan")
+            d = float(d) if np.isfinite(d) else float("nan")
             segs = tracks[int(s)]
-            same = segs and (segs[-1][2] == ld or (np.isnan(segs[-1][2]) and np.isnan(ld)))
+            same = segs and (segs[-1][2] == d or (np.isnan(segs[-1][2]) and np.isnan(d)))
             if segs and segs[-1][1] == left and same:
-                segs[-1] = (segs[-1][0], right, ld)
+                segs[-1] = (segs[-1][0], right, d)
             else:
-                segs.append((left, right, ld))
+                segs.append((left, right, d))
     return tracks
+
+
+def _make_transform(depth, *track_dicts):
+    """The depth → observation transform: ``log`` time (``depth="time"``) or genome-wide span-weighted
+    **rank** in ``[0, 1]`` (``depth="rank"``, monotonic ⇒ calibration-invariant).
+
+    For ``"rank"`` the rank function is built from the pooled finite depths across ``track_dicts``
+    (the references + samples of one member), so the modern panel occupies the low ranks and a deep
+    ghost the high ranks regardless of branch-length calibration.
+    """
+    if depth == "time":
+        return lambda t: float(np.log(t)) if (np.isfinite(t) and t > 0) else float("nan")
+    if depth != "rank":
+        raise ValueError("depth must be 'time' or 'rank'")
+    vals, ws = [], []
+    for tracks in track_dicts:
+        for segs in tracks.values():
+            for (l, r, t) in segs:
+                if np.isfinite(t):
+                    vals.append(t); ws.append(r - l)
+    if not vals:
+        return lambda t: float("nan")
+    vals = np.asarray(vals, float)
+    order = np.argsort(vals)
+    v = vals[order]
+    cw = np.cumsum(np.asarray(ws, float)[order])
+    cw /= cw[-1]
+    return lambda t: float(np.interp(t, v, cw)) if np.isfinite(t) else float("nan")
+
+
+def _apply_transform(tracks, tfm):
+    return {s: [(l, r, tfm(t)) for (l, r, t) in segs] for s, segs in tracks.items()}
 
 
 def _anchor_modern(ref_tracks, q=0.98):
@@ -176,69 +212,14 @@ class GhostResult:
         return out
 
 
-def detect_ghost(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
-                 init_archaic_burden=0.1, init_switch=0.02):
-    """Reference-free ghost / archaic introgression detection via a depth-emission HMM.
+def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol,
+                init_archaic_burden, init_switch):
+    """Pooled Baum–Welch: modern emission fixed at the anchor, ghost emission learned (deeper).
 
-    The dedicated ghost-search tool (CLAUDE.md §9 Plan B): a per-sample 2-state (modern / ghost)
-    HMM along the genome on nearest-modern-reference coalescence depth — the modern emission
-    anchored by the panel, the **ghost** emission learned and constrained deeper. Returns a
-    **calibrated** per-locus ``P(ghost)`` with no ghost/archaic reference required. The signal is
-    depth, so it targets **deep (archaic-like)** ghosts. (Renamed from ``detect_archaic``, which
-    remains a deprecated alias.)
-
-    Parameters
-    ----------
-    ts : tskit.TreeSequence
-        Tree sequence to analyse.
-    labels : dict[int, int] or iterable[int]
-        The modern reference sample ids (a ``{ref: state}`` painting label dict is accepted — only
-        the ids are used; every reference is "modern"). They anchor the modern depth distribution.
-    samples : iterable[int], optional
-        Samples to scan; defaults to every non-reference sample.
-    max_iter, tol : int, float, optional
-        Baum–Welch iteration cap and log-likelihood tolerance.
-    delta : float, optional
-        Minimum gap ``μ_a - μ_m`` (log-depth) enforced on the archaic mean. Defaults to
-        ``0.5 * σ_m`` (half the modern depth spread).
-    init_archaic_burden, init_switch : float, optional
-        Initial archaic fraction and per-breakpoint switch probability.
-
-    Returns
-    -------
-    GhostResult
-        Per-sample ``P(ghost)`` posteriors / tracts / burden plus the learned HMM parameters.
-
-    Raises
-    ------
-    ValueError
-        If the modern anchor cannot be estimated (no informative reference depths).
+    ``obs_list`` / ``span_list`` are the per-sequence observation / span arrays — pooled across an
+    ensemble's members × samples so one shared ``(mu, sd, A, pi0)`` is learned. Returns
+    ``(mu, sd, A, pi0, loglik_history)``.
     """
-    modern_ids = [int(r) for r in (labels.keys() if isinstance(labels, dict)
-                                   else labels)]
-    modern_set = set(modern_ids)
-    if samples is None:
-        samples = [int(s) for s in ts.samples() if int(s) not in modern_set]
-    else:
-        samples = [int(s) for s in samples]
-
-    ref_tracks = _log_depth_track(ts, modern_ids, modern_ids)
-    mu_m, sd_m, q_ref = _anchor_modern(ref_tracks)
-    if not np.isfinite(mu_m):
-        raise ValueError("could not anchor the modern depth distribution (no informative references)")
-    sd_m = max(sd_m, (q_ref - mu_m) / 2.0)   # widen modern to cover its own deep (cross-source) tail
-    if delta is None:
-        delta = sd_m                  # margin above the panel's deepest coalescence (§6 guard)
-    archaic_floor = q_ref + delta      # archaic must be DEEPER than any modern (cross-source) coalescence
-
-    sample_tracks = _log_depth_track(ts, modern_ids, samples)
-    obs_list, span_list = [], []
-    for s in samples:
-        segs = sample_tracks[s]
-        obs_list.append(np.array([ld for (_l, _r, ld) in segs], float))
-        span_list.append(np.array([r - l for (l, r, _ld) in segs], float))
-
-    # --- Baum-Welch (modern emission fixed = the anchor; archaic learned, deeper) ---
     mu = np.array([mu_m, archaic_floor + sd_m])
     sd = np.array([sd_m, sd_m])
     A = np.array([[1.0 - init_switch, init_switch], [init_switch, 1.0 - init_switch]])
@@ -268,7 +249,7 @@ def detect_ghost(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
                 gx[k] += (g * x).sum()
                 gxx[k] += (g * x * x).sum()
         history.append(ll)
-        # M-step: transitions + initial; archaic emission learned, modern emission fixed
+        # M-step: transitions + initial; ghost emission learned, modern emission fixed
         row = acc_xi.sum(axis=1, keepdims=True)
         A = np.where(row > 0, acc_xi / np.where(row > 0, row, 1.0), A)
         # floor the switch probabilities so the HMM keeps modelling tracts (avoid the
@@ -282,26 +263,152 @@ def detect_ghost(ts, labels, samples=None, *, max_iter=50, tol=1e-3, delta=None,
             mu[1] = gx[1] / g_sum[1]
             var = max(gxx[1] / g_sum[1] - mu[1] ** 2, 1e-6)
             sd[1] = np.sqrt(var)
-        mu[1] = max(mu[1], archaic_floor)      # keep the archaic state beyond the modern panel's range
-        sd[1] = min(sd[1], sd_m)               # keep archaic tight (not a wide deep background)
+        mu[1] = max(mu[1], archaic_floor)      # keep the ghost state beyond the modern panel's range
+        sd[1] = min(sd[1], sd_m)               # keep ghost tight (not a wide deep background)
         if len(history) > 1 and abs(ll - prev) < tol:
             break
         prev = ll
+    return mu, sd, A, pi0, history
 
-    # --- decode: per-sample P(archaic) posteriors, tracts, burden ---
+
+def _merge_ghost_tracks(tracks):
+    """N-way breakpoint refinement of per-member ``[(l, r, p)]`` tracks → ``[(lo, hi, mean_p)]``."""
+    m = len(tracks)
+    if m == 1:
+        return list(tracks[0])
+    ptr = [0] * m
+    out = []
+    while all(ptr[i] < len(tracks[i]) for i in range(m)):
+        cur = [tracks[i][ptr[i]] for i in range(m)]
+        lo = max(seg[0] for seg in cur)
+        hi = min(seg[1] for seg in cur)
+        if hi > lo:
+            out.append((lo, hi, float(np.mean([seg[2] for seg in cur]))))
+        for i in range(m):
+            if tracks[i][ptr[i]][1] == hi:
+                ptr[i] += 1
+    return out
+
+
+def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-3, delta=None,
+                 init_archaic_burden=0.1, init_switch=0.02):
+    """Reference-free ghost / archaic introgression detection via a depth-emission HMM.
+
+    The dedicated ghost-search tool (Task 2; CLAUDE.md §9). A 2-state (modern / ghost) HMM along the
+    genome on nearest-modern-reference coalescence depth — the modern emission anchored by the
+    panel, the **ghost** emission learned and constrained deeper. Returns a **calibrated** per-locus
+    ``P(ghost)`` with no ghost/archaic reference required. The signal is depth, so it targets **deep
+    (archaic-like)** ghosts. (Renamed from ``detect_archaic``, which remains a deprecated alias.)
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence or list[tskit.TreeSequence]
+        One tree sequence, or **an ensemble** (e.g. SINGER posterior samples) — the HMM is fit once
+        pooled across all members, decoded per member, and the per-locus ``P(ghost)`` **averaged**
+        across members (marginalising ARG uncertainty for accuracy; CLAUDE.md §7.4). All members
+        must share the same sample ids.
+    labels : dict[int, int] or iterable[int]
+        The modern reference sample ids (a ``{ref: state}`` painting label dict is accepted — only
+        the ids are used; every reference is "modern"). They anchor the modern depth distribution.
+    samples : iterable[int], optional
+        Samples to scan; defaults to every non-reference sample.
+    depth : {"time", "rank"}, optional
+        The depth observation: ``"time"`` (default) uses ``log`` nearest-reference coalescence time;
+        ``"rank"`` uses its genome-wide span-weighted **rank** — a monotonic transform, hence
+        **calibration-invariant** (robust to branch-length miscalibration, e.g. on a Relate ARG).
+    max_iter, tol : int, float, optional
+        Baum–Welch iteration cap and log-likelihood tolerance.
+    delta : float, optional
+        Minimum gap ``μ_ghost - μ_modern`` enforced above the panel's deepest coalescence (in the
+        ``depth`` units). Defaults to ``σ_modern``.
+    init_archaic_burden, init_switch : float, optional
+        Initial ghost fraction and per-breakpoint switch probability.
+
+    Returns
+    -------
+    GhostResult
+        Per-sample ``P(ghost)`` posteriors / tracts / burden plus the learned HMM parameters. For an
+        ensemble the posteriors are the per-member mean.
+
+    Raises
+    ------
+    ValueError
+        If the modern anchor cannot be estimated (no informative reference depths), ``depth`` is
+        invalid, or the ensemble is empty.
+    """
+    members = list(ts) if isinstance(ts, (list, tuple)) else [ts]
+    if not members:
+        raise ValueError("detect_ghost got an empty ensemble; pass at least one tree sequence")
+    if depth not in ("time", "rank"):
+        raise ValueError("depth must be 'time' or 'rank'")
+    modern_ids = [int(r) for r in (labels.keys() if isinstance(labels, dict) else labels)]
+    modern_set = set(modern_ids)
+    if samples is None:
+        samples = [int(s) for s in members[0].samples() if int(s) not in modern_set]
+    else:
+        samples = [int(s) for s in samples]
+
+    # per-member transformed depth tracks (log-time, or per-member calibration-invariant rank)
+    ref_per_member, samp_per_member = [], []
+    for g in members:
+        ref_t = _depth_track(g, modern_ids, modern_ids)
+        samp_t = _depth_track(g, modern_ids, samples)
+        tfm = _make_transform(depth, ref_t, samp_t)
+        ref_per_member.append(_apply_transform(ref_t, tfm))
+        samp_per_member.append(_apply_transform(samp_t, tfm))
+
+    # anchor the modern state from the pooled reference observations across members
+    pooled_ref = {}
+    for mi, ref_t in enumerate(ref_per_member):
+        for r, segs in ref_t.items():
+            pooled_ref[(mi, r)] = segs
+    mu_m, sd_m, q_ref = _anchor_modern(pooled_ref)
+    if not np.isfinite(mu_m):
+        raise ValueError("could not anchor the modern depth distribution (no informative references)")
+    sd_m = max(sd_m, (q_ref - mu_m) / 2.0)   # widen modern to cover its own deep (cross-source) tail
+    if delta is None:
+        delta = sd_m                  # margin above the panel's deepest coalescence (§6 guard)
+    archaic_floor = q_ref + delta      # ghost must be DEEPER than any modern (cross-source) coalescence
+
+    # pooled Baum-Welch over all (member, sample) observation sequences
+    obs_list, span_list = [], []
+    for samp_t in samp_per_member:
+        for s in samples:
+            segs = samp_t[s]
+            obs_list.append(np.array([o for (_l, _r, o) in segs], float))
+            span_list.append(np.array([r - l for (l, r, _o) in segs], float))
+    mu, sd, A, pi0, history = _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor,
+                                          max_iter=max_iter, tol=tol,
+                                          init_archaic_burden=init_archaic_burden,
+                                          init_switch=init_switch)
+
+    # decode per member, then merge each sample across members (mean P(ghost))
+    per_member_post = []
+    for samp_t in samp_per_member:
+        post = {}
+        for s in samples:
+            segs = samp_t[s]
+            if not segs:
+                post[s] = []
+                continue
+            obs = np.array([o for (_l, _r, o) in segs], float)
+            B = _emission(obs, mu, sd)
+            gamma, _xi, _ll = _forward_backward(B, A, pi0)
+            pa = gamma[:, 1]
+            post[s] = [(segs[i][0], segs[i][1], float(pa[i])) for i in range(len(segs))]
+        per_member_post.append(post)
+
     posteriors, burden = {}, {}
-    for s, obs, span in zip(samples, obs_list, span_list):
-        segs = sample_tracks[s]
-        if obs.shape[0] == 0:
+    for s in samples:
+        member_tracks = [pm[s] for pm in per_member_post if pm[s]]
+        if not member_tracks:
             posteriors[s] = []
             burden[s] = float("nan")
             continue
-        B = _emission(obs, mu, sd)
-        gamma, _xi, _ll = _forward_backward(B, A, pi0)
-        pa = gamma[:, 1]
-        posteriors[s] = [(segs[i][0], segs[i][1], float(pa[i])) for i in range(len(segs))]
-        tot = span.sum()
-        burden[s] = float((pa * span).sum() / tot) if tot > 0 else float("nan")
+        merged = _merge_ghost_tracks(member_tracks)
+        posteriors[s] = merged
+        tot = sum(r - l for (l, r, _p) in merged)
+        burden[s] = float(sum(p * (r - l) for (l, r, p) in merged) / tot) if tot > 0 else float("nan")
 
     return GhostResult(posteriors=posteriors, burden=burden, mu=mu, sd=sd, A=A, pi0=pi0,
                        loglik_history=history)

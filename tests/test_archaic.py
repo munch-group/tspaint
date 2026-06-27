@@ -95,3 +95,52 @@ def test_archaic_detection_beats_fixed_threshold():
     assert abs(a["burden"] - r["true_burden"]) < 0.1   # near-exact burden recovery (vs the flag's under-detection)
     assert a["control_fp"] < 0.05                    # identifiability: low no-ghost false-positive
     assert a["mu_archaic"] > a["mu_modern"] + 1.0    # learns a deep archaic state
+
+
+def _scale_node_times(ts, factor):
+    """A monotonic distortion of branch lengths (all node/mutation times × factor)."""
+    t = ts.dump_tables()
+    t.nodes.time = t.nodes.time * factor
+    if t.mutations.num_rows and not np.all(np.isnan(t.mutations.time)):
+        t.mutations.time = np.where(np.isnan(t.mutations.time), t.mutations.time,
+                                    t.mutations.time * factor)
+    t.sort()
+    return t.tree_sequence()
+
+
+@pytest.mark.slow
+def test_detect_ghost_rank_is_calibration_invariant():
+    # depth="rank" uses a monotonic transform of depth, so rescaling all branch lengths leaves
+    # the detection unchanged (the calibration-robustness that the rank option exists for).
+    ts, labels, queries, _ = _ghost_setup(0.25, seed=1)
+    r1 = detect_ghost(ts, labels, queries, depth="rank", max_iter=30)
+    r2 = detect_ghost(_scale_node_times(ts, 7.0), labels, queries, depth="rank", max_iter=30)
+    for q in queries:
+        p1 = np.array([p for (_l, _r, p) in r1.posteriors[q]])
+        p2 = np.array([p for (_l, _r, p) in r2.posteriors[q]])
+        np.testing.assert_allclose(p1, p2, atol=1e-9)        # identical under time rescaling
+    # and it still detects the ghost (burden well above the matched no-ghost control)
+    ts0, labels0, q0, _ = _ghost_setup(0.0, seed=1)
+    c = detect_ghost(ts0, labels0, q0, depth="rank", max_iter=30)
+    assert np.mean([r1.burden[q] for q in queries]) > 3 * np.mean([c.burden[q] for q in q0])
+
+
+@pytest.mark.slow
+def test_detect_ghost_ensemble():
+    # an ensemble of tree sequences: one pooled fit, per-member decode, per-locus P(ghost) averaged.
+    ts, labels, queries, _ = _ghost_setup(0.25, seed=1)
+    single = detect_ghost(ts, labels, queries, max_iter=30)
+    dup = detect_ghost([ts, ts], labels, queries, max_iter=30)      # identical members
+    assert isinstance(dup, GhostResult)
+    for q in queries:                                              # merge of identical ~= single
+        # (not bit-exact: pooling doubles the log-lik, so the abs-tol early stop can fire one
+        #  iteration apart — the params converge to the same fixed point)
+        np.testing.assert_allclose(dup.burden[q], single.burden[q], atol=1e-3)
+        assert dup.posteriors[q][0][0] == 0.0 and dup.posteriors[q][-1][1] == ts.sequence_length
+
+    ts2, _, q2, _ = _ghost_setup(0.25, seed=2)                     # a distinct ARG (same sample ids)
+    res = detect_ghost([ts, ts2], labels, queries, max_iter=20)    # exercises breakpoint refinement
+    for q in queries:
+        segs = res.posteriors[q]
+        assert segs[0][0] == 0.0 and segs[-1][1] == ts.sequence_length
+        assert all(0.0 <= p <= 1.0 for (_l, _r, p) in segs)
