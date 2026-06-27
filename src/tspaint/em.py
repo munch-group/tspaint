@@ -9,7 +9,9 @@ E-step orchestration loop :func:`fit` lands with Rungs 4-5.
 """
 from __future__ import annotations
 
+from contextlib import ExitStack
 from dataclasses import dataclass
+from functools import reduce
 
 import numpy as np
 
@@ -159,7 +161,8 @@ def build_emissions(ts, labels, w, pi):
 
 
 def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
-        soft_refs=None, alpha=20.0, beta=1.0, priors=None, w0=0.9, estimate_pi=True):
+        soft_refs=None, alpha=20.0, beta=1.0, priors=None, w0=0.9, estimate_pi=True,
+        n_jobs=1):
     """Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
 
     The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient
@@ -206,6 +209,12 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     estimate_pi : bool, optional
         Re-estimate ``π`` each M-step rather than holding ``pi0`` fixed. Default
         ``True``. See Notes.
+    n_jobs : int, optional
+        Worker processes for the E-step (the dominant cost). ``1`` (default) is the serial
+        path, **byte-identical** to single-core. ``>1`` runs the genome E-step over
+        member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor`
+        (reused across EM iterations); the result is ``allclose`` to serial, differing only by
+        floating-point reduction order (:mod:`tspaint.parallel`).
 
     Returns
     -------
@@ -243,14 +252,12 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             "applies only to soft_refs (hard-clamped anchors have no learned w)")
     w = {s: float(w0) for s in soft}   # anchors stay at w = 1 implicitly
 
-    history = []
-    prev = -np.inf
-    for _ in range(max_iter):
-        S_dwell = np.zeros(K)
-        S_jumps = np.zeros((K, K))
-        S_root = np.zeros(K)
-        S_cred = {}
-        loglik = 0.0
+    n_jobs = max(1, int(n_jobs)) if n_jobs else 1
+
+    def estep_serial():
+        """The pooled E-step over the ensemble — byte-identical to single-core."""
+        S_dwell, S_jumps = np.zeros(K), np.zeros((K, K))
+        S_root, S_cred, loglik = np.zeros(K), {}, 0.0
         for tsi, labi in zip(ts_list, lab_list):
             emissions = build_emissions(tsi, labi, w, pi)
             ss = accumulate_sufficient_statistics(tsi, Q, pi, emissions,
@@ -261,23 +268,50 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             loglik += ss.loglik
             for node, cred in ss.S_cred.items():
                 S_cred[node] = S_cred.get(node, np.zeros(2)) + cred
-        history.append(loglik)
+        return S_dwell, S_jumps, S_root, S_cred, loglik
 
-        Q = m_step_Q(S_dwell, S_jumps)
-        # pi is a prior on the (arbitrary) GMRCA state. When deep branches wash it is
-        # unidentifiable from the root marginals (they echo pi) and drifts to a degenerate
-        # extreme -> confident-wrong painting on sparse ARGs / the order-only variant
-        # (CLAUDE.md §6). estimate_pi=False holds it fixed (uniform unless pi0 given).
-        if estimate_pi:
-            pi = m_step_pi(S_root)
-        for s in soft:
-            if s in S_cred:
-                agree, disagree = S_cred[s]
-                a, b = tip_priors.get(s, (alpha, beta))
-                w[s] = m_step_w(agree, disagree, a, b)
+    history = []
+    prev = -np.inf
+    with ExitStack() as stack:
+        executor = paths = None
+        if n_jobs > 1:
+            from .parallel import make_pool, as_path
+            executor = make_pool(n_jobs)
+            if executor is not None:
+                stack.callback(executor.shutdown)
+                paths = [stack.enter_context(as_path(t)) for t in ts_list]   # dump once, reuse
 
-        if len(history) > 1 and abs(loglik - prev) < tol:
-            break
-        prev = loglik
+        def estep_parallel():
+            """Same statistics over member × tree-range chunks on the persistent pool."""
+            from .parallel import _accumulate_range, add_suffstats, genome_chunks
+            per_member = max(1, -(-n_jobs // len(ts_list)))   # ceil: ~n_jobs tasks total
+            tasks = [(paths[i], lo, hi, Q, pi, w, lab_list[i], soft or None)
+                     for i in range(len(ts_list))
+                     for (lo, hi) in genome_chunks(ts_list[i], per_member)]
+            futures = [executor.submit(_accumulate_range, *t) for t in tasks]
+            ss = reduce(add_suffstats, (f.result() for f in futures))   # task order = deterministic
+            return ss.S_dwell, ss.S_jumps, ss.S_root, ss.S_cred, ss.loglik
+
+        for _ in range(max_iter):
+            S_dwell, S_jumps, S_root, S_cred, loglik = (
+                estep_parallel() if executor is not None else estep_serial())
+            history.append(loglik)
+
+            Q = m_step_Q(S_dwell, S_jumps)
+            # pi is a prior on the (arbitrary) GMRCA state. When deep branches wash it is
+            # unidentifiable from the root marginals (they echo pi) and drifts to a degenerate
+            # extreme -> confident-wrong painting on sparse ARGs / the order-only variant
+            # (CLAUDE.md §6). estimate_pi=False holds it fixed (uniform unless pi0 given).
+            if estimate_pi:
+                pi = m_step_pi(S_root)
+            for s in soft:
+                if s in S_cred:
+                    agree, disagree = S_cred[s]
+                    a, b = tip_priors.get(s, (alpha, beta))
+                    w[s] = m_step_w(agree, disagree, a, b)
+
+            if len(history) > 1 and abs(loglik - prev) < tol:
+                break
+            prev = loglik
 
     return FitResult(Q, pi, w, history)

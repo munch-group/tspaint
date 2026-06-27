@@ -52,7 +52,7 @@ class SuffStats:
 
 
 def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
-                                     soft_refs=None):
+                                     soft_refs=None, tree_range=None):
     """Single E-step sweep over the tree sequence (CLAUDE.md §3.3).
 
     Drives the genome with ``ts.edge_diffs()`` zipped with ``ts.trees()``, prunes each
@@ -77,6 +77,13 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
         Label index per labelled tip, used to accumulate credibility evidence.
     soft_refs : set[int], optional
         Restrict credibility accumulation to these tips (default: all labelled).
+    tree_range : tuple[int, int], optional
+        ``(lo, hi)`` half-open marginal-tree-index range to process; the rest of the
+        genome is iterated but skipped. Default (``None``) processes every tree. The
+        per-tree arithmetic is **unchanged** by this gate, so a partition of ``[0,
+        num_trees)`` into contiguous ranges sums (per :func:`tspaint.parallel.add_suffstats`)
+        to the full-genome result with the same in-range addition order — the basis of the
+        bit-exact parallel E-step (:mod:`tspaint.parallel`).
 
     Returns
     -------
@@ -103,7 +110,12 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
             kernel_cache[key] = branch_kernel(Q, t)
         return kernel_cache[key]
 
-    for (interval, _edges_out, edges_in), tree in zip(ts.edge_diffs(), ts.trees()):
+    lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
+    for ti, ((interval, _edges_out, edges_in), tree) in enumerate(zip(ts.edge_diffs(), ts.trees())):
+        if ti < lo:
+            continue                      # skip pruning; advance the diff/tree iterators only
+        if ti >= hi:
+            break                         # this worker's range is done
         left, right = interval
         span = right - left
         res = prune_tree(tree, emissions, Q, node_time, pi, Pget=Pget)

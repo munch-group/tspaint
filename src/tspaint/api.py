@@ -261,7 +261,7 @@ class Painting:
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
           smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,
-          priors=None, w0=0.9):
+          priors=None, w0=0.9, n_jobs=1):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -311,6 +311,12 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         Per-tip ``Beta(alpha_i, beta_i)`` prior overrides for the graded-trust setting
         (keys ⊆ ``soft_refs``); see :func:`tspaint.fit`.
     max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tspaint.fit`).
+    n_jobs : int
+        Worker processes for the genome E-step and painting. ``1`` (default) is serial and
+        byte-identical to single-core; ``>1`` saturates the node via a process pool
+        (:mod:`tspaint.parallel`) — the painting is *exactly* equal to serial, the fit
+        ``allclose`` (floating-point reduction order). The CLI resolves this from
+        ``$SLURM_JOB_CPUS_PER_NODE``.
 
     Returns
     -------
@@ -355,11 +361,17 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     res = fit(members if members is not None else ts,
               [labels] * len(members) if members is not None else labels,
               K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
-              estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0)
+              estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0,
+              n_jobs=n_jobs)
 
     def _paint_member(g):
-        emissions = build_emissions(g, labels, res.w, res.pi)
-        table = posterior_table(g, res.Q, res.pi, emissions, focal=queries)
+        if n_jobs and int(n_jobs) > 1:
+            from .parallel import posterior_table_parallel
+            table = posterior_table_parallel(g, res.Q, res.pi, w=res.w, labels=labels,
+                                             focal=queries, n_jobs=n_jobs)
+        else:
+            emissions = build_emissions(g, labels, res.w, res.pi)
+            table = posterior_table(g, res.Q, res.pi, emissions, focal=queries)
         if smooth:
             from .bp import bp_smooth_track
             table = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in table.items()}
