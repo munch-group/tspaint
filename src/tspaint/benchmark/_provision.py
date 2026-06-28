@@ -65,14 +65,22 @@ def plan(name, spec, tools_dir, *, env_root=None, force=False):
     if os.path.exists(check_path) and not force:
         return target, check_path, []
 
+    ref = spec.get("commit", "HEAD")
+    sparse = spec.get("sparse", "").split()
     steps = []
     if not os.path.isdir(os.path.join(target, ".git")):
-        steps.append(["git", "clone", spec["repo"], target])
-        if spec.get("commit"):
-            steps.append(["git", "-C", target, "checkout", spec["commit"]])
-    elif spec.get("commit"):
-        steps.append(["git", "-C", target, "fetch", "--all", "--tags"])
-        steps.append(["git", "-C", target, "checkout", spec["commit"]])
+        # Partial clone (no blobs) + cone sparse-checkout: these repos carry large in-repo data
+        # and history (Recomb-Mix ~2 GB) we don't need — fetch only the code paths' blobs.
+        steps.append(["git", "clone", "--filter=blob:none", "--no-checkout", spec["repo"], target])
+        if sparse:
+            steps.append(["git", "-C", target, "sparse-checkout", "init", "--cone"])
+            steps.append(["git", "-C", target, "sparse-checkout", "set"] + sparse)
+        steps.append(["git", "-C", target, "checkout", ref])
+    else:
+        if sparse:
+            steps.append(["git", "-C", target, "sparse-checkout", "set"] + sparse)
+        steps.append(["git", "-C", target, "fetch", "--filter=blob:none", "origin", ref])
+        steps.append(["git", "-C", target, "checkout", ref])
     if spec.get("pixi"):
         steps.append(("copy", os.path.join(env_root, spec["pixi"]),
                       os.path.join(target, "pixi.toml")))
