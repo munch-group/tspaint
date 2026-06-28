@@ -1,0 +1,19 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "SALAI-Net"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+pip = ">=26.1.2,<27"
+python = "3.14.*"
+h5py = ">=3.16.0,<4"
+numpy = ">=2.4.6,<3"
+pandas = ">=3.0.3,<4"
+scikit-allel = ">=1.3.13,<2"
+pytorch = ">=2.12.1,<3"
+torchvision = ">=0.27.1,<0.28"
+dask = ">=2023.3.0,<2024"

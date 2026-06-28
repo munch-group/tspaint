@@ -1,0 +1,14 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "Recomb-Mix"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+build = { cmd = "$CXX -std=c++17 -fopenmp -Os -I$CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib src/RecombMix.cpp -lboost_iostreams -o RecombMix_v0.7", inputs = ["src/RecombMix.cpp"], outputs = ["RecombMix_v0.7"] }
+
+[dependencies]
+cxx-compiler = "*"
+llvm-openmp = "*"
+libboost-devel = "*"

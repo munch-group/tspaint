@@ -718,6 +718,41 @@ in one call and returns a `Painting` whose `posteriors` carry the mean + `poster
   objects:* ARGformer (embedding+retrieval, unsupervised), `sticcs`+topology
   weighting (topology frequencies), SCAR (Guo et al., 2022; structured-coalescent
   migration rates on inferred ARGs, not painting). See §10.
+- **[BUILT — VCF-native benchmark harness] (`tspaint.benchmark`; CLI `tspaint benchmark`).** All
+  four field comparators run from **VCF input** through one uniform contract — library
+  `benchmark.run(tool, query_vcf, ref_vcf, sample_map=…, out=…)` and CLI `tspaint benchmark
+  <tool> --vcf … [--ref-vcf …] --sample-map … -o out.npz` for `tool ∈ {rfmix, gnomix, salai,
+  recombmix}`. Each writes the tool's inputs, shells out to **its own pixi env / binary**
+  (`pixi run --manifest-path external/<tool> …`, overridable via `TSPAINT_<TOOL>_DIR` / `_CMD` /
+  the binary path vars), and parses its calls into the **tspaint-painting `.npz`** (`save_painting`):
+  posteriors for RFMix/gnomix (the `.fb`), **one-hot 0/1** for SALAI-Net/Recomb-Mix (hard calls
+  only — "report 0 or 1"). Input is two VCFs (query + reference) **or** one combined VCF split by
+  the sample map; output is keyed by **query haplotype index** `2j+h` (tree-free, recoverable —
+  the `<sample>.<hap>` names are stored in the npz). The RFMix/gnomix `.fb` and the
+  RFMix/gnomix/SALAI `.msp.tsv` share one parser (`benchmark._msp`); decoupled from the ts-native
+  `io_rfmix`. `benchmark.export_vcf(ts, labels, …)` writes diploid query/ref VCFs + sample map +
+  a **truth table re-keyed to the same hap index** (pairs nodes; works from haploid or diploid
+  sims), and `benchmark.score` / `tspaint benchmark score --truth … *.npz` builds the leaderboard
+  (balanced accuracy, confidence, switch-density ratio) — closing the **simulate → benchmark →
+  score** loop. **[MEASURED]** live end-to-end on Recomb-Mix (bal-acc 1.0, switch-ratio 1.0 on a
+  strong-structure true-ARG sim). Offline parser / panel-resolution / round-trip / CLI tests in
+  `tests/test_benchmark_*.py`; opt-in live runs (`tests/test_benchmark_integration.py`) gated by
+  `TSPAINT_BENCHMARK_LIVE`. Distinct from the ts-native `compare.py` painter harness (which scores
+  `rfmix_paint` etc. on a tree sequence); this is the genotype/VCF entry point.
+  **Provisioning the git-only tools.** gnomix / SALAI-Net / Recomb-Mix are not on conda/PyPI — each
+  is a GitHub repo cloned + built into its own env. Two committed pieces capture the whole recipe:
+  a pinned manifest `external/tools.ini` (repo + commit + steps) and, per tool, a tracked pixi env
+  recipe `external/envs/<tool>/pixi.toml` (deps + build tasks). The env recipes are **our own glue
+  — NOT in the upstream repos** (a fresh clone lacks them), so `tspaint benchmark setup` (CLI) /
+  `benchmark.setup()` (lib) clones at the pin into `external/<dir>` (gitignored; relocate with
+  `TSPAINT_TOOLS_DIR`), **copies the tracked `pixi.toml` into the clone**, `pixi install`s it, runs
+  the env's build task(s) (e.g. Recomb-Mix's `build` — the boost/openmp compile), and extracts
+  models (SALAI-Net); `tspaint benchmark status` shows what's installed. **Not** git submodules — a
+  submodule pins source but not the env/build/model-extract (the actual work), and the env recipes
+  aren't upstream anyway; the manifest + tracked pixi.toml + setup captures the whole recipe and
+  keeps the tool repos out of the workspace. Env recipes are osx-arm64 in-repo (add `linux-64` for
+  CI). RFMix stays a bioconda dep in the `compare` pixi feature, not in the manifest. Tests:
+  `tests/test_benchmark_setup.py`.
 - **[MEASURED — head-to-head harness] (`compare.py`).** A uniform painter-scoring harness
   (`head_to_head`, `score_painter`); painters = the full method (`tspaint_paint`) and a
   runnable **ARG-native baseline** `nearest_reference_paint` (paint each query by its
@@ -947,6 +982,7 @@ tspaint/
     em.py                        # E-step orchestration + closed-form M-step
     io_relate.py                 # Relate->tskit (--compress) wrappers + checks
     output.py                    # per-haplotype per-position posterior; missing-info tagging
+    benchmark/                   # VCF-native runners for RFMix/gnomix/SALAI-Net/Recomb-Mix + export + score (§9)
     bp/                          # DEFERRED loopy BP/EP (empty until §7.3 triggers)
   notebooks/
     00_persistence_check.ipynb   # §5.1 — RUN FIRST

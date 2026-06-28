@@ -37,6 +37,7 @@ Namespaces
     tspaint.bp           horizontal BP/EP smoother (helps on inferred ARGs; CLAUDE.md §7)
     tspaint.dating       time-inhomogeneous directional mugration EM (admixture dating)
     tspaint.experiments  end-to-end benchmark drivers
+    tspaint.benchmark    run RFMix / gnomix / SALAI-Net / Recomb-Mix from VCF → tspaint .npz; export + score
     tspaint.introgression  reference QC, anonymous foreign tracts (+ the deep ghost flag)
     tspaint.archaic      detect_ghost — reference-free ghost / archaic HMM (depth emission)
 Lower-level machinery lives in the named submodules (``tspaint.model``, ``tspaint.pruning``,
@@ -60,7 +61,7 @@ from .archaic import detect_ghost, GhostResult, detect_archaic
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
     metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics, introgression, archaic,
-    io_tsinfer, io_singer, io_relate, io_genotypes, io_rfmix,
+    io_tsinfer, io_singer, io_relate, io_genotypes, io_rfmix, benchmark,
 )
 
 try:  # version is best-effort; not required for use
@@ -87,6 +88,6 @@ __all__ = [
     # Task 2 — dedicated ghost / archaic introgression search (depth-emission HMM)
     "detect_ghost", "GhostResult", "detect_archaic",
     # namespaces
-    "metrics", "compare", "io", "bp", "dating", "experiments", "introgression", "archaic",
-    "__version__",
+    "metrics", "compare", "io", "bp", "dating", "experiments", "benchmark", "introgression",
+    "archaic", "__version__",
 ]

@@ -152,15 +152,21 @@ def load_params(path):
 # --- painting (paint -> merge; Painting.save/load) ------------------------------------------
 
 def save_painting(path, tracks, *, Q=None, pi=None, w=None, queries=None, labels=None,
-                  seqlen=None, deadband=None):
+                  seqlen=None, deadband=None, sample_names=None):
     """Write a painting (``dict[int -> list[Segment|MergedSegment]]``) as a flat segment table.
 
     The optional ``Q/pi/w/queries/labels/seqlen/deadband`` are stored alongside so a full
     :class:`~tspaint.api.Painting` round-trips (:meth:`tspaint.api.Painting.save`); ``merge``
-    needs only the table, which :func:`load_painting` returns.
+    needs only the table, which :func:`load_painting` returns. ``sample_names`` (``{key: name}``,
+    e.g. the benchmark bridges' ``"<sample>.<hap>"`` labels) is stored for traceability and
+    returned by :func:`load_painting_meta`.
     """
     cols = _flatten_tracks(tracks)
     meta = {}
+    if sample_names:
+        sn = {int(k): str(v) for k, v in sample_names.items()}
+        meta["name_keys"] = np.array(sorted(sn), np.int64)
+        meta["name_vals"] = np.array([sn[k] for k in sorted(sn)], dtype="U")
     if Q is not None:
         meta["Q"] = np.asarray(Q, float)
     if pi is not None:
@@ -208,6 +214,8 @@ def load_painting_meta(path):
         m["seqlen"] = float(d["seqlen"])
     if "deadband" in d:
         m["deadband"] = float(d["deadband"])
+    if "name_keys" in d:
+        m["sample_names"] = {int(k): str(v) for k, v in zip(d["name_keys"], d["name_vals"])}
     return m
 
 

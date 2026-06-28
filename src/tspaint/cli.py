@@ -477,6 +477,10 @@ def _parse_gaps(spec):
     return gaps
 
 
+from .benchmark.cli import benchmark as _benchmark_group   # noqa: E402  (attach the subcommand group)
+cli.add_command(_benchmark_group)
+
+
 def main():
     cli()
 

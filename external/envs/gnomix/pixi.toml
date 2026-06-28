@@ -1,0 +1,16 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "gnomix"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+pip = ">=26.1.2,<27"
+
+[pypi-dependencies]
+numpy = "2.5.0"
+sklearn = "0.5.0"
+xgboost = "3.3.0"

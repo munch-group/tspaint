@@ -146,3 +146,10 @@ docs/_inv/
 .DS_Store
 
 data/
+
+# external benchmark comparators — cloned by `tspaint benchmark setup`; track the manifest +
+# the per-tool pixi env recipes (external/envs/), but not the clones themselves.
+/external/*
+!/external/tools.ini
+!/external/README.md
+!/external/envs
