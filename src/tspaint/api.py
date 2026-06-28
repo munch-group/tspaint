@@ -10,18 +10,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 
 from .em import fit, build_emissions
 from .model import make_generator_2state
-from .output import posterior_table, hard_segments, posterior_at, Segment
+from .output import posterior_table, Segment
+from .track import SoftTrack
 
 __all__ = ["paint", "Painting"]
 
 
 @dataclass
-class Painting:
+class Painting(SoftTrack):
     """Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted model.
 
     Attributes
@@ -77,6 +76,11 @@ class Painting:
         t = self.ts[0] if isinstance(self.ts, (list, tuple)) else self.ts
         return float(t.sequence_length)
 
+    @property
+    def samples(self):
+        """The painted query haplotypes — the row order used by :meth:`plot`."""
+        return self.queries
+
     def save(self, path):
         """Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model).
 
@@ -99,41 +103,6 @@ class Painting:
                         loglik_history=[], queries=m.get("queries", []), ts=None,
                         labels=m.get("labels"), default_deadband=m.get("deadband", 0.0) or 0.0,
                         _seqlen=m.get("seqlen"))
-
-    def segments(self, deadband=None):
-        """Hard ancestry segments for downstream tract-length / dating analysis.
-
-        Parameters
-        ----------
-        deadband : float, optional
-            Confidence dead-band suppressing low-confidence flips that fragment long
-            tracts. Defaults to :attr:`default_deadband`. See
-            :func:`tspaint.output.hard_segments`.
-
-        Returns
-        -------
-        dict[int, list[tuple[float, float, int]]]
-            Per query, hard ``(left, right, state)`` segments.
-        """
-        db = self.default_deadband if deadband is None else deadband
-        return {q: hard_segments(t, db) for q, t in self.posteriors.items()}
-
-    def posterior_at(self, sample, position):
-        """Posterior vector for ``sample`` at a genomic ``position``.
-
-        Parameters
-        ----------
-        sample : int
-            Sample-node id to look up.
-        position : float
-            Genomic position.
-
-        Returns
-        -------
-        numpy.ndarray or None
-            The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
-        """
-        return posterior_at(self.posteriors, sample, position)
 
     def rate_through_time(self, edges=None, *, n_jobs=None, **kwargs):
         """Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
@@ -233,95 +202,6 @@ class Painting:
                 f"Q={np.array2string(self.Q, precision=2)}, "
                 f"pi={np.array2string(self.pi, precision=2)})")
 
-    def plot(self, truth=None, title=None, cmap='coolwarm', colors=None, return_plot=False):
-        """Stacked strip plot of the painting — one row per query haplotype.
-
-        Each haplotype row shows, top to bottom: the **soft** per-position posterior
-        ``P(ancestry A)`` as a colour gradient (the calibrated deliverable), the **hard**
-        ancestry segments (:meth:`segments` at ``deadband=0.4``), and — when ``truth`` is given —
-        the true ancestry tracts as a reference track beneath. A shared colour bar maps
-        ``P(ancestry A)`` (state A at the top of ``cmap``, state B at the bottom). Works for an
-        ensemble painting too (the rows show the ensemble-mean posterior). Requires matplotlib.
-
-        Parameters
-        ----------
-        truth : dict[int, list[tuple[float, float, int]]], optional
-            Ground-truth ancestry tracts ``(left, right, state)`` per query — e.g. from
-            :func:`tspaint.local_ancestry_truth` mapped to states ``0``/``1`` — drawn as a
-            reference track below each haplotype. No truth track is drawn when ``None`` (default).
-        title : str, optional
-            Title placed on the top haplotype axes.
-        cmap : str or matplotlib.colors.Colormap, optional
-            Diverging colormap mapping ``P(ancestry A) ∈ [0, 1]`` (state A → ``1.0``, state B →
-            ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
-        colors : list, optional
-            Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g.
-            ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
-        return_plot : bool, optional
-            Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save
-            the plot, instead of ``None``. Default ``False``.
-
-        Returns
-        -------
-        tuple or None
-            ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
-        """
-        qs = self.queries
-        segments = self.segments(deadband=0.4)
-
-        if colors:
-            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("custom_diverging", colors, N=256)
-
-        sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap=cmap)
-        fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))
-        gs = fig.add_gridspec(len(qs), 2, width_ratios=[1,0.03], hspace=0)
-        axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]
-
-        for i, q in enumerate(qs):
-            ymin, ymax = 0, 1.5
-            if truth:
-                ymin = -0.25
-                for (l, r, s) in truth[q]:
-                    axes[i].barh(-0.25, r - l, left=l, height=0.5,
-                            color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")                                 
-                            # color= 'gray' if s == 0 else 'white', edgecolor="none")
-            for (l, r, s) in segments[q]:
-                axes[i].barh(0.25, r - l, left=l, height=0.5,
-                        color=sm.to_rgba(1.0 if s == 0 else 0.0), edgecolor="none")
-            axes[i].axhline(0.25, c='black', lw=0.25)
-            axes[i].axhline(0.5, c='black', lw=0.25)
-            for seg in self.posteriors[q]:
-                axes[i].barh(1, seg.right - seg.left, left=seg.left, height=1,
-                        color=sm.to_rgba(seg.posterior[0]), edgecolor="none")
-            # for state in [0, 1]:
-            #     xs, ys = [], []
-            #     for seg in self.posteriors[q]:
-            #         xs += [seg.left, seg.right]
-            #         ys += [float(seg.posterior[state])] * 2
-            #     axes[i].plot(xs, ys, color=sm.to_rgba(1.0 if state == 0 else 0.0))
-
-            axes[i].set_ylim(ymin, ymax)
-            axes[i].set_xlim(0, self.length)
-            axes[i].set_ylabel(f'hapl. {i}', rotation=0, fontsize=7, color="0.0", horizontalalignment="right")
-            axes[i].yaxis.set_major_locator(matplotlib.ticker.NullLocator())
-            if i < len(axes)-1:
-                axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())
-            axes[i].tick_params(axis='x', bottom=True)
-            axes[i].spines['top'].set_visible(True)
-            axes[i].spines['bottom'].set_visible(True)
-            axes[i].spines['left'].set_visible(True)
-            axes[i].spines['right'].set_visible(True)
-            axes[i].grid(False)
-
-        ax = fig.add_subplot(gs[:, 1])
-        ax.set_axis_off()
-        cb = fig.colorbar(sm, ax=ax, fraction=0.5, pad=0.01)
-        cb.set_label("P(ancestry A)")
-        if title:
-            axes[0].set_title(title)
-        plt.tight_layout()
-        if return_plot:
-            return fig, axes
 
 def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
           smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,

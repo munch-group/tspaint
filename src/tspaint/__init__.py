@@ -48,6 +48,7 @@ from __future__ import annotations
 
 # Core public API ---------------------------------------------------------------------------
 from .api import paint, Painting
+from .track import SoftTrack
 from .em import fit, FitResult
 from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
                      INFORMATIVE, MISSING_INFO)
@@ -76,7 +77,7 @@ except Exception:  # pragma: no cover
 
 __all__ = [
     # core
-    "paint", "Painting", "fit", "FitResult",
+    "paint", "Painting", "SoftTrack", "fit", "FitResult",
     "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO",
     "make_generator_2state",
     # simulation

@@ -29,6 +29,9 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
+from .output import Segment, INFORMATIVE
+from .track import SoftTrack
+
 __all__ = ["GhostResult", "detect_ghost", "ArchaicResult", "detect_archaic"]
 
 _SQRT2PI = np.sqrt(2.0 * np.pi)
@@ -169,29 +172,44 @@ def _forward_backward(B, A, pi0):
 
 
 @dataclass
-class GhostResult:
+class GhostResult(SoftTrack):
     """Result of :func:`detect_ghost` — per-locus ``P(ghost)`` from the depth-emission HMM.
 
     "Ghost" = ancestry from a population not in the reference panel; the signal is *depth*, so the
     detector targets **deep** (archaic-like) ghosts specifically (a shallow recent ghost will not
-    trip it). For an ensemble input the posteriors are the per-member mean with a ``posterior_std``
-    band.
+    trip it).
+
+    A :class:`~tspaint.track.SoftTrack`, so it shares the painting read-out surface:
+    :meth:`~tspaint.track.SoftTrack.segments` (hard ghost/modern tracts with the calibrated
+    dead-band), :meth:`~tspaint.track.SoftTrack.posterior_at`, and
+    :meth:`~tspaint.track.SoftTrack.plot` (whose colour scale highlights ``P(ghost)``).
 
     Attributes
     ----------
-    posteriors : dict[int, list[tuple[float, float, float]]]
-        Per sample, contiguous ``(left, right, P(ghost))`` over the genome.
+    posteriors : dict[int, list[Segment]]
+        Per sample, contiguous :class:`~tspaint.output.Segment`\\ s tiling ``[0, L)`` whose
+        ``(2,)`` ``posterior`` is ``[P(modern), P(ghost)]`` (state 0 modern, 1 ghost). For an
+        **ensemble** input these are :class:`~tspaint.ensemble.MergedSegment`\\ s — the per-member
+        mean plus a ``posterior_std`` band — but behave identically.
     burden : dict[int, float]
         Per sample, the span-weighted mean ``P(ghost)`` (the genome-wide ghost burden).
     mu, sd : numpy.ndarray
-        ``(2,)`` learned emission means / stds on log-depth (index 0 modern, 1 archaic).
+        ``(2,)`` learned emission means / stds on the depth observation — ``log`` coalescence time
+        (``depth="time"``) or its genome-wide rank (``depth="rank"``); index 0 modern, 1 ghost.
     A : numpy.ndarray
         ``(2, 2)`` learned per-breakpoint transition matrix.
     pi0 : numpy.ndarray
         ``(2,)`` learned initial distribution.
     loglik_history : list
         Pooled Baum–Welch log-likelihood per iteration (non-decreasing).
+    default_deadband : float
+        Default dead-band passed to :meth:`~tspaint.track.SoftTrack.segments`. Default ``0.0``.
     """
+
+    # The ghost detector's "interesting" state is state 1 (ghost); the plot highlights P(ghost).
+    _hi_state = 1
+    _hi_label = "P(ghost)"
+
     posteriors: dict
     burden: dict
     mu: np.ndarray
@@ -199,16 +217,18 @@ class GhostResult:
     A: np.ndarray
     pi0: np.ndarray
     loglik_history: list
+    default_deadband: float = 0.0
+    _seqlen: float = None
 
     def tracts(self, sample, threshold=0.5):
         """Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``."""
         out = []
-        for (l, r, p) in self.posteriors[int(sample)]:
-            if p >= threshold:
-                if out and abs(out[-1][1] - l) < 1e-9:
-                    out[-1] = (out[-1][0], r)
+        for seg in self.posteriors[int(sample)]:
+            if float(seg.posterior[1]) >= threshold:
+                if out and abs(out[-1][1] - seg.left) < 1e-9:
+                    out[-1] = (out[-1][0], seg.right)
                 else:
-                    out.append((l, r))
+                    out.append((seg.left, seg.right))
         return out
 
 
@@ -273,25 +293,6 @@ def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol
             break
         prev = ll
     return mu, sd, A, pi0, history
-
-
-def _merge_ghost_tracks(tracks):
-    """N-way breakpoint refinement of per-member ``[(l, r, p)]`` tracks → ``[(lo, hi, mean_p)]``."""
-    m = len(tracks)
-    if m == 1:
-        return list(tracks[0])
-    ptr = [0] * m
-    out = []
-    while all(ptr[i] < len(tracks[i]) for i in range(m)):
-        cur = [tracks[i][ptr[i]] for i in range(m)]
-        lo = max(seg[0] for seg in cur)
-        hi = min(seg[1] for seg in cur)
-        if hi > lo:
-            out.append((lo, hi, float(np.mean([seg[2] for seg in cur]))))
-        for i in range(m):
-            if tracks[i][ptr[i]][1] == hi:
-                ptr[i] += 1
-    return out
 
 
 def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-3, delta=None,
@@ -396,36 +397,38 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
                                           init_archaic_burden=init_archaic_burden,
                                           init_switch=init_switch, ghost_scale=ghost_scale)
 
-    # decode per member, then merge each sample across members (mean P(ghost))
-    per_member_post = []
+    # decode per member as Segment tables ([P(modern), P(ghost)] per locus), then merge each
+    # sample across members (mean posterior + uncertainty band) reusing the painting ensemble merge.
+    per_member_tables = []
     for samp_t in samp_per_member:
-        post = {}
+        table = {}
         for s in samples:
             segs = samp_t[s]
             if not segs:
-                post[s] = []
+                table[s] = []
                 continue
             obs = np.array([o for (_l, _r, o) in segs], float)
             B = _emission(obs, mu, sd)
-            gamma, _xi, _ll = _forward_backward(B, A, pi0)
-            pa = gamma[:, 1]
-            post[s] = [(segs[i][0], segs[i][1], float(pa[i])) for i in range(len(segs))]
-        per_member_post.append(post)
+            gamma, _xi, _ll = _forward_backward(B, A, pi0)   # gamma[:,0]=P(modern), [:,1]=P(ghost)
+            table[s] = [Segment(segs[i][0], segs[i][1], gamma[i].copy(), INFORMATIVE)
+                        for i in range(len(segs))]
+        per_member_tables.append(table)
 
-    posteriors, burden = {}, {}
+    if len(per_member_tables) == 1:
+        posteriors = per_member_tables[0]
+    else:
+        from .ensemble import merge_posterior_tables
+        posteriors = merge_posterior_tables(per_member_tables, samples=samples)
+
+    burden = {}
     for s in samples:
-        member_tracks = [pm[s] for pm in per_member_post if pm[s]]
-        if not member_tracks:
-            posteriors[s] = []
-            burden[s] = float("nan")
-            continue
-        merged = _merge_ghost_tracks(member_tracks)
-        posteriors[s] = merged
-        tot = sum(r - l for (l, r, _p) in merged)
-        burden[s] = float(sum(p * (r - l) for (l, r, p) in merged) / tot) if tot > 0 else float("nan")
+        segs = posteriors[s]
+        tot = sum(seg.right - seg.left for seg in segs)
+        burden[s] = (float(sum(seg.posterior[1] * (seg.right - seg.left) for seg in segs) / tot)
+                     if tot > 0 else float("nan"))
 
     return GhostResult(posteriors=posteriors, burden=burden, mu=mu, sd=sd, A=A, pi0=pi0,
-                       loglik_history=history)
+                       loglik_history=history, _seqlen=float(members[0].sequence_length))
 
 
 # --- deprecated aliases (the detector was renamed detect_archaic -> detect_ghost) ------------

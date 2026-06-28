@@ -272,11 +272,17 @@ def load_reference_qc(path):
 # --- ghost / archaic / foreign tracts -------------------------------------------------------
 
 def save_ghost(path, ghost):
-    """Write a :class:`~tspaint.GhostResult` — per-locus ``P(ghost)`` + the learned depth-HMM."""
+    """Write a :class:`~tspaint.GhostResult` — per-locus ``P(ghost)`` + the learned depth-HMM.
+
+    Stores the scalar ``P(ghost)`` per segment (``posterior[1]``); :func:`load_ghost` rebuilds the
+    two-state :class:`~tspaint.output.Segment` posterior ``[P(modern), P(ghost)]`` from it. The
+    ensemble ``posterior_std`` band, if any, is not persisted.
+    """
     samp, left, right, p = [], [], [], []
     for s in sorted(ghost.posteriors):
-        for (a, b, pg) in ghost.posteriors[s]:
-            samp.append(int(s)); left.append(float(a)); right.append(float(b)); p.append(float(pg))
+        for seg in ghost.posteriors[s]:
+            samp.append(int(s)); left.append(float(seg.left)); right.append(float(seg.right))
+            p.append(float(seg.posterior[1]))
     nodes = sorted(ghost.burden)
     _savez(path, _format="tspaint-ghost", _version=1,
            sample=np.array(samp, np.int64), left=np.array(left, float),
@@ -289,12 +295,17 @@ def save_ghost(path, ghost):
 
 
 def load_ghost(path):
-    """Reload :func:`save_ghost` as a dict (``posteriors, burden, mu, sd, A, pi0, loglik_history``)."""
+    """Reload :func:`save_ghost` as a dict (``posteriors, burden, mu, sd, A, pi0, loglik_history``).
+
+    ``posteriors`` is rebuilt as per-sample :class:`~tspaint.output.Segment` lists whose
+    ``posterior`` is ``[P(modern), P(ghost)]`` (all ``INFORMATIVE``).
+    """
     d = _loadz(path)
     _check_format(d, "tspaint-ghost")
     post = {}
     for s, a, b, pg in zip(d["sample"], d["left"], d["right"], d["p_ghost"]):
-        post.setdefault(int(s), []).append((float(a), float(b), float(pg)))
+        post.setdefault(int(s), []).append(
+            Segment(float(a), float(b), np.array([1.0 - float(pg), float(pg)]), INFORMATIVE))
     burden = {int(n): float(v) for n, v in zip(d["burden_nodes"], d["burden_vals"])}
     return dict(posteriors=post, burden=burden, mu=d["mu"], sd=d["sd"], A=d["A"], pi0=d["pi0"],
                 loglik_history=d["loglik_history"].tolist())

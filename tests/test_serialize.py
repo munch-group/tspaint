@@ -131,13 +131,18 @@ def test_reference_qc_round_trip(tmp_path):
 
 def test_ghost_round_trip(tmp_path):
     p = tmp_path / "ghost.npz"
-    g = GhostResult(posteriors={5: [(0.0, 100.0, 0.03), (100.0, 200.0, 0.95)]},
+    # posteriors are 2-state Segments: posterior = [P(modern), P(ghost)]
+    g = GhostResult(posteriors={5: [Segment(0.0, 100.0, np.array([0.97, 0.03]), INFORMATIVE),
+                                    Segment(100.0, 200.0, np.array([0.05, 0.95]), INFORMATIVE)]},
                     burden={5: 0.49}, mu=np.array([1.0, 3.2]), sd=np.array([0.5, 0.4]),
                     A=np.array([[0.98, 0.02], [0.05, 0.95]]), pi0=np.array([0.9, 0.1]),
                     loglik_history=[-6.0, -5.0])
     serialize.save_ghost(p, g)
     d = serialize.load_ghost(p)
-    assert d["posteriors"][5] == [(0.0, 100.0, 0.03), (100.0, 200.0, 0.95)]
+    segs = d["posteriors"][5]
+    assert [(s.left, s.right) for s in segs] == [(0.0, 100.0), (100.0, 200.0)]
+    np.testing.assert_allclose([s.posterior[1] for s in segs], [0.03, 0.95])   # P(ghost) survives
+    np.testing.assert_allclose([s.posterior[0] for s in segs], [0.97, 0.05])   # P(modern) rebuilt
     assert d["burden"] == g.burden
     np.testing.assert_array_equal(d["mu"], g.mu)
     np.testing.assert_array_equal(d["A"], g.A)
@@ -145,13 +150,16 @@ def test_ghost_round_trip(tmp_path):
 
 def test_archaic_round_trip(tmp_path):
     p = tmp_path / "arch.npz"
-    a = ArchaicResult(posteriors={5: [(0.0, 100.0, 0.02), (100.0, 200.0, 0.97)]},
+    a = ArchaicResult(posteriors={5: [Segment(0.0, 100.0, np.array([0.98, 0.02]), INFORMATIVE),
+                                      Segment(100.0, 200.0, np.array([0.03, 0.97]), INFORMATIVE)]},
                       burden={5: 0.495}, mu=np.array([1.0, 3.0]), sd=np.array([0.5, 0.4]),
                       A=np.array([[0.98, 0.02], [0.05, 0.95]]), pi0=np.array([0.9, 0.1]),
                       loglik_history=[-5.0, -4.0])
     serialize.save_archaic(p, a)
     d = serialize.load_archaic(p)
-    assert d["posteriors"][5] == [(0.0, 100.0, 0.02), (100.0, 200.0, 0.97)]
+    segs = d["posteriors"][5]
+    assert [(s.left, s.right) for s in segs] == [(0.0, 100.0), (100.0, 200.0)]
+    np.testing.assert_allclose([s.posterior[1] for s in segs], [0.02, 0.97])
     assert d["burden"] == a.burden
     np.testing.assert_array_equal(d["mu"], a.mu)
     np.testing.assert_array_equal(d["A"], a.A)

@@ -9,6 +9,8 @@ import pytest
 
 from tspaint.archaic import detect_ghost, GhostResult, detect_archaic, ArchaicResult
 from tspaint.archaic import _anchor_modern, _forward_backward, _emission
+from tspaint.output import Segment, INFORMATIVE
+from tspaint.track import SoftTrack
 
 
 def test_anchor_and_forward_backward_units():
@@ -55,6 +57,26 @@ def test_detect_ghost_aliases():
             pass
 
 
+def test_ghost_result_is_softtrack():
+    # GhostResult shares the painting read-out surface (segments / posterior_at / length / plot)
+    # via SoftTrack, on Segment posteriors = [P(modern), P(ghost)].
+    g = GhostResult(
+        posteriors={5: [Segment(0.0, 50.0, np.array([0.9, 0.1]), INFORMATIVE),
+                        Segment(50.0, 100.0, np.array([0.2, 0.8]), INFORMATIVE)]},
+        burden={5: 0.45}, mu=np.array([0.0, 2.0]), sd=np.array([1.0, 1.0]),
+        A=np.eye(2), pi0=np.array([0.5, 0.5]), loglik_history=[], _seqlen=100.0)
+    assert isinstance(g, SoftTrack)
+    assert g.length == 100.0
+    assert g.samples == [5]                                   # ordered haplotype ids
+    assert g._hi_state == 1 and g._hi_label == "P(ghost)"     # plot highlights P(ghost)
+    np.testing.assert_allclose(g.posterior_at(5, 60.0), [0.2, 0.8])
+    # hard segments: argmax over [P(modern), P(ghost)] -> ghost (state 1) on the second span
+    assert g.segments()[5] == [(0.0, 50.0, 0), (50.0, 100.0, 1)]
+    # a wide dead-band suppresses the low-margin ghost flip (carries modern forward)
+    assert g.segments(deadband=0.95)[5] == [(0.0, 100.0, 0)]
+    assert g.tracts(5, 0.5) == [(50.0, 100.0)]
+
+
 @pytest.mark.slow
 def test_detect_ghost_recovers_burden_reference_free():
     # with a ghost source (and no ghost reference) the learned burden tracks the truth and
@@ -62,8 +84,9 @@ def test_detect_ghost_recovers_burden_reference_free():
     ts, labels, queries, true_ghost = _ghost_setup(0.25, seed=1)
     res = detect_ghost(ts, labels, queries, max_iter=40)
     assert isinstance(res, GhostResult)
-    assert all(0.0 <= p <= 1.0 for q in queries for (_l, _r, p) in res.posteriors[q])
-    assert res.posteriors[queries[0]][0][0] == 0.0                      # covers from 0
+    # posteriors are 2-state Segments: posterior = [P(modern), P(ghost)]
+    assert all(0.0 <= seg.posterior[1] <= 1.0 for q in queries for seg in res.posteriors[q])
+    assert res.posteriors[queries[0]][0].left == 0.0                    # covers from 0
     assert res.mu[1] > res.mu[0] + 1.0                                  # archaic state is deep
 
     burden = float(np.mean([res.burden[q] for q in queries]))
@@ -116,15 +139,15 @@ def test_detect_ghost_rank_is_calibration_invariant():
     r1 = detect_ghost(ts, labels, queries, depth="rank", max_iter=30)
     r2 = detect_ghost(_scale_node_times(ts, 7.0), labels, queries, depth="rank", max_iter=30)
     for q in queries:
-        p1 = np.array([p for (_l, _r, p) in r1.posteriors[q]])
-        p2 = np.array([p for (_l, _r, p) in r2.posteriors[q]])
+        p1 = np.array([seg.posterior[1] for seg in r1.posteriors[q]])
+        p2 = np.array([seg.posterior[1] for seg in r2.posteriors[q]])
         np.testing.assert_allclose(p1, p2, atol=1e-9)        # identical under time rescaling
     # and it ACTUALLY detects the ghost -- not a vacuously-near-zero posterior. In rank space the
     # depth is bounded in [0, 1], so the unbounded log-time floor (q_ref + sd_m) overshoots the
     # ceiling and parks the ghost emission above every observation: P(ghost) then collapses to ~0
     # and the burden-ratio check below still passes on two near-zero numbers. Require a confident
     # call and a substantial burden so that regression is caught.
-    maxp = max(p for q in queries for (_l, _r, p) in r1.posteriors[q])
+    maxp = max(seg.posterior[1] for q in queries for seg in r1.posteriors[q])
     assert maxp > 0.9                                     # some locus is confidently ghost (was ~0.02 when broken)
     assert np.mean([r1.burden[q] for q in queries]) > 0.05
     ts0, labels0, q0, _ = _ghost_setup(0.0, seed=1)
@@ -143,11 +166,13 @@ def test_detect_ghost_ensemble():
         # (not bit-exact: pooling doubles the log-lik, so the abs-tol early stop can fire one
         #  iteration apart — the params converge to the same fixed point)
         np.testing.assert_allclose(dup.burden[q], single.burden[q], atol=1e-3)
-        assert dup.posteriors[q][0][0] == 0.0 and dup.posteriors[q][-1][1] == ts.sequence_length
+        assert dup.posteriors[q][0].left == 0.0 and dup.posteriors[q][-1].right == ts.sequence_length
 
     ts2, _, q2, _ = _ghost_setup(0.25, seed=2)                     # a distinct ARG (same sample ids)
     res = detect_ghost([ts, ts2], labels, queries, max_iter=20)    # exercises breakpoint refinement
     for q in queries:
-        segs = res.posteriors[q]
-        assert segs[0][0] == 0.0 and segs[-1][1] == ts.sequence_length
-        assert all(0.0 <= p <= 1.0 for (_l, _r, p) in segs)
+        segs = res.posteriors[q]                                   # MergedSegments (ensemble)
+        assert segs[0].left == 0.0 and segs[-1].right == ts.sequence_length
+        assert all(0.0 <= seg.posterior[1] <= 1.0 for seg in segs)
+        # the ensemble merge now carries the ARG-uncertainty band (was documented but absent)
+        assert all(hasattr(seg, "posterior_std") and np.all(seg.posterior_std >= 0) for seg in segs)
