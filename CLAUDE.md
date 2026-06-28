@@ -896,6 +896,20 @@ in one call and returns a `Painting` whose `posteriors` carry the mean + `poster
     min_depth=)`** (the fast, deterministic, rank-depth alternative); `archaic_detection_experiment`
     still scores the HMM against it (recall 0.99–1.00 vs ~0.4–0.5). CLI: `tspaint qc` / `ghost`
     (ensemble, `--depth`) / `introgress` (`--min-depth`).
+  - **[REFACTOR — `GhostResult` is a `SoftTrack`; ensemble band fixed].** The per-locus soft-posterior
+    read-out shared by both deliverables — `segments(deadband)`, `posterior_at`, `plot` — is factored into
+    a `SoftTrack` mixin (`tspaint.track`, exported `tspaint.SoftTrack`); `Painting` and `GhostResult` both
+    subclass it. `GhostResult.posteriors` is now per-sample `output.Segment`s with
+    `posterior = [P(modern), P(ghost)]` (state 1 = ghost), so the ghost detector gains the painting's `plot`
+    (colour scale highlights `P(ghost)`), `segments`, and `posterior_at`, and the calibrated-deadband tract
+    extraction (`hard_segments`) now applies to ghost calls too. Its **ensemble** path reuses
+    `ensemble.merge_posterior_tables` → `MergedSegment`, which **delivers the `posterior_std` band that was
+    documented but never produced** (the bespoke `_merge_ghost_tracks` is deleted). Deliberately **not** a
+    literal `Painting` return: that would bolt the ancestry-CTMC tail (`Q`/`π`/`rate_through_time`/
+    `introgression_map`) meaninglessly onto a depth-HMM result — the mixin shares the read-out *surface*
+    without the coupling. `Painting` behaviour is byte-identical (state 0 / "P(ancestry A)"); the on-disk
+    ghost `.npz` format is unchanged. Tests: `tests/test_archaic.py` (`test_ghost_result_is_softtrack`,
+    ensemble std-band assertion), `tests/test_serialize.py`.
 
 ---
 
