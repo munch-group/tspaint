@@ -293,13 +293,15 @@ def archaic(trees, labels_path, samples, depth, max_iter, out):
 @click.option("--t-admix", "T_admix", type=float, default=30.0, show_default=True)
 @click.option("--t-split", "T_split", type=float, default=5000.0, show_default=True)
 @click.option("--f-a", "f_A", type=float, default=0.5, show_default=True)
+@click.option("--migration-rate", "migration_rate", type=float, default=0.0, show_default=True,
+              help="symmetric A<->B gene flow between split and admixture (0 = isolated sources).")
 @click.option("--mutate/--no-mutate", default=True, show_default=True)
 @click.option("--mu", type=float, default=5e-8, show_default=True, help="mutation rate if --mutate.")
 @click.option("-o", "--out", required=True, type=click.Path(), help="output .trees.")
 @click.option("--labels-out", default=None, type=click.Path(), help="write reference labels JSON.")
 @click.option("--truth", "truth_out", default=None, type=click.Path(), help="write true ancestry .npz.")
 def simulate(n_admix, n_ref, length, recomb_rate, ploidy, seed, Ne, T_admix, T_split, f_A,
-             mutate, mu, out, labels_out, truth_out):
+             migration_rate, mutate, mu, out, labels_out, truth_out):
     """Simulate a 2-source admixture with known truth (the validation workhorse)."""
     import numpy as np
     from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B
@@ -307,7 +309,8 @@ def simulate(n_admix, n_ref, length, recomb_rate, ploidy, seed, Ne, T_admix, T_s
 
     ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=length,
                             recombination_rate=recomb_rate, ploidy=ploidy, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A,
+                            migration_rate=migration_rate)
     if mutate:
         ts = add_mutations(ts, rate=mu, random_seed=seed)
     ts.dump(out)

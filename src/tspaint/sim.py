@@ -49,7 +49,7 @@ _CENSUS_FLAG = getattr(msprime, "NODE_IS_CEN_EVENT", 0)
 
 
 def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
-                         T_split=2000.0, f_A=0.3):
+                         T_split=2000.0, f_A=0.3, migration_rate=0.0):
     """Build a two-source admixture demography with a post-pulse census.
 
     Two sources (A, B) feed an admixed population, with a census placed just
@@ -57,6 +57,18 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
     ``1 - f_A`` to ADMIX at ``T_admix``; they merge into a common ancestor at
     ``T_split``. The census sits at ``T_admix + census_offset`` (strictly
     between admixture and split).
+
+    Two demographic regimes (CLAUDE.md §9 — the harder, more realistic one is
+    the migration model, where the sources are less differentiated):
+
+    * ``migration_rate == 0`` — the sources are **isolated** between split and
+      admixture (the clean two-source pulse).
+    * ``migration_rate > 0`` — symmetric **low-level gene flow** between A and B
+      over ``[census_time, T_split)`` (the interval where they coexist as
+      distinct populations after the census). The census still cleanly labels
+      each lineage's source — migration only acts *deeper* than the census — so
+      the local-ancestry truth is unchanged, but A and B share more recent
+      ancestry, making them harder to tell apart.
 
     Parameters
     ----------
@@ -71,21 +83,27 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
         Time (generations ago) at which A and B coalesce into ANCESTRAL.
     f_A : float, optional
         Fraction of ADMIX contributed by source A (B contributes ``1 - f_A``).
+    migration_rate : float, optional
+        Per-generation symmetric migration rate between A and B over
+        ``[census_time, T_split)``. ``0`` (default) gives the isolated model.
 
     Returns
     -------
     msprime.Demography
         Demography with populations A, B, ADMIX and ANCESTRAL plus the
-        admixture, census and split events.
+        admixture, census and split events (and the A↔B migration if requested).
 
     Raises
     ------
     ValueError
-        If ``T_admix < T_admix + census_offset < T_split`` is violated.
+        If ``T_admix < T_admix + census_offset < T_split`` is violated, or
+        ``migration_rate < 0``.
     """
     census_time = T_admix + census_offset
     if not (T_admix < census_time < T_split):
         raise ValueError("require T_admix < T_admix + census_offset < T_split")
+    if migration_rate < 0:
+        raise ValueError("migration_rate must be non-negative")
 
     d = msprime.Demography()
     d.add_population(name=SOURCE_A, initial_size=Ne)
@@ -98,6 +116,13 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
     # Census after the pulse: every lineage is now in A or B; census nodes label
     # each lineage's source per genomic segment (the local-ancestry truth).
     d.add_census(time=census_time)
+    if migration_rate > 0:
+        # Symmetric A<->B gene flow, switched on (backward in time) just after the
+        # census so the truth labelling is untouched; the split below ends it.
+        d.add_migration_rate_change(time=census_time, rate=migration_rate,
+                                    source=SOURCE_A, dest=SOURCE_B)
+        d.add_migration_rate_change(time=census_time, rate=migration_rate,
+                                    source=SOURCE_B, dest=SOURCE_A)
     # Sources coalesce into a common ancestor deeper in time.
     d.add_population_split(time=T_split, derived=[SOURCE_A, SOURCE_B],
                            ancestral=ANCESTRAL)

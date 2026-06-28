@@ -132,6 +132,18 @@ def recombmix(query_vcf, ref_vcf, sample_map, chromosome, out, genetic_map, reco
                  out=out, log=_echo)
 
 
+@benchmark.command()
+@_base_opts
+@click.option("--smooth/--no-smooth", default=True, show_default=True,
+              help="horizontal BP smoother (recommended on inferred ARGs).")
+@click.option("--estimate-pi", is_flag=True, help="re-estimate pi (default: hold uniform).")
+def tspaint(query_vcf, ref_vcf, sample_map, chromosome, out, smooth, estimate_pi):
+    """tspaint itself, VCF-native: infer an ARG (tsinfer) from the VCFs and paint (soft posteriors)."""
+    from .. import benchmark as bm
+    bm.tspaint(query_vcf, ref_vcf, sample_map=sample_map, smooth=smooth,
+               estimate_pi=estimate_pi, out=out, log=_echo)
+
+
 @benchmark.command("export-vcf")
 @click.argument("trees", type=click.Path(exists=True, dir_okay=False))
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True),
@@ -171,3 +183,35 @@ def score(truth, deadband, paintings):
         named[name] = path
     rows = bm.score(truth, named, deadband=deadband)
     click.echo(bm.format_table(rows))
+
+
+@benchmark.command()
+@click.option("--truth", required=True, type=click.Path(exists=True),
+              help="tspaint-truth .npz (from export-vcf or `tspaint simulate --truth`).")
+@click.option("--name", default="", help="painter label stored in the JSON.")
+@click.option("--meta", multiple=True, help="scenario metadata key=value (repeatable).")
+@click.option("--deadband", type=float, default=0.4, show_default=True)
+@click.option("-o", "--out", required=True, type=click.Path(), help="metrics .json output.")
+@click.argument("painting", type=click.Path(exists=True, dir_okay=False))
+def metrics(truth, name, meta, deadband, out, painting):
+    """Full metrics for ONE painting vs TRUTH → JSON (proportions / fragmentation / size-accuracy)."""
+    from .. import benchmark as bm
+    md = {}
+    for kv in meta:
+        k, _eq, v = kv.partition("=")
+        md[k] = v
+    res = bm.score_full(truth, painting, name=name, meta=md, deadband=deadband)
+    bm.write_metrics(out, res)
+    _echo(f"metrics[{name}]: bal-acc={res['balanced_accuracy']}, "
+          f"prop-err={res['proportion_error']}, sw-ratio={res['switch_ratio']} -> {out}")
+
+
+@benchmark.command()
+@click.option("-o", "--outdir", required=True, type=click.Path(),
+              help="dir for summary_scalar.csv + summary_by_size.csv.")
+@click.argument("jsons", nargs=-1, required=True, type=click.Path(exists=True))
+def aggregate(outdir, jsons):
+    """Collect `benchmark metrics` JSONs into tidy CSVs (scalar + accuracy-by-size)."""
+    from .. import benchmark as bm
+    scalar, size = bm.aggregate(list(jsons), outdir)
+    _echo(f"aggregate: {len(jsons)} results -> {scalar}, {size}")

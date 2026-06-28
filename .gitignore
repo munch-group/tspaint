@@ -153,3 +153,7 @@ data/
 !/external/tools.ini
 !/external/README.md
 !/external/envs
+
+# GWF benchmark workflow (workflow.py): outputs + gwf local state
+/results/
+/.gwf/

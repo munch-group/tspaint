@@ -28,21 +28,22 @@ from .rfmix import rfmix
 from .gnomix import gnomix
 from .salai import salai
 from .recombmix import recombmix
+from ._tspaint import tspaint
 from .export import export_vcf
-from .score import score, load_truth, format_table
+from .score import score, load_truth, format_table, score_full, write_metrics, aggregate
 from ._provision import setup, tool_status, load_manifest
 from ._common import (resolve_panel, read_sample_map, save_tracks, tool_available, tool_command,
                       Panel)
 
 __all__ = [
-    "rfmix", "gnomix", "salai", "recombmix", "run", "BENCHMARK_TOOLS",
-    "export_vcf", "score", "load_truth", "format_table",
+    "tspaint", "rfmix", "gnomix", "salai", "recombmix", "run", "BENCHMARK_TOOLS", "PAINTERS",
+    "export_vcf", "score", "load_truth", "format_table", "score_full", "write_metrics", "aggregate",
     "setup", "tool_status", "load_manifest",
     "resolve_panel", "read_sample_map", "save_tracks", "tool_available", "tool_command", "Panel",
 ]
 
-#: Name → VCF-native runner. Every runner has the signature
-#: ``f(query_vcf, ref_vcf=None, *, sample_map, ..., out=None) -> {hap_index: [Segment]}``.
+#: Name → external comparator runner (what ``setup`` / ``status`` manage). Every runner has the
+#: signature ``f(query_vcf, ref_vcf=None, *, sample_map, ..., out=None) -> {hap_index: [Segment]}``.
 BENCHMARK_TOOLS = {
     "rfmix": rfmix,
     "gnomix": gnomix,
@@ -50,15 +51,18 @@ BENCHMARK_TOOLS = {
     "recombmix": recombmix,
 }
 
+#: Name → painter, including tspaint itself (VCF-native, tsinfer ARG) for the head-to-head.
+PAINTERS = {"tspaint": tspaint, **BENCHMARK_TOOLS}
+
 
 def run(tool, query_vcf, ref_vcf=None, **kwargs):
-    """Dispatch to a benchmark runner by name (``"rfmix"``/``"gnomix"``/``"salai"``/``"recombmix"``).
+    """Dispatch to a painter by name (``"tspaint"`` or an external comparator).
 
-    Forwards ``query_vcf``, ``ref_vcf`` and any tool keyword arguments (e.g. ``sample_map=``,
-    ``out=``, ``generations=``, ``model=``) to the selected runner.
+    Forwards ``query_vcf``, ``ref_vcf`` and any painter keyword arguments (e.g. ``sample_map=``,
+    ``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in :data:`PAINTERS`.
     """
     try:
-        runner = BENCHMARK_TOOLS[tool]
+        runner = PAINTERS[tool]
     except KeyError:
-        raise ValueError(f"unknown benchmark tool {tool!r}; choose from {sorted(BENCHMARK_TOOLS)}")
+        raise ValueError(f"unknown painter {tool!r}; choose from {sorted(PAINTERS)}")
     return runner(query_vcf, ref_vcf, **kwargs)

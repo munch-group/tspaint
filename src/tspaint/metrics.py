@@ -17,6 +17,10 @@ from .validate import (
     tract_boundary_error,
     breakpoint_precision_recall,
     switch_density,
+    global_proportion,
+    true_proportion,
+    accuracy_by_segment_size,
+    DEFAULT_SIZE_BINS,
 )
 
 __all__ = [
@@ -29,4 +33,8 @@ __all__ = [
     "tract_boundary_error",
     "breakpoint_precision_recall",
     "switch_density",
+    "global_proportion",
+    "true_proportion",
+    "accuracy_by_segment_size",
+    "DEFAULT_SIZE_BINS",
 ]

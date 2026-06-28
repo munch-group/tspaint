@@ -17,7 +17,12 @@ from .output import MISSING_INFO
 
 __all__ = ["map_truth", "per_base_accuracy", "balanced_accuracy", "mean_confidence",
            "reliability_curve", "breakpoint_flicker", "tract_boundary_error",
-           "breakpoint_precision_recall", "switch_density"]
+           "breakpoint_precision_recall", "switch_density",
+           "global_proportion", "true_proportion", "accuracy_by_segment_size",
+           "DEFAULT_SIZE_BINS"]
+
+#: Default log-spaced true-segment-length bins (bp) for :func:`accuracy_by_segment_size`.
+DEFAULT_SIZE_BINS = np.array([1e3, 3e3, 1e4, 3e4, 1e5, 3e5, 1e6, 3e6, 1e7])
 
 
 def map_truth(truth, state_of_pop):
@@ -383,3 +388,119 @@ def switch_density(segs, length):
     """
     n = len(_switch_positions(segs, lambda s: s[2], lambda s: s[0]))
     return n / length if length > 0 else float("nan")
+
+
+def global_proportion(tracks, state=0, samples=None, exclude_missing=True):
+    """Painter's estimated global ancestry proportion of ``state``.
+
+    Span-weighted mean of the posterior probability of ``state`` over all (sample, position) —
+    i.e. the soft global ancestry fraction the painter assigns to ``state``. For a one-hot (hard)
+    painter this is the fraction of the genome called ``state``. Compare to
+    :func:`true_proportion`; the signed difference is the painter's global-proportion bias.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    state : int, optional
+        Ancestry-state index whose proportion is estimated.
+    samples : iterable[int], optional
+        Samples to include; defaults to all keys of ``tracks``.
+    exclude_missing : bool, optional
+        If True, skip :data:`tspaint.output.MISSING_INFO` spans.
+
+    Returns
+    -------
+    float
+        Span-weighted mean posterior of ``state``, or ``nan`` if no span was scored.
+    """
+    num = den = 0.0
+    for s in (samples if samples is not None else tracks):
+        for seg in tracks[int(s)]:
+            if exclude_missing and seg.status == MISSING_INFO:
+                continue
+            w = seg.right - seg.left
+            den += w
+            num += w * float(seg.posterior[state])
+    return num / den if den > 0 else float("nan")
+
+
+def true_proportion(truth_states, state=0, samples=None):
+    """True global ancestry proportion of ``state`` (span-weighted fraction of the truth).
+
+    Parameters
+    ----------
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    state : int, optional
+        Ancestry-state index whose true proportion is computed.
+    samples : iterable[int], optional
+        Samples to include; defaults to all keys of ``truth_states``.
+
+    Returns
+    -------
+    float
+        Span-weighted fraction of the truth equal to ``state``, or ``nan`` if empty.
+    """
+    num = den = 0.0
+    for s in (samples if samples is not None else truth_states):
+        for (l, r, st) in truth_states[int(s)]:
+            w = r - l
+            den += w
+            if int(st) == state:
+                num += w
+    return num / den if den > 0 else float("nan")
+
+
+def accuracy_by_segment_size(tracks, truth_states, bins=None, samples=None, exclude_missing=True):
+    """Per-base painting accuracy stratified by **true** ancestry-tract length.
+
+    The headline of the segment-length analysis (CLAUDE.md §9): tract-/copying-based methods
+    degrade as tracts shorten, so accuracy as a function of true segment size separates methods
+    that hold up on short (old-admixture) tracts from those that don't. Each true tract is
+    assigned to a length bin; within it, the span where the painter's ``argmax`` matches the true
+    state counts as correct, aggregated per bin.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Posterior segment tracks per sample.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+    bins : array_like, optional
+        Monotone tract-length bin edges in bp (``len(bins) - 1`` bins). Defaults to
+        :data:`DEFAULT_SIZE_BINS`.
+    samples : iterable[int], optional
+        Samples to score; defaults to all keys of ``tracks``.
+    exclude_missing : bool, optional
+        If True, skip :data:`tspaint.output.MISSING_INFO` spans.
+
+    Returns
+    -------
+    dict
+        Keys ``"edges"`` (the bin edges), ``"accuracy"``, ``"weight"`` (scored span) and
+        ``"n_segments"`` — each a 1-D array over the bins. ``accuracy`` is ``nan`` in empty bins.
+    """
+    bins = np.asarray(DEFAULT_SIZE_BINS if bins is None else bins, float)
+    nb = len(bins) - 1
+    correct, total = np.zeros(nb), np.zeros(nb)
+    nseg = np.zeros(nb, np.int64)
+    for s in (samples if samples is not None else tracks):
+        s = int(s)
+        post = tracks[s]
+        for (tl, tr, tst) in truth_states[s]:
+            b = int(np.searchsorted(bins, tr - tl, side="right")) - 1
+            if b < 0 or b >= nb:
+                continue
+            nseg[b] += 1
+            for lo, hi, seg, st in _walk_overlap(post, [(tl, tr, tst)]):
+                if exclude_missing and seg.status == MISSING_INFO:
+                    continue
+                w = hi - lo
+                total[b] += w
+                if int(np.argmax(seg.posterior)) == st:
+                    correct[b] += w
+    acc = np.full(nb, np.nan)
+    m = total > 0
+    acc[m] = correct[m] / total[m]
+    return {"edges": bins, "accuracy": acc, "weight": total, "n_segments": nseg}
