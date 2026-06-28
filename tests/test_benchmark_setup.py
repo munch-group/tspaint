@@ -42,11 +42,23 @@ def test_plan_fresh_clone_copies_recipe_and_installs(tmp_path):
     target, check, steps = S.plan("x", spec, str(tmp_path), env_root="/REPO/external")
     assert target == str(tmp_path / "x")
     assert check == str(tmp_path / "x" / "x.py")
-    assert steps[0][:2] == ["git", "clone"] and steps[0][2] == spec["repo"]
+    # partial clone (no blobs) avoids pulling these repos' large in-repo data + history
+    assert steps[0][:2] == ["git", "clone"]
+    assert "--filter=blob:none" in steps[0] and spec["repo"] in steps[0]
     assert ["git", "-C", target, "checkout", "a" * 40] in steps
     # the tracked env recipe is copied into the clone, then installed
     assert ("copy", "/REPO/external/envs/x/pixi.toml", os.path.join(target, "pixi.toml")) in steps
     assert [C._PIXI, "install", "--manifest-path", target] in steps
+
+
+def test_plan_sparse_checkout(tmp_path):
+    spec = {"repo": "r", "commit": "a" * 40, "dir": "x", "sparse": "src configs", "check": "x.py"}
+    target, _c, steps = S.plan("x", spec, str(tmp_path))
+    assert ["git", "-C", target, "sparse-checkout", "init", "--cone"] in steps
+    assert ["git", "-C", target, "sparse-checkout", "set", "src", "configs"] in steps
+    # sparse is configured before the checkout that populates the tree
+    assert steps.index(["git", "-C", target, "sparse-checkout", "set", "src", "configs"]) < \
+        steps.index(["git", "-C", target, "checkout", "a" * 40])
 
 
 def test_plan_runs_pixi_build_task(tmp_path):

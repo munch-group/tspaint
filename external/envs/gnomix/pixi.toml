@@ -5,12 +5,11 @@ name = "gnomix"
 platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
+# gnomix's Python deps are pinned in its own requirements.txt (scikit-learn, scikit-allel,
+# xgboost, sklearn-crfsuite, pandas, …); `tspaint benchmark setup` runs this task after the env
+# is created (it provides python + pip) to install them into the env.
 [tasks]
+install-deps = "pip install -r requirements.txt"
 
 [dependencies]
 pip = ">=26.1.2,<27"
-
-[pypi-dependencies]
-numpy = "2.5.0"
-sklearn = "0.5.0"
-xgboost = "3.3.0"

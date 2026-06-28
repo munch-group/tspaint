@@ -2,10 +2,18 @@
 authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
 channels = ["conda-forge", "munch-group"]
 name = "SALAI-Net"
-platforms = ["osx-arm64", "linux-64"]
+# osx-arm64 only: the exact pytorch/python pins below are the combination proven to solve here;
+# for linux-64 add it and adjust torch/torchvision to versions with conda-forge linux builds.
+platforms = ["osx-arm64"]
 version = "0.1.0"
 
+# scikit-allel hard-imports dask.array, so dask must be present AND numpy-2 compatible. The only
+# *conda* dask that co-installs with this exact pytorch/python/numpy combination is dask 2023.3.0
+# (pulled in by scikit-allel), which does `from numpy.compat import basestring` — removed in numpy
+# 2.x → fatal SALAI.py import. Every numpy-2 conda dask conflicts with the pytorch 2.12.1 build.
+# So we let conda solve as-is, then pip-upgrade dask (pure-python; sidesteps the conda conflict).
 [tasks]
+install-deps = "pip install -U 'dask[array]'"
 
 [dependencies]
 pip = ">=26.1.2,<27"
@@ -16,4 +24,3 @@ pandas = ">=3.0.3,<4"
 scikit-allel = ">=1.3.13,<2"
 pytorch = ">=2.12.1,<3"
 torchvision = ">=0.27.1,<0.28"
-dask = ">=2023.3.0,<2024"
