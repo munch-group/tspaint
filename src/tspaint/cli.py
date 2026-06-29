@@ -480,6 +480,26 @@ def _parse_gaps(spec):
     return gaps
 
 
+@cli.group()
+def install():
+    """Install optional external dependencies for tspaint."""
+
+
+@install.command("singer")
+@click.option("--commit", default=None, help="SINGER commit to pin (default: the tested pin).")
+@click.option("--force", is_flag=True, help="rebuild even if the singer binary already exists.")
+def install_singer_cmd(commit, force):
+    """Clone + build the SINGER ARG sampler from source (linux-64 / osx-arm64).
+
+    Builds the `singer` binary where tspaint finds it automatically, so the SINGER painter
+    (`tspaint benchmark tspaint --arg singer`) and `tspaint.io.singer` work with no extra config.
+    """
+    from .install import install_singer
+    path = install_singer(commit=commit, force=force, log=_echo)
+    _echo(f"\nSINGER ready: {path}")
+    _echo(f"tspaint uses it automatically; to use it from elsewhere set TSPAINT_SINGER={path}")
+
+
 from .benchmark.cli import benchmark as _benchmark_group   # noqa: E402  (attach the subcommand group)
 cli.add_command(_benchmark_group)
 

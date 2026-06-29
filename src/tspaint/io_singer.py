@@ -32,11 +32,32 @@ import warnings
 import numpy as np
 
 __all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences",
-           "singer_window", "build_merge_table", "run_merge_arg"]
+           "singer_window", "build_merge_table", "run_merge_arg",
+           "singer_install_dir", "singer_binary_path"]
 
-DEFAULT_SINGER = os.environ.get("TSPAINT_SINGER", "/Users/kmt/SINGER/SINGER/SINGER/singer")
-DEFAULT_MERGE_ARG = os.environ.get("TSPAINT_MERGE_ARG",
-                                   "/Users/kmt/SINGER/SINGER/SINGER/merge_ARG.py")
+
+def _tools_dir():
+    """Clone root for external tools (``$TSPAINT_TOOLS_DIR`` or ``<repo>/external``)."""
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return os.path.expanduser(
+        os.environ.get("TSPAINT_TOOLS_DIR", os.path.join(repo_root, "external")))
+
+
+def singer_install_dir():
+    """Clone root that ``tspaint install singer`` builds into (``<tools-dir>/SINGER``)."""
+    return os.path.join(_tools_dir(), "SINGER")
+
+
+def singer_binary_path():
+    """Path to the ``singer`` binary built by ``tspaint install singer``."""
+    return os.path.join(singer_install_dir(), "SINGER", "SINGER", "singer")
+
+
+#: SINGER binary: ``$TSPAINT_SINGER`` if set, else the ``tspaint install singer`` build location.
+DEFAULT_SINGER = os.environ.get("TSPAINT_SINGER") or singer_binary_path()
+#: SINGER's ``merge_ARG.py`` helper, at the same install location unless ``$TSPAINT_MERGE_ARG``.
+DEFAULT_MERGE_ARG = os.environ.get("TSPAINT_MERGE_ARG") or os.path.join(
+    singer_install_dir(), "SINGER", "SINGER", "merge_ARG.py")
 
 
 def write_haploid_vcf(ts, path):

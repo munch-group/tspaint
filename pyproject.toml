@@ -79,6 +79,7 @@ demesdraw = ">=0.4.1,<0.5"
 tszip = ">=0.3.1,<0.4"
 matplotlib = "*"
 bio2zarr = ">=0.1.7,<0.2"
+gwf = ">=2.1.1,<3"
 
 [tool.pixi.pypi-dependencies]
 tspaint = { path = ".", editable = true }

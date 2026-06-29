@@ -12,6 +12,7 @@ relocate with ``TSPAINT_GNOMIX_DIR`` or replace the launcher with ``TSPAINT_GNOM
 from __future__ import annotations
 
 import os
+import shutil
 import tempfile
 
 from . import _common as C
@@ -20,8 +21,51 @@ from ._msp import parse_fb
 __all__ = ["gnomix"]
 
 
+def _genetic_length_cM(gmap_path):
+    """Total map length in cM = max of the last column over numeric rows.
+
+    Works for both genetic-map formats :func:`tspaint.benchmark._common.write_genetic_map` emits
+    (plink ``chrom pos cM`` and hapmap ``... Map(cM)``) — cM is the last column in each — with
+    header / comment rows skipped (non-numeric last field).
+    """
+    best = 0.0
+    with open(gmap_path) as fh:
+        for line in fh:
+            parts = line.split()
+            if not parts:
+                continue
+            try:
+                best = max(best, float(parts[-1]))
+            except ValueError:
+                continue
+    return best
+
+
+def _fit_config(cfg, total_cM):
+    """Scale gnomix's window / smoother so ``W >= 2*smooth_size`` holds on a short region.
+
+    gnomix's shipped configs target whole chromosomes; the smoother asserts ``W >= 2*smooth_size``
+    (``src/Smooth/models.py``) where the window count ``W ≈ total_cM / window_size_cM``
+    (``gnomix.py``: ``M = round(window_size_cM * C/total_cM)``, ``W = C // M``). We shrink
+    ``window_size_cM`` toward ``total_cM / (3*smooth_size)`` (≈1.5x margin over the floor) without
+    coarsening past the config's own window, and cap ``smooth_size`` as a fallback for very short
+    regions. Mutates and returns ``cfg``.
+    """
+    model = cfg.setdefault("model", {})
+    smooth = int(model.get("smooth_size") or 75)
+    window = float(model.get("window_size_cM") or 0.2)
+    if total_cM > 0:
+        window = min(window, max(total_cM / (3 * smooth), 0.01))
+        W = int(total_cM / window)
+        if W < 2 * smooth:                       # very short region: shrink the smoother too
+            smooth = max(2, W // 2)
+    model["window_size_cM"] = window
+    model["smooth_size"] = smooth
+    return cfg
+
+
 def gnomix(query_vcf, ref_vcf=None, *, sample_map, genetic_map=None, chromosome=None,
-           recomb_rate=1e-8, model=None, phase=False, out=None, workdir=None,
+           recomb_rate=1e-8, model=None, phase=False, config=None, out=None, workdir=None,
            extra_args=None, log=None):
     """Run Gnomix on a query VCF and return per-query-haplotype posterior Segment tracks.
 
@@ -37,8 +81,12 @@ def gnomix(query_vcf, ref_vcf=None, *, sample_map, genetic_map=None, chromosome=
     phase : bool, optional
         gnomix's ``<phase>`` flag (Gnofix phasing-error correction). Default ``False`` — inputs
         are taken as already phased.
+    config : str, optional
+        Path to a gnomix ``config.yaml``. Defaults to the one shipped in the gnomix repo
+        (``<GNOMIX_DIR>/config.yaml``). gnomix otherwise reads ``./config.yaml`` from its working
+        directory, which our temp workdir does not have — so it is staged there (see below).
     extra_args : iterable[str], optional
-        Extra positional arguments appended after the standard gnomix arguments (e.g. a config).
+        Extra positional arguments appended after the standard gnomix arguments.
 
     Returns
     -------
@@ -51,9 +99,11 @@ def gnomix(query_vcf, ref_vcf=None, *, sample_map, genetic_map=None, chromosome=
     contig = str(chromosome) if chromosome is not None else panel.contig
     out_dir = os.path.join(workdir, "gnomix_out")
 
+    # Build the gnomix positional args (train-from-reference unless a pretrained model is given).
     if model is not None:
         C.require(model, "pretrained gnomix model .pkl not found")
         args = [qv, out_dir, contig, str(bool(phase)), model]
+        gmap = None
     else:
         gmap = genetic_map
         if gmap is None:
@@ -62,6 +112,30 @@ def gnomix(query_vcf, ref_vcf=None, *, sample_map, genetic_map=None, chromosome=
         args = [qv, out_dir, contig, str(bool(phase)), gmap, rv, sm]
     if extra_args:
         args += list(extra_args)
+
+    # gnomix hardcodes its config to ``./config.yaml`` relative to its cwd (only train mode can
+    # override it via a trailing arg; pre-trained mode cannot at all). We run with ``cwd=workdir``
+    # (a fresh temp dir), so stage a config there to satisfy both modes. gnomix's shipped configs
+    # target whole chromosomes: their smoother asserts ``W >= 2*smooth_size`` windows, where
+    # ``W ≈ total_cM / window_size_cM``, which fails on the benchmark's short regions. So when the
+    # default config is used, scale ``window_size_cM`` / ``smooth_size`` to the region length.
+    src_cfg = config or os.path.join(C.GNOMIX_DIR, "config.yaml")
+    C.require(src_cfg, "gnomix config.yaml not found — pass config= or set TSPAINT_GNOMIX_DIR")
+    staged_cfg = os.path.join(workdir, "config.yaml")
+    if config is None and gmap is not None:
+        import yaml
+        with open(src_cfg) as fh:
+            cfg_dict = yaml.safe_load(fh)
+        total_cM = _genetic_length_cM(gmap)
+        _fit_config(cfg_dict, total_cM)
+        with open(staged_cfg, "w") as fh:
+            yaml.safe_dump(cfg_dict, fh, sort_keys=False)
+        if log:
+            m = cfg_dict["model"]
+            log(f"gnomix: fitted config to a {total_cM:.2f} cM region "
+                f"(window_size_cM={m['window_size_cM']:.4g}, smooth_size={m['smooth_size']})")
+    elif os.path.abspath(src_cfg) != os.path.abspath(staged_cfg):
+        shutil.copyfile(src_cfg, staged_cfg)
 
     if not C.tool_available("gnomix"):
         raise FileNotFoundError(

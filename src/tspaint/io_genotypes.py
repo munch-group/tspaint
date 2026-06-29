@@ -73,7 +73,9 @@ def source_kind(source):
 
 
 def resolve_variants(source):
-    """Normalise a non-``ts`` ``source`` (VCF or VCF Zarr) into :class:`Variants`."""
+    """Normalise a ``source`` into :class:`Variants` (a :class:`Variants` is returned as-is)."""
+    if isinstance(source, Variants):
+        return source
     kind = source_kind(source)
     if kind == "vcf":
         return variants_from_vcf(source)

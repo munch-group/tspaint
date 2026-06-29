@@ -1,0 +1,14 @@
+# Toolchain env for building SINGER from source — dropped into the clone by `tspaint install
+# singer` (our own glue; NOT in the upstream popgenmethods/SINGER repo). SINGER compiles with a
+# single C++17 glob (`$CXX -std=c++17 -O3 *.cpp -o singer`, no external libs), so the only
+# dependency is a compiler; `tspaint install singer` runs the compile against this env's `$CXX`
+# and links an rpath into `$CONDA_PREFIX/lib` (works on both linux-64 and osx-arm64).
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge"]
+name = "SINGER-build"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[dependencies]
+cxx-compiler = "*"

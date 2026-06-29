@@ -17,12 +17,15 @@ ancestry**, then paints the same data with every painter and scores three metric
 
 Painters (all scored against the matching truth, so the aggregate metrics are comparable):
 
-* ``tspaint_true``  — tspaint on the **true** ARG (upper bound), scored vs the node-id truth;
-* ``tspaint``       — tspaint on a **tsinfer** ARG built from the VCFs (the fair, realistic case);
+* ``tspaint_true``   — tspaint on the **true** ARG (upper bound), scored vs the node-id truth;
+* ``tspaint``        — tspaint on a single **tsinfer** ARG from the VCFs (cheap, realistic case);
+* ``tspaint_singer`` — tspaint on a **SINGER** posterior ARG **ensemble** from the VCFs (calibrated,
+  realistic case; needs the SINGER binary — see Prerequisites);
 * ``rfmix`` / ``gnomix`` / ``salai`` / ``recombmix`` — the external tools, run from the VCFs.
 
-The last six all consume the *identical* query/reference VCFs that ``benchmark export-vcf`` writes
-from the simulation, and are scored against its hap-index truth.
+``tspaint_true`` paints the simulation ``.trees`` directly; the other six all consume the
+*identical* query/reference VCFs that ``benchmark export-vcf`` writes from the simulation, and are
+scored against its hap-index truth.
 
 Running it
 ----------
@@ -38,7 +41,10 @@ across the grid. Edit the grid / sizes / resources in the **CONFIG** block below
 
 Prerequisites: the external tools must be provisioned (``tspaint benchmark setup`` + the ``compare``
 pixi env for RFMix). ``PROVISION_TOOLS = True`` makes that a gwf target the tool jobs depend on; set
-it False and provision manually (then ``gwf touch SetupTools``) if you prefer.
+it False and provision manually (then ``gwf touch SetupTools``) if you prefer. The ``tspaint_singer``
+painter additionally needs the **SINGER** binary, built once by the ``InstallSinger`` target
+(``tspaint install singer`` — clones + compiles it into ``external/SINGER`` where tspaint finds it
+automatically; it is *not* part of ``tspaint benchmark setup``).
 """
 import itertools
 import os
@@ -48,9 +54,12 @@ from gwf.executors import Pixi
 
 # ============================ CONFIG (edit me) ============================
 NE = 10_000                                   # human-like effective size (all populations)
-MODELS = {"isolated": 0.0, "migration": 1e-4}  # name -> A<->B migration rate between split & admixture
-T_SPLIT = [5_000, 10_000, 20_000]      # source-split times (generations ago)
-T_ADMIX = [100, 500, 1_000]                   # admixture-pulse times (generations ago); must be < T_split
+# MODELS = {"isolated": 0.0, "migration": 1e-4}  # name -> A<->B migration rate between split & admixture
+MODELS = {"isolated": 0.0}  # name -> A<->B migration rate between split & admixture
+# T_SPLIT = [5_000, 10_000, 20_000]      # source-split times (generations ago)
+T_SPLIT = [10_000]      # source-split times (generations ago)
+# T_ADMIX = [100, 500, 1_000]                   # admixture-pulse times (generations ago); must be < T_split
+T_ADMIX = [500]                   # admixture-pulse times (generations ago); must be < T_split
 SEEDS = [1, 2]                                # replicate simulations per grid point
 F_A = 0.5                                     # admixture fraction from source A
 
@@ -61,16 +70,23 @@ RECOMB = 1e-8                                 # recombination rate (per bp per g
 MU = 1.25e-8                                  # mutation rate (per bp per generation)
 DEADBAND = 0.4                                # confidence dead-band for the fragmentation metric
 
+# tspaint_singer painter (tspaint over a SINGER posterior ARG ensemble). Needs the SINGER binary
+# (set TSPAINT_SINGER) — it is NOT provisioned by `tspaint benchmark setup`.
+N_SINGER = 100                                # SINGER posterior samples (post-burn-in) to paint
+SINGER_THIN = 20                              # SINGER MCMC thinning interval
+SINGER_BURNIN = 20                            # SINGER burn-in samples discarded
+
 RESULTS = "results"                           # output root (relative to this file)
 PROVISION_TOOLS = True                        # build a SetupTools target the external tools depend on
 PAINT_CORES = 4                               # cores per painting job (tspaint uses them via -j)
 
-# Painters: the two tspaint variants plus the external comparators.
+# Painters: tspaint on the true ARG (upper bound), on a single tsinfer ARG and on a SINGER
+# posterior ensemble (the two observable substrates), plus the external comparators.
 EXTERNAL = ["rfmix", "gnomix", "salai", "recombmix"]
-PAINTERS = ["tspaint_true", "tspaint"] + EXTERNAL
+PAINTERS = ["tspaint_true", "tspaint", "tspaint_singer"] + EXTERNAL
 # =========================================================================
 
-gwf = Workflow(defaults={"cores": 1, "memory": "4g", "walltime": "01:00:00"}, executor=Pixi())
+gwf = Workflow(defaults={"cores": 1, "memory": "4g", "walltime": "01:00:00", 'account': 'xy-drive'}, executor=Pixi())
 
 
 def _name(model, ts, ta, seed):
@@ -92,6 +108,14 @@ tspaint benchmark setup
 touch {setup_sentinel}
 """
 tool_dep = [setup_sentinel] if PROVISION_TOOLS else []
+
+# SINGER is built from source (clone + C++17 compile) where tspaint finds it by default; the
+# tspaint_singer painter depends on it. Gated by PROVISION_TOOLS like SetupTools.
+singer_binary = os.path.join("external", "SINGER", "SINGER", "SINGER", "singer")
+if PROVISION_TOOLS:
+    gwf.target("InstallSinger", inputs=[], outputs=[singer_binary],
+               cores=4, memory="8g", walltime="02:00:00") << "tspaint install singer\n"
+singer_dep = [singer_binary] if PROVISION_TOOLS else []
 
 # --- the grid -----------------------------------------------------------------------------
 metrics_jsons = []
@@ -135,11 +159,22 @@ tspaint benchmark export-vcf {trees} --labels {labels} -o {d}
             paint_cmd = f"tspaint paint {trees} --labels {labels} -j {PAINT_CORES} -o {out_npz}"
             paint_opts = {"cores": PAINT_CORES, "memory": "16g", "walltime": "04:00:00"}
         elif painter == "tspaint":
-            # tspaint on a tsinfer ARG built from the VCFs (the fair, realistic case).
+            # tspaint on a single tsinfer ARG built from the VCFs (the cheap, realistic case).
             paint_inputs, truth = [qvcf, rvcf, smap], truth_hap
-            paint_cmd = (f"tspaint benchmark tspaint --vcf {qvcf} --ref-vcf {rvcf} "
-                         f"--sample-map {smap} -o {out_npz}")
+            paint_cmd = (f"tspaint benchmark tspaint --arg tsinfer --vcf {qvcf} --ref-vcf {rvcf} "
+                         f"--sample-map {smap} -j {PAINT_CORES} -o {out_npz}")
             paint_opts = {"cores": PAINT_CORES, "memory": "16g", "walltime": "06:00:00"}
+        elif painter == "tspaint_singer":
+            # tspaint over a SINGER posterior ARG ensemble (the calibrated, realistic case;
+            # CLAUDE.md §7.4). Depends on the SINGER binary built by InstallSinger. SINGER's MCMC
+            # over the whole panel × N_SINGER samples is the slow step (hence the long walltime).
+            paint_inputs, truth = [qvcf, rvcf, smap] + singer_dep, truth_hap
+            paint_cmd = (f"tspaint benchmark tspaint --arg singer "
+                         f"--n-singer {N_SINGER} --thin {SINGER_THIN} --burn-in {SINGER_BURNIN} "
+                         f"--ne {NE} --mu {MU} --recomb-rate {RECOMB} "
+                         f"--vcf {qvcf} --ref-vcf {rvcf} --sample-map {smap} "
+                         f"-j {PAINT_CORES} -o {out_npz}")
+            paint_opts = {"cores": PAINT_CORES, "memory": "32g", "walltime": "24:00:00"}
         else:                                      # external comparator (needs the tools provisioned)
             paint_inputs, truth = [qvcf, rvcf, smap] + tool_dep, truth_hap
             gens = f" --generations {ta}" if painter == "rfmix" else ""

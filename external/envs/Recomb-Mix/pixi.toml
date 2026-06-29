@@ -5,8 +5,13 @@ name = "Recomb-Mix"
 platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
+# The upstream repo commits a prebuilt `RecombMix_v0.7` (linked against its own boost, non-exec).
+# Delete it first and force the compile to ALWAYS run (no `inputs`/`outputs`, else pixi treats the
+# committed binary as an up-to-date output and skips the build) so we link against THIS env's boost
+# with an rpath into the env — otherwise it fails at runtime with `libboost_iostreams.so... not
+# found`. g++ emits an executable, so no separate chmod is needed.
 [tasks]
-build = { cmd = "$CXX -std=c++17 -fopenmp -Os -I$CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib src/RecombMix.cpp -lboost_iostreams -o RecombMix_v0.7", inputs = ["src/RecombMix.cpp"], outputs = ["RecombMix_v0.7"] }
+build = "rm -f RecombMix_v0.7 && $CXX -std=c++17 -fopenmp -Os -I$CONDA_PREFIX/include -L$CONDA_PREFIX/lib -Wl,-rpath,$CONDA_PREFIX/lib src/RecombMix.cpp -lboost_iostreams -o RecombMix_v0.7"
 
 [dependencies]
 cxx-compiler = "*"

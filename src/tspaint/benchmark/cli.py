@@ -134,14 +134,41 @@ def recombmix(query_vcf, ref_vcf, sample_map, chromosome, out, genetic_map, reco
 
 @benchmark.command()
 @_base_opts
+@click.option("--arg", type=click.Choice(["tsinfer", "singer"]), default="tsinfer",
+              show_default=True,
+              help="ARG front end: a single tsinfer tree sequence, or a SINGER posterior ensemble.")
 @click.option("--smooth/--no-smooth", default=True, show_default=True,
               help="horizontal BP smoother (recommended on inferred ARGs).")
 @click.option("--estimate-pi", is_flag=True, help="re-estimate pi (default: hold uniform).")
-def tspaint(query_vcf, ref_vcf, sample_map, chromosome, out, smooth, estimate_pi):
-    """tspaint itself, VCF-native: infer an ARG (tsinfer) from the VCFs and paint (soft posteriors)."""
+@click.option("--max-iter", type=int, default=12, show_default=True, help="EM iterations.")
+@click.option("-j", "--cores", "n_jobs", type=int, default=None,
+              help="worker processes (default: SLURM allocation else 1).")
+@click.option("--n-singer", type=int, default=100, show_default=True,
+              help="SINGER ensemble size = post-burn-in samples to paint (--arg singer).")
+@click.option("--thin", type=int, default=20, show_default=True,
+              help="SINGER MCMC thinning interval (--arg singer).")
+@click.option("--burn-in", type=int, default=20, show_default=True,
+              help="SINGER burn-in samples to discard (--arg singer).")
+@click.option("--ne", type=float, default=1e4, show_default=True,
+              help="effective population size passed to SINGER (--arg singer).")
+@click.option("--mu", type=float, default=1.25e-8, show_default=True,
+              help="per-base mutation rate passed to SINGER (--arg singer).")
+@click.option("--recomb-rate", type=float, default=1e-8, show_default=True,
+              help="per-base recombination rate passed to SINGER (--arg singer).")
+@click.option("--singer-seed", type=int, default=42, show_default=True,
+              help="SINGER base random seed (--arg singer).")
+def tspaint(query_vcf, ref_vcf, sample_map, chromosome, out, arg, smooth, estimate_pi, max_iter,
+            n_jobs, n_singer, thin, burn_in, ne, mu, recomb_rate, singer_seed):
+    """tspaint itself, VCF-native: infer an ARG (tsinfer or a SINGER ensemble) and paint.
+
+    ``--arg singer`` paints a SINGER posterior ARG ensemble (``--n-singer`` post-burn-in samples)
+    and averages the per-position posteriors; it needs the SINGER binary (``TSPAINT_SINGER``).
+    """
     from .. import benchmark as bm
-    bm.tspaint(query_vcf, ref_vcf, sample_map=sample_map, smooth=smooth,
-               estimate_pi=estimate_pi, out=out, log=_echo)
+    bm.tspaint(query_vcf, ref_vcf, sample_map=sample_map, arg=arg, smooth=smooth,
+               estimate_pi=estimate_pi, max_iter=max_iter, n_jobs=n_jobs, n_singer=n_singer,
+               thin=thin, burn_in=burn_in, Ne=ne, mutation_rate=mu, recombination_rate=recomb_rate,
+               singer_seed=singer_seed, out=out, log=_echo)
 
 
 @benchmark.command("export-vcf")
