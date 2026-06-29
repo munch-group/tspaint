@@ -48,7 +48,7 @@ testpaths = ["tests"]
 markers = ["slow: heavy end-to-end / ARG-inference tests (deselect with -m 'not slow')"]
 
 [tool.pixi.workspace]
-channels = ["conda-forge", "munch-group"]
+channels = ["conda-forge", "munch-group", "bioconda"]
 platforms = ["osx-arm64",  "linux-64"]
 
 [tool.pixi.dependencies]
@@ -78,6 +78,7 @@ tsinfer = ">=0.5.1,<0.6"
 demesdraw = ">=0.4.1,<0.5"
 tszip = ">=0.3.1,<0.4"
 matplotlib = "*"
+bio2zarr = ">=0.1.7,<0.2"
 
 [tool.pixi.pypi-dependencies]
 tspaint = { path = ".", editable = true }
