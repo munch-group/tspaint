@@ -2,426 +2,426 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/fragmentation.html</loc>
-    <lastmod>2026-06-29T11:41:51.466Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.071Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/showcase.html</loc>
-    <lastmod>2026-06-29T11:41:51.472Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.078Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/neanderthal_power.html</loc>
-    <lastmod>2026-06-29T11:41:51.468Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.073Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/painting.html</loc>
-    <lastmod>2026-06-29T11:41:51.468Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.074Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/dating.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/code_paths.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/assumptions.html</loc>
-    <lastmod>2026-06-29T11:41:51.472Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.078Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/overview.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.hard_segments.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/sim.simulate_admixture_with_ghost.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.singer_ensemble_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/index.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/branch_stats.branch_expected_stats.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.flicker_vs_true_boundaries.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/diagnostics.node_persistence.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.map_truth.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.scaling_sweep.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.per_base_accuracy.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.singer.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/model.query_emission.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/bp.bp_smooth_track.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.reliability_curve.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.switch_density.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/em.m_step_pi.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/reference_qc.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/sim.admixture_demography_with_ghost.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/detect_ghost.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/ensemble.merge_posterior_tables.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/archaic.ArchaicResult.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.posterior_at.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/model.tip_emission.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.write_haploid_vcf.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/accumulate.accumulate_sufficient_statistics.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.make_Q_of_cell.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.composite_transition.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/pruning.prune_root.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/diagnostics.persistence_summary.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/simulate_admixture.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/diagnostics.edge_span_summary.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/local_ancestry_truth.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/introgression.foreignness_track.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/RateThroughTime.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/make_generator_2state.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/foreign_tracts.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/detect_archaic.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.loo_posterior_table.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io_genotypes.Variants.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.check_persistence.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.impure_reference_sweep.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/introgression.GhostResult.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/compare.score_painter.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/ensemble.MergedSegment.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/sim.simulate_admixture_impure_refs.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.relate.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/model.validate_generator.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/Painting.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/model.transition_matrix.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/ranked.ranked_tree_sequence.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/sim.admixture_demography.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/em.m_step_Q.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/bp.bp_paint.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.branch_cell_stats.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/compare.nearest_reference_paint.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/FitResult.html</loc>
-    <lastmod>2026-06-29T11:41:51.460Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.065Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/fit_rate_through_time.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.add_mutations.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.fragmentation_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/introgression.ReferenceQC.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/pruning.prune_tree.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.paint_qt.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/em.build_emissions.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.tract_boundary_error.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/model.stationary_distribution.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/fit.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.mean_confidence.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/bp.bp_smooth.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/bp.bp_vs_deadband_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.fit_poisson_spline.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.balanced_accuracy.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/paint.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/io.tsinfer.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.log_time_grid.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.impure_reference_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.posterior_table.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/compare.tspaint_paint.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.rate_through_time_binned.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.breakpoint_precision_recall.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/compare.rfmix_paint.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.split_branch.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.directional_rate_splines.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.age_sweep.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.arg_ensemble_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.462Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/em.m_step_w.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/validate.breakpoint_flicker.html</loc>
-    <lastmod>2026-06-29T11:41:51.464Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.069Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.missing_info_mask.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/compare.head_to_head.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/dating.select_lambda_gcv.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/experiments.admixture_experiment.html</loc>
-    <lastmod>2026-06-29T11:41:51.461Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.067Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/api/output.Segment.html</loc>
-    <lastmod>2026-06-29T11:41:51.463Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.068Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/results.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/model.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/pages/inference.html</loc>
-    <lastmod>2026-06-29T11:41:51.473Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.079Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/introgression_qc.html</loc>
-    <lastmod>2026-06-29T11:41:51.466Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.071Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/bp_smoother.html</loc>
-    <lastmod>2026-06-29T11:41:51.465Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.070Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/dating.html</loc>
-    <lastmod>2026-06-29T11:41:51.465Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.071Z</lastmod>
   </url>
   <url>
     <loc>https://munch-group.github.io/tspaint/notebooks/calibration.html</loc>
-    <lastmod>2026-06-29T11:41:51.465Z</lastmod>
+    <lastmod>2026-06-29T15:06:53.071Z</lastmod>
   </url>
 </urlset>
