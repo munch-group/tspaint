@@ -49,7 +49,7 @@ from gwf.executors import Pixi
 # ============================ CONFIG (edit me) ============================
 NE = 10_000                                   # human-like effective size (all populations)
 MODELS = {"isolated": 0.0, "migration": 1e-4}  # name -> A<->B migration rate between split & admixture
-T_SPLIT = [2_000, 5_000, 10_000]              # source-split times (generations ago)
+T_SPLIT = [5_000, 10_000, 20_000]      # source-split times (generations ago)
 T_ADMIX = [100, 500, 1_000]                   # admixture-pulse times (generations ago); must be < T_split
 SEEDS = [1, 2]                                # replicate simulations per grid point
 F_A = 0.5                                     # admixture fraction from source A
