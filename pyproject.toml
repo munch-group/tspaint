@@ -48,7 +48,7 @@ testpaths = ["tests"]
 markers = ["slow: heavy end-to-end / ARG-inference tests (deselect with -m 'not slow')"]
 
 [tool.pixi.workspace]
-channels = ["conda-forge", "munch-group", "bioconda"]
+channels = ["conda-forge", "munch-group", "bioconda", "gwforg"]
 platforms = ["osx-arm64",  "linux-64"]
 
 [tool.pixi.dependencies]
