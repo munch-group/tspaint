@@ -4,7 +4,7 @@ channels = ["conda-forge", "munch-group"]
 name = "SALAI-Net"
 # osx-arm64 only: the exact pytorch/python pins below are the combination proven to solve here;
 # for linux-64 add it and adjust torch/torchvision to versions with conda-forge linux builds.
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 # scikit-allel hard-imports dask.array, so dask must be present AND numpy-2 compatible. The only
