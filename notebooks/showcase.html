@@ -654,7 +654,7 @@ dict
 <tr class="odd">
 <td>Provenances</td>
 <td>1</td>
-<td>835 Bytes</td>
+<td>843 Bytes</td>
 <td style="text-align: center;"></td>
 </tr>
 <tr class="even">
@@ -688,7 +688,7 @@ dict
 </thead>
 <tbody>
 <tr class="odd">
-<td>27 June, 2026 at 07:15:45 PM</td>
+<td>27 June, 2026 at 09:13:16 PM</td>
 <td>tsinfer</td>
 <td>0.5.1</td>
 <td>infer</td>
@@ -853,10 +853,10 @@ list
 <summary>
 dict
 </summary>
-elapsed_time: 2.269840250024572<br>
-user_time: 2.013514496<br>
-sys_time: 0.214531264<br>
-max_memory: 462405632<br>
+elapsed_time: 2.3068613328505307<br>
+user_time: 1.9613798400000002<br>
+sys_time: 0.231404736<br>
+max_memory: 431177728<br>
 
 </details>
 </div>
@@ -1151,7 +1151,7 @@ SINGER (one posterior sample)     balanced acc 0.997   mean confidence 0.998</co
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>rtt <span class="op">=</span> paint_singer.rate_through_time(n_iter<span class="op">=</span><span class="dv">10</span>)     <span class="co"># reuses the painting's fit; posteriors untouched</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code>q_AB(t)</code> and <code>q_BA(t)</code> vs (backward) time on a log axis. The rise marks the divergence epoch; recent time carries ~no cross-ancestry rate. (Convention: a jump is parent→child = old→young = forward in time, so a <em>backward</em>-time A→B admixture shows in <code>q_BA</code>.)</p>
-<div id="cell-fig-dating-profile" class="cell">
+<div id="cell-fig-dating-profile" class="cell" data-execution_count="17">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>rtt.plot(ax<span class="op">=</span>ax)</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>ax.axvline(T_split, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="ss">f"true split (</span><span class="sc">{</span>T_split<span class="sc">}</span><span class="ss">)"</span>)</span>
@@ -1162,7 +1162,7 @@ SINGER (one posterior sample)     balanced acc 0.997   mean confidence 0.998</co
 <div id="fig-dating-profile" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-dating-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<a href="showcase_files/figure-html/fig-dating-profile-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs backward time: ~0 more recent than the population split, rising once cross-ancestry sharing becomes possible. The dashed line is the true split time."><img src="showcase_files/figure-html/fig-dating-profile-output-1.png" width="609" height="387" class="figure-img"></a>
+<a href="showcase_files/figure-html/fig-dating-profile-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs backward time: ~0 more recent than the population split, rising once cross-ancestry sharing becomes possible. The dashed line is the true split time."><img src="showcase_files/figure-html/fig-dating-profile-output-1.png" width="489" height="357" class="figure-img"></a>
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-dating-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs backward time: ~0 more recent than the population split, rising once cross-ancestry sharing becomes possible. The dashed line is the true split time.
@@ -1183,15 +1183,27 @@ Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs b
 <p>Use SINGER’s posterior for a confidence estimate in dating:</p>
 <div id="bf7c0642" class="cell" data-execution_count="19">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>er <span class="op">=</span> paint_singer_posterior.rate_through_time()        <span class="co"># ensemble painting</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-error">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ModuleNotFoundError</span>                       Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[19]</span><span class="ansi-green-fg">, line 1</span>
+<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">1</span> er = <span class="ansi-yellow-bg">paint_singer_posterior</span><span class="ansi-yellow-bg">.</span><span class="ansi-yellow-bg">rate_through_time</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>        <span style="font-style:italic;color:rgb(95,135,135)"># ensemble painting</span>
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/tspaint/api.py:184</span>, in <span class="ansi-cyan-fg">rate_through_time</span><span class="ansi-blue-fg">(self, edges, n_jobs, **kwargs)</span>
+
+<span class="ansi-red-fg">ModuleNotFoundError</span>: No module named 'tspaint.parallel'</pre>
 </div>
-<div id="6a4ab7c5" class="cell" data-execution_count="20">
+</div>
+</div>
+<div id="6a4ab7c5" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># point estimate (median over members), generations agoer.split_time_ci(level=0.95)             # (lo, hi) — the ARG-uncertainty band on the split</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>er.split_time()                            </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="20">
 <pre><code>3807.710098689057</code></pre>
 </div>
 </div>
-<div id="f2ea8a30" class="cell" data-execution_count="21">
+<div id="f2ea8a30" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># er.split_times                           # (M,) per-member estimates</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co"># er.members                               # the M RateThroughTime profiles</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>er.q_AB, er.q_BA, er.centers             <span class="co"># ensemble-mean rate profile</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1228,7 +1240,7 @@ Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs b
         7.65411625e+03, 9.65988850e+03, 1.21912763e+04, 1.53860179e+04]))</code></pre>
 </div>
 </div>
-<div id="2818e276" class="cell" data-execution_count="22">
+<div id="2818e276" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.2</span>, <span class="dv">4</span>))</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>er.plot(ax<span class="op">=</span>ax)</span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>ax.axvline(T_split, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="ss">f"true split (</span><span class="sc">{</span>T_split<span class="sc">}</span><span class="ss">)"</span>)</span>
@@ -1243,7 +1255,7 @@ Figure&nbsp;1: Directional cross-ancestry transition rates q_AB(t), q_BA(t) vs b
 </div>
 </div>
 </div>
-<div id="d812a508" class="cell" data-execution_count="30">
+<div id="d812a508" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>paint_singer.save(<span class="st">"paint_singer.npz"</span>)</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>paint_tsinfer.save(<span class="st">"paint_tsinfer.npz"</span>)</span>
