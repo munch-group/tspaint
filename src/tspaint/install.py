@@ -15,7 +15,7 @@ import os
 import shutil
 import subprocess
 
-from .io_singer import singer_binary_path, singer_install_dir
+from .io_singer import singer_binary_path, singer_install_dir, repo_root
 
 __all__ = ["install_singer", "SINGER_REPO", "SINGER_COMMIT"]
 
@@ -26,9 +26,12 @@ _PIXI = os.environ.get("TSPAINT_PIXI", "pixi")
 
 
 def _env_recipe():
-    """The tracked pixi toolchain recipe dropped into the clone (``external/envs/SINGER``)."""
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    return os.path.join(repo_root, "external", "envs", "SINGER", "pixi.toml")
+    """The tracked pixi toolchain recipe dropped into the clone (``external/envs/SINGER``).
+
+    Resolved via :func:`tspaint.io_singer.repo_root` so it works whether tspaint is installed
+    editable or as a non-editable copy in site-packages (run from the repo either way).
+    """
+    return os.path.join(repo_root(), "external", "envs", "SINGER", "pixi.toml")
 
 
 def _run(cmd, *, cwd=None, log):

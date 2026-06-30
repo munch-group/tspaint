@@ -432,7 +432,8 @@ def setup_inputs(query_vcf, ref_vcf, sample_map, workdir, *, sample_map_header=N
 
 # --- subprocess launchers (each tool in its own env; all env-overridable) -------------------
 
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from ..io_singer import repo_root as _repo_root   # robust to editable vs non-editable installs
+_REPO_ROOT = _repo_root()
 _PIXI = os.environ.get("TSPAINT_PIXI", "pixi")
 
 # The git-only comparators are cloned into external/<dir> by `tspaint benchmark setup`

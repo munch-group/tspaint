@@ -33,14 +33,36 @@ import numpy as np
 
 __all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences",
            "singer_window", "build_merge_table", "run_merge_arg",
-           "singer_install_dir", "singer_binary_path"]
+           "singer_install_dir", "singer_binary_path", "repo_root"]
+
+
+def repo_root():
+    """Locate the tspaint repo root (which holds ``external/`` and the build recipes).
+
+    Robust to how the package is installed: an **editable** install resolves it from this file
+    (cwd-independent); a **non-editable** copy in ``site-packages`` (which a ``pip install .`` can
+    create, clobbering the editable ``.pth``) instead resolves it from the current working
+    directory — so ``tspaint install singer`` / ``benchmark setup``, run from the repo, still find
+    ``external/`` rather than a bogus path inside the env. Searches up for the ``external/tools.ini``
+    marker, falling back to the legacy ``<this>/../../..`` guess.
+    """
+    marker = os.path.join("external", "tools.ini")
+    for start in (os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+        d = os.path.abspath(start)
+        while True:
+            if os.path.exists(os.path.join(d, marker)):
+                return d
+            parent = os.path.dirname(d)
+            if parent == d:
+                break
+            d = parent
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _tools_dir():
     """Clone root for external tools (``$TSPAINT_TOOLS_DIR`` or ``<repo>/external``)."""
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.expanduser(
-        os.environ.get("TSPAINT_TOOLS_DIR", os.path.join(repo_root, "external")))
+        os.environ.get("TSPAINT_TOOLS_DIR", os.path.join(repo_root(), "external")))
 
 
 def singer_install_dir():
