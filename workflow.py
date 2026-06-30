@@ -63,16 +63,16 @@ T_ADMIX = [500]                   # admixture-pulse times (generations ago); mus
 SEEDS = [1, 2]                                # replicate simulations per grid point
 F_A = 0.5                                     # admixture fraction from source A
 
-N_ADMIX = 20                                  # admixed (query) individuals
-N_REF = 20                                    # reference individuals per source
-LENGTH = 10_000_000                           # simulated sequence length (bp)
+N_ADMIX = [8]                                  # admixed (query) individuals
+N_REF = [8]                                    # reference individuals per source
+LENGTH = 5_000_000                           # simulated sequence length (bp)
 RECOMB = 1e-8                                 # recombination rate (per bp per generation)
 MU = 1.25e-8                                  # mutation rate (per bp per generation)
 DEADBAND = 0.4                                # confidence dead-band for the fragmentation metric
 
 # tspaint_singer painter (tspaint over a SINGER posterior ARG ensemble). Needs the SINGER binary
 # (set TSPAINT_SINGER) — it is NOT provisioned by `tspaint benchmark setup`.
-N_SINGER = 100                                # SINGER posterior samples (post-burn-in) to paint
+N_SINGER = 3                                  # SINGER posterior samples (post-burn-in) to paint
 SINGER_THIN = 20                              # SINGER MCMC thinning interval
 SINGER_BURNIN = 20                            # SINGER burn-in samples discarded
 
@@ -89,14 +89,14 @@ PAINTERS = ["tspaint_true", "tspaint", "tspaint_singer"] + EXTERNAL
 gwf = Workflow(defaults={"cores": 1, "memory": "4g", "walltime": "01:00:00", 'account': 'xy-drive'}, executor=Pixi())
 
 
-def _name(model, ts, ta, seed):
+
+def _name(model, ts, ta, nr, na, seed):
     """A target-name-safe scenario id (letters/digits/underscores only)."""
-    return f"{model}_Ts{ts}_Ta{ta}_s{seed}"
+    return f"{model}_Ts{ts}_Ta{ta}_Nr{nr}_Na{na}_s{seed}"
 
 
-def _dir(model, ts, ta, seed):
-    return os.path.join(RESULTS, model, f"Ts{ts}_Ta{ta}", f"s{seed}")
-
+def _dir(model, ts, ta, nr, na, seed):
+    return os.path.join(RESULTS, model, f"Nr{nr}_Na{na}_Ts{ts}_Ta{ta}", f"s{seed}")
 
 # --- one-time provisioning of the external tools -------------------------------------------
 setup_sentinel = os.path.join("external", ".provisioned")
@@ -119,12 +119,12 @@ singer_dep = [singer_binary] if PROVISION_TOOLS else []
 
 # --- the grid -----------------------------------------------------------------------------
 metrics_jsons = []
-for model, ts, ta, seed in itertools.product(MODELS, T_SPLIT, T_ADMIX, SEEDS):
+for model, ts, ta, nr, na, seed in itertools.product(MODELS, T_SPLIT, T_ADMIX, N_REF, N_ADMIX, SEEDS):
     if ta >= ts:                                  # need T_admix < census < T_split
         continue
     mig = MODELS[model]
-    d = _dir(model, ts, ta, seed)
-    sid = _name(model, ts, ta, seed)
+    d = _dir(model, ts, ta, nr, na, seed)
+    sid = _name(model, ts, ta, nr, na, seed)
 
     trees = f"{d}/sim.trees"
     labels = f"{d}/labels.json"
@@ -136,7 +136,7 @@ for model, ts, ta, seed in itertools.product(MODELS, T_SPLIT, T_ADMIX, SEEDS):
     gwf.target(f"Sim_{sid}", inputs=[], outputs=[trees, labels, truth_nodes],
                memory="8g", walltime="01:00:00") << f"""
 mkdir -p {d}
-tspaint simulate --n-admix {N_ADMIX} --n-ref {N_REF} --length {LENGTH} --recomb-rate {RECOMB} \
+tspaint simulate --n-admix {na} --n-ref {nr} --length {LENGTH} --recomb-rate {RECOMB} \
     --ploidy 2 --seed {seed} --ne {NE} --t-admix {ta} --t-split {ts} --f-a {F_A} \
     --migration-rate {mig} --mutate --mu {MU} \
     -o {trees} --labels-out {labels} --truth {truth_nodes}
@@ -157,7 +157,7 @@ tspaint benchmark export-vcf {trees} --labels {labels} -o {d}
             # many marginal trees of the full ARG.
             paint_inputs, truth = [trees, labels], truth_nodes
             paint_cmd = f"tspaint paint {trees} --labels {labels} -j {PAINT_CORES} -o {out_npz}"
-            paint_opts = {"cores": PAINT_CORES, "memory": "16g", "walltime": "04:00:00"}
+            paint_opts = {"cores": PAINT_CORES, "memory": "16g", "walltime": "24:00:00"}
         elif painter == "tspaint":
             # tspaint on a single tsinfer ARG built from the VCFs (the cheap, realistic case).
             paint_inputs, truth = [qvcf, rvcf, smap], truth_hap
