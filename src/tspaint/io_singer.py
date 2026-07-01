@@ -31,7 +31,9 @@ import warnings
 
 import numpy as np
 
-__all__ = ["singer", "write_haploid_vcf", "singer_tree_sequences",
+from .ids import attach_sample_ids
+
+__all__ = ["singer", "singer_windowed", "write_haploid_vcf", "singer_tree_sequences",
            "singer_window", "build_merge_table", "run_merge_arg",
            "singer_install_dir", "singer_binary_path", "repo_root"]
 
@@ -172,6 +174,20 @@ def _write_singer_vcf(source, prefix, sequence_length=None):
     return int(sequence_length or v.sequence_length)
 
 
+def _source_sample_ids(source):
+    """Resolve ``(source, sample_names, ploidy)`` for id-stamping the output tree sequences.
+
+    A VCF / VCF-Zarr / :class:`~tspaint.io_genotypes.Variants` source is parsed once into a
+    ``Variants`` and returned (so the write step reuses it — no second parse); a ``ts`` source
+    carries no VCF sample names, so ``(source, None, 1)``.
+    """
+    from .io_genotypes import source_kind, resolve_variants
+    if source_kind(source) == "ts":
+        return source, None, 1
+    v = resolve_variants(source)
+    return v, v.sample_names, v.ploidy
+
+
 def _singer_indices(out_prefix):
     """The MCMC sample indices SINGER wrote at ``{out_prefix}_nodes_<i>.txt`` (sorted)."""
     return sorted(int(f.split("_nodes_")[1].split(".txt")[0])
@@ -200,10 +216,26 @@ def _run_singer(prefix, out, *, start, end, Ne, mutation_rate, recombination_rat
         cmd = base + (["-debug"] if k > 0 else []) + ["-seed", str(sd)]
         last = subprocess.run(cmd, capture_output=True, text=True)
         if last.returncode == 0:
-            break
+            return _singer_indices(out)
+        if last.returncode == -11:        # SIGSEGV: a hard crash inside SINGER, not a numerical
+            break                         # edge case fresh seeds can dodge — don't burn 50 retries
+
+    # Failure. SINGER prints its log/errors to *stdout* (stderr is usually empty, esp. on a crash),
+    # so surface stdout, and name the signal when it was killed (negative returncode).
+    import signal
+    rc = last.returncode
+    if rc < 0:
+        try:
+            why = f"crashed ({signal.Signals(-rc).name})"
+        except ValueError:
+            why = f"was killed by signal {-rc}"
+        why += " — a SINGER-side bug on this input; reseeding cannot fix a deterministic crash"
     else:
-        raise RuntimeError(f"SINGER failed after {max_retries} retries:\n{(last.stderr or '')[-1000:]}")
-    return _singer_indices(out)
+        why = f"failed after {max_retries} retries (exit {rc})"
+    tail = (last.stdout or last.stderr or "").strip()[-1500:]
+    raise RuntimeError(
+        f"SINGER {why} on [{int(start)},{int(end)}), {n_samples} samples. SINGER's last output:\n"
+        f"{tail}\n(workarounds: a smaller -start/-end window, a newer SINGER build, or arg='tsinfer'.)")
 
 
 def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=21,
@@ -253,7 +285,10 @@ def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=21,
     -------
     list of tskit.TreeSequence
         Post-burn-in posterior samples (one per thinned MCMC sample), with sample
-        order preserved (VCF column ``i`` -> sample ``i``).
+        order preserved (VCF column ``i`` -> sample ``i``). For a VCF / VCF-Zarr / ``Variants``
+        source the sample ids are stamped onto the sample nodes
+        (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed
+        by sample-ID string as well as by node index.
 
     Raises
     ------
@@ -267,6 +302,10 @@ def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=21,
     Mirrors SINGER's ``singer_master`` retry loop: on a nonzero exit it re-invokes
     ``-debug`` with fresh seeds.
     """
+    # Resolve the source's sample ids for stamping the output. NB: keep this separate from the
+    # ``ploidy`` argument, which is SINGER's ``-ploidy`` for the *haploid* VCF (always the input's
+    # per-haplotype columns), not the source's diploidy.
+    source, names, in_ploidy = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
@@ -281,7 +320,8 @@ def singer(source, *, Ne, mutation_rate, recombination_rate, n_samples=21,
         if i < burn_in:
             continue
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
-        samples.append(_read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf))
+        arg = _read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf)
+        samples.append(attach_sample_ids(arg, names, in_ploidy))    # stamp source ids for name-keyed labels
     if len(samples) == 1:
         return samples[0]
     return samples
@@ -361,31 +401,181 @@ def build_merge_table(windows, member, *, skip_gaps=None, coords="local"):
     return rows
 
 
+def _merge_script_with_mutation_parents(script):
+    """Return a ``merge_ARG.py`` path whose multi-window builder calls ``compute_mutation_parents()``.
+
+    SINGER's ``merge_ARG.py`` has two builders: ``read_short_ARG`` calls ``compute_mutation_parents()``
+    but the multi-window ``read_long_ARG`` builds the tree sequence right after ``tables.sort()``
+    **without** it (the same omission its ``convert_to_tskit`` has), so the file-table merge crashes
+    on recurrent mutations with ``TSK_ERR_BAD_MUTATION_PARENT``. Insert the missing call at exactly
+    that spot: if the ``sort() -> tree_sequence()`` pattern is present, write a patched **temp copy**
+    (``merge_ARG.py`` imports only stdlib/numpy/tskit/tszip, so a relocated copy runs fine) and
+    return ``(patched_path, patched_path)``; otherwise return ``(script, None)``.
+    """
+    import re
+    with open(script) as f:
+        src = f.read()
+    patched, n = re.subn(
+        r"tables\.sort\(\)[ \t]*\n(\s*)ts = tables\.tree_sequence\(\)",
+        r"tables.sort()\n\g<1>tables.build_index()\n\g<1>tables.compute_mutation_parents()"
+        r"\n\g<1>ts = tables.tree_sequence()",
+        src, count=1)
+    if n == 0:
+        return script, None                       # already patched there, or an unfamiliar layout
+    fd, path = tempfile.mkstemp(prefix="merge_ARG_patched_", suffix=".py")
+    with os.fdopen(fd, "w") as f:
+        f.write(patched)
+    return path, path
+
+
 def run_merge_arg(rows, out, *, script=None, python=None):
     """Stitch per-window ARG tables into ``out`` by shelling out to SINGER's ``merge_ARG.py``.
 
     ``rows`` come from :func:`build_merge_table`. ``script`` defaults to ``DEFAULT_MERGE_ARG``
     (env ``TSPAINT_MERGE_ARG``); ``python`` to the current interpreter — note ``merge_ARG.py``
-    imports ``tszip``, so that interpreter needs ``tskit + numpy + tszip``.
+    imports ``tszip``, so that interpreter needs ``tskit + numpy + tszip``. The script is run
+    through :func:`_merge_script_with_mutation_parents`, which repairs SINGER's missing
+    ``compute_mutation_parents()`` call (else recurrent mutations abort the merge).
     """
     script = script or DEFAULT_MERGE_ARG
     python = python or sys.executable
     if not os.path.exists(script):
         raise FileNotFoundError(
             f"merge_ARG.py not found at {script}; set TSPAINT_MERGE_ARG or pass script")
+    run_script, tmp_script = _merge_script_with_mutation_parents(script)
     fd, table = tempfile.mkstemp(suffix="_file_table.txt")
     os.close(fd)
     try:
         with open(table, "w") as f:
             for (n, b, m, blk) in rows:
                 f.write(f"{n} {b} {m} {int(blk)}\n")
-        r = subprocess.run([python, script, "--file_table", table, "--output", out],
+        r = subprocess.run([python, run_script, "--file_table", table, "--output", out],
                            capture_output=True, text=True)
         if r.returncode != 0:
             raise RuntimeError(f"merge_ARG.py failed:\n{(r.stderr or '')[-2000:]}")
     finally:
         os.remove(table)
+        if tmp_script:
+            os.remove(tmp_script)
     return out
+
+
+def singer_windowed(source, *, window_size, Ne, mutation_rate, recombination_rate,
+                    n_samples=21, thin=10, burn_in=20, seed=42, ploidy=1, polar=0.5,
+                    n_jobs=None, sequence_length=None, skip_gaps=None, workdir=None,
+                    singer_bin=None, merge_arg_script=None, merge_python=None, log=None):
+    """Sample posterior ARGs for a long region on ONE machine: window SINGER, then stitch.
+
+    The single-machine analogue of the per-window × per-member cluster workflow (``workflow.py``)
+    — for a laptop, a big multi-core node, or a Jupyter notebook, with no Slurm. It
+
+    1. writes the haploid VCF **once** (any :func:`singer`-style ``source``);
+    2. runs :func:`singer_window` on each contiguous ``window_size`` window **in parallel** across
+       ``n_jobs`` worker threads (each shells out to the SINGER binary, so threads give real
+       parallelism); then
+    3. stitches every post-burn-in MCMC member across the windows into a region-length ARG with
+       SINGER's ``merge_ARG.py`` (:func:`build_merge_table` + :func:`run_merge_arg`), in parallel.
+
+    Use it instead of :func:`singer` when the region is longer than SINGER handles in one run. The
+    return value has the **same shape** as :func:`singer` (a posterior-ARG tree sequence, or a list
+    of them), so downstream code — :func:`tspaint.paint`, the ensemble merge — is unchanged.
+
+    Parameters
+    ----------
+    source : tskit.TreeSequence, str, or Variants
+        Genotypes, resolved like :func:`singer`'s ``source`` (ts / VCF / VCF-Zarr store /
+        :class:`~tspaint.io_genotypes.Variants`). Slice it first with
+        :func:`~tspaint.io_genotypes.subset_data` to restrict the region / panel.
+    window_size : float
+        Contiguous window width (bp); ``[0, L)`` is tiled into non-overlapping windows. Pick a
+        width SINGER handles comfortably (≈0.5–2 Mb) — smaller windows parallelise better but the
+        per-window ARG ignores linkage across its boundaries.
+    Ne, mutation_rate, recombination_rate, n_samples, thin, ploidy, polar, singer_bin
+        As for :func:`singer` / :func:`singer_window`. ``seed`` is offset per window
+        (``seed + window_index``) so windows are independent but the run is reproducible.
+    burn_in : int, optional
+        Leading MCMC samples to discard; members ``burn_in .. n_samples-1`` present in **every**
+        window are stitched (default 20).
+    n_jobs : int, optional
+        Worker threads for the window and merge stages (default: the SLURM / CPU core count).
+    sequence_length : float, optional
+        Override the region length ``L`` (default: the source's, or the max variant position).
+    skip_gaps : list[tuple[float, float]], optional
+        ``(lo, hi)`` regions to skip entirely (e.g. a centromere) — windows overlapping any are
+        neither run nor stitched.
+    workdir : str, optional
+        Directory for the VCF, per-window tables, and merged ``member_<i>.trees`` (default: a
+        fresh tempdir).
+    merge_arg_script, merge_python : str, optional
+        Path to ``merge_ARG.py`` and the interpreter to run it with (defaults: the SINGER install /
+        the current interpreter, which needs ``tskit + numpy + tszip``).
+    log : callable, optional
+        Progress sink (e.g. ``print``).
+
+    Returns
+    -------
+    tskit.TreeSequence or list of tskit.TreeSequence
+        The stitched posterior ARG(s) — a single tree sequence if only one member survives
+        burn-in, else the ensemble (as :func:`singer`).
+    """
+    import tskit
+    from concurrent.futures import ThreadPoolExecutor
+    from .parallel import resolve_cores
+
+    n_jobs = max(1, resolve_cores(n_jobs))
+    # Resolve sample ids for stamping; keep separate from ``ploidy`` (SINGER's -ploidy, see singer()).
+    source, names, in_ploidy = _source_sample_ids(source)
+    tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_win_")
+    os.makedirs(tmp, exist_ok=True)
+
+    # 1) one haploid VCF for every window (write once; SINGER reuses <prefix>.vcf in place).
+    prefix = os.path.join(tmp, "data")
+    L = _write_singer_vcf(source, prefix, sequence_length)
+    vcf = prefix + ".vcf"
+
+    # 2) tile [0, L) into contiguous windows; drop any that fall in a skip gap.
+    gaps = [(float(lo), float(hi)) for (lo, hi) in (skip_gaps or [])]
+    windows, w = [], 0
+    while w * window_size < L:
+        lo, hi = w * window_size, min((w + 1) * window_size, L)
+        if not any(not (hi <= glo or lo >= ghi) for (glo, ghi) in gaps):
+            windows.append((w, float(lo), float(hi), os.path.join(tmp, f"w{w}")))
+        w += 1
+    if not windows:
+        raise ValueError("no windows to run (empty region or fully covered by skip_gaps)")
+    if log:
+        log(f"SINGER: {len(windows)} window(s) × n={n_samples} over [0,{L:g}) on {n_jobs} worker(s)")
+
+    # 3) run the windows in parallel — each shells out to SINGER, so it releases the GIL.
+    def _run(win):
+        _w, s, e, pfx = win
+        return set(singer_window(vcf, start=s, end=e, out_prefix=pfx, Ne=Ne,
+                                 mutation_rate=mutation_rate, recombination_rate=recombination_rate,
+                                 n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed + _w,
+                                 polar=polar, singer_bin=singer_bin))
+    with ThreadPoolExecutor(max_workers=n_jobs) as ex:
+        idx_sets = list(ex.map(_run, windows))
+
+    # 4) members written by every window and past burn-in.
+    common = set.intersection(*idx_sets)
+    members = sorted(i for i in common if i >= burn_in)
+    if not members:
+        raise RuntimeError(
+            f"no post-burn-in MCMC members common to all {len(windows)} windows "
+            f"(n_samples={n_samples}, burn_in={burn_in}); raise n_samples or lower burn_in")
+    if log:
+        log(f"stitching {len(members)} member(s) across windows")
+
+    # 5) stitch each member across the windows (merge_ARG.py), in parallel; load the results back.
+    def _merge(member):
+        rows = build_merge_table(windows, member, coords="local")
+        out = os.path.join(tmp, f"member_{member}.trees")
+        run_merge_arg(rows, out, script=merge_arg_script, python=merge_python)
+        return out
+    with ThreadPoolExecutor(max_workers=n_jobs) as ex:
+        paths = list(ex.map(_merge, members))
+    ensemble = [attach_sample_ids(tskit.load(p), names, in_ploidy) for p in paths]  # stamp source ids
+    return ensemble[0] if len(ensemble) == 1 else ensemble
 
 
 def singer_tree_sequences(ts, **kwargs):

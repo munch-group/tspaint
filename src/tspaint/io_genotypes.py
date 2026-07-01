@@ -21,8 +21,9 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-__all__ = ["Variants", "source_kind", "resolve_variants", "variants_from_vcf",
-           "variants_from_zarr", "variant_data_from_zarr", "to_sample_data", "write_haploid_vcf"]
+__all__ = ["Variants", "source_kind", "resolve_variants", "subset_data", "variants_from_vcf",
+           "variants_from_zarr", "variant_data_from_zarr", "to_sample_data", "write_haploid_vcf",
+           "sample_names_from_zarr"]
 
 
 @dataclass
@@ -41,13 +42,19 @@ class Variants:
     sequence_length : float
         Sequence length for the inferred tree sequence.
     sample_names : list[str] or None
-        Optional haplotype/sample names (length ``H``).
+        Optional haplotype/sample names (length ``H``). For ``ploidy > 1`` these are the flattened
+        per-haplotype names ``"<sample>_<k>"`` (0-based ``k``), as produced by the readers below.
+    ploidy : int
+        Haplotypes per sample (``H = num_samples * ploidy``); ``1`` for haploid data. Lets the front
+        ends recover the base sample id from :attr:`sample_names` when stamping the tree sequence
+        (:func:`tspaint.ids.attach_sample_ids`).
     """
     positions: np.ndarray
     genotypes: np.ndarray
     alleles: list
     sequence_length: float
     sample_names: list = None
+    ploidy: int = 1
 
     @property
     def num_sites(self):
@@ -82,6 +89,98 @@ def resolve_variants(source):
     if kind == "zarr":
         return variants_from_zarr(source)
     raise ValueError(f"resolve_variants expects a VCF or zarr source, not a {kind}")
+
+
+def subset_data(source, *, start=None, end=None, samples=None):
+    """Normalise a genotype ``source`` and restrict it to a region and/or a sub-panel.
+
+    A convenience wrapper over :func:`resolve_variants` that turns any
+    :func:`~tspaint.io.singer`-style ``source`` — a :class:`tskit.TreeSequence`, a **VCF**, a
+    **VCF Zarr** store, or a :class:`Variants` — into a :class:`Variants` keeping only the sites
+    in ``[start, end)`` and the selected haplotype columns. This is the boilerplate you would
+    otherwise write before handing a slice of a chromosome (or a handful of samples) to
+    :func:`~tspaint.io.singer`, :func:`~tspaint.paint`, etc.
+
+    Parameters
+    ----------
+    source : tskit.TreeSequence, str, or Variants
+        Genotypes, resolved exactly like :func:`~tspaint.io.singer`'s ``source``. A
+        ``tsinfer.VariantData`` is **not** a valid source — pass the underlying ``.vcz`` store
+        path (the same one you gave ``VariantData``) instead.
+    start, end : float, optional
+        Keep sites with ``start <= position < end``. ``start`` defaults to 0 and ``end`` to the
+        source's sequence length. Positions are **not** shifted — genomic coordinates are
+        preserved and the returned :attr:`Variants.sequence_length` is ``end``.
+    samples : sequence or slice, optional
+        Haplotype columns to keep (default ``None`` = all). May be integer column indices, a
+        :class:`slice`, a boolean mask of length ``num_haplotypes``, or names matched against
+        :attr:`Variants.sample_names` — a name selects an exact match **or** a whole
+        diploid/polyploid sample by its base name (e.g. ``"NA12878"`` selects the
+        ``"NA12878_0"`` / ``"NA12878_1"`` columns).
+
+    Returns
+    -------
+    Variants
+        The region- and sample-restricted matrix, ready for :func:`~tspaint.io.singer` / painting.
+
+    Examples
+    --------
+    >>> from tspaint.io import singer, subset_data
+    >>> region = subset_data("chr20.vcz", start=0, end=2_000_000, samples=range(20))
+    >>> tss = singer(region, Ne=1e4, mutation_rate=1.25e-8, recombination_rate=1e-8)
+    """
+    v = _variants_from_ts(source) if source_kind(source) == "ts" else resolve_variants(source)
+
+    lo = 0.0 if start is None else float(start)
+    hi = float(v.sequence_length) if end is None else float(end)
+    site_idx = np.nonzero((v.positions >= lo) & (v.positions < hi))[0]
+    cols = _resolve_sample_columns(v, samples)
+
+    genotypes = v.genotypes[site_idx]
+    names = v.sample_names
+    if cols is not None:
+        genotypes = genotypes[:, cols]
+        names = [names[c] for c in cols] if names is not None else None
+    return Variants(positions=v.positions[site_idx], genotypes=genotypes,
+                    alleles=[v.alleles[i] for i in site_idx], sequence_length=hi,
+                    sample_names=names, ploidy=v.ploidy)
+
+
+def _variants_from_ts(ts):
+    """A biallelic :class:`Variants` view of a tree sequence (one column per sample node)."""
+    G = ts.genotype_matrix()
+    alleles = [(s.ancestral_state, s.mutations[0].derived_state if s.mutations else ".")
+               for s in ts.sites()]
+    return Variants(positions=np.asarray(ts.tables.sites.position),
+                    genotypes=np.where(G > 0, 1, 0).astype(np.int8), alleles=alleles,
+                    sequence_length=float(ts.sequence_length))
+
+
+def _resolve_sample_columns(v, samples):
+    """Resolve the ``samples`` selector to an array of haplotype-column indices (or ``None``)."""
+    if samples is None:
+        return None
+    H = v.num_haplotypes
+    if isinstance(samples, slice):
+        return np.arange(H)[samples]
+    arr = np.atleast_1d(np.asarray(samples))
+    if arr.dtype == bool:
+        if arr.shape != (H,):
+            raise ValueError(f"boolean sample mask must have length {H}, got {arr.shape[0]}")
+        return np.nonzero(arr)[0]
+    if arr.dtype.kind in ("U", "S", "O"):                     # select by name
+        names = v.sample_names
+        if names is None:
+            raise ValueError("cannot select samples by name: source has no sample_names "
+                             "(select by integer haplotype-column index instead)")
+        cols = []
+        for s in (str(x) for x in arr.tolist()):
+            hit = [i for i, nm in enumerate(names) if nm == s or nm.startswith(s + "_")]
+            if not hit:
+                raise ValueError(f"sample {s!r} not found in sample_names")
+            cols.extend(hit)
+        return np.asarray(cols, dtype=int)
+    return arr.astype(int)                                    # integer column indices
 
 
 def variants_from_vcf(path):
@@ -129,12 +228,12 @@ def variants_from_vcf(path):
         raise ValueError(f"no biallelic GT records parsed from {path}")
     positions = np.asarray(positions, float)
     genotypes = np.asarray(genos, np.int8)
-    names = None
+    names, ploidy = None, 1
     if samples is not None and genotypes.shape[1] % len(samples) == 0:
         ploidy = genotypes.shape[1] // len(samples)
         names = [f"{s}_{k}" for s in samples for k in range(ploidy)] if ploidy > 1 else list(samples)
     return Variants(positions=positions, genotypes=genotypes, alleles=alleles,
-                    sequence_length=float(positions.max() + 1), sample_names=names)
+                    sequence_length=float(positions.max() + 1), sample_names=names, ploidy=ploidy)
 
 
 def variants_from_zarr(store):
@@ -169,11 +268,35 @@ def variants_from_zarr(store):
     except KeyError:
         names = None
     return Variants(positions=pos, genotypes=haps, alleles=alleles,
-                    sequence_length=float(pos.max() + 1), sample_names=names)
+                    sequence_length=float(pos.max() + 1), sample_names=names, ploidy=P)
 
 
 def _as_str(x):
     return x.decode() if isinstance(x, (bytes, bytearray)) else str(x)
+
+
+def sample_names_from_zarr(store):
+    """Read only the sample ids and ploidy from a VCF-Zarr store — **without** loading genotypes.
+
+    The cheap identity read for the scalable :func:`variant_data_from_zarr` path: reads the small
+    ``sample_id`` array and infers ploidy from ``call_genotype``'s shape metadata (no chunk I/O), so
+    :func:`tspaint.io.tsinfer` can stamp whole-genome tree sequences with sample ids affordably.
+
+    Returns
+    -------
+    (list[str] or None, int)
+        Flattened per-haplotype names ``"<sample>_<k>"`` (or the base names for haploid), matching
+        :attr:`Variants.sample_names`, and the ploidy. ``(None, 1)`` if no ``sample_id`` is present.
+    """
+    import zarr
+    root = zarr.open(store, mode="r")
+    ploidy = int(root["call_genotype"].shape[2]) if "call_genotype" in root else 1
+    try:
+        base = [_as_str(s) for s in np.asarray(root["sample_id"])]
+    except KeyError:
+        return None, ploidy
+    names = [f"{s}_{k}" for s in base for k in range(ploidy)] if ploidy > 1 else base
+    return names, ploidy
 
 
 def variant_data_from_zarr(store):

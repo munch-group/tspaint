@@ -228,8 +228,10 @@ def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_i
     RateThroughTime
     """
     from ..em import fit, build_emissions
+    from ..ids import resolve_labels
     from ..model import make_generator_2state
 
+    labels = resolve_labels(ts, labels)                # keys may be sample-ID strings or node indices
     if edges is None:                                  # auto log-time grid from the node ages
         nt = np.asarray(ts.tables.nodes.time, float)
         pos = nt[nt > 0]

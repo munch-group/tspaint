@@ -19,8 +19,13 @@ from .io_singer import singer_binary_path, singer_install_dir, repo_root
 
 __all__ = ["install_singer", "SINGER_REPO", "SINGER_COMMIT"]
 
-SINGER_REPO = "https://github.com/popgenmethods/SINGER"
-SINGER_COMMIT = "f88d68737962246d20f693c36978deba90ccd7ff"   # pinned; override via commit=
+# TEMPORARY: upstream SINGER (popgenmethods/SINGER @ f88d687, v0.1.9) has a node-write-state
+# use-after-free that corrupts the heap and SIGSEGVs on ARGs above ~1 Mb. The fix lives on this
+# fork branch; revert to "https://github.com/popgenmethods/SINGER" @ f88d687 once it is merged
+# upstream. Override either without editing via $TSPAINT_SINGER_REPO / $TSPAINT_SINGER_COMMIT.
+SINGER_REPO = os.environ.get("TSPAINT_SINGER_REPO", "https://github.com/munch-group/SINGER")
+SINGER_COMMIT = os.environ.get(
+    "TSPAINT_SINGER_COMMIT", "2316f5932acb19eb49773e1f8cd19500df88ec37")  # fork fix branch
 
 _PIXI = os.environ.get("TSPAINT_PIXI", "pixi")
 
@@ -82,6 +87,10 @@ def install_singer(*, commit=None, force=False, tools_dir=None, log=print):
         log(f"cloning SINGER @ {commit[:10]} -> {target}")
         _run(["git", "clone", "--filter=blob:none", "--no-checkout", SINGER_REPO, target], log=log)
         _run(["git", "-C", target, "sparse-checkout", "init", "--cone"], log=log)
+    else:
+        # an existing clone may point at a different repo (e.g. after switching SINGER_REPO);
+        # retarget origin so the commit below is fetched from the right place.
+        _run(["git", "-C", target, "remote", "set-url", "origin", SINGER_REPO], log=log)
     _run(["git", "-C", target, "sparse-checkout", "set", "SINGER"], log=log)
     _run(["git", "-C", target, "fetch", "--filter=blob:none", "origin", commit], log=log)
     _run(["git", "-C", target, "checkout", commit], log=log)

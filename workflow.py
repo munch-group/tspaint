@@ -72,7 +72,7 @@ DEADBAND = 0.4                                # confidence dead-band for the fra
 
 # tspaint_singer painter (tspaint over a SINGER posterior ARG ensemble). Needs the SINGER binary
 # (set TSPAINT_SINGER) — it is NOT provisioned by `tspaint benchmark setup`.
-N_SINGER = 3                                  # SINGER posterior samples (post-burn-in) to paint
+N_SINGER = 1                                  # SINGER posterior samples (post-burn-in) to paint
 SINGER_THIN = 20                              # SINGER MCMC thinning interval
 SINGER_BURNIN = 20                            # SINGER burn-in samples discarded
 

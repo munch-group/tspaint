@@ -54,7 +54,10 @@ def tsinfer(source):
     -------
     tskit.TreeSequence
         The tsinfer-inferred tree sequence. Sample nodes are preserved in input order, so
-        per-sample labels and truth transfer by sample id.
+        per-sample labels and truth transfer by sample id. For a **VCF** / **VCF-Zarr** source the
+        source's sample ids are stamped onto the sample nodes (:func:`tspaint.ids.attach_sample_ids`),
+        so :func:`tspaint.paint` accepts ``labels`` keyed by sample-ID string as well as by node
+        index. A bare **ts** source is returned unstamped (it carries no VCF sample names).
 
     Notes
     -----
@@ -64,13 +67,18 @@ def tsinfer(source):
     is pinned ``<0.6``); a **VCF** is parsed in-memory by :mod:`tspaint.io_genotypes`.
     """
     import tsinfer as _tsinfer
-    from .io_genotypes import source_kind, variants_from_vcf, to_sample_data, variant_data_from_zarr
+    from .ids import attach_sample_ids
+    from .io_genotypes import (source_kind, variants_from_vcf, to_sample_data,
+                               variant_data_from_zarr, sample_names_from_zarr)
     kind = source_kind(source)
     if kind == "ts":
         return _tsinfer.infer(_tsinfer.SampleData.from_tree_sequence(source))
     if kind == "zarr":
-        return _tsinfer.infer(variant_data_from_zarr(source))           # chunked / scalable
-    return _tsinfer.infer(to_sample_data(variants_from_vcf(source)))     # VCF -> in-memory SampleData
+        ts = _tsinfer.infer(variant_data_from_zarr(source))             # chunked / scalable
+        names, ploidy = sample_names_from_zarr(source)                  # cheap: no genotype I/O
+        return attach_sample_ids(ts, names, ploidy)
+    v = variants_from_vcf(source)                                       # VCF -> in-memory SampleData
+    return attach_sample_ids(_tsinfer.infer(to_sample_data(v)), v.sample_names, v.ploidy)
 
 
 def infer_tree_sequence(ts_with_mutations):

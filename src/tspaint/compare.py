@@ -79,6 +79,9 @@ def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
         Per-query posterior segment tracks (from
         :func:`tspaint.output.posterior_table`).
     """
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
+    queries = resolve_ids(ts, queries)
     if ranked:
         from .ranked import ranked_tree_sequence
         ts = ranked_tree_sequence(ts)
@@ -114,6 +117,9 @@ def nearest_reference_paint(ts, labels, queries, K=2):
         Per-query segment tracks with one-hot posteriors;
         :data:`tspaint.output.MISSING_INFO` marks spans with no reachable reference.
     """
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
+    queries = resolve_ids(ts, queries)
     node_time = ts.tables.nodes.time
     ref_ids = [int(s) for s in labels]
     tracks = {int(q): [] for q in queries}

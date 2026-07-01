@@ -341,7 +341,8 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     ReferenceQC
         Per-reference credibility, introgression maps and the flagged-tract / summary helpers.
     """
-    labels = {int(k): int(v) for k, v in labels.items()}
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
     refs = list(labels)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
 
@@ -355,7 +356,7 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     credibility = dict(agreement)
 
     if anchors is not None:
-        anchor_set = set(int(a) for a in anchors)
+        anchor_set = set(resolve_ids(ts, anchors))
     elif refine and len(refs) >= 2:
         n_anchor = min(len(refs) - 1, max(1, int(round(anchor_frac * len(refs)))))
         ranked = sorted(refs, key=lambda r: (agreement[r] if np.isfinite(agreement[r]) else -1.0),
@@ -462,8 +463,9 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="
     """
     if mode not in ("auto", "label", "fit"):
         raise ValueError("mode must be 'auto', 'label' or 'fit'")
-    labels = {int(k): int(v) for k, v in labels.items()}
-    samples = [int(s) for s in samples]
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
+    samples = resolve_ids(ts, samples)
     ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank")
     out = {}
     for s in samples:

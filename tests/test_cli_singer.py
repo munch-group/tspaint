@@ -71,3 +71,28 @@ def test_singer_window_runs_and_is_local(tmp_path):
         assert os.path.exists(tmp_path / f"argW_{suf}_{i}.txt")
     edge = np.loadtxt(tmp_path / f"argW_branches_{i}.txt")
     assert edge[:, 1].max() <= (E - S) * 1.001       # window-LOCAL coords (the coords='local' default)
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not os.path.exists(DEFAULT_SINGER), reason="SINGER binary not available")
+def test_singer_windowed_stitches_across_windows(tmp_path):
+    """singer_windowed: write VCF once -> 2 windows in parallel -> merge each member -> ensemble."""
+    from tspaint.io import singer_windowed
+    from tspaint.io_tsinfer import add_mutations
+    import tskit
+
+    ts = add_mutations(tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=6e4,
+                       recombination_rate=1e-8, random_seed=5, Ne=1000, T_admix=30,
+                       T_split=5000, f_A=0.5), rate=3e-7, random_seed=5)
+    ens = singer_windowed(ts, window_size=3e4, Ne=1000, mutation_rate=3e-7,
+                          recombination_rate=1e-8, n_samples=4, thin=2, burn_in=1,
+                          seed=11, n_jobs=2, workdir=str(tmp_path))
+
+    ens = ens if isinstance(ens, list) else [ens]
+    assert 1 <= len(ens) <= 4                                  # members 1..3 survive burn_in=1
+    for t in ens:
+        assert isinstance(t, tskit.TreeSequence)
+        assert t.num_samples == ts.num_samples                 # sample order preserved by the merge
+        assert t.sequence_length > 3e4                         # stitched BEYOND the first window
+    assert (tmp_path / "data.vcf").exists()                    # the write-once VCF
+    assert (tmp_path / "member_1.trees").exists()              # a stitched member on disk

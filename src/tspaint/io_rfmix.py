@@ -414,6 +414,9 @@ def rfmix_paint(ts, labels, queries, K=2, *, recombination_rate=1e-8, generation
         ``{query_node: [Segment]}`` from the ``.fb.tsv`` per-marker posteriors.
     """
     ts = _ensure_sites(ts, mutation_rate, seed)
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
+    queries = resolve_ids(ts, queries)
     query_inds, _ref = _classify_individuals(ts, labels, queries)
     out = run_rfmix(ts, labels, queries, recombination_rate=recombination_rate,
                     generations=generations, rfmix_bin=rfmix_bin, extra_args=extra_args)

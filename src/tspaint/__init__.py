@@ -53,6 +53,7 @@ from .em import fit, FitResult
 from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
                      INFORMATIVE, MISSING_INFO)
 from .model import make_generator_2state
+from .io_genotypes import subset_data
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 from .dating import fit_rate_through_time, RateThroughTime, EnsembleRateThroughTime
 from .introgression import reference_qc, foreign_tracts
@@ -80,6 +81,8 @@ __all__ = [
     "paint", "Painting", "SoftTrack", "fit", "FitResult",
     "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO",
     "make_generator_2state",
+    # data prep (slice / normalise a genotype source before a front end)
+    "subset_data",
     # simulation
     "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
     # dating (admixture rate through time)

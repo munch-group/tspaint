@@ -23,15 +23,23 @@ RFMix is a *comparator* (genotype-native), not an ARG front end — see
 from __future__ import annotations
 
 from .io_tsinfer import tsinfer, add_mutations, infer_tree_sequence
-from .io_singer import (singer, singer_tree_sequences, write_haploid_vcf,
+from .io_singer import (singer, singer_windowed, singer_tree_sequences, write_haploid_vcf,
                         singer_window, build_merge_table, run_merge_arg)
 from .io_relate import relate, check_persistence, convert_relate
+from .io_genotypes import subset_data, resolve_variants, Variants
+from .ids import attach_sample_ids, resolve_labels, resolve_ids, sample_id_index
 
 __all__ = [
     # unified front ends (name = tool)
     "tsinfer", "relate", "singer",
-    # SINGER large-chromosome windowing (run per window, then stitch per member)
+    # SINGER long-region path: one call (many cores, no cluster) ...
+    "singer_windowed",
+    # ... or the per-window primitives it is built from (the cluster/GWF unit)
     "singer_window", "build_merge_table", "run_merge_arg",
+    # data prep (normalise / slice a source before a front end)
+    "subset_data", "resolve_variants", "Variants",
+    # sample identity: front ends stamp source ids; labels/queries resolve str-or-int keys
+    "attach_sample_ids", "resolve_labels", "resolve_ids", "sample_id_index",
     # helpers
     "add_mutations", "write_haploid_vcf", "check_persistence",
     # deprecated aliases (pre-unification names)

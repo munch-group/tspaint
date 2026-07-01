@@ -223,11 +223,15 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
         **averaged**. This marginalises ARG uncertainty — the binding constraint on real data —
         and the spread becomes a calibrated uncertainty band (CLAUDE.md §7.4). All members must
         share the same sample ids (true of a SINGER ensemble, where sample order is preserved).
-    labels : dict[int, int]
-        Reference sample-node id → ancestry-state index in ``0..K-1``. Applied to every member
-        of an ensemble.
-    queries : iterable[int], optional
-        Sample nodes to paint; defaults to every sample not in ``labels``.
+    labels : dict
+        Reference → ancestry-state index in ``0..K-1``, applied to every member of an ensemble.
+        Each key is an integer **sample-node index** or a **sample-ID string**: when ``ts`` came
+        from :func:`tspaint.io.singer` / :func:`tspaint.io.tsinfer` the source's sample ids are
+        stamped on the nodes, so a base id (e.g. ``"NA12878"``) labels **both** its haplotypes and a
+        per-haplotype id (``"NA12878_1"``) labels one (:mod:`tspaint.ids`).
+    queries : iterable, optional
+        Samples to paint (node indices or sample-ID strings, as for ``labels``); defaults to every
+        sample not in ``labels``.
     K : int
         Number of ancestry states (2 by default; pass a ``K×K`` ``Q0`` for K-way).
     soft_refs : set[int], optional
@@ -284,21 +288,31 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     >>> painting = tspaint.paint(ts, labels)
     >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
 
+    Label references by **sample-ID string** — no need to know the node order — when the tree
+    sequence came from a front end (:func:`tspaint.io.singer` / :func:`tspaint.io.tsinfer` stamp
+    the source's ids); a diploid base id labels both its haplotypes:
+
+    >>> ts = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
+    >>> painting = tspaint.paint(ts, {"NA12878": 0, "NA12889": 1})
+
     Paint from a SINGER posterior ensemble — the mean painting carries an uncertainty band:
 
     >>> ensemble = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
     >>> painting = tspaint.paint(ensemble, labels)            # one pooled fit; averaged posteriors
     >>> painting.posteriors[q][0].posterior_std               # per-position ARG-uncertainty band
     """
-    labels = {int(k): int(v) for k, v in labels.items()}
     members = list(ts) if isinstance(ts, (list, tuple)) else None    # an ARG ensemble?
     if members is not None and not members:
         raise ValueError("paint() got an empty ensemble; pass at least one tree sequence")
     ref_ts = members[0] if members is not None else ts
+    # labels / queries may be keyed by sample-ID string (from io.singer/io.tsinfer's stamped ids)
+    # or by integer node index; resolve both to node ids (soft_refs / priors are resolved by fit).
+    from .ids import resolve_labels, resolve_ids
+    labels = resolve_labels(ref_ts, labels)
     if queries is None:
         queries = [int(s) for s in ref_ts.samples() if int(s) not in labels]
     else:
-        queries = [int(q) for q in queries]
+        queries = resolve_ids(ref_ts, queries)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
 
     # One pooled θ fit shared across the ensemble (the M-step is scale-invariant).

@@ -39,12 +39,20 @@ def test_cli_help():
 def test_read_helpers(tmp_path):
     lab = tmp_path / "labels.json"
     lab.write_text(json.dumps({"0": 0, "3": 1}))
-    assert read_labels(lab) == {0: 0, 3: 1}
-    assert read_id_list("3,4, 5") == [3, 4, 5]
+    # keys / ids are kept as strings; the library resolves them against the ts's stamped sample ids
+    # (a sample-ID string by name, an integer-looking id with no name match as a node index).
+    assert read_labels(lab) == {"0": 0, "3": 1}
+    assert read_id_list("3,4, 5") == ["3", "4", "5"]
     assert read_id_list(None) is None
     f = tmp_path / "ids.txt"
     f.write_text("7 8\n9\n")
-    assert read_id_list(f"@{f}") == [7, 8, 9]
+    assert read_id_list(f"@{f}") == ["7", "8", "9"]
+
+    # integer-looking ids still resolve to node indices on an (unstamped) ts — the CLI contract
+    from tspaint.ids import resolve_labels, resolve_ids
+    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    assert resolve_labels(ts, read_labels(lab)) == {0: 0, 3: 1}
+    assert resolve_ids(ts, read_id_list("3,4, 5")) == [3, 4, 5]
 
 
 def test_paint_needs_params_or_labels(tmp_path):

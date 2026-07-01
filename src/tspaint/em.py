@@ -174,8 +174,10 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     ----------
     ts : tskit.TreeSequence or list thereof
         One genome, or several independent tree sequences whose statistics are pooled.
-    labels : dict[int, int] or list thereof
-        Per-sample label index for the reference tips; samples absent are queries.
+    labels : dict or list thereof
+        Per-reference label index; samples absent are queries. Keys may be integer sample-node
+        indices or sample-ID strings when ``ts`` was stamped by :func:`tspaint.io.singer` /
+        :func:`tspaint.io.tsinfer` (:mod:`tspaint.ids`). ``soft_refs`` / ``priors`` keys likewise.
     K : int, optional
         Number of ancestry states. Default ``2``.
     Q0 : (K, K) array_like, optional
@@ -234,6 +236,14 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     (CLAUDE.md §6). ``estimate_pi=False`` holds it fixed (uniform unless ``pi0`` given).
     """
     ts_list, lab_list = _as_dataset_lists(ts, labels)
+    # labels / soft_refs / priors keys may be sample-ID strings (stamped by io.singer/io.tsinfer)
+    # or integer node indices; resolve to node ids (idempotent for already-integer keys).
+    from .ids import resolve_labels, resolve_ids, resolve_nodes
+    lab_list = [resolve_labels(t, l) for t, l in zip(ts_list, lab_list)]
+    if soft_refs is not None:
+        soft_refs = resolve_ids(ts_list[0], soft_refs)
+    if priors:
+        priors = {node: pv for k, pv in priors.items() for node in resolve_nodes(ts_list[0], k)}
     Q = np.array(Q0, float) if Q0 is not None else make_generator_2state(0.1, 0.1)
     pi = np.array(pi0, float) if pi0 is not None else np.full(K, 1.0 / K)
 

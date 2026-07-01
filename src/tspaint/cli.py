@@ -31,19 +31,29 @@ import click
 # --- input helpers --------------------------------------------------------------------------
 
 def read_labels(path):
-    """Read a labels JSON file ``{"<node-id>": <state-int>}`` into ``{int: int}``."""
+    """Read a labels JSON file ``{"<id>": <state-int>}`` into ``{id: state}``.
+
+    Keys are left as-is (JSON keys are strings): a node index or a **sample-ID string**. The library
+    resolves them against the ts's stamped ids (:mod:`tspaint.ids`) — a sample-ID string matches by
+    name (base id → both haplotypes), an integer-looking string with no name match is a node index.
+    Values are ancestry-state integers.
+    """
     with open(path) as f:
-        return {int(k): int(v) for k, v in json.load(f).items()}
+        return {k: int(v) for k, v in json.load(f).items()}
 
 
 def read_id_list(spec):
-    """Parse an id list: ``None`` → ``None``; ``"@file"`` → ids from the file; else inline ``"3,4,5"``."""
+    """Parse an id list: ``None`` → ``None``; ``"@file"`` → ids from the file; else inline ``"3,4,5"``.
+
+    Ids (node indices or sample-ID strings) are returned as strings and resolved by the library
+    against the ts (:mod:`tspaint.ids`); an integer-looking id with no name match is a node index.
+    """
     if spec is None:
         return None
     if spec.startswith("@"):
         with open(spec[1:]) as f:
             spec = f.read()
-    return [int(tok) for tok in re.split(r"[,\s]+", spec.strip()) if tok]
+    return [tok for tok in re.split(r"[,\s]+", spec.strip()) if tok]
 
 
 def _cores(cores):
@@ -87,9 +97,10 @@ def fit(trees, labels_path, soft_refs, estimate_pi, deadband, max_iter, tol, cor
     from .model import make_generator_2state
     from .serialize import save_params
 
-    labels = read_labels(labels_path)
-    soft = read_id_list(soft_refs)
+    from .ids import resolve_labels, resolve_ids
     ts_list = [_load_ts(t) for t in trees]
+    labels = resolve_labels(ts_list[0], read_labels(labels_path))   # to node ids before save_params
+    soft = resolve_ids(ts_list[0], read_id_list(soft_refs))
     n_jobs = _cores(cores)
     res = _fit(ts_list if len(ts_list) > 1 else ts_list[0], labels,
                Q0=make_generator_2state(1e-3, 1e-3), max_iter=max_iter, tol=tol,
@@ -126,10 +137,12 @@ def paint(trees, params_path, labels_path, queries, soft_refs, estimate_pi, smoo
         from .serialize import load_params
         from .em import build_emissions
         from .output import posterior_table
+        from .ids import resolve_ids
         p = load_params(params_path)
         ts = _load_ts(trees[0])
-        labels, w, pi, Q = p["labels"], p["w"], p["pi"], p["Q"]
-        focal = qids if qids is not None else [int(s) for s in ts.samples() if int(s) not in labels]
+        labels, w, pi, Q = p["labels"], p["w"], p["pi"], p["Q"]     # labels: node ids (resolved at fit)
+        focal = (resolve_ids(ts, qids) if qids is not None
+                 else [int(s) for s in ts.samples() if int(s) not in labels])
         if n_jobs > 1:
             from .parallel import posterior_table_parallel
             table = posterior_table_parallel(ts, Q, pi, w=w, labels=labels, focal=focal, n_jobs=n_jobs)
@@ -179,8 +192,10 @@ def merge(paintings, out):
 def date(trees, labels_path, n_cells, n_iter, estimate_pi, out):
     """Admixture rate through time q_AB(t), q_BA(t) → rtt.npz."""
     from .dating import fit_rate_through_time
+    from .ids import resolve_labels
     from .serialize import save_rate_through_time
-    rtt = fit_rate_through_time(_load_ts(trees), read_labels(labels_path), n_cells=n_cells,
+    ts = _load_ts(trees)
+    rtt = fit_rate_through_time(ts, resolve_labels(ts, read_labels(labels_path)), n_cells=n_cells,
                                 n_iter=n_iter, estimate_pi=estimate_pi)
     save_rate_through_time(out, rtt)
     _echo(f"date: {n_cells} cells -> {out}")

@@ -346,12 +346,13 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
         raise ValueError("detect_ghost got an empty ensemble; pass at least one tree sequence")
     if depth not in ("time", "rank"):
         raise ValueError("depth must be 'time' or 'rank'")
-    modern_ids = [int(r) for r in (labels.keys() if isinstance(labels, dict) else labels)]
+    from .ids import resolve_ids
+    modern_ids = resolve_ids(members[0], list(labels.keys() if isinstance(labels, dict) else labels))
     modern_set = set(modern_ids)
     if samples is None:
         samples = [int(s) for s in members[0].samples() if int(s) not in modern_set]
     else:
-        samples = [int(s) for s in samples]
+        samples = resolve_ids(members[0], samples)
 
     # per-member transformed depth tracks (log-time, or per-member calibration-invariant rank)
     ref_per_member, samp_per_member = [], []
