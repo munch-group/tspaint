@@ -7873,8 +7873,8 @@ packages:
   timestamp: 1778795831561
 - pypi: ./
   name: tspaint
-  version: 0.1.16
-  sha256: 6786ddf59bb70675d89b706b7b138f604d12443d58e13eced59a3685ca1458db
+  version: 0.1.18
+  sha256: e3255d7c9ecab94be3a9f0a364f4960a6a58db1b4a1eae8e30aba9b16cf8b5c7
   requires_dist:
   - tskit>=0.5
   - msprime>=1.3
