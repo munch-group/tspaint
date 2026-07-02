@@ -384,25 +384,41 @@ def trees_relate(anc, mut, out):
     _echo(f"relate -> {out}")
 
 
+# Option names mirror SINGER's own flags (single dash for short, two dashes for long) so a
+# recommendation from the SINGER authors/users applies directly; old tspaint names are kept as
+# aliases. `-r`/`--recomb-rate` overrides `--ratio`; `--Ne` is auto-estimated (pi/4m) when omitted.
 @trees.command("singer")
 @click.argument("source", type=click.Path(exists=True))
-@click.option("--ne", "Ne", type=float, required=True)
-@click.option("--mut-rate", "mutation_rate", type=float, required=True)
-@click.option("--recomb-rate", "recombination_rate", type=float, required=True)
-@click.option("--n", "n_samples", type=int, default=20, show_default=True)
-@click.option("--thin", type=int, default=10, show_default=True)
-@click.option("--burn-in", type=int, default=5, show_default=True)
+@click.option("-m", "--mut-rate", "m", type=float, default=None, help="mutation rate (SINGER -m).")
+@click.option("--Ne", "--ne", "Ne", type=float, default=None, help="diploid Ne (SINGER --Ne); auto pi/4m if omitted.")
+@click.option("--ratio", type=float, default=1.0, show_default=True, help="recomb/mut ratio (SINGER --ratio).")
+@click.option("-r", "--recomb-rate", "r", type=float, default=None, help="recombination rate (SINGER -r; overrides --ratio).")
+@click.option("-n", "--n", "n", type=int, default=100, show_default=True, help="number of posterior samples (SINGER -n).")
+@click.option("--thin", type=int, default=20, show_default=True, help="MCMC iterations between samples (SINGER --thin).")
+@click.option("--burnin", "--burn-in", "burnin", type=int, default=0, show_default=True,
+              help="discard the first BURNIN posterior samples.")
+@click.option("--polar", type=float, default=0.5, show_default=True, help="polarization prob (SINGER --polar; 0.99 if polarized).")
+@click.option("--ploidy", type=int, default=1, show_default=True)
 @click.option("--seed", type=int, default=42, show_default=True)
+@click.option("--recomb_map", "recomb_map", type=click.Path(exists=True), default=None, help="SINGER --recomb_map file.")
+@click.option("--mut_map", "mut_map", type=click.Path(exists=True), default=None, help="SINGER --mut_map file.")
+@click.option("--penalty", type=float, default=None, help="SINGER --penalty.")
+@click.option("--hmm_epsilon", "hmm_epsilon", type=float, default=None, help="SINGER --hmm_epsilon.")
+@click.option("--psmc_bins", "psmc_bins", type=float, default=None, help="SINGER --psmc_bins.")
+@click.option("--fast", is_flag=True, default=False, help="SINGER --fast.")
+@click.option("--singer-arg", "singer_args", multiple=True, help="passthrough SINGER flag/value (repeatable).")
 @click.option("--length", "sequence_length", type=float, default=None)
 @click.option("-d", "--out-dir", required=True, type=click.Path(), help="dir for member_*.trees.")
-def trees_singer(source, Ne, mutation_rate, recombination_rate, n_samples, thin, burn_in, seed,
-                 sequence_length, out_dir):
+def trees_singer(source, m, Ne, ratio, r, n, thin, burnin, polar, ploidy, seed, recomb_map, mut_map,
+                 penalty, hmm_epsilon, psmc_bins, fast, singer_args, sequence_length, out_dir):
     """Sample a posterior ARG ensemble with SINGER (whole genome) → member_*.trees."""
     from .io import singer
     src = _load_ts(source) if str(source).endswith(".trees") else source
-    ensemble = singer(src, Ne=Ne, mutation_rate=mutation_rate, recombination_rate=recombination_rate,
-                      n_samples=n_samples, thin=thin, burn_in=burn_in, seed=seed,
-                      sequence_length=sequence_length)
+    ensemble = singer(src, m=m, Ne=Ne, ratio=ratio, r=r, n=n, thin=thin, burnin=burnin, polar=polar,
+                      ploidy=ploidy, seed=seed, recomb_map=recomb_map, mut_map=mut_map,
+                      penalty=penalty, hmm_epsilon=hmm_epsilon, psmc_bins=psmc_bins, fast=fast,
+                      singer_args=list(singer_args) or None, sequence_length=sequence_length)
+    ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
     os.makedirs(out_dir, exist_ok=True)
     for i, ts in enumerate(ensemble):
         ts.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
@@ -426,21 +442,27 @@ def trees_add_mutations(trees_path, rate, seed, out):
 @click.option("--start", type=float, required=True)
 @click.option("--end", type=float, required=True)
 @click.option("--out-prefix", required=True, help="SINGER writes {out_prefix}_{nodes,branches,muts}_<i>.txt.")
-@click.option("--ne", "Ne", type=float, required=True)
-@click.option("--mut-rate", "mutation_rate", type=float, required=True)
-@click.option("--recomb-rate", "recombination_rate", type=float, required=True)
-@click.option("--n", "n_samples", type=int, default=20, show_default=True)
-@click.option("--thin", type=int, default=10, show_default=True)
+@click.option("--Ne", "--ne", "Ne", type=float, required=True, help="diploid Ne (SINGER --Ne).")
+@click.option("-m", "--mut-rate", "m", type=float, default=None, help="mutation rate (SINGER -m).")
+@click.option("--ratio", type=float, default=1.0, show_default=True, help="recomb/mut ratio (SINGER --ratio).")
+@click.option("-r", "--recomb-rate", "r", type=float, default=None, help="recombination rate (SINGER -r; overrides --ratio).")
+@click.option("-n", "--n", "n", type=int, default=100, show_default=True, help="number of posterior samples (SINGER -n).")
+@click.option("--thin", type=int, default=20, show_default=True, help="MCMC iterations between samples (SINGER --thin).")
+@click.option("--polar", type=float, default=0.5, show_default=True, help="polarization prob (SINGER --polar).")
 @click.option("--ploidy", type=int, default=1, show_default=True)
 @click.option("--seed", type=int, default=42, show_default=True)
-def trees_singer_window(source, start, end, out_prefix, Ne, mutation_rate, recombination_rate,
-                        n_samples, thin, ploidy, seed):
+@click.option("--recomb_map", "recomb_map", type=click.Path(exists=True), default=None)
+@click.option("--mut_map", "mut_map", type=click.Path(exists=True), default=None)
+@click.option("--singer-arg", "singer_args", multiple=True, help="passthrough SINGER flag/value (repeatable).")
+def trees_singer_window(source, start, end, out_prefix, Ne, m, ratio, r, n, thin, polar, ploidy,
+                        seed, recomb_map, mut_map, singer_args):
     """Run SINGER on ONE genomic window (the GWF per-window unit; bare-singer engine)."""
     from .io_singer import singer_window
     src = _load_ts(source) if str(source).endswith(".trees") else source
-    idxs = singer_window(src, start=start, end=end, out_prefix=out_prefix, Ne=Ne,
-                         mutation_rate=mutation_rate, recombination_rate=recombination_rate,
-                         n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed)
+    idxs = singer_window(src, start=start, end=end, out_prefix=out_prefix, Ne=Ne, m=m, ratio=ratio,
+                         r=r, n=n, thin=thin, polar=polar, ploidy=ploidy, seed=seed,
+                         recomb_map=recomb_map, mut_map=mut_map,
+                         singer_args=list(singer_args) or None)
     _echo(f"singer-window [{start:g},{end:g}): {len(idxs)} samples -> {out_prefix}_*_<i>.txt")
 
 
