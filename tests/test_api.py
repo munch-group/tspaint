@@ -1,4 +1,7 @@
 """High-level paint() / Painting API tests (CLAUDE.md §2.4)."""
+import io
+from contextlib import redirect_stderr
+
 import numpy as np
 import pytest
 
@@ -27,6 +30,51 @@ def test_tidy_namespaces_exposed():
     assert callable(tspaint.paint) and tspaint.Painting is not None
     assert callable(tspaint.metrics.balanced_accuracy)
     assert callable(tspaint.compare.head_to_head)
+
+
+def _posteriors_view(painting):
+    """Canonical, comparable view of a Painting's per-query posterior segments."""
+    return {
+        int(q): [(round(float(s.left), 9), round(float(s.right), 9),
+                  getattr(s, "status", None),
+                  tuple(np.round(np.asarray(s.posterior, float), 10).tolist()))
+                 for s in segs]
+        for q, segs in painting.posteriors.items()
+    }
+
+
+def _paint_capturing(*args, **kwargs):
+    """paint() while capturing the tqdm bar's stderr output."""
+    buf = io.StringIO()
+    with redirect_stderr(buf):
+        p = tspaint.paint(*args, **kwargs)
+    return p, buf.getvalue()
+
+
+@pytest.mark.slow
+def test_progress_is_value_preserving_and_emits_a_bar():
+    """`progress=True` must be a pure UI addition: identical results on every path
+    (serial, parallel, ensemble), a bar on stderr when on, and silence when off."""
+    ts, labels, _, _ = _admixture()
+
+    # serial: identical to the no-progress baseline; per-tree bar fires; off is silent.
+    base = tspaint.paint(ts, labels)
+    prog, err = _paint_capturing(ts, labels, progress=True)
+    assert _posteriors_view(prog) == _posteriors_view(base)
+    assert "painting" in err
+    _, err_off = _paint_capturing(ts, labels, progress=False)
+    assert err_off.strip() == ""
+
+    # parallel: exactly equal to serial, with a per-chunk bar.
+    par, err_par = _paint_capturing(ts, labels, n_jobs=2, progress=True)
+    assert _posteriors_view(par) == _posteriors_view(base)
+    assert "painting" in err_par
+
+    # ensemble: per-member bar; identical to the no-progress ensemble.
+    ens_base = tspaint.paint([ts, ts], labels)
+    ens, err_ens = _paint_capturing([ts, ts], labels, progress=True)
+    assert _posteriors_view(ens) == _posteriors_view(ens_base)
+    assert "painting" in err_ens
 
 
 @pytest.mark.slow

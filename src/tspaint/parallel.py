@@ -226,17 +226,22 @@ def accumulate_parallel(ts, Q, pi, *, w=None, labels=None, soft_refs=None, emiss
 
 
 def posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merge_tol=1e-12,
-                             emissions=None, n_jobs=1, executor=None):
+                             emissions=None, n_jobs=1, executor=None, progress=False):
     """Parallel :func:`~tspaint.output.posterior_table` — **exactly** equal to serial for any ``n_jobs``.
 
     Splits by tree-range, then stitches the per-range tracks in genome order, re-merging adjacent
     equal segments at the seams (the same merge rule serial painting uses).
+
+    ``progress=True`` shows a :mod:`tqdm` bar: per-marginal-tree when it falls back to serial
+    (``n_jobs <= 1``), else one tick per completed genome chunk (the per-tree loop runs inside
+    worker subprocesses, so per-chunk is the finest granularity the parent can observe).
     """
     if executor is None and resolve_to_int(n_jobs) <= 1:
         if emissions is None:
             from .em import build_emissions
             emissions = build_emissions(ts, labels, w, pi)
-        return posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol)
+        return posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
+                               progress=progress)
 
     own = executor is None
     ex = executor or make_pool(n_jobs)
@@ -244,7 +249,11 @@ def posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merg
         with as_path(ts) as path:
             futures = [ex.submit(_paint_range, path, lo, hi, Q, pi, w, labels, focal, merge_tol)
                        for (lo, hi) in genome_chunks(ts, n_jobs)]
-            chunk_tracks = [f.result() for f in futures]
+            results = futures
+            if progress:
+                from tqdm.auto import tqdm
+                results = tqdm(futures, desc="painting", unit="chunk")
+            chunk_tracks = [f.result() for f in results]
         return _stitch_tracks(chunk_tracks, merge_tol)
     finally:
         if own:
