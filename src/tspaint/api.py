@@ -205,7 +205,7 @@ class Painting(SoftTrack):
 
 def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate_pi=False,
           deadband=0.0, smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0,
-          beta=1.0, priors=None, w0=0.9, n_jobs=1):
+          beta=1.0, priors=None, w0=0.9, n_jobs=1, progress=False):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -275,6 +275,12 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         (:mod:`tspaint.parallel`) — the painting is *exactly* equal to serial, the fit
         ``allclose`` (floating-point reduction order). The CLI resolves this from
         ``$SLURM_JOB_CPUS_PER_NODE``.
+    progress : bool
+        Show a :mod:`tqdm` progress bar for the **painting** phase (after the EM fit). Per
+        marginal tree when serial (``n_jobs == 1``), per genome chunk when parallel
+        (``n_jobs > 1``), and per ensemble member when ``ts`` is a list of tree sequences.
+        Default ``False`` (no bar; behaviour is otherwise unchanged). The EM fit itself is
+        not covered.
 
     Returns
     -------
@@ -358,14 +364,16 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
               estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0,
               n_jobs=n_jobs)
 
-    def _paint_member(g):
+    def _paint_member(g, member_progress=False):
         if n_jobs and int(n_jobs) > 1:
             from .parallel import posterior_table_parallel
             table = posterior_table_parallel(g, res.Q, res.pi, w=res.w, labels=labels,
-                                             focal=queries, n_jobs=n_jobs)
+                                             focal=queries, n_jobs=n_jobs,
+                                             progress=member_progress)
         else:
             emissions = build_emissions(g, labels, res.w, res.pi)
-            table = posterior_table(g, res.Q, res.pi, emissions, focal=queries)
+            table = posterior_table(g, res.Q, res.pi, emissions, focal=queries,
+                                    progress=member_progress)
         if smooth:
             from .bp import bp_smooth_track
             table = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in table.items()}
@@ -373,10 +381,17 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
 
     member_tables = None
     if members is None:
-        posteriors = _paint_member(ts)
+        # Single tree sequence: the per-tree (or per-chunk) bar is the progress axis.
+        posteriors = _paint_member(ts, member_progress=progress)
     else:
         from .ensemble import merge_posterior_tables
-        member_tables = [_paint_member(g) for g in members]      # kept for the per-member CI
+        # Ensemble: one tick per member (each member is a full genome paint); the inner
+        # per-tree/per-chunk bar is suppressed to avoid one nested bar per member.
+        member_iter = members
+        if progress:
+            from tqdm.auto import tqdm
+            member_iter = tqdm(members, desc="painting", unit="member")
+        member_tables = [_paint_member(g) for g in member_iter]  # kept for the per-member CI
         posteriors = merge_posterior_tables(member_tables, samples=queries)
 
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,

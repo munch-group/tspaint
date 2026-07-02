@@ -44,7 +44,8 @@ class Segment:
     status: str             # INFORMATIVE or MISSING_INFO
 
 
-def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None):
+def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None,
+                  progress=False):
     """Shared engine for the per-sample segment painters.
 
     Runs the down-pass per marginal tree and records, for each focal sample, the
@@ -57,6 +58,10 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None)
     — independent of which trees a chunk covers — concatenating the per-range tracks in
     genome order and re-merging at the seams reproduces the full-genome result exactly
     (:func:`tspaint.parallel.posterior_table_parallel`).
+
+    ``progress=True`` shows a per-marginal-tree :mod:`tqdm` bar; it is honoured only for the
+    full-genome pass (``tree_range is None``), since a chunked worker (``tree_range`` set) is a
+    subprocess whose progress is reported per-chunk by the parent (:func:`posterior_table_parallel`).
     """
     pi = np.asarray(pi, float)
     node_time = ts.tables.nodes.time
@@ -64,7 +69,11 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None)
     tracks = {s: [] for s in samples}
 
     lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
-    for ti, tree in enumerate(ts.trees()):
+    tree_iter = ts.trees()
+    if progress and tree_range is None:
+        from tqdm.auto import tqdm
+        tree_iter = tqdm(tree_iter, total=(hi - lo), desc="painting", unit="tree")
+    for ti, tree in enumerate(tree_iter):
         if ti < lo:
             continue
         if ti >= hi:
@@ -84,7 +93,8 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None)
     return tracks
 
 
-def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None):
+def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None,
+                    progress=False):
     """Per-sample ancestry posterior as contiguous segments covering ``[0, L)``.
 
     Runs the down-pass per marginal tree and records each focal sample's posterior
@@ -105,6 +115,9 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_rang
     merge_tol : float, optional
         Absolute tolerance for merging adjacent segments with equal posterior.
         Default ``1e-12``.
+    progress : bool, optional
+        Show a per-marginal-tree :mod:`tqdm` progress bar (full-genome pass only).
+        Default ``False``.
 
     Returns
     -------
@@ -113,7 +126,8 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_rang
         :class:`Segment`\\ s covering ``[0, L)``.
     """
     return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
-                         lambda res, s, prior: res.gamma[s], tree_range=tree_range)
+                         lambda res, s, prior: res.gamma[s], tree_range=tree_range,
+                         progress=progress)
 
 
 def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None):
