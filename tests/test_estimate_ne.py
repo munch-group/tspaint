@@ -134,6 +134,25 @@ def test_groups_matching_nothing_raises():
         estimate_ne(v, 1e-3, groups={"x": 0, "y": 0})        # keys match no individual
 
 
+def test_exclude_drops_soft_ref_individuals():
+    """exclude= leaves soft/suspect refs out of the estimate — by sample id or individual index."""
+    S1, S2, S = 20, 60, 80
+    G = np.zeros((S, 8), np.int8)
+    rng = np.random.default_rng(0)
+    for i in range(S1):
+        G[i, rng.integers(0, 6)] = 1                          # singletons among a, b, c
+    G[S1:, 6] = 1; G[S1:, 7] = 1                              # d is divergent -> inflates diversity
+    v = Variants(np.arange(S, dtype=float), G, [("0", "1")] * S, 1000.0,
+                 sample_names=["a_0", "a_1", "b_0", "b_1", "c_0", "c_1", "d_0", "d_1"], ploidy=2)
+    base = estimate_ne(v, 1e-3)
+    assert estimate_ne(v, 1e-3, exclude=None) == base
+    assert estimate_ne(v, 1e-3, exclude={"d"}) < base         # excluding the divergent ref lowers Ne
+    assert estimate_ne(v, 1e-3, exclude={3}) == estimate_ne(v, 1e-3, exclude={"d"})   # index == name
+    # composes with groups: exclude a member of a within-reference group
+    g = {"a": 0, "b": 0, "c": 0}
+    assert estimate_ne(v, 1e-3, groups=g, exclude={"c"}) != estimate_ne(v, 1e-3, groups=g)
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(not os.path.exists(DEFAULT_SINGER), reason="SINGER binary not available")
 def test_singer_estimates_ne_when_omitted(tmp_path):

@@ -63,6 +63,29 @@ def test_signatures_expose_singer_flags():
         assert flag in wp, flag
 
 
+# --- soft_refs are excluded from the Ne estimate --------------------------------------------
+
+def test_singer_exposes_soft_refs():
+    for fn in (singer, singer_windowed):
+        assert "soft_refs" in inspect.signature(fn).parameters, fn.__name__
+
+
+def test_singer_soft_refs_forwarded_to_ne_exclude(monkeypatch):
+    """singer(Ne=None, soft_refs=...) forwards soft_refs as estimate_ne's exclude (no SINGER run)."""
+    import tspaint.io_genotypes as iog
+    captured = {}
+
+    def fake_estimate_ne(source, mutation_rate, groups=None, exclude=None):
+        captured["groups"], captured["exclude"] = groups, exclude
+        return 12345.0
+
+    monkeypatch.setattr(iog, "estimate_ne", fake_estimate_ne)
+    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    with pytest.raises(FileNotFoundError):            # fails at the (missing) binary, after Ne estimate
+        io.singer(ts, m=1e-8, labels={0: 0, 1: 0}, soft_refs={1}, singer_bin="/no/such/singer")
+    assert captured["exclude"] == {1} and captured["groups"] == {0: 0, 1: 0}
+
+
 # --- CLI mirrors SINGER's flags: short single-dash, long two-dash; old names kept ------------
 
 def test_cli_singer_help_uses_singer_flag_names():

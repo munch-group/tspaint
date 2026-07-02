@@ -273,7 +273,7 @@ def _resolve_singer_rates(*, mutation_rate, m, recombination_rate, r, ratio, mut
 
 
 def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, ratio=1.0, labels=None,
-           n_samples=21, thin=10, burn_in=20, polar=0.5, ploidy=1, seed=42,
+           soft_refs=None, n_samples=21, thin=10, burn_in=20, polar=0.5, ploidy=1, seed=42,
            recomb_map=None, mut_map=None, penalty=None, hmm_epsilon=None, psmc_bins=None,
            fast=False, singer_args=None, workdir=None, singer_bin=None, with_mutations=True,
            max_retries=50, sequence_length=None,
@@ -318,6 +318,11 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
         (:func:`tspaint.io.estimate_ne`'s ``groups``) — so cross-reference divergence does not inflate
         the SINGER ``-Ne`` prior. Ignored when ``Ne`` is given. Requires a named source (VCF / Zarr /
         :class:`~tspaint.io_genotypes.Variants`); has no effect on a bare tree-sequence source.
+    soft_refs : iterable, optional
+        Soft / suspect reference individuals (admixed or mislabelled — the same set you would pass to
+        :func:`tspaint.paint`) to **exclude** from the ``Ne`` estimate, so their inflated diversity
+        does not bias the SINGER prior. Used **only** when ``Ne`` is ``None`` (via
+        :func:`tspaint.io.estimate_ne`'s ``exclude``); keyed by sample id, as ``labels``.
     n_samples : int, optional
         Number of MCMC samples SINGER draws (``-n``, default 20).
     thin : int, optional
@@ -377,7 +382,7 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
         if mutation_rate is None:
             raise ValueError("Ne=None auto-estimate needs a scalar mutation rate (m=/mutation_rate=); "
                              "pass Ne explicitly when using mut_map")
-        Ne = estimate_ne(source, mutation_rate, groups=labels)
+        Ne = estimate_ne(source, mutation_rate, groups=labels, exclude=soft_refs)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
@@ -544,11 +549,12 @@ def run_merge_arg(rows, out, *, script=None, python=None):
 
 
 def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombination_rate=None,
-                    ratio=1.0, labels=None, n_samples=21, thin=10, burn_in=20, polar=0.5, ploidy=1,
-                    seed=42, recomb_map=None, mut_map=None, penalty=None, hmm_epsilon=None,
-                    psmc_bins=None, fast=False, singer_args=None, n_jobs=None, sequence_length=None,
-                    skip_gaps=None, workdir=None, singer_bin=None, merge_arg_script=None,
-                    merge_python=None, log=None, m=None, r=None, n=None, burnin=None):
+                    ratio=1.0, labels=None, soft_refs=None, n_samples=21, thin=10, burn_in=20,
+                    polar=0.5, ploidy=1, seed=42, recomb_map=None, mut_map=None, penalty=None,
+                    hmm_epsilon=None, psmc_bins=None, fast=False, singer_args=None, n_jobs=None,
+                    sequence_length=None, skip_gaps=None, workdir=None, singer_bin=None,
+                    merge_arg_script=None, merge_python=None, log=None,
+                    m=None, r=None, n=None, burnin=None):
     """Sample posterior ARGs for a long region on ONE machine: window SINGER, then stitch.
 
     The single-machine analogue of the per-window × per-member cluster workflow (``workflow.py``)
@@ -575,11 +581,12 @@ def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombi
         Contiguous window width (bp); ``[0, L)`` is tiled into non-overlapping windows. Pick a
         width SINGER handles comfortably (≈0.5–2 Mb) — smaller windows parallelise better but the
         per-window ARG ignores linkage across its boundaries.
-    Ne, mutation_rate, recombination_rate, labels, n_samples, thin, ploidy, polar, singer_bin
+    Ne, mutation_rate, recombination_rate, ratio, labels, soft_refs, n_samples, thin, ploidy, polar, singer_bin
         As for :func:`singer` / :func:`singer_window`. ``Ne`` is optional — when ``None`` it is
         estimated once from the whole source via :func:`tspaint.io.estimate_ne` (pass ``labels`` to
-        restrict that estimate to within-reference pairs) and reused for every window. ``seed`` is
-        offset per window (``seed + window_index``) so windows are independent but reproducible.
+        restrict that estimate to within-reference pairs, and ``soft_refs`` to exclude admixed /
+        suspect references from it) and reused for every window. ``seed`` is offset per window
+        (``seed + window_index``) so windows are independent but reproducible.
     burn_in : int, optional
         Leading MCMC samples to discard; members ``burn_in .. n_samples-1`` present in **every**
         window are stitched (default 20).
@@ -624,7 +631,7 @@ def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombi
         if mutation_rate is None:
             raise ValueError("Ne=None auto-estimate needs a scalar mutation rate (m=/mutation_rate=); "
                              "pass Ne explicitly when using mut_map")
-        Ne = estimate_ne(source, mutation_rate, groups=labels)
+        Ne = estimate_ne(source, mutation_rate, groups=labels, exclude=soft_refs)
         if log:
             log(f"estimated Ne={Ne:.0f} from nucleotide diversity (pi / 4mu)")
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_win_")
