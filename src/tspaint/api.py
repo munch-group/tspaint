@@ -280,8 +280,8 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         slow part on a large ARG — one bar with the running log-likelihood), then a
         ``painting`` bar: per marginal tree when serial (``n_jobs == 1``), per genome chunk
         when parallel (``n_jobs > 1``), and per ensemble member when ``ts`` is a list of tree
-        sequences. Text bars (render in terminals, Jupyter, and VS Code notebooks alike).
-        Default ``False`` (no bar; behaviour is otherwise unchanged).
+        sequences. Uses :mod:`tqdm.auto` — the notebook widget in Jupyter, a text bar in a
+        terminal. Default ``False`` (no bar; behaviour is otherwise unchanged).
 
     Returns
     -------
@@ -390,7 +390,7 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         # per-tree/per-chunk bar is suppressed to avoid one nested bar per member.
         member_iter = members
         if progress:
-            from tqdm import tqdm
+            from tqdm.auto import tqdm
             member_iter = tqdm(members, desc="painting", unit="member")
         member_tables = [_paint_member(g) for g in member_iter]  # kept for the per-member CI
         posteriors = merge_posterior_tables(member_tables, samples=queries)

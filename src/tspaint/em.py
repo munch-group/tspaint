@@ -218,8 +218,8 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         (reused across EM iterations); the result is ``allclose`` to serial, differing only by
         floating-point reduction order (:mod:`tspaint.parallel`).
     progress : bool, optional
-        Show a text :mod:`tqdm` ``EM fit`` bar over the iterations, with the running
-        log-likelihood. Default ``False``.
+        Show a :mod:`tqdm.auto` ``EM fit`` bar over the iterations, with the running
+        log-likelihood (notebook widget in Jupyter, text in a terminal). Default ``False``.
 
     Returns
     -------
@@ -307,7 +307,7 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
 
         bar = None
         if progress:
-            from tqdm import tqdm
+            from tqdm.auto import tqdm
             bar = tqdm(total=max_iter, desc="EM fit", unit="iter")
             stack.callback(bar.close)
 
