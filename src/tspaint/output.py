@@ -71,7 +71,7 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None,
     lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
     tree_iter = ts.trees()
     if progress and tree_range is None:
-        from tqdm.auto import tqdm
+        from tqdm import tqdm
         tree_iter = tqdm(tree_iter, total=(hi - lo), desc="painting", unit="tree")
     for ti, tree in enumerate(tree_iter):
         if ti < lo:

@@ -162,7 +162,7 @@ def build_emissions(ts, labels, w, pi):
 
 def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         soft_refs=None, alpha=20.0, beta=1.0, priors=None, w0=0.9, estimate_pi=True,
-        n_jobs=1):
+        n_jobs=1, progress=False):
     """Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
 
     The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient
@@ -217,6 +217,9 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor`
         (reused across EM iterations); the result is ``allclose`` to serial, differing only by
         floating-point reduction order (:mod:`tspaint.parallel`).
+    progress : bool, optional
+        Show a text :mod:`tqdm` ``EM fit`` bar over the iterations, with the running
+        log-likelihood. Default ``False``.
 
     Returns
     -------
@@ -302,6 +305,12 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             ss = reduce(add_suffstats, (f.result() for f in futures))   # task order = deterministic
             return ss.S_dwell, ss.S_jumps, ss.S_root, ss.S_cred, ss.loglik
 
+        bar = None
+        if progress:
+            from tqdm import tqdm
+            bar = tqdm(total=max_iter, desc="EM fit", unit="iter")
+            stack.callback(bar.close)
+
         for _ in range(max_iter):
             S_dwell, S_jumps, S_root, S_cred, loglik = (
                 estep_parallel() if executor is not None else estep_serial())
@@ -320,6 +329,9 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
                     a, b = tip_priors.get(s, (alpha, beta))
                     w[s] = m_step_w(agree, disagree, a, b)
 
+            if bar is not None:
+                bar.update(1)
+                bar.set_postfix(loglik=f"{loglik:.1f}")
             if len(history) > 1 and abs(loglik - prev) < tol:
                 break
             prev = loglik

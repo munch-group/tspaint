@@ -251,7 +251,7 @@ def posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merg
                        for (lo, hi) in genome_chunks(ts, n_jobs)]
             results = futures
             if progress:
-                from tqdm.auto import tqdm
+                from tqdm import tqdm
                 results = tqdm(futures, desc="painting", unit="chunk")
             chunk_tracks = [f.result() for f in results]
         return _stitch_tracks(chunk_tracks, merge_tol)

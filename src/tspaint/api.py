@@ -276,11 +276,12 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         ``allclose`` (floating-point reduction order). The CLI resolves this from
         ``$SLURM_JOB_CPUS_PER_NODE``.
     progress : bool
-        Show a :mod:`tqdm` progress bar for the **painting** phase (after the EM fit). Per
-        marginal tree when serial (``n_jobs == 1``), per genome chunk when parallel
-        (``n_jobs > 1``), and per ensemble member when ``ts`` is a list of tree sequences.
-        Default ``False`` (no bar; behaviour is otherwise unchanged). The EM fit itself is
-        not covered.
+        Show :mod:`tqdm` progress bars. First an ``EM fit`` bar over the EM iterations (the
+        slow part on a large ARG — one bar with the running log-likelihood), then a
+        ``painting`` bar: per marginal tree when serial (``n_jobs == 1``), per genome chunk
+        when parallel (``n_jobs > 1``), and per ensemble member when ``ts`` is a list of tree
+        sequences. Text bars (render in terminals, Jupyter, and VS Code notebooks alike).
+        Default ``False`` (no bar; behaviour is otherwise unchanged).
 
     Returns
     -------
@@ -362,7 +363,7 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
               [labels] * len(members) if members is not None else labels,
               K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
               estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0,
-              n_jobs=n_jobs)
+              n_jobs=n_jobs, progress=progress)
 
     def _paint_member(g, member_progress=False):
         if n_jobs and int(n_jobs) > 1:
@@ -389,7 +390,7 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         # per-tree/per-chunk bar is suppressed to avoid one nested bar per member.
         member_iter = members
         if progress:
-            from tqdm.auto import tqdm
+            from tqdm import tqdm
             member_iter = tqdm(members, desc="painting", unit="member")
         member_tables = [_paint_member(g) for g in member_iter]  # kept for the per-member CI
         posteriors = merge_posterior_tables(member_tables, samples=queries)
