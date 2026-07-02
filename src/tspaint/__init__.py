@@ -48,7 +48,7 @@ from __future__ import annotations
 
 # Core public API ---------------------------------------------------------------------------
 from .api import paint, Painting
-from .track import SoftTrack
+from .track import SoftTrack, SegmentTrack, compare_tracks
 from .em import fit, FitResult
 from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
                      INFORMATIVE, MISSING_INFO)
@@ -78,7 +78,7 @@ except Exception:  # pragma: no cover
 
 __all__ = [
     # core
-    "paint", "Painting", "SoftTrack", "fit", "FitResult",
+    "paint", "Painting", "SoftTrack", "SegmentTrack", "compare_tracks", "fit", "FitResult",
     "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO",
     "make_generator_2state",
     # data prep (slice / normalise a genotype source before a front end)

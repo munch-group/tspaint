@@ -18,9 +18,49 @@ is the dataclass and supplies the data attributes the mixin reads (see :class:`S
 """
 from __future__ import annotations
 
-from .output import hard_segments, posterior_at
+import numpy as np
 
-__all__ = ["SoftTrack"]
+from .output import hard_segments, posterior_at, Segment, INFORMATIVE
+
+__all__ = ["SoftTrack", "SegmentTrack", "compare_tracks"]
+
+
+def _diverging_sm(cmap, colors):
+    """A ``[0, 1]`` ScalarMappable, optionally from a custom ``colors`` diverging colormap."""
+    import matplotlib
+    if colors:
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("custom_diverging", colors, N=256)
+    return matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap=cmap)
+
+
+def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, ylabel):
+    """Draw one haplotype strip: soft posterior gradient (top), hard segments (middle), truth (below).
+
+    Shared by :meth:`SoftTrack.plot` and :func:`compare_tracks` so every track/tool renders the same
+    way. ``soft_segs`` are :class:`~tspaint.output.Segment`\\ s (gradient by ``posterior[hi]``);
+    ``hard_segs`` / ``truth_segs`` are ``(left, right, state)`` tuples (solid, highlighted at ``hi``).
+    """
+    import matplotlib
+    ymin = -0.25 if truth_segs is not None else 0.0
+    if truth_segs is not None:
+        for (l, r, s) in truth_segs:
+            ax.barh(-0.25, r - l, left=l, height=0.5, color=sm.to_rgba(1.0 if s == hi else 0.0),
+                    edgecolor="none")
+    for (l, r, s) in hard_segs:
+        ax.barh(0.25, r - l, left=l, height=0.5, color=sm.to_rgba(1.0 if s == hi else 0.0),
+                edgecolor="none")
+    ax.axhline(0.25, c='black', lw=0.25)
+    ax.axhline(0.5, c='black', lw=0.25)
+    for seg in soft_segs:
+        ax.barh(1, seg.right - seg.left, left=seg.left, height=1,
+                color=sm.to_rgba(seg.posterior[hi]), edgecolor="none")
+    ax.set_ylim(ymin, 1.5)
+    ax.set_xlim(0, length)
+    ax.set_ylabel(ylabel, rotation=0, fontsize=7, color="0.0", horizontalalignment="right")
+    ax.yaxis.set_major_locator(matplotlib.ticker.NullLocator())
+    for sp in ("top", "bottom", "left", "right"):
+        ax.spines[sp].set_visible(True)
+    ax.grid(False)
 
 
 class SoftTrack:
@@ -131,42 +171,17 @@ class SoftTrack:
         qs = self.samples
         segments = self.segments(deadband=0.4)
 
-        if colors:
-            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("custom_diverging", colors, N=256)
-
-        sm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap=cmap)
+        sm = _diverging_sm(cmap, colors)
         fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))
         gs = fig.add_gridspec(len(qs), 2, width_ratios=[1, 0.03], hspace=0)
         axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]
 
         for i, q in enumerate(qs):
-            ymin, ymax = 0, 1.5
-            if truth:
-                ymin = -0.25
-                for (l, r, s) in truth[q]:
-                    axes[i].barh(-0.25, r - l, left=l, height=0.5,
-                                 color=sm.to_rgba(1.0 if s == hi else 0.0), edgecolor="none")
-            for (l, r, s) in segments[q]:
-                axes[i].barh(0.25, r - l, left=l, height=0.5,
-                             color=sm.to_rgba(1.0 if s == hi else 0.0), edgecolor="none")
-            axes[i].axhline(0.25, c='black', lw=0.25)
-            axes[i].axhline(0.5, c='black', lw=0.25)
-            for seg in self.posteriors[q]:
-                axes[i].barh(1, seg.right - seg.left, left=seg.left, height=1,
-                             color=sm.to_rgba(seg.posterior[hi]), edgecolor="none")
-
-            axes[i].set_ylim(ymin, ymax)
-            axes[i].set_xlim(0, self.length)
-            axes[i].set_ylabel(f'hapl. {i}', rotation=0, fontsize=7, color="0.0", horizontalalignment="right")
-            axes[i].yaxis.set_major_locator(matplotlib.ticker.NullLocator())
+            _draw_track_row(axes[i], self.posteriors[q], segments[q], truth[q] if truth else None,
+                            hi=hi, sm=sm, length=self.length, ylabel=f'hapl. {i}')
+            axes[i].tick_params(axis='x', bottom=True)
             if i < len(axes) - 1:
                 axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())
-            axes[i].tick_params(axis='x', bottom=True)
-            axes[i].spines['top'].set_visible(True)
-            axes[i].spines['bottom'].set_visible(True)
-            axes[i].spines['left'].set_visible(True)
-            axes[i].spines['right'].set_visible(True)
-            axes[i].grid(False)
 
         ax = fig.add_subplot(gs[:, 1])
         ax.set_axis_off()
@@ -177,3 +192,140 @@ class SoftTrack:
         plt.tight_layout()
         if return_plot:
             return fig, axes
+
+
+def _infer_K(data):
+    """Number of ancestry states across a segments dict (max soft-posterior length / hard state + 1)."""
+    K = 2
+    for segs in data.values():
+        for s in segs:
+            K = max(K, int(np.asarray(s.posterior).shape[0]) if isinstance(s, Segment) else int(s[2]) + 1)
+    return K
+
+
+def _to_segments(seglist, K):
+    """Normalise one sample's list to soft :class:`~tspaint.output.Segment`\\ s.
+
+    :class:`Segment`\\ s pass through; a hard ``(left, right, state)`` tuple becomes a one-hot
+    ``Segment`` so the shared renderer draws it as a solid state bar.
+    """
+    out = []
+    for s in seglist:
+        if isinstance(s, Segment):
+            out.append(s)
+        else:
+            left, right, state = s
+            post = np.zeros(K)
+            post[int(state)] = 1.0
+            out.append(Segment(float(left), float(right), post, INFORMATIVE))
+    return out
+
+
+def _infer_length(posteriors):
+    return max((float(s.right) for segs in posteriors.values() for s in segs), default=0.0)
+
+
+class SegmentTrack(SoftTrack):
+    """Wrap any per-sample segments in a plottable track — hard tuples *or* soft posteriors.
+
+    Gives ``painting.segments()`` (hard ``(left, right, state)`` tuples), the comparator painters
+    (``rfmix_paint`` / ``gnomix`` / ``tspaint_paint`` — soft :class:`~tspaint.output.Segment`\\ s), or any
+    ``{sample: segments}`` dict the same read-out as a :class:`~tspaint.Painting`: :meth:`plot`,
+    :meth:`segments`, :meth:`posterior_at`. Hard tuples become one-hot segments and render as solid
+    per-state bars; soft segments render as the posterior gradient — so different tools plot in one
+    consistent style (compare several at once with :func:`compare_tracks`). Purely a view: it does not
+    alter the segments it wraps.
+
+    Parameters
+    ----------
+    segments : dict or SoftTrack
+        ``{sample: [Segment | (left, right, state)]}``, or an existing track / :class:`~tspaint.Painting`
+        (its ``posteriors`` and length are reused).
+    length : float, optional
+        Sequence length for the x-axis; defaults to the largest segment ``right``.
+    deadband : float, optional
+        Default dead-band for :meth:`segments`. Default ``0.0``.
+    hi_state : int, optional
+        The state highlighted by :meth:`plot`'s colour scale (top of the colormap). Default ``0``.
+    hi_label : str, optional
+        Colour-bar label; defaults to the painting's ``"P(ancestry A)"``.
+    K : int, optional
+        Number of ancestry states (for one-hot conversion of hard tuples); inferred when ``None``.
+    """
+
+    def __init__(self, segments, *, length=None, deadband=0.0, hi_state=0, hi_label=None, K=None):
+        if isinstance(segments, SoftTrack):
+            data = segments.posteriors
+            if length is None:
+                length = segments.length
+        else:
+            data = segments
+        K = K if K is not None else _infer_K(data)
+        self.posteriors = {s: _to_segments(list(v), K) for s, v in data.items()}
+        self._seqlen = float(length) if length is not None else _infer_length(self.posteriors)
+        self.default_deadband = deadband
+        self._hi_state = hi_state
+        if hi_label is not None:
+            self._hi_label = hi_label
+
+
+def compare_tracks(tracks, sample, *, truth=None, length=None, cmap='coolwarm', colors=None,
+                   title=None, return_plot=False):
+    """Stack several tools' calls for **one haplotype**, one row per tool, for visual comparison.
+
+    Parameters
+    ----------
+    tracks : mapping
+        ``{tool name: segments}`` — each value a ``{sample: segments}`` dict, a
+        :class:`~tspaint.Painting`, or a :class:`SegmentTrack` (soft or hard; normalised via
+        :class:`SegmentTrack`).
+    sample : int
+        The haplotype (sample id / key) to compare across tools. Call once per haplotype.
+    truth : dict, optional
+        Ground-truth ``{sample: [(left, right, state)]}`` drawn as a reference row at the bottom.
+    length : float, optional
+        x-axis length; defaults to the largest ``right`` across the tools.
+    cmap, colors, title, return_plot
+        As for :meth:`SoftTrack.plot`.
+
+    Returns
+    -------
+    tuple or None
+        ``(figure, axes)`` if ``return_plot`` else ``None``.
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib
+
+    names = list(tracks)
+    sts = {name: (t if isinstance(t, SegmentTrack) else SegmentTrack(t, length=length))
+           for name, t in tracks.items()}
+    hi = 0
+    L = float(length) if length is not None else max((st.length for st in sts.values()), default=0.0)
+    truth_seg = truth.get(sample) if truth else None
+    n_rows = len(names) + (1 if truth_seg is not None else 0)
+
+    sm = _diverging_sm(cmap, colors)
+    fig = plt.figure(figsize=(9, 0.4 * n_rows + 1))
+    gs = fig.add_gridspec(n_rows, 2, width_ratios=[1, 0.03], hspace=0)
+    axes = [fig.add_subplot(gs[i, 0]) for i in range(n_rows)]
+
+    for i, name in enumerate(names):
+        st = sts[name]
+        _draw_track_row(axes[i], st.posteriors.get(sample, []),
+                        st.segments(deadband=0.4).get(sample, []), None,
+                        hi=hi, sm=sm, length=L, ylabel=name)
+        axes[i].tick_params(axis='x', bottom=True)
+        if i < n_rows - 1:
+            axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())
+    if truth_seg is not None:
+        _draw_track_row(axes[-1], [], truth_seg, None, hi=hi, sm=sm, length=L, ylabel="truth")
+        axes[-1].tick_params(axis='x', bottom=True)
+
+    ax = fig.add_subplot(gs[:, 1])
+    ax.set_axis_off()
+    fig.colorbar(sm, ax=ax, fraction=0.5, pad=0.01)
+    if title:
+        axes[0].set_title(title)
+    plt.tight_layout()
+    if return_plot:
+        return fig, axes
