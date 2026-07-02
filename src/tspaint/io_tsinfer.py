@@ -45,10 +45,12 @@ def tsinfer(source):
 
     Parameters
     ----------
-    source : tskit.TreeSequence or str
+    source : tskit.TreeSequence, str, or Variants
         The genotypes to infer from — a tree sequence carrying variant sites (e.g. from
-        :func:`add_mutations`), a **VCF Zarr** store, or a **VCF** file (see
-        :mod:`tspaint.io_genotypes` for the unified handling and its v1 limits).
+        :func:`add_mutations`), a **VCF Zarr** store, a **VCF** file, or a
+        :class:`~tspaint.io_genotypes.Variants` (e.g. from :func:`~tspaint.io.subset_data` /
+        :func:`~tspaint.io.pseudohaploid`) — see :mod:`tspaint.io_genotypes` for the unified
+        handling and its v1 limits.
 
     Returns
     -------
@@ -68,8 +70,11 @@ def tsinfer(source):
     """
     import tsinfer as _tsinfer
     from .ids import attach_sample_ids
-    from .io_genotypes import (source_kind, variants_from_vcf, to_sample_data,
+    from .io_genotypes import (Variants, source_kind, variants_from_vcf, to_sample_data,
                                variant_data_from_zarr, sample_names_from_zarr)
+    if isinstance(source, Variants):                                    # e.g. subset_data / pseudohaploid
+        return attach_sample_ids(_tsinfer.infer(to_sample_data(source)),
+                                 source.sample_names, source.ploidy)
     kind = source_kind(source)
     if kind == "ts":
         return _tsinfer.infer(_tsinfer.SampleData.from_tree_sequence(source))

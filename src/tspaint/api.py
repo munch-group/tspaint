@@ -203,9 +203,9 @@ class Painting(SoftTrack):
                 f"pi={np.array2string(self.pi, precision=2)})")
 
 
-def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, deadband=0.0,
-          smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0, beta=1.0,
-          priors=None, w0=0.9, n_jobs=1):
+def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate_pi=False,
+          deadband=0.0, smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0,
+          beta=1.0, priors=None, w0=0.9, n_jobs=1):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -232,6 +232,16 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     queries : iterable, optional
         Samples to paint (node indices or sample-ID strings, as for ``labels``); defaults to every
         sample not in ``labels``.
+    refs : bool or iterable, optional
+        Also paint reference haplotypes, arranged around the queries so the plot is framed by its
+        anchors: **group-0 references ("ref1") occupy the first (top) rows and the other groups
+        ("ref2", ...) the last (bottom) rows**, with the queries in between. ``True`` includes every
+        reference; an iterable includes only the named reference individuals (node indices or
+        sample-ID strings, a diploid id expanding to both haplotypes) — a
+        :class:`ValueError` is raised if any of them is not a labelled reference. Default ``False``
+        (paint queries only). References stay hard-clamped anchors in the fit, so a clamped
+        reference paints as a flat bar of its own label colour (use ``soft_refs`` /
+        :meth:`Painting.introgression_map` to see a reference dissent from its label).
     K : int
         Number of ancestry states (2 by default; pass a ``K×K`` ``Q0`` for K-way).
     soft_refs : set[int], optional
@@ -307,12 +317,38 @@ def paint(ts, labels, queries=None, *, K=2, soft_refs=None, estimate_pi=False, d
     ref_ts = members[0] if members is not None else ts
     # labels / queries may be keyed by sample-ID string (from io.singer/io.tsinfer's stamped ids)
     # or by integer node index; resolve both to node ids (soft_refs / priors are resolved by fit).
-    from .ids import resolve_labels, resolve_ids
+    from .ids import resolve_labels, resolve_ids, resolve_nodes
     labels = resolve_labels(ref_ts, labels)
     if queries is None:
         queries = [int(s) for s in ref_ts.samples() if int(s) not in labels]
     else:
         queries = resolve_ids(ref_ts, queries)
+
+    # Optionally paint the reference haplotypes too, framing the queries: group-0 refs ("ref1") as
+    # the first (top) rows, the other reference groups ("ref2", ...) as the last (bottom) rows.
+    if refs:
+        if refs is True:
+            ref_nodes = list(labels)                          # every reference, in label order
+        else:
+            ref_nodes, absent = [], []
+            for item in refs:                                 # an explicit set of reference individuals
+                try:
+                    nodes = resolve_nodes(ref_ts, item)
+                except KeyError:
+                    nodes = []
+                if nodes and all(n in labels for n in nodes):
+                    ref_nodes.extend(nodes)
+                else:
+                    absent.append(item)
+            if absent:
+                raise ValueError(
+                    f"refs {absent} are not reference individuals (absent from labels); pass only "
+                    "labelled references, or refs=True to include them all")
+        ref_set = set(ref_nodes)
+        top = [n for n in ref_nodes if labels[n] == 0]        # ref1 (state 0) -> first rows
+        bottom = [n for n in ref_nodes if labels[n] != 0]     # ref2 (other states) -> bottom rows
+        queries = top + [q for q in queries if q not in ref_set] + bottom
+
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
 
     # One pooled θ fit shared across the ensemble (the M-step is scale-invariant).

@@ -70,6 +70,39 @@ def test_paint_smooth_option_reduces_switches():
     assert nsw(smoothed) <= nsw(plain)
 
 
+# --- refs: also paint the reference haplotypes, framing the queries --------------------------
+
+@pytest.mark.slow
+def test_paint_refs_true_frames_queries():
+    ts, labels, queries, _ = _admixture(L=1e5)
+    ref1 = [s for s in labels if labels[s] == 0]
+    ref2 = [s for s in labels if labels[s] == 1]
+    p = tspaint.paint(ts, labels, queries, refs=True)
+    assert p.queries[:len(ref1)] == ref1                     # ref1 (state 0) -> first rows
+    assert p.queries[-len(ref2):] == ref2                    # ref2 (state 1) -> bottom rows
+    assert set(p.queries[len(ref1):-len(ref2)]) == set(queries)   # queries in the middle
+    assert set(p.posteriors) == set(p.queries)               # references are painted too
+    assert p.posterior_at(ref1[0], ts.sequence_length / 2)[0] > 0.99   # clamped ref -> its label
+
+
+@pytest.mark.slow
+def test_paint_refs_list_selects_and_orders():
+    ts, labels, queries, _ = _admixture(L=1e5)
+    ref1 = [s for s in labels if labels[s] == 0]
+    ref2 = [s for s in labels if labels[s] == 1]
+    p = tspaint.paint(ts, labels, queries, refs=[ref2[0], ref1[0]])   # input order ignored
+    assert p.queries[0] == ref1[0]                           # state-grouped: ref1 first
+    assert p.queries[-1] == ref2[0]                          # ref2 last
+    assert set(p.queries) == {ref1[0], ref2[0]} | set(queries)
+
+
+def test_paint_refs_non_reference_raises():
+    # raised while resolving args, before the EM fit -> fast (no @slow needed)
+    ts, labels, queries, _ = _admixture(L=5e4)
+    with pytest.raises(ValueError, match="not reference individuals"):
+        tspaint.paint(ts, labels, queries, refs=[queries[0]])         # a query is not a reference
+
+
 # --- ensemble input: paint() accepts a list of tree sequences -------------------------------
 
 def test_paint_empty_ensemble_raises():
