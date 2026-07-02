@@ -400,7 +400,7 @@ def _group_assignment(groups, v, indiv_cols, base_ids):
     return arr
 
 
-def estimate_ne(source, mutation_rate, groups=None):
+def estimate_ne(source, mutation_rate, groups=None, exclude=None):
     r"""Estimate the (diploid) effective population size from between-individual diversity.
 
     Uses Tajima's pairwise estimator of :math:`\theta = 4 N_e \mu`: nucleotide diversity
@@ -433,6 +433,11 @@ def estimate_ne(source, mutation_rate, groups=None):
         painting ``labels`` dict works directly; an array-like gives one value per individual (or per
         haplotype). Individuals with no entry (absent from the mapping, or ``None`` / NaN) are dropped
         from every pair. ``None`` (default) puts everyone in one group — the all-pairs behaviour.
+    exclude : iterable, optional
+        Individuals to leave out of the estimate entirely — by base sample id (as in
+        :attr:`Variants.sample_names`) or integer individual index. Use it to drop **soft / suspect
+        references** (admixed or mislabelled) whose inflated diversity would bias :math:`N_e`, so the
+        SINGER prior is set from the clean panel only.
 
     Returns
     -------
@@ -463,11 +468,17 @@ def estimate_ne(source, mutation_rate, groups=None):
     # structured panel can restrict Ne to within-reference pairs. groups=None -> one all-individual
     # group == the historical all-pairs estimate.
     indiv_cols, base_ids = _group_columns(v)
+    excluded = set()
+    if exclude:                                              # drop soft/suspect refs (by id or index)
+        ex = set(exclude)
+        excluded = {k for k in range(len(indiv_cols)) if base_ids[k] in ex or k in ex}
     if groups is None:
-        buckets = [indiv_cols]
+        buckets = [[indiv_cols[k] for k in range(len(indiv_cols)) if k not in excluded]]
     else:
         by_val = {}
         for k, val in enumerate(_group_assignment(groups, v, indiv_cols, base_ids)):
+            if k in excluded:
+                continue                                     # soft/suspect ref -> excluded
             if val is _UNSET or val is None or (isinstance(val, float) and val != val):
                 continue                                     # uncovered / NaN -> excluded
             by_val.setdefault(val, []).append(indiv_cols[k])
