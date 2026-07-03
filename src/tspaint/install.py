@@ -17,7 +17,13 @@ import subprocess
 
 from .io_singer import singer_binary_path, singer_install_dir, repo_root
 
-__all__ = ["install_singer", "SINGER_REPO", "SINGER_COMMIT"]
+__all__ = ["install_singer", "SINGER_REPO", "SINGER_COMMIT",
+           "install_argweaver", "ARGWEAVER_REPO", "ARGWEAVER_COMMIT"]
+
+#: ARGweaver source (mdrasmus/argweaver). Only the C++ ``arg-sample`` binary is built (``make``);
+#: the Python-2 ``make install`` step is skipped. Override via $TSPAINT_ARGWEAVER_REPO / _COMMIT.
+ARGWEAVER_REPO = os.environ.get("TSPAINT_ARGWEAVER_REPO", "https://github.com/mdrasmus/argweaver")
+ARGWEAVER_COMMIT = os.environ.get("TSPAINT_ARGWEAVER_COMMIT", "master")
 
 # TEMPORARY: upstream SINGER (popgenmethods/SINGER @ f88d687, v0.1.9) has a node-write-state
 # use-after-free that corrupts the heap and SIGSEGVs on ARGs above ~1 Mb. The fix lives on this
@@ -117,4 +123,53 @@ def install_singer(*, commit=None, force=False, tools_dir=None, log=print):
         raise RuntimeError("built binary did not behave like singer:\n"
                            f"{(chk.stderr or chk.stdout)[-500:]}")
     log(f"singer built: {binary}")
+    return binary
+
+
+def install_argweaver(*, commit=None, force=False, tools_dir=None, log=print):
+    """Clone + build ARGweaver's ``arg-sample`` where tspaint finds it; return the binary path.
+
+    Runs the project's own ``make`` (only the C++ sampler is built — the Python-2 ``make install``
+    step is skipped, so no Python-2 runtime is needed). Requires a C++ compiler and ``make`` on
+    PATH. Override the source via ``$TSPAINT_ARGWEAVER_REPO`` / ``_COMMIT``; relocate the clone with
+    ``$TSPAINT_TOOLS_DIR``. tspaint's ARGweaver front end (:mod:`tspaint.io_argweaver`) looks here by
+    default (or at ``$TSPAINT_ARGWEAVER``).
+
+    Parameters
+    ----------
+    commit : str, optional
+        ARGweaver commit / ref to build (default :data:`ARGWEAVER_COMMIT`, i.e. ``master``).
+    force : bool, optional
+        Rebuild even if the binary already exists.
+    tools_dir : str, optional
+        Override the clone root (default: ``$TSPAINT_TOOLS_DIR`` or ``<repo>/external``).
+
+    Returns
+    -------
+    str
+        Path to the built ``arg-sample`` binary.
+    """
+    from .io_argweaver import argweaver_binary_path, argweaver_install_dir
+    commit = commit or ARGWEAVER_COMMIT
+    target = argweaver_install_dir() if tools_dir is None else os.path.join(tools_dir, "argweaver")
+    binary = (argweaver_binary_path() if tools_dir is None
+              else os.path.join(target, "bin", "arg-sample"))
+    if os.path.exists(binary) and not force:
+        log(f"argweaver already built: {binary} (use --force to rebuild)")
+        return binary
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    if not os.path.exists(os.path.join(target, ".git")):
+        log(f"cloning argweaver @ {commit} -> {target}")
+        _run(["git", "clone", ARGWEAVER_REPO, target], log=log)
+    else:
+        _run(["git", "-C", target, "fetch", "origin", commit], log=log)
+    _run(["git", "-C", target, "checkout", commit], log=log)
+    log("building arg-sample (make)")
+    _run(["make", "-C", target], log=log)
+    if not os.path.exists(binary):
+        raise RuntimeError(
+            f"make reported success but {binary} is missing — ARGweaver needs a C++ compiler and "
+            f"make; see https://mdrasmus.github.io/argweaver/")
+    os.chmod(binary, 0o755)
+    log(f"argweaver built: {binary}")
     return binary

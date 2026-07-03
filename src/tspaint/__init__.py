@@ -65,7 +65,7 @@ from .archaic import detect_ghost, GhostResult, detect_archaic
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
     metrics, compare, io, experiments, bp, dating, sim, model, ensemble, ranked, validate,
     em, output, pruning, accumulate, branch_stats, diagnostics, introgression, archaic,
-    io_tsinfer, io_singer, io_relate, io_genotypes, io_rfmix, benchmark,
+    io_tsinfer, io_singer, io_argweaver, io_relate, io_genotypes, io_rfmix, benchmark,
 )
 
 try:  # version is best-effort; not required for use

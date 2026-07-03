@@ -121,6 +121,12 @@ within-reference pairs; `exclude=` drops admixed refs). SINGER's options mirror 
 `r`/`ratio`, `n`, `thin`, `polar`, …, passed as-is); if it **over-recombines** (too many short trees),
 lower `ratio` (the recombination/mutation ratio) — `Ne` sets the timescale, `ratio` the tree density.
 
+`tspaint.io.argweaver` is a **drop-in alternative** posterior-ARG sampler (ARGweaver; Rasmussen et
+al., 2014) with the same ensemble output — `argweaver(vcf, Ne=Ne, mutation_rate=…, recombination_rate=…)`.
+It also requires an explicit `Ne` (`arg-sample -N`) and mirrors ARGweaver's flags (`ntimes`, `maxtime`,
+`compress`, `iters`, …). Build the binary with `tspaint install argweaver` (needs a C++ compiler + make)
+or set `$TSPAINT_ARGWEAVER`.
+
 ## Command-line interface (GWF / cluster)
 
 The `tspaint` command wraps the library so a pipeline runs as file-in/file-out jobs (e.g. under
@@ -165,7 +171,7 @@ gain — the paths stay side by side).
 |---|---|
 | `tspaint.metrics` | `balanced_accuracy`, `reliability_curve`, `breakpoint_precision_recall`, `switch_density`, `tract_boundary_error`, … |
 | `tspaint.compare` | painters `tspaint_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
-| `tspaint.io` | unified front ends `tsinfer` / `relate` / `singer` (accept ts \| VCF Zarr \| VCF) + `add_mutations`; `estimate_ne` (π/4μ) for SINGER's required `Ne` |
+| `tspaint.io` | unified front ends `tsinfer` / `relate` / `singer` / `argweaver` (accept ts \| VCF Zarr \| VCF) + `add_mutations`; `estimate_ne` (π/4μ) for SINGER's / ARGweaver's required `Ne` |
 | `tspaint.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
 | `tspaint.dating` | admixture rate through time (time-inhomogeneous directional mugration EM): `fit_rate_through_time`, `RateThroughTime`, `paint_qt` |
 | `tspaint.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |

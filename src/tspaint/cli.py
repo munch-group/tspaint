@@ -426,6 +426,41 @@ def trees_singer(source, m, Ne, ratio, r, n, thin, burnin, polar, ploidy, seed, 
     _echo(f"singer: {len(ensemble)} posterior members -> {out_dir}/member_*.trees")
 
 
+# ARGweaver flag names, passed as-is: -N (diploid Ne, required), -m, -r, --ntimes, --maxtime, -c,
+# -n (iters), --sample-step, --randseed. An alternative posterior-ARG ensemble source to `singer`.
+@trees.command("argweaver")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("--Ne", "--ne", "Ne", type=float, required=True, help="diploid Ne (arg-sample -N; required).")
+@click.option("-m", "--mut-rate", "mutation_rate", type=float, required=True, help="mutation rate (arg-sample -m).")
+@click.option("-r", "--recomb-rate", "recombination_rate", type=float, required=True, help="recombination rate (arg-sample -r).")
+@click.option("--ntimes", type=int, default=20, show_default=True, help="discretised time steps (--ntimes).")
+@click.option("--maxtime", type=float, default=200e3, show_default=True, help="max time, generations (--maxtime).")
+@click.option("-c", "--compress", type=int, default=1, show_default=True, help="block compression bp (arg-sample -c).")
+@click.option("-n", "--iters", type=int, default=100, show_default=True, help="MCMC iterations (arg-sample -n).")
+@click.option("--sample-step", "sample_step", type=int, default=None, help="save a sample every N iters (--sample-step).")
+@click.option("--burnin", "--burn-in", "burn_in", type=int, default=0, show_default=True, help="discard leading samples.")
+@click.option("--thin", type=int, default=1, show_default=True, help="keep every THIN-th sample.")
+@click.option("--seed", type=int, default=None, help="random seed (--randseed).")
+@click.option("--argweaver-arg", "argweaver_args", multiple=True, help="passthrough arg-sample flag/value (repeatable).")
+@click.option("--length", "sequence_length", type=float, default=None)
+@click.option("-d", "--out-dir", required=True, type=click.Path(), help="dir for member_*.trees.")
+def trees_argweaver(source, Ne, mutation_rate, recombination_rate, ntimes, maxtime, compress, iters,
+                    sample_step, burn_in, thin, seed, argweaver_args, sequence_length, out_dir):
+    """Sample a posterior ARG ensemble with ARGweaver (alternative to singer) → member_*.trees."""
+    from .io import argweaver
+    src = _load_ts(source) if str(source).endswith(".trees") else source
+    ensemble = argweaver(src, Ne=Ne, mutation_rate=mutation_rate,
+                         recombination_rate=recombination_rate, ntimes=ntimes, maxtime=maxtime,
+                         compress=compress, iters=iters, sample_step=sample_step, burn_in=burn_in,
+                         thin=thin, seed=seed, argweaver_args=list(argweaver_args) or None,
+                         sequence_length=sequence_length)
+    ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
+    os.makedirs(out_dir, exist_ok=True)
+    for i, ts in enumerate(ensemble):
+        ts.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
+    _echo(f"argweaver: {len(ensemble)} posterior members -> {out_dir}/member_*.trees")
+
+
 @trees.command("add-mutations")
 @click.argument("trees_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("--rate", type=float, default=1e-8, show_default=True)
@@ -542,6 +577,21 @@ def install_singer_cmd(commit, force):
     path = install_singer(commit=commit, force=force, log=_echo)
     _echo(f"\nSINGER ready: {path}")
     _echo(f"tspaint uses it automatically; to use it from elsewhere set TSPAINT_SINGER={path}")
+
+
+@install.command("argweaver")
+@click.option("--commit", default=None, help="ARGweaver commit/ref to build (default: master).")
+@click.option("--force", is_flag=True, help="rebuild even if the arg-sample binary already exists.")
+def install_argweaver_cmd(commit, force):
+    """Clone + build ARGweaver's `arg-sample` from source (needs a C++ compiler + make).
+
+    Builds the `arg-sample` binary where tspaint finds it automatically, so `tspaint.io.argweaver`
+    (an alternative to `tspaint.io.singer`) works with no extra config.
+    """
+    from .install import install_argweaver
+    path = install_argweaver(commit=commit, force=force, log=_echo)
+    _echo(f"\nARGweaver ready: {path}")
+    _echo(f"tspaint uses it automatically; to use it from elsewhere set TSPAINT_ARGWEAVER={path}")
 
 
 from .benchmark.cli import benchmark as _benchmark_group   # noqa: E402  (attach the subcommand group)
