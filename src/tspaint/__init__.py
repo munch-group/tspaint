@@ -11,6 +11,7 @@ Quick start
 >>> painting = tspaint.paint(ts, labels)                    # EM-fit on references, paint the queries
 >>> painting.posteriors[q]                                # soft per-position posterior (Segments)
 >>> painting.segments(deadband=0.4)                       # hard ancestry tracts (for dating)
+>>> painting.plot()                                       # per-haplotype figure (soft posterior + hard tracts)
 
 On an inferred (tsinfer / Relate) ARG, add ``smooth=True`` to suppress tree-inference-induced
 spurious switches with the horizontal BP smoother (CLAUDE.md §7).
@@ -19,7 +20,8 @@ Public API
 ----------
 Core
     paint, Painting, fit, FitResult, posterior_table, hard_segments, Segment,
-    INFORMATIVE, MISSING_INFO, make_generator_2state
+    INFORMATIVE, MISSING_INFO, make_generator_2state; SegmentTrack / compare_tracks
+    (plot any per-sample segments — tspaint or an external tool like RFMix/gnomix — like a Painting)
 Simulation (examples / benchmarks)
     simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
 Dating (admixture rate through time — an optional, separate deliverable)

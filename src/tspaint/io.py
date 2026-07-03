@@ -7,7 +7,8 @@ sequence (or, for SINGER, an ensemble of posterior samples):
 * :func:`tsinfer` — tsinfer point estimate;
 * :func:`relate` — Relate ``--compress`` conversion (run Relate upstream);
 * :func:`singer` — SINGER Bayesian posterior ARG samples (a ``list`` — the input to the
-  ensemble merge, CLAUDE.md §7.4).
+  ensemble merge, CLAUDE.md §7.4). Needs an explicit ``Ne`` (SINGER's binary requires ``-Ne``);
+  get one from :func:`estimate_ne` (π/4μ).
 
 The two **inference** front ends (:func:`tsinfer`, :func:`singer`) take the same ``source``: a
 :class:`tskit.TreeSequence` (with mutations), a **VCF Zarr** store, or a **VCF** file (normalised

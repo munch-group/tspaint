@@ -100,9 +100,26 @@ state = {p: i for i, p in enumerate(p for p, n in name.items() if n in ("A", "B"
 labels = {int(s): state[pop[s]] for s in ts.samples() if pop[s] in state}
 
 painting = tspaint.paint(ts, labels)          # EM-fit (Q[, π, w]) on references, paint the queries
+#          tspaint.paint(ts, labels, progress=True)   # add EM-fit + painting progress bars
 painting.posteriors[painting.queries[0]]    # soft per-position posterior over ancestry (Segments)
 painting.segments(deadband=0.4)             # hard ancestry tracts (for tract-length / dating)
+painting.plot()                             # per-haplotype figure: soft posterior + hard tracts
 ```
+
+### From genotypes (VCF / VCF Zarr) with a SINGER posterior ensemble
+
+```python
+labels = {"HG00096": 0, "NA20509": 1, ...}                            # sample id -> ancestry state
+Ne = tspaint.io.estimate_ne(vcf, mutation_rate=1.2e-8, groups=labels)  # π/4μ; Ne is required
+ensemble = tspaint.io.singer(vcf, Ne=Ne, m=1.2e-8, ratio=1.0)          # posterior ARGs (Bayesian SMC)
+painting = tspaint.paint(ensemble, labels)                             # mean posterior + uncertainty band
+```
+
+`io.singer` needs an **explicit `Ne`** — the SINGER binary requires `-Ne`, so tspaint never estimates
+one silently. `tspaint.io.estimate_ne` gives the π/4μ estimate (`groups=labels` restricts to
+within-reference pairs; `exclude=` drops admixed refs). SINGER's options mirror its own flags (`m`,
+`r`/`ratio`, `n`, `thin`, `polar`, …, passed as-is); if it **over-recombines** (too many short trees),
+lower `ratio` (the recombination/mutation ratio) — `Ne` sets the timescale, `ratio` the tree density.
 
 ## Command-line interface (GWF / cluster)
 
@@ -127,10 +144,14 @@ and the bit-exactness contract.
 
 ## Public API
 
-**Core** — `tspaint.paint(ts, labels, queries=None, *, deadband=…)` returns a `Painting` with
-`.posteriors` (soft `Segment` tracks), `.segments(deadband=…)` (hard tracts), and the fitted
-`.Q / .pi / .w`. Building blocks: `tspaint.fit`, `posterior_table`, `hard_segments`, `Segment`,
-`make_generator_2state`. Simulation: `simulate_admixture`, `local_ancestry_truth`.
+**Core** — `tspaint.paint(ts, labels, queries=None, *, deadband=…, progress=…)` returns a `Painting`
+with `.posteriors` (soft `Segment` tracks), `.segments(deadband=…)` (hard tracts), `.plot()`
+(per-haplotype figure), and the fitted `.Q / .pi / .w`; `progress=True` adds a progress bar for the EM
+fit and the painting. `tspaint.SegmentTrack` wraps **any** `{sample: segments}` dict — a painting's
+hard tracts, or an external tool's calls (RFMix / gnomix) — with the same `.plot()`, and
+`tspaint.compare_tracks` stacks several tools for one haplotype. Building blocks: `tspaint.fit`,
+`posterior_table`, `hard_segments`, `Segment`, `make_generator_2state`. Simulation:
+`simulate_admixture`, `local_ancestry_truth`.
 
 **Dating (optional)** — `tspaint.fit_rate_through_time(ts, labels)` estimates the directional
 cross-ancestry rate through time (`RateThroughTime` with `.q_AB / .q_BA / .plot()`) — *when* the
@@ -144,7 +165,7 @@ gain — the paths stay side by side).
 |---|---|
 | `tspaint.metrics` | `balanced_accuracy`, `reliability_curve`, `breakpoint_precision_recall`, `switch_density`, `tract_boundary_error`, … |
 | `tspaint.compare` | painters `tspaint_paint`, `nearest_reference_paint`, `rfmix_paint` + `head_to_head` |
-| `tspaint.io` | unified front ends `tsinfer` / `relate` / `singer` (accept ts \| VCF Zarr \| VCF) + `add_mutations` |
+| `tspaint.io` | unified front ends `tsinfer` / `relate` / `singer` (accept ts \| VCF Zarr \| VCF) + `add_mutations`; `estimate_ne` (π/4μ) for SINGER's required `Ne` |
 | `tspaint.bp` | horizontal BP/EP smoother (`bp_paint`, `bp_smooth`) — also `paint(smooth=True)`; helps on inferred ARGs (§7) |
 | `tspaint.dating` | admixture rate through time (time-inhomogeneous directional mugration EM): `fit_rate_through_time`, `RateThroughTime`, `paint_qt` |
 | `tspaint.experiments` | end-to-end drivers: `admixture_experiment`, `age_sweep`, `fragmentation_experiment`, `singer_ensemble_experiment`, … |
