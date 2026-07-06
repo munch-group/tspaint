@@ -231,7 +231,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../notebooks/showcase.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">A worked example: from genotypes to local ancestry, panel QC, and hidden sources</span></a>
+ <span class="menu-text">A worked example</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -331,7 +331,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="reference-qc" class="level2">
 <h2 class="anchored" data-anchor-id="reference-qc">1. Reference QC</h2>
 <p>Simulate a panel where a few nominal <code>A</code> / <code>B</code> references are themselves slightly admixed, then audit it. <code>reference_qc</code> ranks references by credibility (least-credible first) and maps each one’s own introgression. It assumes the clean references are the <strong>majority</strong>.</p>
-<div id="cell-3" class="cell">
+<div id="cell-3" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -346,50 +346,66 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'A'</span>) <span class="op">+</span> of(<span class="st">'RA'</span>)}        <span class="co"># RA = impure-A panel (nominally A)</span></span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>labels.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'B'</span>) <span class="op">+</span> of(<span class="st">'RB'</span>)})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="cell-4" class="cell">
+<div id="cell-4" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts, labels)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># least-credible references first -- the impure ones float to the top of the audit</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row <span class="kw">in</span> qc.summary()[:<span class="dv">6</span>]:</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"ref </span><span class="sc">{</span>row[<span class="st">'ref'</span>]<span class="sc">:&gt;3}</span><span class="ss">  label </span><span class="sc">{</span>row[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">  credibility </span><span class="sc">{</span>row[<span class="st">'credibility'</span>]<span class="sc">:.2f}</span><span class="ss">"</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"  anchor </span><span class="sc">{</span>row[<span class="st">'is_anchor'</span>]<span class="sc">!s:&gt;5}</span><span class="ss">  foreign_frac </span><span class="sc">{</span>row[<span class="st">'foreign_fraction'</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>ref  41  label 0  credibility 0.92  anchor False  foreign_frac 0.07
+ref  16  label 0  credibility 0.95  anchor False  foreign_frac 0.00
+ref  39  label 0  credibility 0.95  anchor False  foreign_frac 0.00
+ref  27  label 1  credibility 0.96  anchor False  foreign_frac 0.00
+ref  29  label 1  credibility 0.96  anchor False  foreign_frac 0.00
+ref  38  label 0  credibility 0.96  anchor False  foreign_frac 0.00</code></pre>
 </div>
-<div id="cell-5" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the least-credible reference's own foreign tracts (its introgression map, thresholded)</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary()[<span class="dv">0</span>][<span class="st">'ref'</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'suspect reference:'</span>, suspect)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'flagged foreign tracts:'</span>, qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the least-credible reference's own foreign tracts (its introgression map, thresholded)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary()[<span class="dv">0</span>][<span class="st">'ref'</span>]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'suspect reference:'</span>, suspect)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'flagged foreign tracts:'</span>, qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>suspect reference: 41
+flagged foreign tracts: [(556426.0, 699786.0, 1)]</code></pre>
+</div>
 </div>
 </section>
 <section id="anonymous-foreign-tracts" class="level2">
 <h2 class="anchored" data-anchor-id="anonymous-foreign-tracts">2. Anonymous foreign tracts</h2>
 <p><code>foreign_tracts</code> flags foreign tracts of any haplotype <strong>without attributing a donor</strong>. For a labelled reference it reports where the genealogy withholds support from its label; for an unlabelled query it reports where the tract fits <em>no</em> panel source.</p>
-<div id="cell-7" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>impure <span class="op">=</span> of(<span class="st">'RA'</span>) <span class="op">+</span> of(<span class="st">'RB'</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ft <span class="op">=</span> tspaint.foreign_tracts(ts, labels, impure, soft_refs<span class="op">=</span><span class="bu">set</span>(impure), min_score<span class="op">=</span><span class="fl">0.4</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> {r: ft[r] <span class="cf">for</span> r <span class="kw">in</span> impure <span class="cf">if</span> ft[r]}      <span class="co"># references carrying a foreign tract</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span><span class="bu">len</span>(flagged)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">len</span>(impure)<span class="sc">}</span><span class="ss"> impure references carry a flagged foreign tract'</span>)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items())[:<span class="dv">3</span>]:</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  sample </span><span class="sc">{</span>r<span class="sc">}</span><span class="ss">:'</span>, [(<span class="bu">round</span>(l), <span class="bu">round</span>(rr), <span class="bu">round</span>(sc, <span class="dv">2</span>)) <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="cell-7" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>impure <span class="op">=</span> of(<span class="st">'RA'</span>) <span class="op">+</span> of(<span class="st">'RB'</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ft <span class="op">=</span> tspaint.foreign_tracts(ts, labels, impure, soft_refs<span class="op">=</span><span class="bu">set</span>(impure), min_score<span class="op">=</span><span class="fl">0.4</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> {r: ft[r] <span class="cf">for</span> r <span class="kw">in</span> impure <span class="cf">if</span> ft[r]}      <span class="co"># references carrying a foreign tract</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span><span class="bu">len</span>(flagged)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">len</span>(impure)<span class="sc">}</span><span class="ss"> impure references carry a flagged foreign tract'</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items())[:<span class="dv">3</span>]:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  sample </span><span class="sc">{</span>r<span class="sc">}</span><span class="ss">:'</span>, [(<span class="bu">round</span>(l), <span class="bu">round</span>(rr), <span class="bu">round</span>(sc, <span class="dv">2</span>)) <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>1/12 impure references carry a flagged foreign tract
+  sample 41: [(556426, 699786, 0.99)]</code></pre>
+</div>
 </div>
 </section>
 <section id="ghost-source-detection" class="level2">
 <h2 class="anchored" data-anchor-id="ghost-source-detection">3. Ghost-source detection</h2>
 <p>An <em>unsampled</em> third source (<code>GHOST</code>) contributes to the admixed queries as a deep outgroup. <code>detect_ghost</code> flags tracts that fit no panel source <strong>and</strong> sit on an anomalously deep branch — the genome-wide <strong>burden</strong> separates ghost from the matched no-ghost control ~10x. This is detection (<em>that</em> a tract is foreign-to-the-panel), not attribution.</p>
 <div id="cell-9" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ghost_burden(ghost_fraction, seed<span class="op">=</span><span class="dv">1</span>):</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> tspaint.sim.simulate_admixture_with_ghost(</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span><span class="dv">12</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span><span class="dv">100</span>, T_split_AB<span class="op">=</span><span class="dv">2000</span>, T_split_ABC<span class="op">=</span><span class="dv">20000</span>, Ne<span class="op">=</span><span class="dv">1000</span>, random_seed<span class="op">=</span>seed)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    npop <span class="op">=</span> ts.tables.nodes.population</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    nm <span class="op">=</span> {p: ts.population(p).metadata.get(<span class="st">'name'</span>, <span class="bu">str</span>(p)) <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">range</span>(ts.num_populations)}</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    pg <span class="op">=</span> {n: p <span class="cf">for</span> p, n <span class="kw">in</span> nm.items()}</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    of <span class="op">=</span> <span class="kw">lambda</span> x: [<span class="bu">int</span>(s) <span class="cf">for</span> s <span class="kw">in</span> ts.samples() <span class="cf">if</span> npop[s] <span class="op">==</span> pg[x]]</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> of(<span class="st">'ADMIX'</span>)<span class="op">;</span> lab <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'A'</span>)}<span class="op">;</span> lab.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'B'</span>)})</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    gh <span class="op">=</span> tspaint.detect_ghost(ts, lab, q)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">float</span>(np.mean([gh.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q]))</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'ghost burden (25</span><span class="sc">% g</span><span class="st">host):'</span>, <span class="bu">round</span>(ghost_burden(<span class="fl">0.25</span>), <span class="dv">3</span>))</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'ghost burden (no ghost) :'</span>, <span class="bu">round</span>(ghost_burden(<span class="fl">0.0</span>), <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ghost_burden(ghost_fraction, seed<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    ts <span class="op">=</span> tspaint.sim.simulate_admixture_with_ghost(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>        n_admix<span class="op">=</span><span class="dv">12</span>, n_ref<span class="op">=</span><span class="dv">8</span>, sequence_length<span class="op">=</span><span class="fl">2e6</span>, ghost_fraction<span class="op">=</span>ghost_fraction,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        T_admix<span class="op">=</span><span class="dv">100</span>, T_split_AB<span class="op">=</span><span class="dv">2000</span>, T_split_ABC<span class="op">=</span><span class="dv">20000</span>, Ne<span class="op">=</span><span class="dv">1000</span>, random_seed<span class="op">=</span>seed)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    npop <span class="op">=</span> ts.tables.nodes.population</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    nm <span class="op">=</span> {p: ts.population(p).metadata.get(<span class="st">'name'</span>, <span class="bu">str</span>(p)) <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">range</span>(ts.num_populations)}</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    pg <span class="op">=</span> {n: p <span class="cf">for</span> p, n <span class="kw">in</span> nm.items()}</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    of <span class="op">=</span> <span class="kw">lambda</span> x: [<span class="bu">int</span>(s) <span class="cf">for</span> s <span class="kw">in</span> ts.samples() <span class="cf">if</span> npop[s] <span class="op">==</span> pg[x]]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> of(<span class="st">'ADMIX'</span>)<span class="op">;</span> lab <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'A'</span>)}<span class="op">;</span> lab.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> of(<span class="st">'B'</span>)})</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    gh <span class="op">=</span> tspaint.detect_ghost(ts, lab, q)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">float</span>(np.mean([gh.burden[x] <span class="cf">for</span> x <span class="kw">in</span> q]))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'ghost burden (25</span><span class="sc">% g</span><span class="st">host):'</span>, <span class="bu">round</span>(ghost_burden(<span class="fl">0.25</span>), <span class="dv">3</span>))</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'ghost burden (no ghost) :'</span>, <span class="bu">round</span>(ghost_burden(<span class="fl">0.0</span>), <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <hr>
 <p><strong>When these pay off.</strong> The signal is <em>deep</em> divergence of the foreign source relative to the admixture age — strongest for archaic-like introgression and clean panels with many anchors; it vanishes when the donor is a close cousin or the admixture is ancient relative to a shallow source split (CLAUDE.md §6, §9).</p>
