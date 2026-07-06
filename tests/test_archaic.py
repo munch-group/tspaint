@@ -176,3 +176,43 @@ def test_detect_ghost_ensemble():
         assert all(0.0 <= seg.posterior[1] <= 1.0 for seg in segs)
         # the ensemble merge now carries the ARG-uncertainty band (was documented but absent)
         assert all(hasattr(seg, "posterior_std") and np.all(seg.posterior_std >= 0) for seg in segs)
+
+
+# --- n_jobs parallelism: byte-identical to serial (genome-chunk split of the depth pass) --------
+
+def test_depth_track_parallel_byte_identical():
+    import tspaint
+    from tspaint.archaic import _depth_track
+    from tspaint.parallel import depth_track_parallel
+    ts = tspaint.io.add_mutations(
+        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
+                                   random_seed=3, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        rate=2e-7, random_seed=3)
+    assert ts.num_trees > 4
+    modern = list(range(4, 12))
+    samples = list(range(4))
+    serial = _depth_track(ts, modern, samples)
+    par = depth_track_parallel(ts, modern, samples, n_jobs=3)      # stitched across genome chunks
+    assert serial.keys() == par.keys()
+    for s in samples:                                             # (left, right, depth) tuples, exact
+        assert serial[s] == par[s]
+    # depths genuinely vary along the genome (not a trivial all-equal track)
+    depths = [d for (_l, _r, d) in serial[0] if np.isfinite(d)]
+    assert len(set(round(d, 3) for d in depths)) > 2
+
+
+def test_detect_ghost_n_jobs_matches_serial():
+    import tspaint
+    ts = tspaint.io.add_mutations(
+        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
+                                   random_seed=3, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        rate=2e-7, random_seed=3)
+    labels = {i: 0 for i in range(4, 12)}                        # modern refs
+    samples = list(range(4))
+    g1 = detect_ghost(ts, labels, samples=samples, n_jobs=1)
+    g3 = detect_ghost(ts, labels, samples=samples, n_jobs=3)     # no CTMC fit -> fully deterministic
+    assert g1.burden == g3.burden
+    for s in samples:
+        p1 = [seg.posterior[1] for seg in g1.posteriors[s]]
+        p3 = [seg.posterior[1] for seg in g3.posteriors[s]]
+        assert np.array_equal(p1, p3)

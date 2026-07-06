@@ -429,6 +429,34 @@ off. Guards:
   swamps the prior ⇒ `w →` the ref's empirical purity), so the per-tip prior override
   (`em.fit(priors=...)`, `paint(..., priors=...)`) is available but ~inert at genome scale. Keep
   the pure anchors hard-clamped.
+- **[MEASURED — fragment masking (`paint(mask=)` / `fit(mask=)`): the *local* alternative to soft `w`;
+  NOT a query-accuracy win].** Instead of down-weighting a whole impure reference (global scalar `w_i`),
+  mask its flagged spans as **unlabelled** — the tip emits the query emission there, so it anchors at
+  full strength on its clean spans and contributes nothing exactly where it is foreign (the
+  position-dependent generalisation of §2.2's `w_i`, in-model per §2.3). **Built:** `model.MaskedEmissions`
+  + `emissions_for`; `build_emissions(mask=)`; `paint(mask={ref:[(l,r)]})` / `fit(mask=)` threaded through
+  the serial **and** byte-exact-parallel paths; feeds directly from `ReferenceQC.mask()` /
+  `foreign_tracts`; arm `experiments.impure_reference_experiment["fragment_mask"]` (two-pass:
+  hard-clamp LOO → flag the impure refs' foreign tracts → mask → re-fit/paint); demography
+  `sim.simulate_admixture_source_gene_flow` (the sources exchange genes via a prior A↔B pulse, so the
+  SOURCE_A panel carries *real, demographically-generated* B tracts — not a synthetic mix).
+  **Measured verdict across three scenarios — it does not beat the whole-individual approaches on
+  *query* bal-acc:** (i) impure_refs, strong anchors (n_pure=6, purity 0.88) — **ties** `soft_strong` at
+  the ceiling (both 1.000, slightly more confident); (ii) impure_refs, weak anchors (n_pure=2, purity
+  0.64) — **worse** (0.837 vs soft 0.887): it over-masks (21/32 refs, ~31% each) and is *confidently*
+  wrong (conf ↑, acc ↓), the hard-vs-soft robustness cost — masking commits the LOO detection as hard
+  local decisions and strips anchors, where soft `w` averages the detection noise; (iii)
+  `simulate_admixture_source_gene_flow` (all A-refs ~10% B, no pure A core) — marginally **worse** (0.984
+  vs 0.987), and **soft also gives nothing** (0.987 = hard): mild real contamination doesn't hurt query
+  painting, so there is nothing to fix and masking pays a small anchor-removal cost. A demography-specific
+  trap: when the impurity is a **shared** event (the sources' own prior admixture), a query's co-located
+  ancestry inherits the *same* deep affinity, so the census-"A" truth is genealogically ambiguous there —
+  **unrecoverable by any reference re-weighting** (soft or mask). **The one robust benefit is orthogonal:
+  the down-pass foreign recall goes 0 → ~1** (a hard clamp pins a ref to its label; masking unlabels it),
+  so masking is a tool for **introgression-*mapping the references*** (the standard painting then annotates
+  a ref's own foreign tracts), **not** for query accuracy — matching the "un-clamping recovers
+  introgression, not accuracy" finding above. **Recommendation:** keep it as a shipped
+  introgression-mapping / hard-exclusion capability; do not reach for it to improve query painting.
 - Degenerate fixed points to watch in tests: `Q → 0` freezes initialization;
   `Q → ∞` washes everything to `π`; unsupervised mode label-switches/collapses.
 - **Branch-length / time-calibration risk.** Relate estimates branch lengths

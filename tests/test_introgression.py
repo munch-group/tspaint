@@ -128,6 +128,117 @@ def test_reference_qc_flags_impure_minority():
 
 
 @pytest.mark.slow
+def test_reference_qc_ensemble_identical_members_matches_single():
+    """Ensemble reference_qc (SINGER-style): pooled fit, per-member LOO, merged maps. A 2-member
+    ensemble of the SAME ts reproduces the single-ts audit and yields MergedSegment maps with a ~0
+    band (proving the per-member paint + merge path, not a single-ts shortcut)."""
+    from tspaint.sim import (simulate_admixture_impure_refs, SOURCE_A, SOURCE_B,
+                             REF_A_IMPURE, REF_B_IMPURE)
+    from tspaint.ensemble import MergedSegment
+
+    ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=6e5,
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+    node_pop = ts.tables.nodes.population
+    names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    pid = {n: p for p, n in names.items()}
+    of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+    labels = {s: 0 for s in of(SOURCE_A) + of(REF_A_IMPURE)}
+    labels.update({s: 1 for s in of(SOURCE_B) + of(REF_B_IMPURE)})
+
+    single = reference_qc(ts, labels, max_iter=6, n_jobs=1)
+    ens = reference_qc([ts, ts], labels, max_iter=6, n_jobs=1)       # ensemble of two identical members
+
+    # maps are the MERGED ensemble objects: span the genome, band ~0 for identical members
+    for r, segs in ens.maps.items():
+        assert segs and segs[0].left == 0.0 and segs[-1].right == ts.sequence_length
+        assert all(isinstance(s, MergedSegment) for s in segs)
+        assert all(np.allclose(s.posterior_std, 0.0, atol=1e-6) for s in segs)
+    # reproduces the single-ts audit's structure: same anchor core, same soft set, same pass-1 LOO
+    # self-agreement (the prior-free pass). learned_w for soft refs legitimately differs — the pooled
+    # fit applies the Beta prior once to M-fold evidence, so w moves toward empirical (CLAUDE.md §6).
+    assert ens.anchors == single.anchors
+    assert set(ens.soft_refs()) == set(single.soft_refs())
+    for r in single.labels:
+        assert np.isclose(ens.loo_agreement[r], single.loo_agreement[r], atol=1e-6)
+
+
+def test_reference_qc_reports_ids_on_stamped_ts():
+    """On a stamped (diploid) tree sequence the audit is legible in the user's ids: each summary row
+    names the individual + haplotype and maps to the right node, and soft_refs(by='individual')
+    returns individual ids (a diploid reference's two haplotype nodes share one individual id).
+    Backward compatible: an unstamped tree sequence reports node integers only."""
+    from tspaint.sim import (simulate_admixture_impure_refs, SOURCE_A, SOURCE_B,
+                             REF_A_IMPURE, REF_B_IMPURE)
+    from tspaint.ids import attach_sample_ids
+
+    ts = simulate_admixture_impure_refs(n_admix=2, n_pure=3, n_impure=2, sequence_length=3e5,
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+    npop = ts.tables.nodes.population
+    pname = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    pid = {n: p for p, n in pname.items()}
+    samples = [int(s) for s in ts.samples()]
+    ind_of = {s: ts.node(s).individual for s in samples}
+    ref_pops = {SOURCE_A, SOURCE_B, REF_A_IMPURE, REF_B_IMPURE}
+
+    # stamp per-haplotype names "<pop>__<ind>_<k>" so a diploid individual's two nodes share a base id
+    nbn = {}
+    for ind in sorted(set(ind_of.values())):
+        nodes = sorted(n for n in samples if ind_of[n] == ind)
+        base = f"{pname[npop[nodes[0]]]}__{ind}"
+        for k, n in enumerate(nodes):
+            nbn[n] = f"{base}_{k}"
+    sts = attach_sample_ids(ts, [nbn[s] for s in samples], ploidy=2)
+
+    iids = [sts.individual(i).metadata["id"] for i in range(sts.num_individuals)]
+    ref_ids = [b for b in iids if b.split("__")[0] in ref_pops]
+    labels = {b: (0 if b.split("__")[0] in (SOURCE_A, REF_A_IMPURE) else 1) for b in ref_ids}
+    anchors = {b for b in ref_ids if b.split("__")[0] in (SOURCE_A, SOURCE_B)}
+    qc = reference_qc(sts, labels, anchors=anchors, max_iter=4)
+
+    # every row names an individual + haplotype, and the node index belongs to that individual
+    for row in qc.summary():
+        node = row["ref"]
+        assert row["individual"] == sts.individual(sts.node(node).individual).metadata["id"]
+        assert row["haplotype"] == sts.node(node).metadata["id"]
+    # soft_refs "by node" and "by individual" are consistent, and by='individual' is str ids
+    soft_nodes = qc.soft_refs()
+    soft_inds = qc.soft_refs(by="individual")
+    assert soft_inds == {qc.individual_ids[n] for n in soft_nodes}
+    assert soft_inds and all(isinstance(x, str) and "__" in x for x in soft_inds)
+
+    # backward compatible: an UNSTAMPED ts reports node integers only
+    of = lambda nm: [int(s) for s in ts.samples() if npop[s] == pid[nm]]
+    labels0 = {s: 0 for s in of(SOURCE_A)}
+    labels0.update({s: 1 for s in of(SOURCE_B)})
+    qc0 = reference_qc(ts, labels0, max_iter=4)
+    assert qc0.individual_ids is None and qc0.sample_ids is None
+    assert "individual" not in qc0.summary()[0]
+    with pytest.raises(ValueError, match="stamped"):
+        qc0.soft_refs(by="individual")
+
+
+@pytest.mark.slow
+def test_reference_qc_n_jobs_matches_serial():
+    """reference_qc(..., n_jobs=P) parallelises the EM fits and leave-one-out paints — the compute,
+    not the cheap soft_refs()/summary() lookups. It matches serial (fit reduction order differs by
+    ULPs, so credibility is allclose; the anchor set / soft_refs are identical) and progress runs."""
+    from tspaint.sim import simulate_admixture_impure_refs, SOURCE_A, SOURCE_B, REF_A_IMPURE, REF_B_IMPURE
+    ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=6e5,
+            recombination_rate=1e-8, random_seed=2, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+    node_pop = ts.tables.nodes.population
+    pid = {ts.population(p).metadata.get("name", str(p)): p for p in range(ts.num_populations)}
+    of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
+    labels = {s: 0 for s in of(SOURCE_A) + of(REF_A_IMPURE)}
+    labels.update({s: 1 for s in of(SOURCE_B) + of(REF_B_IMPURE)})
+
+    serial = reference_qc(ts, labels, max_iter=6)
+    par = reference_qc(ts, labels, max_iter=6, n_jobs=3, progress=True)   # progress must not error
+    assert serial.anchors == par.anchors and serial.soft_refs() == par.soft_refs()
+    for r in labels:
+        assert abs(serial.credibility[r] - par.credibility[r]) < 1e-9    # allclose (fit ULPs)
+
+
+@pytest.mark.slow
 def test_deep_foreign_flag_finds_unsampled_source():
     # The deep foreign-tract FLAG — foreign_tracts(mode="fit", min_score, min_depth) — detects an
     # unsampled ghost source (low fit + deep), with a low false-positive burden on the matched
@@ -224,3 +335,49 @@ def test_foreign_tracts_flags_reference_introgression():
             total_hit += _span_overlap(l, rr, true_foreign)
     assert total_det > 0                                # flags something
     assert total_hit / total_det > 0.5                  # most flagged span is truly foreign
+
+
+# --- n_jobs parallelism: byte-identical to serial (genome-chunk split + seam-stitch) -----------
+
+def _admix_ts(seed=3):
+    import tspaint
+    return tspaint.io.add_mutations(
+        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
+                                   random_seed=seed, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        rate=2e-7, random_seed=seed)
+
+
+def test_foreignness_track_parallel_byte_identical():
+    import tspaint
+    from tspaint.em import fit, build_emissions
+    from tspaint.parallel import foreignness_track_parallel
+    ts = _admix_ts()
+    labels = {i: (0 if i < 4 else 1) for i in range(4, 12)}
+    samples = list(range(4)) + list(range(4, 12))
+    assert ts.num_trees > 4
+    res = fit(ts, labels, K=2, max_iter=8, estimate_pi=False)
+    em = build_emissions(ts, labels, res.w, res.pi)
+    serial = foreignness_track(ts, res.Q, res.pi, em, labels, focal=samples, depth="rank")
+    par = foreignness_track_parallel(ts, res.Q, res.pi, w=res.w, labels=labels, emissions=em,
+                                     focal=samples, depth="rank", n_jobs=3)   # genome-wide rank post-stitch
+    assert serial.keys() == par.keys()
+    for s in samples:
+        assert len(serial[s]) == len(par[s])
+        for a, b in zip(serial[s], par[s]):
+            assert a.left == b.left and a.right == b.right and a.status == b.status
+            assert np.array_equal(a.loo, b.loo) and a.fit == b.fit
+            assert a.depth == b.depth or (np.isnan(a.depth) and np.isnan(b.depth))
+
+
+def test_foreign_tracts_n_jobs_matches_serial():
+    import tspaint
+    ts = _admix_ts()
+    labels = {i: (0 if i < 4 else 1) for i in range(4, 12)}
+    samples = list(range(4)) + list(range(4, 12))
+    s1 = tspaint.foreign_tracts(ts, labels, samples, n_jobs=1)
+    s3 = tspaint.foreign_tracts(ts, labels, samples, n_jobs=3)
+    assert s1.keys() == s3.keys()
+    for k in s1:                                          # fit is parallel-reduced -> allclose, not exact
+        assert len(s1[k]) == len(s3[k])
+        for u, v in zip(s1[k], s3[k]):
+            assert np.allclose(u, v, atol=1e-6)

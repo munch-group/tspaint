@@ -22,6 +22,7 @@ import numpy as np
 import tskit
 
 from .branch_stats import branch_kernel, stats_from_kernel
+from .model import emissions_for
 from .pruning import prune_tree, _transition_cache
 
 __all__ = ["SuffStats", "accumulate_sufficient_statistics"]
@@ -118,7 +119,7 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
             break                         # this worker's range is done
         left, right = interval
         span = right - left
-        res = prune_tree(tree, emissions, Q, node_time, pi, Pget=Pget)
+        res = prune_tree(tree, emissions_for(emissions, left, right), Q, node_time, pi, Pget=Pget)
         loglik += span * res.loglik
 
         # Bank each entering edge's contribution ONCE, weighted by its own span.

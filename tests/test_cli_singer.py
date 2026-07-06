@@ -63,8 +63,8 @@ def test_singer_window_runs_and_is_local(tmp_path):
     vcf = str(tmp_path / "data.vcf")
     write_haploid_vcf(ts, vcf)
     S, E = 2e4, 4e4
-    idxs = singer_window(vcf, start=S, end=E, out_prefix=str(tmp_path / "argW"), Ne=1000,
-                         mutation_rate=2e-7, recombination_rate=1e-8, n_samples=5, thin=2, seed=7)
+    idxs = singer_window(vcf, start=S, end=E, out_prefix=str(tmp_path / "argW"), _Ne=1000,
+                         _m=2e-7, _r=1e-8, _n_samples=5, _thin=2, _seed=7)
     assert len(idxs) >= 1
     i = idxs[-1]
     for suf in ("nodes", "branches", "muts"):
@@ -84,12 +84,12 @@ def test_singer_windowed_stitches_across_windows(tmp_path):
     ts = add_mutations(tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=6e4,
                        recombination_rate=1e-8, random_seed=5, Ne=1000, T_admix=30,
                        T_split=5000, f_A=0.5), rate=3e-7, random_seed=5)
-    ens = singer_windowed(ts, window_size=3e4, Ne=1000, mutation_rate=3e-7,
-                          recombination_rate=1e-8, n_samples=4, thin=2, burn_in=1,
-                          seed=11, n_jobs=2, workdir=str(tmp_path))
+    ens = singer_windowed(ts, window_size=3e4, _Ne=1000, _m=3e-7,
+                          _r=1e-8, ts=3, mcmc_step=2, mcmc_burnin=2,
+                          _seed=11, n_jobs=2, workdir=str(tmp_path))
 
     ens = ens if isinstance(ens, list) else [ens]
-    assert 1 <= len(ens) <= 4                                  # members 1..3 survive burn_in=1
+    assert len(ens) == 3                                       # ts=3 members stitched across windows
     for t in ens:
         assert isinstance(t, tskit.TreeSequence)
         assert t.num_samples == ts.num_samples                 # sample order preserved by the merge

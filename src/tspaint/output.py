@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .model import emissions_for
 from .pruning import prune_tree
 
 __all__ = ["Segment", "INFORMATIVE", "MISSING_INFO", "posterior_table",
@@ -80,7 +81,7 @@ def _paint_tracks(ts, Q, pi, emissions, focal, merge_tol, pick, tree_range=None,
             break
         left = tree.interval.left
         right = tree.interval.right
-        res = prune_tree(tree, emissions, Q, node_time, pi)
+        res = prune_tree(tree, emissions_for(emissions, left, right), Q, node_time, pi)
         for s in samples:
             post = pick(res, s, pi)
             status = MISSING_INFO if s in res.missing_info else INFORMATIVE
@@ -130,7 +131,8 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_rang
                          progress=progress)
 
 
-def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None):
+def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_range=None,
+                        progress=False):
     """Per-sample **leave-one-out** ancestry posterior as contiguous segments.
 
     Like :func:`posterior_table` but paints the *outside message* — what the rest of
@@ -143,8 +145,10 @@ def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_
 
     Parameters
     ----------
-    ts, Q, pi, emissions, focal, merge_tol
-        As for :func:`posterior_table`.
+    ts, Q, pi, emissions, focal, merge_tol, progress
+        As for :func:`posterior_table` (``progress`` shows a per-marginal-tree bar for the
+        full-genome pass). For a parallel leave-one-out paint use
+        :func:`tspaint.parallel.loo_posterior_table_parallel`.
 
     Returns
     -------
@@ -153,7 +157,8 @@ def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_
         :class:`Segment`\\ s covering ``[0, L)``.
     """
     return _paint_tracks(ts, Q, pi, emissions, focal, merge_tol,
-                         lambda res, s, prior: res.loo.get(s, prior), tree_range=tree_range)
+                         lambda res, s, prior: res.loo.get(s, prior), tree_range=tree_range,
+                         progress=progress)
 
 
 def missing_info_mask(ts, focal=None):
@@ -213,6 +218,23 @@ def posterior_at(tracks, sample, position):
     return None
 
 
+#: The documented default confidence dead-band for the **high-level** segmentation surface
+#: (:meth:`tspaint.Painting.segments` / :func:`tspaint.paint` / the plots / the benchmark scorer).
+#: ``0.4`` is the value CLAUDE.md §9 recommends for admixture-pulse dating: it suppresses the
+#: low-confidence (~P=0.5) ``argmax`` flips that fragment long tracts ~3× under naive segmentation
+#: while a calibrated posterior keeps the true switches. The low-level primitive
+#: :func:`hard_segments` keeps its own neutral default of ``0.0`` (pure ``argmax``); the objects and
+#: :func:`tspaint.paint` supply :data:`DEFAULT_DEADBAND`. Override anywhere with ``deadband=``.
+DEFAULT_DEADBAND = 0.4
+
+#: The default dead-band for the **introgression / reference-QC** read-out
+#: (:meth:`tspaint.ReferenceQC.summary` / ``.mask`` / ``.flagged_tracts``). This is a **different
+#: quantity** from :data:`DEFAULT_DEADBAND`: it gates the leave-one-out *dissent margin*
+#: ``loo[foreign] - loo[label]`` (how strongly a reference's own genealogy disowns its label),
+#: not the top-two segmentation margin — hence its own value (``0.3``). Override with ``deadband=``.
+DEFAULT_QC_DEADBAND = 0.3
+
+
 def hard_segments(track, deadband=0.0):
     """Collapse a soft posterior ``track`` into hard ancestry segments.
 
@@ -224,10 +246,14 @@ def hard_segments(track, deadband=0.0):
     track : list[Segment]
         Soft posterior segments for one sample (e.g. from :func:`posterior_table`).
     deadband : float, optional
-        Confidence dead-band on the top-two posterior **margin**
-        ``max(P) - 2nd-max(P)``. A switch to a new ``argmax`` state is accepted only
-        where ``margin >= deadband``; otherwise the previous state is carried forward.
-        Default ``0.0`` (naive ``argmax``).
+        Confidence dead-band on the top-two posterior **margin** ``max(P) - 2nd-max(P)``.
+        It **confirms** switches: a locus is a *confident anchor* only where
+        ``margin >= deadband``; a tract boundary is kept only between two confident anchors
+        of different states (a low-confidence run that dips and returns to the same confident
+        state is flicker and is suppressed). Default ``0.0`` (every ``argmax`` change is a
+        boundary) for this low-level primitive; the high-level surface
+        (:meth:`tspaint.Painting.segments`, :func:`tspaint.paint`, the plots) defaults to
+        :data:`DEFAULT_DEADBAND`.
 
     Returns
     -------
@@ -236,26 +262,79 @@ def hard_segments(track, deadband=0.0):
 
     Notes
     -----
-    A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment
-    long tracts under naive ``argmax`` (``deadband=0``). Because the posterior is
-    calibrated, a modest dead-band (≈0.3–0.5) recovers the true switch density and
-    tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9).
-    This is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF)
-    does not expose. ``MISSING_INFO`` spans carry the previous state forward; the first
-    interval takes its ``argmax``.
+    **Reversal-invariant** (a chromosome has no privileged left/right): the deadband only
+    decides *whether* a switch is real, while the boundary is placed at the **argmax
+    crossover** (where the two states' posteriors cross) — a direction-free point in the
+    data — rather than at the first confident locus reached by the scan. So segmenting the
+    track or its mirror image yields the same physical borders. (Contrast a one-pass causal
+    filter, which would attribute a blurred switch to whichever confident tract precedes it
+    in the scan direction.) When a sub-deadband run separates two *different* confident
+    anchors, the border is the argmax-change boundary nearest the run's midpoint (unique for
+    a monotone transition, the usual case).
+
+    A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment long
+    tracts under naive ``argmax`` (``deadband=0``). Because the posterior is calibrated, a
+    modest dead-band (≈0.3–0.5) recovers the true switch density and tract-length
+    distribution where naive argmax over-fragments ~3× (CLAUDE.md §9) — a tunable
+    precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF) does not expose.
+    ``MISSING_INFO`` spans are never anchors (missing ≠ a confident opposite call) and are
+    filled by the nearest confident anchor; with no confident anchor at all the track falls
+    back to raw per-locus ``argmax``.
     """
-    segs, cur = [], None
-    for seg in track:
+    segs = list(track)
+    n = len(segs)
+    if n == 0:
+        return []
+
+    amax = np.empty(n, dtype=int)
+    conf = np.zeros(n, dtype=bool)
+    psum = np.zeros_like(np.asarray(segs[0].posterior, float))
+    for i, seg in enumerate(segs):
         p = np.asarray(seg.posterior, float)
-        st = int(np.argmax(p))
-        if cur is not None:
-            order = np.sort(p)
-            margin = float(order[-1] - order[-2])
-            if seg.status == MISSING_INFO or margin < deadband:
-                st = cur
-        cur = st
-        if segs and segs[-1][2] == st and segs[-1][1] == seg.left:
-            segs[-1] = (segs[-1][0], seg.right, st)
+        psum += p
+        amax[i] = int(np.argmax(p))
+        order = np.sort(p)
+        conf[i] = (seg.status != MISSING_INFO) and (float(order[-1] - order[-2]) >= deadband)
+
+    state = np.empty(n, dtype=int)
+    anchors = np.flatnonzero(conf)
+    if anchors.size == 0:
+        # nothing clears the dead-band -> no switch is confirmed -> one tract of the most probable
+        # state overall (reversal-invariant: a sum over loci, not the scan-first call).
+        state[:] = int(np.argmax(psum))
+    else:
+        first, last = int(anchors[0]), int(anchors[-1])
+        state[: first + 1] = amax[first]             # leading run -> first confident state
+        state[last:] = amax[last]                    # trailing run -> last confident state
+        for a, b in zip(anchors[:-1], anchors[1:]):
+            a, b, sa, sb = int(a), int(b), int(amax[a]), int(amax[b])
+            if sa == sb:
+                state[a : b + 1] = sa                # dip returning to the same state -> flicker
+                continue
+            # a real switch: border at the argmax crossover in (a, b] nearest the sub-deadband run's
+            # midpoint (reversal-invariant; unique for a monotone crossing, the usual case).
+            mid = 0.5 * (segs[a].right + segs[b].left)
+            changes = [k for k in range(a + 1, b + 1) if amax[k] != amax[k - 1]]
+            dists = [abs(segs[k].left - mid) for k in changes]
+            dmin = min(dists)
+            tied = [k for k, d in zip(changes, dists) if d <= dmin + 1e-9]
+            if len(tied) == 1:
+                k = tied[0]
+                state[a:k] = sa
+                state[k : b + 1] = sb
+            else:
+                # crossings equidistant from the centre (symmetric): split each gap locus by which
+                # side of the midpoint it falls on — direction-free (a position tie-break would not be).
+                lo = min(sa, sb)
+                for j in range(a, b + 1):
+                    c = 0.5 * (segs[j].left + segs[j].right)
+                    state[j] = sa if c < mid else (sb if c > mid else lo)
+
+    out = []
+    for i, seg in enumerate(segs):
+        st = int(state[i])
+        if out and out[-1][2] == st and out[-1][1] == seg.left:
+            out[-1] = (out[-1][0], seg.right, st)
         else:
-            segs.append((seg.left, seg.right, st))
-    return segs
+            out.append((seg.left, seg.right, st))
+    return out

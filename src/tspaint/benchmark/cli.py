@@ -15,6 +15,8 @@ import os
 
 import click
 
+from ..output import DEFAULT_DEADBAND
+
 
 def _echo(msg):
     click.echo(msg, err=True)
@@ -195,7 +197,7 @@ def export_vcf_cmd(trees, labels_path, queries, chromosome, mutation_rate, seed,
 @benchmark.command()
 @click.option("--truth", required=True, type=click.Path(exists=True),
               help="tspaint-truth .npz (from export-vcf or `tspaint simulate --truth`).")
-@click.option("--deadband", type=float, default=0.4, show_default=True,
+@click.option("--deadband", type=float, default=DEFAULT_DEADBAND, show_default=True,
               help="confidence dead-band for the switch-density ratio.")
 @click.argument("paintings", nargs=-1, required=True, type=str)
 def score(truth, deadband, paintings):
@@ -217,7 +219,7 @@ def score(truth, deadband, paintings):
               help="tspaint-truth .npz (from export-vcf or `tspaint simulate --truth`).")
 @click.option("--name", default="", help="painter label stored in the JSON.")
 @click.option("--meta", multiple=True, help="scenario metadata key=value (repeatable).")
-@click.option("--deadband", type=float, default=0.4, show_default=True)
+@click.option("--deadband", type=float, default=DEFAULT_DEADBAND, show_default=True)
 @click.option("-o", "--out", required=True, type=click.Path(), help="metrics .json output.")
 @click.argument("painting", type=click.Path(exists=True, dir_okay=False))
 def metrics(truth, name, meta, deadband, out, painting):

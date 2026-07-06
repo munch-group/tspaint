@@ -305,6 +305,69 @@ def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_le
     )
 
 
+def admixture_demography_source_gene_flow(Ne=1000, T_admix=30.0, census_offset=1.0,
+                                          T_prev_admix=1000.0, T_split=5000.0, f_A=0.5,
+                                          prev_migration=0.1):
+    """Two-source admixture where the **sources themselves exchanged genes via a prior pulse**.
+
+    Like :func:`admixture_demography`, but with a mass migration ``SOURCE_A -> SOURCE_B`` (backward
+    in time; = a forward-time pulse of ``SOURCE_B`` **into** ``SOURCE_A``) of fraction
+    ``prev_migration`` at ``T_prev_admix`` — placed between the census and the split. So the
+    ``SOURCE_A`` reference panel genuinely carries ``~prev_migration`` of ``SOURCE_B`` introgressed
+    tracts: **real, localized reference contamination from a demographic event** (not a synthetic
+    pure/impure mix). The post-pulse census at ``T_admix + census_offset`` still labels each query
+    lineage's proximate source (A / B) — the prior pulse acts *deeper* than the census, so the query
+    local-ancestry truth is unchanged. (The A-refs' B tracts sit below the census, so they are not
+    in :func:`local_ancestry_truth`; the query A/B truth is the evaluation target.)
+
+    Parameters
+    ----------
+    Ne, T_admix, census_offset, T_split, f_A : optional
+        As for :func:`admixture_demography`.
+    T_prev_admix : float, optional
+        Time of the prior A↔B pulse (strictly between the census and ``T_split``).
+    prev_migration : float, optional
+        Fraction of ``SOURCE_A`` replaced (backward) by ``SOURCE_B`` at ``T_prev_admix`` — the
+        ``SOURCE_A`` panel's foreign (B) fraction.
+
+    Raises
+    ------
+    ValueError
+        If ``T_admix < census < T_prev_admix < T_split`` is violated or ``prev_migration`` ∉ ``[0,1)``.
+    """
+    census_time = T_admix + census_offset
+    if not (T_admix < census_time < T_prev_admix < T_split):
+        raise ValueError("require T_admix < T_admix+census_offset < T_prev_admix < T_split")
+    if not (0.0 <= prev_migration < 1.0):
+        raise ValueError("prev_migration must be in [0, 1)")
+    d = msprime.Demography()
+    for name in (SOURCE_A, SOURCE_B, ADMIXED, ANCESTRAL):
+        d.add_population(name=name, initial_size=Ne)
+    d.add_admixture(time=T_admix, derived=ADMIXED,
+                    ancestral=[SOURCE_A, SOURCE_B], proportions=[f_A, 1.0 - f_A])
+    d.add_census(time=census_time)
+    d.add_mass_migration(time=T_prev_admix, source=SOURCE_A, dest=SOURCE_B, proportion=prev_migration)
+    d.add_population_split(time=T_split, derived=[SOURCE_A, SOURCE_B], ancestral=ANCESTRAL)
+    return d
+
+
+def simulate_admixture_source_gene_flow(n_admix=10, n_ref=10, sequence_length=2e6,
+                                        recombination_rate=1e-8, ploidy=2, random_seed=42,
+                                        **demography_kwargs):
+    """Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOURCE_B``
+    introgressed tracts from a prior A↔B pulse (:func:`admixture_demography_source_gene_flow`).
+
+    The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
+    the ``SOURCE_B`` references are pure. The census labels each query lineage's proximate source, so
+    :func:`local_ancestry_truth` gives the query A/B truth. Identify samples by node population.
+    """
+    demography = admixture_demography_source_gene_flow(**demography_kwargs)
+    return msprime.sim_ancestry(
+        samples={ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},
+        demography=demography, sequence_length=sequence_length,
+        recombination_rate=recombination_rate, ploidy=ploidy, random_seed=random_seed)
+
+
 def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
                                     T_split_AB=2000.0, T_split_ABC=20000.0, ghost_fraction=0.10):
     """Two-source admixture with a third **unsampled ("ghost") source** ``C``.

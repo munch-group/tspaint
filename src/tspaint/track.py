@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .output import hard_segments, posterior_at, Segment, INFORMATIVE
+from .output import hard_segments, posterior_at, Segment, INFORMATIVE, DEFAULT_DEADBAND
 
 __all__ = ["SoftTrack", "SegmentTrack", "compare_tracks"]
 
@@ -33,12 +33,14 @@ def _diverging_sm(cmap, colors):
     return matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(0, 1), cmap=cmap)
 
 
-def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, ylabel):
+def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, ylabel, mark_segs=None):
     """Draw one haplotype strip: soft posterior gradient (top), hard segments (middle), truth (below).
 
     Shared by :meth:`SoftTrack.plot` and :func:`compare_tracks` so every track/tool renders the same
     way. ``soft_segs`` are :class:`~tspaint.output.Segment`\\ s (gradient by ``posterior[hi]``);
     ``hard_segs`` / ``truth_segs`` are ``(left, right, state)`` tuples (solid, highlighted at ``hi``).
+    ``mark_segs`` (``[(left, right), ...]``, e.g. a reference's *masked* / unlabelled spans) are
+    hatched over the soft band.
     """
     import matplotlib
     ymin = -0.25 if truth_segs is not None else 0.0
@@ -49,11 +51,14 @@ def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, yla
     for (l, r, s) in hard_segs:
         ax.barh(0.25, r - l, left=l, height=0.5, color=sm.to_rgba(1.0 if s == hi else 0.0),
                 edgecolor="none")
-    ax.axhline(0.25, c='black', lw=0.25)
+    ax.axhline(0, c='black', lw=0.25)
     ax.axhline(0.5, c='black', lw=0.25)
     for seg in soft_segs:
         ax.barh(1, seg.right - seg.left, left=seg.left, height=1,
                 color=sm.to_rgba(seg.posterior[hi]), edgecolor="none")
+    for (l, r) in (mark_segs or ()):                # masked / unlabelled spans: hatch over the soft band
+        ax.barh(1, r - l, left=l, height=1, facecolor="none", hatch="////",
+                edgecolor="black", linewidth=0.0)
     ax.set_ylim(ymin, 1.5)
     ax.set_xlim(0, length)
     ax.set_ylabel(ylabel, rotation=0, fontsize=7, color="0.0", horizontalalignment="right")
@@ -130,13 +135,14 @@ class SoftTrack:
         """
         return posterior_at(self.posteriors, sample, position)
 
-    def plot(self, truth=None, title=None, cmap='coolwarm', colors=None, return_plot=False):
+    def plot(self, truth=None, title=None, cmap='coolwarm', colors=None, return_plot=False,
+             deadband=None, row_labels=None, mark_spans=None):
         """Stacked strip plot of the soft posterior — one row per haplotype.
 
         Each haplotype row shows, top to bottom: the **soft** per-position posterior for the
         highlighted state (``self._hi_label``, e.g. ``P(ancestry A)`` for a painting or ``P(ghost)``
-        for the ghost detector) as a colour gradient, the **hard** segments (:meth:`segments` at
-        ``deadband=0.4``), and — when ``truth`` is given — the true tracts as a reference track
+        for the ghost detector) as a colour gradient, the **hard** segments (:meth:`segments` at the
+        ``deadband`` below), and — when ``truth`` is given — the true tracts as a reference track
         beneath. A shared colour bar maps the highlighted state's probability (highlighted state at
         the top of ``cmap``, the other at the bottom). For an ensemble result the rows show the
         ensemble-mean posterior. Requires matplotlib.
@@ -158,6 +164,15 @@ class SoftTrack:
         return_plot : bool, optional
             Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save
             the plot, instead of ``None``. Default ``False``.
+        deadband : float, optional
+            Dead-band for the hard-segment overlay. Defaults to :attr:`default_deadband` (so the
+            plotted tracts match :meth:`segments`); pass a value to override for this plot only.
+        row_labels : dict[int, str], optional
+            Per-sample y-axis label overriding the default ``hapl. i`` (e.g. mark reference rows with
+            their nominal ancestry). Samples absent keep the default.
+        mark_spans : dict[int, list[tuple[float, float]]], optional
+            Per-sample ``[(left, right), ...]`` spans to **hatch** over the soft band — e.g. a
+            reference's masked / unlabelled spans, so the plot shows *where* a reference was un-anchored.
 
         Returns
         -------
@@ -169,7 +184,7 @@ class SoftTrack:
 
         hi = self._hi_state
         qs = self.samples
-        segments = self.segments(deadband=0.4)
+        segments = self.segments(deadband=deadband)     # None -> the track's default_deadband
 
         sm = _diverging_sm(cmap, colors)
         fig = plt.figure(figsize=(9, 0.3 * len(qs) + 1))
@@ -177,8 +192,11 @@ class SoftTrack:
         axes = [fig.add_subplot(gs[i, 0]) for i in range(len(qs))]
 
         for i, q in enumerate(qs):
-            _draw_track_row(axes[i], self.posteriors[q], segments[q], truth[q] if truth else None,
-                            hi=hi, sm=sm, length=self.length, ylabel=f'hapl. {i}')
+            ylabel = (row_labels or {}).get(q, f'hapl. {i}')
+            _draw_track_row(axes[i], self.posteriors[q], segments[q],
+                            truth.get(q) if truth else None,          # rows with no truth omit the track
+                            hi=hi, sm=sm, length=self.length, ylabel=ylabel,
+                            mark_segs=(mark_spans or {}).get(q))
             axes[i].tick_params(axis='x', bottom=True)
             if i < len(axes) - 1:
                 axes[i].xaxis.set_major_locator(matplotlib.ticker.NullLocator())
@@ -244,7 +262,7 @@ class SegmentTrack(SoftTrack):
     length : float, optional
         Sequence length for the x-axis; defaults to the largest segment ``right``.
     deadband : float, optional
-        Default dead-band for :meth:`segments`. Default ``0.0``.
+        Default dead-band for :meth:`segments`. Defaults to :data:`~tspaint.output.DEFAULT_DEADBAND`.
     hi_state : int, optional
         The state highlighted by :meth:`plot`'s colour scale (top of the colormap). Default ``0``.
     hi_label : str, optional
@@ -253,7 +271,8 @@ class SegmentTrack(SoftTrack):
         Number of ancestry states (for one-hot conversion of hard tuples); inferred when ``None``.
     """
 
-    def __init__(self, segments, *, length=None, deadband=0.0, hi_state=0, hi_label=None, K=None):
+    def __init__(self, segments, *, length=None, deadband=DEFAULT_DEADBAND, hi_state=0,
+                 hi_label=None, K=None):
         if isinstance(segments, SoftTrack):
             data = segments.posteriors
             if length is None:
@@ -270,7 +289,7 @@ class SegmentTrack(SoftTrack):
 
 
 def compare_tracks(tracks, sample, *, truth=None, length=None, cmap='coolwarm', colors=None,
-                   title=None, return_plot=False):
+                   title=None, return_plot=False, deadband=None):
     """Stack several tools' calls for **one haplotype**, one row per tool, for visual comparison.
 
     Parameters
@@ -312,7 +331,7 @@ def compare_tracks(tracks, sample, *, truth=None, length=None, cmap='coolwarm', 
     for i, name in enumerate(names):
         st = sts[name]
         _draw_track_row(axes[i], st.posteriors.get(sample, []),
-                        st.segments(deadband=0.4).get(sample, []), None,
+                        st.segments(deadband=deadband).get(sample, []), None,
                         hi=hi, sm=sm, length=L, ylabel=name)
         axes[i].tick_params(axis='x', bottom=True)
         if i < n_rows - 1:

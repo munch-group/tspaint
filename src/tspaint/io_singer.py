@@ -88,9 +88,86 @@ DEFAULT_MERGE_ARG = os.environ.get("TSPAINT_MERGE_ARG") or os.path.join(
 #: the value, optionally via :func:`tspaint.io.estimate_ne`.
 _NE_REQUIRED = (
     "singer requires Ne: the SINGER binary needs -Ne and errors without it (auto-Ne lives only in "
-    "SINGER's singer_master wrapper, not the binary). Estimate one from the data and pass it, e.g.\n"
-    "    Ne = tspaint.io.estimate_ne(source, mutation_rate, groups=labels)  # optional exclude=soft_refs\n"
-    "    tspaint.io.singer(source, Ne=Ne, m=mutation_rate)")
+    "SINGER's singer_master wrapper, not the binary). SINGER calibrates its coalescent prior so that "
+    "4*Ne*mu ~= pi (observed nucleotide diversity), so estimate Ne over the WHOLE analysed panel "
+    "(all-pairs pi/4mu -- it must place the deep between-population coalescences on SINGER's "
+    "representable time range) and pass it, e.g.\n"
+    "    Ne = tspaint.io.estimate_ne(source, mutation_rate)   # all-pairs pi/4mu; optional exclude=soft_refs\n"
+    "    tspaint.io.singer(source, _Ne=Ne, _m=mutation_rate)\n"
+    "Do NOT restrict with groups=labels here: a within-population Ne under-calibrates SINGER's prior "
+    "on a structured / multi-population sample and can push coalescence times off-scale.")
+
+#: Defaults for the unified sampling knobs: tree sequences returned (``ts``), MCMC iterations between
+#: saved samples (``mcmc_step``), and burn-in iterations (``mcmc_burnin``). The chain runs
+#: ``ts * mcmc_step + mcmc_burnin`` iterations, saving every ``mcmc_step`` and keeping ``ts`` of them.
+_TS_DEFAULT, _STEP_DEFAULT, _BURNIN_DEFAULT = 20, 50, 200
+
+
+def _reject_both(plain_name, plain, flag_name, flag):
+    """A plain sampling knob and its terminal-flag ``_``-counterpart cannot both be set: the plain one
+    takes precedence, so passing both is ambiguous."""
+    if plain is not None and flag is not None:
+        raise ValueError(
+            f"pass either {plain_name}= or {flag_name}=, not both: the plain '{plain_name}' takes "
+            f"precedence over the terminal-flag '{flag_name}'.")
+
+
+def _select(written, discard, keep):
+    """Keep ``keep`` raw samples after discarding the first ``discard`` (burn-in)."""
+    return list(written)[int(discard):][:int(keep)]
+
+
+def _singer_sampling(ts, mcmc_step, mcmc_burnin, _n_samples, _thin):
+    """Resolve the unified knobs (+ optional native ``_n_samples`` / ``_thin``) into SINGER's run.
+
+    Returns ``(n, thin, discard, keep)``: SINGER writes ``n`` samples ``thin`` iterations apart
+    (``-n`` / ``-thin``); the caller discards the first ``discard`` and keeps ``keep``. With the
+    defaults ``n = ts + mcmc_burnin // mcmc_step``, so the chain runs ``ts*mcmc_step + mcmc_burnin``
+    iterations and ``keep == ts``.
+    """
+    _reject_both("ts", ts, "_n_samples", _n_samples)
+    _reject_both("mcmc_step", mcmc_step, "_thin", _thin)
+    thin = int(_thin) if _thin is not None else (_STEP_DEFAULT if mcmc_step is None else int(mcmc_step))
+    burnin = _BURNIN_DEFAULT if mcmc_burnin is None else int(mcmc_burnin)
+    if thin < 1:
+        raise ValueError(f"mcmc_step / _thin must be >= 1, got {thin}")
+    if burnin < 0:
+        raise ValueError(f"mcmc_burnin must be >= 0, got {burnin}")
+    discard = burnin // thin
+    if _n_samples is not None:
+        n = int(_n_samples); keep = n - discard
+    else:
+        keep = _TS_DEFAULT if ts is None else int(ts); n = keep + discard
+    if keep < 1:
+        raise ValueError("resolved to < 1 returned sample; raise ts / _n_samples or lower mcmc_burnin")
+    return n, thin, discard, keep
+
+
+def _argweaver_sampling(ts, mcmc_step, mcmc_burnin, _iters, _sample_step):
+    """Resolve the unified knobs (+ optional native ``_iters`` / ``_sample_step``) into ARGweaver's
+    run. Returns ``(iters, sample_step, discard, keep)``: ``arg-sample`` runs ``iters`` iterations
+    saving one every ``sample_step`` (``-n`` / ``--sample-step``), so it writes
+    ``iters // sample_step + 1`` ARGs; the caller discards the first ``discard`` and keeps ``keep``.
+    With the defaults ``iters = ts*mcmc_step + mcmc_burnin`` and ``keep == ts``.
+    """
+    _reject_both("mcmc_step", mcmc_step, "_sample_step", _sample_step)
+    _reject_both("ts", ts, "_iters", _iters)
+    _reject_both("mcmc_burnin", mcmc_burnin, "_iters", _iters)
+    step = int(_sample_step) if _sample_step is not None else (_STEP_DEFAULT if mcmc_step is None else int(mcmc_step))
+    burnin = _BURNIN_DEFAULT if mcmc_burnin is None else int(mcmc_burnin)
+    if step < 1:
+        raise ValueError(f"mcmc_step / _sample_step must be >= 1, got {step}")
+    if burnin < 0:
+        raise ValueError(f"mcmc_burnin must be >= 0, got {burnin}")
+    discard = burnin // step
+    ts_eff = _TS_DEFAULT if ts is None else int(ts)
+    if _iters is not None:
+        iters = int(_iters); keep = (iters // step + 1) - discard
+    else:
+        iters = ts_eff * step + burnin; keep = ts_eff
+    if keep < 1:
+        raise ValueError("resolved to < 1 returned sample; raise ts / _iters or lower mcmc_burnin")
+    return iters, step, discard, keep
 
 
 def write_haploid_vcf(ts, path):
@@ -141,7 +218,8 @@ def _read_singer_arg(node_file, branch_file, mut_file=None):
     node_time = np.loadtxt(node_file)
     edge = np.loadtxt(branch_file)
     edge = edge[edge[:, 2] >= 0, :]
-    tables = tskit.TableCollection(sequence_length=float(max(edge[:, 1])))
+    seqlen = float(max(edge[:, 1]))
+    tables = tskit.TableCollection(sequence_length=seqlen)
     prev = -1.0
     for tm in node_time:
         if tm == 0:
@@ -159,7 +237,11 @@ def _read_singer_arg(node_file, branch_file, mut_file=None):
             muts = muts.reshape(1, -1)
         mp = -1.0
         for i in range(muts.shape[0]):
-            if muts[i, 0] != mp and muts[i, 0] < 1e6:
+            # Add each distinct within-window mutation position as a site. SINGER writes an
+            # end-of-window sentinel at position == sequence_length; keep the guard SINGER's own
+            # convert_long_ARG.py uses (``< length``) but with the real window length, NOT a
+            # hard-coded 1e6 (which silently dropped every site past 1 Mb in any region > 1 Mb).
+            if muts[i, 0] != mp and muts[i, 0] < seqlen:
                 tables.sites.add_row(position=muts[i, 0], ancestral_state='0')
                 mp = muts[i, 0]
             tables.mutations.add_row(site=tables.sites.num_rows - 1, node=int(muts[i, 1]),
@@ -266,49 +348,39 @@ def _run_singer(prefix, out, *, start, end, Ne, mutation_rate, recombination_rat
         f"{tail}\n(workarounds: a smaller -start/-end window, a newer SINGER build, or arg='tsinfer'.)")
 
 
-def _resolve_singer_rates(*, mutation_rate, m, recombination_rate, r, ratio, mut_map, recomb_map):
-    """Resolve SINGER-flag rate aliases and derive ``r`` from the recomb/mut ratio.
-
-    SINGER's own short flag names are accepted as aliases of the descriptive kwargs (``m`` for
-    ``mutation_rate``, ``r`` for ``recombination_rate``); when both are given the SINGER-flag alias
-    wins. Following ``singer_master``, the recombination rate defaults to ``mutation_rate * ratio``
-    (SINGER's ``-ratio``, default 1) when neither ``r`` / ``recombination_rate`` nor a ``recomb_map``
-    is supplied.
-    """
-    mutation_rate = m if m is not None else mutation_rate
-    recombination_rate = r if r is not None else recombination_rate
-    if mutation_rate is None and mut_map is None:
-        raise ValueError("singer needs a mutation rate: pass m= / mutation_rate= (or mut_map=)")
-    if recombination_rate is None and recomb_map is None:
-        recombination_rate = mutation_rate * ratio        # SINGER's -ratio (default 1): r = m * ratio
-    return mutation_rate, recombination_rate
+def _resolve_singer_rates(*, _m, _r, _ratio, _mut_map, _recomb_map):
+    """Resolve SINGER's rate flags: derive ``-r`` from ``-m * -ratio`` when neither ``_r`` nor a
+    ``_recomb_map`` is given (SINGER's ``-ratio``, default 1)."""
+    if _m is None and _mut_map is None:
+        raise ValueError("singer needs a mutation rate: pass _m= (or _mut_map=)")
+    if _r is None and _recomb_map is None:
+        _r = _m * (1.0 if _ratio is None else _ratio)     # SINGER's -ratio (default 1): r = m * ratio
+    return _m, _r
 
 
-def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, ratio=1.0,
-           n_samples=21, thin=10, burn_in=20, polar=0.5, ploidy=1, seed=42,
-           penalty=None, hmm_epsilon=None, psmc_bins=None, recomb_map=None, mut_map=None,
-           fast=False, singer_args=None, workdir=None, singer_bin=None,
-           with_mutations=True, max_retries=50, sequence_length=None,
-           m=None, r=None, n=None, burnin=None):
+def singer(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
+           _Ne=None, _m=None, _r=None, _ratio=None, _n_samples=None, _thin=None,
+           _polar=0.5, _ploidy=1, _seed=42, _penalty=None, _hmm_epsilon=None, _psmc_bins=None,
+           _fast=False, _recomb_map=None, _mut_map=None,
+           singer_args=None, workdir=None, singer_bin=None,
+           with_mutations=True, max_retries=50, sequence_length=None):
     """Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4).
 
     SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
     samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
     since they represent genuine ARG uncertainty (§7.4).
 
-    Every SINGER binary flag is exposed as a kwarg and passed **as-is**, so a recommendation from the
-    SINGER authors or other SINGER users applies directly: ``Ne`` (``-Ne``, **diploid** — required,
-    see below), ``m`` (mutation rate, ``-m``), ``ratio`` (recomb/mut ratio, ``-ratio``, default 1 — so
-    ``r = m * ratio``) or ``r`` (``-r``) directly, ``n`` (``-n``, number of samples), ``thin``
-    (``-thin``), ``burnin`` (discard the first *burnin* samples — the authors' convergence
-    recommendation), ``polar`` (``-polar``; use ``0.99`` for polarised data), ``ploidy``, ``seed``,
-    ``recomb_map`` / ``mut_map`` (rate-map files), ``penalty`` / ``hmm_epsilon`` / ``psmc_bins`` and
-    ``fast`` (``-fast``). The genome-window (``-start`` / ``-end``) and I/O (``-input`` / ``-output``)
-    flags are managed by this wrapper, and SINGER's stateful ``-resume`` / ``-debug``
-    resume-from-``.log`` operations do not apply to a fresh run (``-debug`` is how the retry loop
-    recovers a failure); reach any of these, or a future flag, verbatim via ``singer_args``. The
-    descriptive names ``mutation_rate`` / ``recombination_rate`` / ``n_samples`` / ``burn_in`` are
-    retained as aliases (the SINGER-flag name wins if both are given).
+    **Posterior sampling is controlled by three unified knobs, shared with**
+    :func:`tspaint.io.argweaver` — ``ts`` (how many tree sequences you get back), ``mcmc_step`` (MCMC
+    iterations between saved samples) and ``mcmc_burnin`` (burn-in iterations). The chain runs
+    ``ts * mcmc_step + mcmc_burnin`` iterations; tspaint translates the knobs into SINGER's native
+    ``-n`` / ``-thin`` (see Returns). Every **native terminal flag** is exposed underscore-prefixed to
+    mark its 1:1 correspondence to the SINGER CLI: ``_Ne`` (``-Ne``, **required**), ``_m`` (``-m``),
+    ``_r`` (``-r``) or ``_ratio`` (``-ratio``, default 1 — so ``r = m*ratio``), ``_polar``, ``_ploidy``,
+    ``_seed``, ``_recomb_map`` / ``_mut_map``, ``_penalty`` / ``_hmm_epsilon`` / ``_psmc_bins``,
+    ``_fast``, and the raw sampling flags ``_n_samples`` (``-n``) / ``_thin`` (``-thin``) — normally
+    left to inference from the three unified knobs. Passing a plain knob **and** its ``_``-counterpart
+    (e.g. ``ts`` and ``_n_samples``) raises: the plain one takes precedence.
 
     Parameters
     ----------
@@ -316,27 +388,32 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
         The genotypes to sample ARGs from — a tree sequence carrying mutations, a **VCF Zarr**
         store, or a **VCF** file (normalised by :mod:`tspaint.io_genotypes`). All are written out
         as a haploid VCF for SINGER.
-    Ne : float
-        Diploid effective population size passed to SINGER (``-Ne``). **Required** — the SINGER
-        binary needs ``-Ne`` and errors without it, so tspaint does not estimate one silently (Ne
-        drives the recombination prior ``ρ = 4·Ne·r`` and hence the tree density). Estimate one from
-        the input with :func:`tspaint.io.estimate_ne` (``pi / 4mu`` from between-individual diversity;
-        ``groups=labels`` restricts to within-reference pairs, ``exclude=soft_refs`` drops admixed
-        refs) and pass the result here. Omitting it raises ``ValueError``.
-    mutation_rate : float
-        Per-base mutation rate (``-m``; alias ``m``).
-    recombination_rate : float
-        Per-base recombination rate (``-r``; alias ``r``). Defaults to ``mutation_rate * ratio``.
-    n_samples : int, optional
-        Number of MCMC samples SINGER draws (``-n``, default 20).
-    thin : int, optional
-        MCMC thinning interval (``-thin``, default 10).
-    burn_in : int, optional
-        Number of leading samples to discard as burn-in (default 5).
-    seed : int, optional
-        Base random seed; retries derive fresh seeds from it (default 42).
-    ploidy : int, optional
-        Ploidy passed to SINGER (``-ploidy``, default 1).
+    ts : int, optional
+        Number of posterior tree sequences returned (default 20). Exactly this many come back (see
+        Returns) — a single :class:`tskit.TreeSequence` when 1, else a list.
+    mcmc_step : int, optional
+        MCMC iterations between saved samples (SINGER ``-thin``; default 50). Larger ⇒ more
+        decorrelated returned samples.
+    mcmc_burnin : int, optional
+        Burn-in MCMC iterations discarded before the kept samples (default 200); ``mcmc_burnin //
+        mcmc_step`` leading saved samples are dropped.
+    _Ne : float
+        Diploid effective population size (``-Ne``). **Required** — SINGER needs it and tspaint does
+        not estimate one silently. SINGER calibrates its prior so ``4·_Ne·_m ≈ π`` (observed
+        diversity), so estimate _Ne over the **whole analysed panel** with
+        :func:`tspaint.io.estimate_ne` (all-pairs ``π/4μ``). On a structured / multi-species sample
+        that value is legitimately large — a too-small _Ne pushes deep coalescences off SINGER's
+        representable range into noisy / failing runs. Omitting it raises ``ValueError``.
+    _m : float
+        Per-base mutation rate (``-m``). Required (or ``_mut_map``).
+    _r : float, optional
+        Per-base recombination rate (``-r``). Defaults to ``_m * _ratio``.
+    _ratio, _polar, _ploidy, _seed, _penalty, _hmm_epsilon, _psmc_bins, _fast, _recomb_map, _mut_map
+        The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1,
+        ``-seed`` 42, ``-fast`` off; the rest optional).
+    _n_samples, _thin : int, optional
+        SINGER's raw ``-n`` / ``-thin`` — normally inferred from ``ts`` / ``mcmc_step`` / ``mcmc_burnin``;
+        set directly for full control (but not alongside the plain knob they correspond to).
     workdir : str, optional
         Working directory for VCF and ARG text tables (default: a fresh tempdir).
     singer_bin : str, optional
@@ -351,12 +428,15 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
 
     Returns
     -------
-    list of tskit.TreeSequence
-        Post-burn-in posterior samples (one per thinned MCMC sample), with sample
-        order preserved (VCF column ``i`` -> sample ``i``). For a VCF / VCF-Zarr / ``Variants``
-        source the sample ids are stamped onto the sample nodes
-        (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed
-        by sample-ID string as well as by node index.
+    tskit.TreeSequence or list of tskit.TreeSequence
+        Exactly ``ts`` posterior samples — a **single** :class:`tskit.TreeSequence` when ``ts == 1``,
+        else a **list** of ``ts``. SINGER runs ``-n = ts + mcmc_burnin // mcmc_step`` samples ``-thin =
+        mcmc_step`` iterations apart (``ts*mcmc_step + mcmc_burnin`` iterations total); tspaint discards
+        the ``mcmc_burnin // mcmc_step`` burn-in samples and keeps ``ts``. E.g. ``ts=20, mcmc_step=2,
+        mcmc_burnin=200`` → 20 samples over 240 iterations. Sample order is preserved (VCF column ``i``
+        -> sample ``i``); for a VCF / VCF-Zarr / ``Variants`` source the sample ids are stamped onto the
+        sample nodes (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts
+        ``labels`` keyed by sample-ID string as well as by node index.
 
     Raises
     ------
@@ -370,17 +450,11 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
     Mirrors SINGER's ``singer_master`` retry loop: on a nonzero exit it re-invokes
     ``-debug`` with fresh seeds.
     """
-    if n is not None:                                  # SINGER-flag aliases (see _resolve_singer_rates)
-        n_samples = n
-    if burnin is not None:
-        burn_in = burnin
-    mutation_rate, recombination_rate = _resolve_singer_rates(
-        mutation_rate=mutation_rate, m=m, recombination_rate=recombination_rate, r=r,
-        ratio=ratio, mut_map=mut_map, recomb_map=recomb_map)
-    # Resolve the source's sample ids for stamping the output. NB: keep this separate from the
-    # ``ploidy`` argument, which is SINGER's ``-ploidy`` for the *haploid* VCF (always the input's
-    # per-haplotype columns), not the source's diploidy.
-    if Ne is None:
+    _m, _r = _resolve_singer_rates(_m=_m, _r=_r, _ratio=_ratio, _mut_map=_mut_map, _recomb_map=_recomb_map)
+    n_raw, thin, discard, keep = _singer_sampling(ts, mcmc_step, mcmc_burnin, _n_samples, _thin)
+    # NB: ``_ploidy`` is SINGER's ``-ploidy`` for the *haploid* VCF (always the input's per-haplotype
+    # columns), separate from the source's own diploidy used for id stamping.
+    if _Ne is None:
         raise ValueError(_NE_REQUIRED)
     source, names, in_ploidy = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
@@ -388,16 +462,14 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
     prefix = os.path.join(tmp, "data")
     L = _write_singer_vcf(source, prefix, sequence_length)
     out = os.path.join(tmp, "arg")
-    _run_singer(prefix, out, start=0, end=L, Ne=Ne, mutation_rate=mutation_rate,
-                recombination_rate=recombination_rate, n_samples=n_samples, thin=thin,
-                ploidy=ploidy, seed=seed, polar=polar, penalty=penalty, hmm_epsilon=hmm_epsilon,
-                psmc_bins=psmc_bins, recomb_map=recomb_map, mut_map=mut_map, fast=fast,
+    _run_singer(prefix, out, start=0, end=L, Ne=_Ne, mutation_rate=_m,
+                recombination_rate=_r, n_samples=n_raw, thin=thin,
+                ploidy=_ploidy, seed=_seed, polar=_polar, penalty=_penalty, hmm_epsilon=_hmm_epsilon,
+                psmc_bins=_psmc_bins, recomb_map=_recomb_map, mut_map=_mut_map, fast=_fast,
                 singer_args=singer_args, max_retries=max_retries, singer_bin=singer_bin)
 
     samples = []
-    for i in _singer_indices(out):
-        if i < burn_in:
-            continue
+    for i in _select(_singer_indices(out), discard, keep):
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
         arg = _read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf)
         samples.append(attach_sample_ids(arg, names, in_ploidy))    # stamp source ids for name-keyed labels
@@ -406,11 +478,10 @@ def singer(source, *, Ne=None, mutation_rate=None, recombination_rate=None, rati
     return samples
 
 
-def singer_window(source, *, start, end, out_prefix, Ne, mutation_rate=None, recombination_rate=None,
-                  ratio=1.0, n_samples=20, thin=10, ploidy=1, seed=42, polar=0.5,
-                  penalty=None, hmm_epsilon=None, psmc_bins=None, recomb_map=None, mut_map=None,
-                  fast=False, singer_args=None, max_retries=50,
-                  singer_bin=None, m=None, r=None, n=None):
+def singer_window(source, *, start, end, out_prefix, _Ne, _m=None, _r=None,
+                  _ratio=None, _n_samples=20, _thin=10, _ploidy=1, _seed=42, _polar=0.5,
+                  _penalty=None, _hmm_epsilon=None, _psmc_bins=None, _recomb_map=None, _mut_map=None,
+                  _fast=False, singer_args=None, max_retries=50, singer_bin=None):
     """Run SINGER on ONE genomic window ``[start, end)``, leaving the raw node/branch/mut tables.
 
     The per-window unit of a GWF window × member parallelisation: run this for each window, then
@@ -437,22 +508,18 @@ def singer_window(source, *, start, end, out_prefix, Ne, mutation_rate=None, rec
         The MCMC sample indices written for this window.
     """
     from .io_genotypes import source_kind
-    if n is not None:
-        n_samples = n
-    mutation_rate, recombination_rate = _resolve_singer_rates(
-        mutation_rate=mutation_rate, m=m, recombination_rate=recombination_rate, r=r,
-        ratio=ratio, mut_map=mut_map, recomb_map=recomb_map)
+    _m, _r = _resolve_singer_rates(_m=_m, _r=_r, _ratio=_ratio, _mut_map=_mut_map, _recomb_map=_recomb_map)
     if source_kind(source) == "vcf":
         s = str(source)
         vcf_prefix = s[:-4] if s.endswith(".vcf") else s
     else:
         vcf_prefix = out_prefix + "_input"
         _write_singer_vcf(source, vcf_prefix)
-    return _run_singer(vcf_prefix, out_prefix, start=start, end=end, Ne=Ne,
-                       mutation_rate=mutation_rate, recombination_rate=recombination_rate,
-                       n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed, polar=polar,
-                       penalty=penalty, hmm_epsilon=hmm_epsilon, psmc_bins=psmc_bins,
-                       recomb_map=recomb_map, mut_map=mut_map, fast=fast,
+    return _run_singer(vcf_prefix, out_prefix, start=start, end=end, Ne=_Ne,
+                       mutation_rate=_m, recombination_rate=_r,
+                       n_samples=_n_samples, thin=_thin, ploidy=_ploidy, seed=_seed, polar=_polar,
+                       penalty=_penalty, hmm_epsilon=_hmm_epsilon, psmc_bins=_psmc_bins,
+                       recomb_map=_recomb_map, mut_map=_mut_map, fast=_fast,
                        singer_args=singer_args, max_retries=max_retries, singer_bin=singer_bin)
 
 
@@ -548,13 +615,13 @@ def run_merge_arg(rows, out, *, script=None, python=None):
     return out
 
 
-def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombination_rate=None,
-                    ratio=1.0, n_samples=21, thin=10, burn_in=20, polar=0.5, ploidy=1, seed=42,
-                    penalty=None, hmm_epsilon=None, psmc_bins=None, recomb_map=None, mut_map=None,
-                    fast=False, singer_args=None, n_jobs=None,
+def singer_windowed(source, *, window_size, ts=None, mcmc_step=None, mcmc_burnin=None,
+                    _Ne=None, _m=None, _r=None, _ratio=None, _n_samples=None, _thin=None,
+                    _polar=0.5, _ploidy=1, _seed=42, _penalty=None, _hmm_epsilon=None, _psmc_bins=None,
+                    _fast=False, _recomb_map=None, _mut_map=None,
+                    singer_args=None, n_jobs=None,
                     sequence_length=None, skip_gaps=None, workdir=None, singer_bin=None,
-                    merge_arg_script=None, merge_python=None, log=None,
-                    m=None, r=None, n=None, burnin=None):
+                    merge_arg_script=None, merge_python=None, log=None):
     """Sample posterior ARGs for a long region on ONE machine: window SINGER, then stitch.
 
     The single-machine analogue of the per-window × per-member cluster workflow (``workflow.py``)
@@ -581,14 +648,16 @@ def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombi
         Contiguous window width (bp); ``[0, L)`` is tiled into non-overlapping windows. Pick a
         width SINGER handles comfortably (≈0.5–2 Mb) — smaller windows parallelise better but the
         per-window ARG ignores linkage across its boundaries.
-    Ne, mutation_rate, recombination_rate, ratio, n_samples, thin, ploidy, polar, singer_bin
-        As for :func:`singer` / :func:`singer_window`. ``Ne`` is **required** (see :func:`singer`):
-        estimate it once with :func:`tspaint.io.estimate_ne` and pass it — the same value is reused
-        for every window. ``seed`` is offset per window (``seed + window_index``) so windows are
-        independent but reproducible.
-    burn_in : int, optional
-        Leading MCMC samples to discard; members ``burn_in .. n_samples-1`` present in **every**
-        window are stitched (default 20).
+    ts, mcmc_step, mcmc_burnin, _Ne, _m, _r, _ratio, _ploidy, _polar, singer_bin
+        As for :func:`singer` — ``ts`` / ``mcmc_step`` / ``mcmc_burnin`` control the posterior sampling
+        identically (the SAME raw samples are run in every window, then burn-in + thinning select the
+        ``ts`` members present in all windows to stitch). ``_Ne`` is **required** (see :func:`singer`
+        for the ``4·Ne·μ ≈ π`` calibration): estimate it once over the whole region with the all-pairs
+        :func:`tspaint.io.estimate_ne` and pass it — the same value is reused for every window.
+        ``_seed`` is offset per window (``_seed + window_index``) so windows are independent but
+        reproducible.
+    mcmc_burnin : int, optional
+        Leading raw MCMC samples discarded before thinning (default 0).
     n_jobs : int, optional
         Worker threads for the window and merge stages (default: the SLURM / CPU core count).
     sequence_length : float, optional
@@ -616,16 +685,11 @@ def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombi
     from .parallel import resolve_cores
 
     n_jobs = max(1, resolve_cores(n_jobs))
-    if n is not None:                                  # SINGER-flag aliases
-        n_samples = n
-    if burnin is not None:
-        burn_in = burnin
-    mutation_rate, recombination_rate = _resolve_singer_rates(
-        mutation_rate=mutation_rate, m=m, recombination_rate=recombination_rate, r=r,
-        ratio=ratio, mut_map=mut_map, recomb_map=recomb_map)
-    if Ne is None:
+    _m, _r = _resolve_singer_rates(_m=_m, _r=_r, _ratio=_ratio, _mut_map=_mut_map, _recomb_map=_recomb_map)
+    n_raw, thin, discard, keep = _singer_sampling(ts, mcmc_step, mcmc_burnin, _n_samples, _thin)
+    if _Ne is None:
         raise ValueError(_NE_REQUIRED)
-    # Resolve sample ids for stamping; keep separate from ``ploidy`` (SINGER's -ploidy, see singer()).
+    # Resolve sample ids for stamping; keep separate from ``_ploidy`` (SINGER's -ploidy, see singer()).
     source, names, in_ploidy = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_win_")
     os.makedirs(tmp, exist_ok=True)
@@ -646,27 +710,28 @@ def singer_windowed(source, *, window_size, Ne=None, mutation_rate=None, recombi
     if not windows:
         raise ValueError("no windows to run (empty region or fully covered by skip_gaps)")
     if log:
-        log(f"SINGER: {len(windows)} window(s) × n={n_samples} over [0,{L:g}) on {n_jobs} worker(s)")
+        log(f"SINGER: {len(windows)} window(s) × {n_raw} raw sample(s) over [0,{L:g}) on "
+            f"{n_jobs} worker(s)")
 
     # 3) run the windows in parallel — each shells out to SINGER, so it releases the GIL.
     def _run(win):
         _w, s, e, pfx = win
-        return set(singer_window(vcf, start=s, end=e, out_prefix=pfx, Ne=Ne,
-                                 mutation_rate=mutation_rate, recombination_rate=recombination_rate,
-                                 n_samples=n_samples, thin=thin, ploidy=ploidy, seed=seed + _w,
-                                 polar=polar, penalty=penalty, hmm_epsilon=hmm_epsilon,
-                                 psmc_bins=psmc_bins, recomb_map=recomb_map, mut_map=mut_map,
-                                 fast=fast, singer_args=singer_args, singer_bin=singer_bin))
+        return set(singer_window(vcf, start=s, end=e, out_prefix=pfx, _Ne=_Ne,
+                                 _m=_m, _r=_r, _n_samples=n_raw, _thin=thin, _ploidy=_ploidy,
+                                 _seed=_seed + _w, _polar=_polar, _penalty=_penalty,
+                                 _hmm_epsilon=_hmm_epsilon, _psmc_bins=_psmc_bins, _recomb_map=_recomb_map,
+                                 _mut_map=_mut_map, _fast=_fast, singer_args=singer_args,
+                                 singer_bin=singer_bin))
     with ThreadPoolExecutor(max_workers=n_jobs) as ex:
         idx_sets = list(ex.map(_run, windows))
 
-    # 4) members written by every window and past burn-in.
-    common = set.intersection(*idx_sets)
-    members = sorted(i for i in common if i >= burn_in)
+    # 4) the raw members written by EVERY window, then burn-in + thinning to `ts` (as singer()).
+    common = sorted(set.intersection(*idx_sets))
+    members = _select(common, discard, keep)
     if not members:
         raise RuntimeError(
-            f"no post-burn-in MCMC members common to all {len(windows)} windows "
-            f"(n_samples={n_samples}, burn_in={burn_in}); raise n_samples or lower burn_in")
+            f"no MCMC members common to all {len(windows)} windows after burn-in/thinning "
+            f"(ts={ts}, mcmc_step={mcmc_step}, mcmc_burnin={mcmc_burnin}); raise ts or lower mcmc_burnin")
     if log:
         log(f"stitching {len(members)} member(s) across windows")
 

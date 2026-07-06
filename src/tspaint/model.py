@@ -164,3 +164,62 @@ def query_emission(pi):
         ``(K,)`` emission likelihood vector (a copy of ``pi``).
     """
     return np.asarray(pi, float).copy()
+
+
+class MaskedEmissions:
+    """Position-dependent Felsenstein emissions — **fragment masking** (CLAUDE.md §2.3).
+
+    Wraps the base per-tip emission vectors and, for the marginal tree covering a genomic interval,
+    returns them with each *masked* reference tip switched to the query (unlabelled) emission over
+    its masked spans. So a contaminated reference anchors at full strength on its clean spans and is
+    treated as a query (contributes no label information) exactly where it is flagged foreign —
+    the local generalisation of the global per-tip credibility ``w_i``.
+
+    Parameters
+    ----------
+    base : dict[int, numpy.ndarray]
+        Base per-tip emission vectors (:func:`build_emissions`).
+    mask : dict[int, list[tuple[float, float]]]
+        Per reference-node the half-open ``[left, right)`` spans to mask out (unlabel).
+    pi : array_like
+        Root frequencies for the query emission used on masked spans.
+
+    Notes
+    -----
+    A reference is masked for a tree if the tree interval's **midpoint** falls in one of its spans
+    (tracts span many marginal trees, so the ≤1-interval boundary rounding is negligible). The
+    per-interval emission depends only on that interval, so the E-step stays exactly summable over
+    tree-range chunks (the byte-exact parallel property is preserved).
+    """
+
+    def __init__(self, base, mask, pi):
+        self.base = base
+        self._q = query_emission(pi)
+        # accept (left, right) or (left, right, score) spans (ReferenceQC.mask / foreign_tracts)
+        self.mask = {int(r): sorted((float(s[0]), float(s[1])) for s in spans)
+                     for r, spans in (mask or {}).items() if spans}
+        self._active = None                      # cache: (frozenset masked-here, overlay dict)
+
+    def for_interval(self, left, right):
+        """The emission dict for the marginal tree covering ``[left, right)``."""
+        if not self.mask:
+            return self.base
+        mid = 0.5 * (float(left) + float(right))
+        here = frozenset(r for r, spans in self.mask.items()
+                         if any(l <= mid < rr for (l, rr) in spans))
+        if not here:
+            return self.base
+        if self._active is not None and self._active[0] == here:
+            return self._active[1]               # unchanged since the last interval — reuse overlay
+        overlay = dict(self.base)
+        for r in here:
+            overlay[r] = self._q
+        self._active = (here, overlay)
+        return overlay
+
+
+def emissions_for(emissions, left, right):
+    """The emission dict for a marginal tree interval — position-dependent for a
+    :class:`MaskedEmissions`, else the plain ``emissions`` dict unchanged (backward compatible)."""
+    fn = getattr(emissions, "for_interval", None)
+    return fn(left, right) if fn is not None else emissions

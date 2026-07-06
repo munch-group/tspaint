@@ -49,11 +49,11 @@ Lower-level machinery lives in the named submodules (``tspaint.model``, ``tspain
 from __future__ import annotations
 
 # Core public API ---------------------------------------------------------------------------
-from .api import paint, Painting
+from .api import paint, Painting, WindowedPainting
 from .track import SoftTrack, SegmentTrack, compare_tracks
 from .em import fit, FitResult
 from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
-                     INFORMATIVE, MISSING_INFO)
+                     INFORMATIVE, MISSING_INFO, DEFAULT_DEADBAND)
 from .model import make_generator_2state
 from .io_genotypes import subset_data
 from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
@@ -80,8 +80,9 @@ except Exception:  # pragma: no cover
 
 __all__ = [
     # core
-    "paint", "Painting", "SoftTrack", "SegmentTrack", "compare_tracks", "fit", "FitResult",
-    "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO",
+    "paint", "Painting", "WindowedPainting", "SoftTrack", "SegmentTrack", "compare_tracks", "fit",
+    "FitResult",
+    "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO", "DEFAULT_DEADBAND",
     "make_generator_2state",
     # data prep (slice / normalise a genotype source before a front end)
     "subset_data",

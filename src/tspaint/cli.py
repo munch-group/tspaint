@@ -14,7 +14,7 @@ ensemble pipeline decomposes as::
 Computed results are ``.npz`` (:mod:`tspaint.serialize`); hand-authored inputs are text: labels
 as JSON ``{"<node>": <state>}``, id-lists (``--queries`` / ``--soft-refs`` / ``--samples`` /
 ``--anchors``) as an inline ``3,4,5`` or ``@file``. ``--cores/-j`` defaults to the SLURM
-allocation (``$SLURM_JOB_CPUS_PER_NODE``) else serial.
+allocation (``$SLURM_JOB_CPUS_PER_NODE``) else all available CPUs.
 
 This module is the only one importing ``click``; the core package never imports it, so
 ``import tspaint`` works without click installed.
@@ -26,6 +26,8 @@ import os
 import re
 
 import click
+
+from .output import DEFAULT_DEADBAND, DEFAULT_QC_DEADBAND
 
 
 # --- input helpers --------------------------------------------------------------------------
@@ -86,10 +88,11 @@ def cli():
               help="labels JSON {node: state}.")
 @click.option("--soft-refs", default=None, help="ids whose credibility is learned (inline or @file).")
 @click.option("--estimate-pi", is_flag=True, help="re-estimate pi (default: hold uniform).")
-@click.option("--deadband", type=float, default=0.0, help="default segmentation dead-band stored in params.")
+@click.option("--deadband", type=float, default=DEFAULT_DEADBAND, show_default=True,
+              help="default segmentation dead-band stored in params.")
 @click.option("--max-iter", type=int, default=12, show_default=True)
 @click.option("--tol", type=float, default=1e-7, show_default=True)
-@click.option("-j", "--cores", type=int, default=None, help="worker processes (default: SLURM / 1).")
+@click.option("-j", "--cores", type=int, default=None, help="worker processes (default: SLURM / all CPUs).")
 @click.option("-o", "--out", required=True, type=click.Path(), help="output params .npz.")
 def fit(trees, labels_path, soft_refs, estimate_pi, deadband, max_iter, tol, cores, out):
     """Fit the ancestry model (Q, pi, w) pooled across one or more TREES → params.npz."""
@@ -120,9 +123,9 @@ def fit(trees, labels_path, soft_refs, estimate_pi, deadband, max_iter, tol, cor
 @click.option("--soft-refs", default=None, help="refs whose credibility is learned (with --labels).")
 @click.option("--estimate-pi", is_flag=True)
 @click.option("--smooth", is_flag=True, help="horizontal BP smoother (recommended on inferred ARGs).")
-@click.option("--deadband", type=float, default=0.0, show_default=True)
+@click.option("--deadband", type=float, default=DEFAULT_DEADBAND, show_default=True)
 @click.option("--max-iter", type=int, default=12, show_default=True)
-@click.option("-j", "--cores", type=int, default=None, help="worker processes (default: SLURM / 1).")
+@click.option("-j", "--cores", type=int, default=None, help="worker processes (default: SLURM / all CPUs).")
 @click.option("-o", "--out", required=True, type=click.Path(), help="output painting .npz.")
 def paint(trees, params_path, labels_path, queries, soft_refs, estimate_pi, smooth, deadband,
           max_iter, cores, out):
@@ -202,15 +205,18 @@ def date(trees, labels_path, n_cells, n_iter, estimate_pi, out):
 
 
 @cli.command()
-@click.argument("trees", type=click.Path(exists=True, dir_okay=False))
+@click.argument("trees", nargs=-1, required=True, type=click.Path(exists=True, dir_okay=False))
 @click.option("--labels", "labels_path", required=True, type=click.Path(exists=True))
 @click.option("--anchors", default=None, help="trusted hard-clamped refs (inline or @file).")
-@click.option("--deadband", type=float, default=0.3, show_default=True)
+@click.option("--deadband", type=float, default=DEFAULT_QC_DEADBAND, show_default=True)
 @click.option("--soft-refs-out", default=None, type=click.Path(),
               help="write the suspect reference ids (one per line) for `paint --soft-refs @file`.")
 @click.option("-o", "--out", required=True, type=click.Path(), help="QC table .npz.")
 def qc(trees, labels_path, anchors, deadband, soft_refs_out, out):
     """Audit a reference panel for admixture / mislabelling → qc.npz.
+
+    Pass several TREES (e.g. SINGER posterior members) to fit once pooled, paint each reference's
+    leave-one-out map per member and merge them (mean map + ARG-uncertainty band; CLAUDE.md §7.4).
 
     Task 1: re-paint with the flagged references down-weighted —
     ``tspaint qc ... --soft-refs-out suspects.txt`` then ``tspaint paint ... --soft-refs @suspects.txt``.
@@ -218,10 +224,11 @@ def qc(trees, labels_path, anchors, deadband, soft_refs_out, out):
     from .introgression import reference_qc
     from .serialize import save_reference_qc
     anc = read_id_list(anchors)
-    result = reference_qc(_load_ts(trees), read_labels(labels_path),
+    members = [_load_ts(t) for t in trees]
+    result = reference_qc(members if len(members) > 1 else members[0], read_labels(labels_path),
                           anchors=set(anc) if anc else None)
     save_reference_qc(out, result, deadband=deadband)
-    _echo(f"qc: {len(result.labels)} refs -> {out}")
+    _echo(f"qc: {len(result.labels)} refs, {len(members)} ARG(s) -> {out}")
     if soft_refs_out:
         suspects = sorted(result.soft_refs())
         with open(soft_refs_out, "w") as f:
@@ -374,55 +381,78 @@ def trees_tsinfer(source, out):
 
 
 @trees.command("relate")
+@click.argument("source", type=click.Path(exists=True))
+@click.option("-m", "--mut-rate", "mutation_rate", type=float, required=True,
+              help="per-bp mutation rate (Relate -m).")
+@click.option("-r", "--recomb-rate", "recombination_rate", type=float, default=1e-8,
+              show_default=True, help="per-bp recombination rate (flat genetic map).")
+@click.option("--Ne", "Ne", type=float, default=None,
+              help="diploid Ne for Relate's initial prior (default: estimate_ne).")
+@click.option("--poplabels", type=click.Path(exists=True), default=None,
+              help=".poplabels for a structure-aware EstimatePopulationSize.")
+@click.option("--no-eps", "no_eps", is_flag=True,
+              help="skip EstimatePopulationSize (faster, less calibrated).")
+@click.option("--seed", type=int, default=1, show_default=True)
+@click.option("-o", "--out", required=True, type=click.Path(), help="output .trees.")
+def trees_relate(source, mutation_rate, recombination_rate, Ne, poplabels, no_eps, seed, out):
+    """Infer a tree sequence from a ts / VCF / VCF-Zarr SOURCE with Relate (end to end)."""
+    from .io import relate
+    src = _load_ts(source) if str(source).endswith(".trees") else source
+    ts = relate(src, mutation_rate=mutation_rate, recombination_rate=recombination_rate, Ne=Ne,
+                poplabels=poplabels, estimate_population_size=not no_eps, seed=seed)
+    ts.dump(out)
+    _echo(f"relate: {ts.num_trees} trees -> {out}")
+
+
+@trees.command("relate-convert")
 @click.argument("anc", type=click.Path(exists=True))
 @click.argument("mut", type=click.Path(exists=True))
 @click.option("-o", "--out", required=True, type=click.Path(), help="output .trees.")
-def trees_relate(anc, mut, out):
-    """Convert Relate .anc/.mut to a tree sequence (--compress)."""
-    from .io import relate
-    relate(anc, mut).dump(out)
-    _echo(f"relate -> {out}")
+def trees_relate_convert(anc, mut, out):
+    """Convert existing Relate .anc/.mut to a tree sequence (--compress)."""
+    from .io import relate_convert
+    relate_convert(anc, mut).dump(out)
+    _echo(f"relate-convert -> {out}")
 
 
-# Option names mirror SINGER's own flags (single dash for short, two dashes for long) so a
-# recommendation from the SINGER authors/users applies directly; old tspaint names are kept as
-# aliases. `-r`/`--recomb-rate` overrides `--ratio`. `--Ne` is required (SINGER's binary needs it).
+# Sampling is the unified --ts / --mcmc-step / --mcmc-burnin; the remaining options are SINGER's own
+# terminal flags (mapped to the underscore Python kwargs). `-r`/`--recomb-rate` overrides `--ratio`.
 @trees.command("singer")
 @click.argument("source", type=click.Path(exists=True))
+@click.option("--ts", "ts", type=int, default=None, help="number of posterior tree sequences returned (default 20).")
+@click.option("--mcmc-step", "mcmc_step", type=int, default=None, help="MCMC iterations between saved samples (default 50).")
+@click.option("--mcmc-burnin", "mcmc_burnin", type=int, default=None, help="burn-in MCMC iterations (default 200).")
 @click.option("-m", "--mut-rate", "m", type=float, default=None, help="mutation rate (SINGER -m).")
-@click.option("--Ne", "--ne", "Ne", type=float, required=True, help="diploid Ne (SINGER --Ne; required).")
-@click.option("--ratio", type=float, default=1.0, show_default=True, help="recomb/mut ratio (SINGER --ratio).")
+@click.option("--Ne", "--ne", "Ne", type=float, required=True, help="diploid Ne (SINGER -Ne; required).")
+@click.option("--ratio", type=float, default=None, help="recomb/mut ratio (SINGER -ratio, default 1).")
 @click.option("-r", "--recomb-rate", "r", type=float, default=None, help="recombination rate (SINGER -r; overrides --ratio).")
-@click.option("-n", "--n", "n", type=int, default=100, show_default=True, help="number of posterior samples (SINGER -n).")
-@click.option("--thin", type=int, default=20, show_default=True, help="MCMC iterations between samples (SINGER --thin).")
-@click.option("--burnin", "--burn-in", "burnin", type=int, default=0, show_default=True,
-              help="discard the first BURNIN posterior samples.")
-@click.option("--polar", type=float, default=0.5, show_default=True, help="polarization prob (SINGER --polar; 0.99 if polarized).")
+@click.option("--polar", type=float, default=0.5, show_default=True, help="polarization prob (SINGER -polar; 0.99 if polarized).")
 @click.option("--ploidy", type=int, default=1, show_default=True)
 @click.option("--seed", type=int, default=42, show_default=True)
-@click.option("--recomb_map", "recomb_map", type=click.Path(exists=True), default=None, help="SINGER --recomb_map file.")
-@click.option("--mut_map", "mut_map", type=click.Path(exists=True), default=None, help="SINGER --mut_map file.")
-@click.option("--penalty", type=float, default=None, help="SINGER --penalty.")
-@click.option("--hmm_epsilon", "hmm_epsilon", type=float, default=None, help="SINGER --hmm_epsilon.")
-@click.option("--psmc_bins", "psmc_bins", type=float, default=None, help="SINGER --psmc_bins.")
-@click.option("--fast", is_flag=True, default=False, help="SINGER --fast.")
+@click.option("--recomb_map", "recomb_map", type=click.Path(exists=True), default=None, help="SINGER -recomb_map file.")
+@click.option("--mut_map", "mut_map", type=click.Path(exists=True), default=None, help="SINGER -mut_map file.")
+@click.option("--penalty", type=float, default=None, help="SINGER -penalty.")
+@click.option("--hmm_epsilon", "hmm_epsilon", type=float, default=None, help="SINGER -hmm_epsilon.")
+@click.option("--psmc_bins", "psmc_bins", type=float, default=None, help="SINGER -psmc_bins.")
+@click.option("--fast", is_flag=True, default=False, help="SINGER -fast.")
 @click.option("--singer-arg", "singer_args", multiple=True,
               help="passthrough SINGER flag/value, repeatable (e.g. the stateful -resume / -debug).")
 @click.option("--length", "sequence_length", type=float, default=None)
 @click.option("-d", "--out-dir", required=True, type=click.Path(), help="dir for member_*.trees.")
-def trees_singer(source, m, Ne, ratio, r, n, thin, burnin, polar, ploidy, seed, recomb_map, mut_map,
-                 penalty, hmm_epsilon, psmc_bins, fast, singer_args, sequence_length, out_dir):
+def trees_singer(source, ts, mcmc_step, mcmc_burnin, m, Ne, ratio, r, polar, ploidy, seed, recomb_map,
+                 mut_map, penalty, hmm_epsilon, psmc_bins, fast, singer_args, sequence_length, out_dir):
     """Sample a posterior ARG ensemble with SINGER (whole genome) → member_*.trees."""
     from .io import singer
     src = _load_ts(source) if str(source).endswith(".trees") else source
-    ensemble = singer(src, m=m, Ne=Ne, ratio=ratio, r=r, n=n, thin=thin, burnin=burnin, polar=polar,
-                      ploidy=ploidy, seed=seed, recomb_map=recomb_map, mut_map=mut_map,
-                      penalty=penalty, hmm_epsilon=hmm_epsilon, psmc_bins=psmc_bins, fast=fast,
+    ensemble = singer(src, ts=ts, mcmc_step=mcmc_step, mcmc_burnin=mcmc_burnin,
+                      _Ne=Ne, _m=m, _r=r, _ratio=ratio, _polar=polar, _ploidy=ploidy, _seed=seed,
+                      _recomb_map=recomb_map, _mut_map=mut_map, _penalty=penalty,
+                      _hmm_epsilon=hmm_epsilon, _psmc_bins=psmc_bins, _fast=fast,
                       singer_args=list(singer_args) or None, sequence_length=sequence_length)
     ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
     os.makedirs(out_dir, exist_ok=True)
-    for i, ts in enumerate(ensemble):
-        ts.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
+    for i, member in enumerate(ensemble):
+        member.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
     _echo(f"singer: {len(ensemble)} posterior members -> {out_dir}/member_*.trees")
 
 
@@ -433,31 +463,29 @@ def trees_singer(source, m, Ne, ratio, r, n, thin, burnin, polar, ploidy, seed, 
 @click.option("--Ne", "--ne", "Ne", type=float, required=True, help="diploid Ne (arg-sample -N; required).")
 @click.option("-m", "--mut-rate", "mutation_rate", type=float, required=True, help="mutation rate (arg-sample -m).")
 @click.option("-r", "--recomb-rate", "recombination_rate", type=float, required=True, help="recombination rate (arg-sample -r).")
+@click.option("--ts", "ts", type=int, default=None, help="number of posterior tree sequences returned (default 20).")
+@click.option("--mcmc-step", "mcmc_step", type=int, default=None, help="MCMC iterations between saved samples (default 50).")
+@click.option("--mcmc-burnin", "mcmc_burnin", type=int, default=None, help="burn-in MCMC iterations (default 200).")
 @click.option("--ntimes", type=int, default=20, show_default=True, help="discretised time steps (--ntimes).")
 @click.option("--maxtime", type=float, default=200e3, show_default=True, help="max time, generations (--maxtime).")
 @click.option("-c", "--compress", type=int, default=1, show_default=True, help="block compression bp (arg-sample -c).")
-@click.option("-n", "--iters", type=int, default=100, show_default=True, help="MCMC iterations (arg-sample -n).")
-@click.option("--sample-step", "sample_step", type=int, default=None, help="save a sample every N iters (--sample-step).")
-@click.option("--burnin", "--burn-in", "burn_in", type=int, default=0, show_default=True, help="discard leading samples.")
-@click.option("--thin", type=int, default=1, show_default=True, help="keep every THIN-th sample.")
 @click.option("--seed", type=int, default=None, help="random seed (--randseed).")
 @click.option("--argweaver-arg", "argweaver_args", multiple=True, help="passthrough arg-sample flag/value (repeatable).")
 @click.option("--length", "sequence_length", type=float, default=None)
 @click.option("-d", "--out-dir", required=True, type=click.Path(), help="dir for member_*.trees.")
-def trees_argweaver(source, Ne, mutation_rate, recombination_rate, ntimes, maxtime, compress, iters,
-                    sample_step, burn_in, thin, seed, argweaver_args, sequence_length, out_dir):
+def trees_argweaver(source, ts, mcmc_step, mcmc_burnin, Ne, mutation_rate, recombination_rate, ntimes,
+                    maxtime, compress, seed, argweaver_args, sequence_length, out_dir):
     """Sample a posterior ARG ensemble with ARGweaver (alternative to singer) → member_*.trees."""
     from .io import argweaver
     src = _load_ts(source) if str(source).endswith(".trees") else source
-    ensemble = argweaver(src, Ne=Ne, mutation_rate=mutation_rate,
-                         recombination_rate=recombination_rate, ntimes=ntimes, maxtime=maxtime,
-                         compress=compress, iters=iters, sample_step=sample_step, burn_in=burn_in,
-                         thin=thin, seed=seed, argweaver_args=list(argweaver_args) or None,
-                         sequence_length=sequence_length)
+    ensemble = argweaver(src, ts=ts, mcmc_step=mcmc_step, mcmc_burnin=mcmc_burnin,
+                         _N=Ne, _m=mutation_rate, _r=recombination_rate, _ntimes=ntimes,
+                         _maxtime=maxtime, _compress=compress, _seed=seed,
+                         argweaver_args=list(argweaver_args) or None, sequence_length=sequence_length)
     ensemble = ensemble if isinstance(ensemble, list) else [ensemble]
     os.makedirs(out_dir, exist_ok=True)
-    for i, ts in enumerate(ensemble):
-        ts.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
+    for i, member in enumerate(ensemble):
+        member.dump(os.path.join(out_dir, f"member_{i:03d}.trees"))
     _echo(f"argweaver: {len(ensemble)} posterior members -> {out_dir}/member_*.trees")
 
 
@@ -500,10 +528,10 @@ def trees_singer_window(source, start, end, out_prefix, Ne, m, ratio, r, n, thin
     """Run SINGER on ONE genomic window (the GWF per-window unit; bare-singer engine)."""
     from .io_singer import singer_window
     src = _load_ts(source) if str(source).endswith(".trees") else source
-    idxs = singer_window(src, start=start, end=end, out_prefix=out_prefix, Ne=Ne, m=m, ratio=ratio,
-                         r=r, n=n, thin=thin, polar=polar, ploidy=ploidy, seed=seed,
-                         recomb_map=recomb_map, mut_map=mut_map, penalty=penalty,
-                         hmm_epsilon=hmm_epsilon, psmc_bins=psmc_bins, fast=fast,
+    idxs = singer_window(src, start=start, end=end, out_prefix=out_prefix, _Ne=Ne, _m=m, _ratio=ratio,
+                         _r=r, _n_samples=n, _thin=thin, _polar=polar, _ploidy=ploidy, _seed=seed,
+                         _recomb_map=recomb_map, _mut_map=mut_map, _penalty=penalty,
+                         _hmm_epsilon=hmm_epsilon, _psmc_bins=psmc_bins, _fast=fast,
                          singer_args=list(singer_args) or None)
     _echo(f"singer-window [{start:g},{end:g}): {len(idxs)} samples -> {out_prefix}_*_<i>.txt")
 
@@ -592,6 +620,29 @@ def install_argweaver_cmd(commit, force):
     path = install_argweaver(commit=commit, force=force, log=_echo)
     _echo(f"\nARGweaver ready: {path}")
     _echo(f"tspaint uses it automatically; to use it from elsewhere set TSPAINT_ARGWEAVER={path}")
+
+
+@install.command("relate")
+@click.option("--force", is_flag=True, help="rebuild even if the binaries already exist.")
+@click.option("--relate-commit", default=None, help="Relate commit to pin (default: the tested pin).")
+@click.option("--relate-lib-commit", default=None,
+              help="relate_lib commit to pin (default: the tested pin).")
+def install_relate_cmd(force, relate_commit, relate_lib_commit):
+    """Clone + build Relate and relate_lib from source (linux-64 / osx-arm64).
+
+    Builds relate_lib's `Convert` (used by `tspaint.io.relate` to convert `.anc`/`.mut` -> tskit with
+    `--compress`) and the `Relate` inference program + `EstimatePopulationSize`. Recommended workflow:
+    run Relate on a WHOLE chromosome (EstimatePopulationSize is best estimated genome-wide), convert
+    with `tspaint.io.relate`, then split into paint-sized pieces with `tspaint.io.relate_windows`.
+    """
+    from .install import install_relate
+    paths = install_relate(force=force, relate_commit=relate_commit,
+                           relate_lib_commit=relate_lib_commit, log=_echo)
+    _echo("\nRelate ready:")
+    for name, p in paths.items():
+        _echo(f"  {name:22s} {p}")
+    _echo(f"\ntspaint.io.relate uses Convert automatically; elsewhere set "
+          f"TSPAINT_RELATE_CONVERT={paths['Convert']}")
 
 
 from .benchmark.cli import benchmark as _benchmark_group   # noqa: E402  (attach the subcommand group)

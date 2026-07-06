@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .output import Segment, INFORMATIVE, MISSING_INFO
+from .output import Segment, INFORMATIVE, MISSING_INFO, DEFAULT_QC_DEADBAND
 from .ensemble import MergedSegment
 
 __all__ = [
@@ -240,7 +240,7 @@ def load_rate_through_time(path):
 
 # --- reference QC ---------------------------------------------------------------------------
 
-def save_reference_qc(path, qc, deadband=0.3):
+def save_reference_qc(path, qc, deadband=DEFAULT_QC_DEADBAND):
     """Write a :class:`~tspaint.introgression.ReferenceQC` — the per-reference audit table
     (``ref, label, credibility, is_anchor, foreign_fraction``, least-credible first), the fitted
     ``Q/π``, and each reference's leave-one-out introgression map."""

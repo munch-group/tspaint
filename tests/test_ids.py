@@ -171,8 +171,8 @@ def test_singer_diploid_vcf_ploidy_and_stamping(tmp_path):
     vcf = str(tmp_path / "cohort.vcf")
     _diploid_vcf(ts, vcf, names)
 
-    ens = io.singer(vcf, Ne=1000, mutation_rate=6e-7, recombination_rate=1e-8,
-                    n_samples=6, thin=2, burn_in=2, seed=42, sequence_length=ts.sequence_length)
+    ens = io.singer(vcf, _Ne=1000, _m=6e-7, _r=1e-8,
+                    ts=4, mcmc_step=2, mcmc_burnin=4, _seed=42, sequence_length=ts.sequence_length)
     g = ens[0] if isinstance(ens, list) else ens
     assert g.num_samples == ts.num_samples          # NOT doubled (the -ploidy clobber regression)
     assert g.num_individuals == ts.num_individuals

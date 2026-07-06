@@ -25,7 +25,7 @@ import numpy as np
 import tskit
 
 from .pruning import prune_tree
-from .output import INFORMATIVE, MISSING_INFO, loo_posterior_table
+from .output import INFORMATIVE, MISSING_INFO, loo_posterior_table, DEFAULT_QC_DEADBAND
 from .em import fit, build_emissions
 from .model import make_generator_2state
 
@@ -104,7 +104,8 @@ def _rank_normalise_depth(tracks):
                 seg.depth = float("nan")
 
 
-def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", merge_tol=1e-9):
+def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", merge_tol=1e-9,
+                      tree_range=None):
     """Per-sample foreignness components as contiguous segments covering ``[0, L)``.
 
     Single pass over the marginal trees (one pruning per tree); for each focal sample records
@@ -147,7 +148,12 @@ def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", me
     samples = [int(s) for s in (ts.samples() if focal is None else focal)]
     tracks = {s: [] for s in samples}
 
-    for tree in ts.trees():
+    lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
+    for ti, tree in enumerate(ts.trees()):
+        if ti < lo:
+            continue
+        if ti >= hi:
+            break
         left, right = tree.interval.left, tree.interval.right
         res = prune_tree(tree, emissions, Q, node_time, pi)
         for s in samples:
@@ -164,7 +170,7 @@ def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", me
             else:
                 segs.append(ForeignnessSegment(left, right, loo, fit, d, status))
 
-    if depth == "rank":
+    if depth == "rank" and tree_range is None:   # a chunk returns raw depth; parent normalises genome-wide
         _rank_normalise_depth(tracks)
     return tracks
 
@@ -201,7 +207,10 @@ class ReferenceQC:
     Attributes
     ----------
     labels : dict[int, int]
-        Reference sample id -> its nominal ancestry-state label.
+        Reference **sample-node (haplotype) index** -> its nominal ancestry-state label. Keys are
+        haplotype nodes even when :func:`reference_qc` was called with base-id / individual labels,
+        because credibility is learned per tip (per haplotype). Use :attr:`individual_ids` /
+        :attr:`sample_ids` (or :meth:`summary`) to read them back as the ids you passed in.
     credibility : dict[int, float]
         Per-reference credibility in ``[0, 1]`` — the learned ``w_i`` for softened (suspect)
         references, the leave-one-out self-agreement for the hard-clamped anchor core. Low =
@@ -217,6 +226,14 @@ class ReferenceQC:
         segments) — where its own genealogy dissents from its label.
     Q, pi : numpy.ndarray
         The fitted generator and root frequencies (from the refined pass when refining).
+    sample_ids : dict[int, str] or None
+        Per-reference haplotype-node -> its stamped **haplotype** id (e.g. ``"PD_0213_1"``), when the
+        tree sequence carried sample names (from :func:`tspaint.io.tsinfer` / ``singer`` / ``relate``);
+        ``None`` for an unstamped (bare-sim) tree sequence.
+    individual_ids : dict[int, str] or None
+        Per-reference haplotype-node -> its **individual** id (e.g. ``"PD_0213"``) — a diploid
+        reference's two haplotype nodes share one individual id. Lets :meth:`summary` /
+        :meth:`soft_refs` speak in the ids you passed in rather than raw node indices.
     """
     labels: dict
     credibility: dict
@@ -227,12 +244,14 @@ class ReferenceQC:
     Q: np.ndarray
     pi: np.ndarray
     _length: float = 0.0
+    sample_ids: dict = None
+    individual_ids: dict = None
 
     def introgression_map(self, ref):
         """The leave-one-out introgression map (list of segments) for one reference."""
         return self.maps[int(ref)]
 
-    def flagged_tracts(self, ref, deadband=0.3):
+    def flagged_tracts(self, ref, deadband=DEFAULT_QC_DEADBAND):
         """Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state.
 
         A segment is flagged where ``loo[foreign] - loo[label] >= deadband`` (``foreign`` =
@@ -250,19 +269,33 @@ class ReferenceQC:
                 out.append((seg.left, seg.right, foreign))
         return _merge_segments(out)
 
-    def foreign_fraction(self, ref, deadband=0.3):
+    def foreign_fraction(self, ref, deadband=DEFAULT_QC_DEADBAND):
         """Fraction of ``ref``'s genome flagged foreign at the given ``deadband``."""
         tracts = self.flagged_tracts(ref, deadband)
         return sum(r - l for (l, r, _) in tracts) / self._length if self._length else float("nan")
 
-    def summary(self, deadband=0.3):
-        """Per-reference QC rows, least-credible first (the audit table)."""
-        return [{"ref": r, "label": self.labels[r], "credibility": self.credibility[r],
-                 "is_anchor": r in self.anchors,
-                 "foreign_fraction": self.foreign_fraction(r, deadband)}
-                for r in sorted(self.labels, key=lambda r: self.credibility[r])]
+    def summary(self, deadband=DEFAULT_QC_DEADBAND):
+        """Per-reference-**haplotype** QC rows, least-credible first (the audit table).
 
-    def soft_refs(self, max_credibility=None):
+        One row per reference haplotype (two per diploid individual — credibility is learned per
+        tip). ``ref`` is the sample-node index; when the tree sequence carried sample names the row
+        also names the ``individual`` (base id) and ``haplotype`` (per-haplotype id) so the table is
+        legible in your own ids, not just node integers.
+        """
+        rows = []
+        for r in sorted(self.labels, key=lambda r: self.credibility[r]):
+            row = {}
+            if self.individual_ids and self.individual_ids.get(r) is not None:
+                row["individual"] = self.individual_ids[r]
+            if self.sample_ids and self.sample_ids.get(r) is not None:
+                row["haplotype"] = self.sample_ids[r]
+            row.update({"ref": r, "label": self.labels[r], "credibility": self.credibility[r],
+                        "is_anchor": r in self.anchors,
+                        "foreign_fraction": self.foreign_fraction(r, deadband)})
+            rows.append(row)
+        return rows
+
+    def soft_refs(self, max_credibility=None, by="node"):
         """References to soften when re-painting — feed straight to ``paint(..., soft_refs=...)``.
 
         The Task-1 action: down-weight the contaminated references so they stop anchoring the
@@ -271,16 +304,36 @@ class ReferenceQC:
         every reference with ``credibility < max_credibility`` instead. Keep the trusted anchors
         hard-clamped — never let the whole panel float (CLAUDE.md §6).
 
+        Parameters
+        ----------
+        max_credibility : float, optional
+            Cutoff (see above); default returns the QC's softened (non-anchor) set.
+        by : {"node", "individual"}, optional
+            ``"node"`` (default) returns sample-**node** indices; ``"individual"`` returns the
+            distinct **individual** ids (e.g. ``"PD_0213"``) — more legible, and still accepted by
+            ``paint(..., soft_refs=...)`` (which resolves ids). ``"individual"`` requires a stamped
+            tree sequence; a diploid individual is included if *either* of its haplotypes is suspect.
+
         Returns
         -------
-        set[int]
-            Reference sample ids to pass as ``soft_refs``.
+        set[int] or set[str]
+            Node indices (``by="node"``) or individual ids (``by="individual"``) to pass as
+            ``soft_refs``.
         """
         if max_credibility is None:
-            return {int(r) for r in self.labels if r not in self.anchors}
-        return {int(r) for r, c in self.credibility.items() if c < max_credibility}
+            nodes = {int(r) for r in self.labels if r not in self.anchors}
+        else:
+            nodes = {int(r) for r, c in self.credibility.items() if c < max_credibility}
+        if by == "node":
+            return nodes
+        if by != "individual":
+            raise ValueError(f"by must be 'node' or 'individual', got {by!r}")
+        if not self.individual_ids:
+            raise ValueError("soft_refs(by='individual') needs a stamped tree sequence (from "
+                             "io.tsinfer / io.singer / io.relate with sample names); this QC has none")
+        return {self.individual_ids[n] for n in nodes if n in self.individual_ids}
 
-    def mask(self, deadband=0.3):
+    def mask(self, deadband=DEFAULT_QC_DEADBAND):
         """Per-reference foreign spans to **mask** out before re-painting.
 
         The alternative Task-1 action to :meth:`soft_refs`: rather than down-weight a whole
@@ -296,8 +349,29 @@ class ReferenceQC:
         return out
 
 
+def _qc_loo_maps(members, res, labels, focal, *, n_jobs, progress):
+    """Per-reference leave-one-out introgression maps, for a single tree sequence or an ensemble.
+
+    Single tree sequence: the plain :func:`~tspaint.output.loo_posterior_table`. **Ensemble** (e.g.
+    SINGER posterior samples): the LOO table is painted **per member** on the shared pooled fit
+    ``res`` and then **merged per reference** — mean map + ARG-uncertainty band — reusing
+    :func:`tspaint.ensemble.merge_posterior_tables`, exactly as :func:`tspaint.paint` marginalises an
+    ensemble (CLAUDE.md §7.4). The merged ``MergedSegment``\\ s are duck-compatible with ``Segment``,
+    so :meth:`ReferenceQC.flagged_tracts` / :meth:`~ReferenceQC.mask` and ``_loo_agreement`` consume
+    them unchanged (and gain ``posterior_std``)."""
+    from .parallel import loo_posterior_table_parallel
+    if len(members) == 1:
+        em = build_emissions(members[0], labels, res.w, res.pi)
+        return loo_posterior_table_parallel(members[0], res.Q, res.pi, w=res.w, labels=labels,
+                                             focal=focal, emissions=em, n_jobs=n_jobs, progress=progress)
+    tables = [loo_posterior_table_parallel(g, res.Q, res.pi, w=res.w, labels=labels, focal=focal,
+                                           n_jobs=n_jobs, progress=progress) for g in members]
+    from .ensemble import merge_posterior_tables
+    return merge_posterior_tables(tables, samples=list(focal))
+
+
 def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2, Q0=None,
-                 max_iter=8, alpha=20.0, beta=1.0):
+                 max_iter=8, alpha=20.0, beta=1.0, n_jobs=None, progress=False):
     """Audit a reference panel for admixture / mislabelling (Plan A Workflow 1; CLAUDE.md §9).
 
     Two passes (the second optional). Pass 1 hard-clamps every reference and reads each one's
@@ -314,10 +388,14 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
 
     Parameters
     ----------
-    ts : tskit.TreeSequence
-        Tree sequence whose samples include the references (no queries required).
+    ts : tskit.TreeSequence or list[tskit.TreeSequence]
+        Tree sequence whose samples include the references (no queries required), or **an ensemble**
+        (e.g. SINGER posterior samples). For an ensemble one ``theta`` is fit **pooled** across all
+        members, each reference's leave-one-out introgression map is painted **per member** and
+        **merged** (mean map + ARG-uncertainty ``posterior_std`` band), exactly as :func:`tspaint.paint`
+        marginalises an ensemble (CLAUDE.md §7.4). Members must share samples and coordinates.
     labels : dict[int, int]
-        Reference sample id -> nominal ancestry-state label.
+        Reference sample id -> nominal ancestry-state label (keyed on the first member for an ensemble).
     anchors : iterable[int], optional
         Known-trusted references to hold as the hard-clamped core (the rest are softened). If
         given, overrides the ``anchor_frac`` auto-selection — the robust choice when you know
@@ -335,6 +413,13 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
         Maximum EM iterations per pass.
     alpha, beta : float, optional
         Beta prior for the softened references (refine pass).
+    n_jobs : int, optional
+        Worker processes for the EM fits and the leave-one-out paints (the slow, genome-scale part;
+        the per-pass work parallelises exactly like :func:`tspaint.paint`). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
+        (The result's :meth:`ReferenceQC.soft_refs` / :meth:`~ReferenceQC.summary` are cheap
+        table lookups — nothing to parallelise there; this is where the compute lives.)
+    progress : bool, optional
+        Show :mod:`tqdm` bars for the EM fits and LOO paints. Default ``False``.
 
     Returns
     -------
@@ -342,13 +427,21 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
         Per-reference credibility, introgression maps and the flagged-tract / summary helpers.
     """
     from .ids import resolve_labels, resolve_ids
-    labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
+    members = list(ts) if isinstance(ts, (list, tuple)) else [ts]
+    if not members:
+        raise ValueError("reference_qc() got an empty ensemble; pass at least one tree sequence")
+    ref_ts = members[0]
+    labels = resolve_labels(ref_ts, labels)      # keys may be sample-ID strings or node indices
     refs = list(labels)
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    # One theta fit pooled across the ensemble (the M-step is scale-invariant, so summing sufficient
+    # statistics over members == averaging; CLAUDE.md §7.4). A single tree sequence is the 1-member case.
+    fit_ts = members if len(members) > 1 else members[0]
+    fit_labels = [labels] * len(members) if len(members) > 1 else labels
 
-    res1 = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False)
-    em1 = build_emissions(ts, labels, res1.w, res1.pi)
-    maps1 = loo_posterior_table(ts, res1.Q, res1.pi, em1, focal=refs)
+    res1 = fit(fit_ts, fit_labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False,
+               n_jobs=n_jobs, progress=progress)
+    maps1 = _qc_loo_maps(members, res1, labels, refs, n_jobs=n_jobs, progress=progress)
     agreement = {r: _loo_agreement(maps1[r], labels[r]) for r in refs}
 
     learned = {}
@@ -356,7 +449,7 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     credibility = dict(agreement)
 
     if anchors is not None:
-        anchor_set = set(resolve_ids(ts, anchors))
+        anchor_set = set(resolve_ids(ref_ts, anchors))
     elif refine and len(refs) >= 2:
         n_anchor = min(len(refs) - 1, max(1, int(round(anchor_frac * len(refs)))))
         ranked = sorted(refs, key=lambda r: (agreement[r] if np.isfinite(agreement[r]) else -1.0),
@@ -367,29 +460,53 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     soft = set(refs) - anchor_set
 
     if soft:
-        res2 = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False,
-                   soft_refs=soft, alpha=alpha, beta=beta)
-        em2 = build_emissions(ts, labels, res2.w, res2.pi)
-        maps2 = loo_posterior_table(ts, res2.Q, res2.pi, em2, focal=sorted(soft))
+        res2 = fit(fit_ts, fit_labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False,
+                   soft_refs=soft, alpha=alpha, beta=beta, n_jobs=n_jobs, progress=progress)
+        maps2 = _qc_loo_maps(members, res2, labels, sorted(soft), n_jobs=n_jobs, progress=progress)
         Q, pi = res2.Q, res2.pi
         for r in soft:
             learned[r] = float(res2.w.get(r, 1.0))
             credibility[r] = learned[r]
             maps[r] = maps2[r]
 
+    sample_ids, individual_ids = _ref_id_maps(ref_ts, refs)
     return ReferenceQC(labels=labels, credibility=credibility, loo_agreement=agreement,
                        learned_w=learned, anchors=anchor_set, maps=maps, Q=Q, pi=pi,
-                       _length=float(ts.sequence_length))
+                       _length=float(ref_ts.sequence_length),
+                       sample_ids=sample_ids, individual_ids=individual_ids)
+
+
+def _ref_id_maps(ts, refs):
+    """``(node -> haplotype id, node -> individual id)`` for the reference nodes, from the stamped
+    tree-sequence metadata (:func:`tspaint.ids.attach_sample_ids`); ``(None, None)`` if unstamped."""
+    hap, ind = {}, {}
+    for r in refs:
+        node = ts.node(int(r))
+        md = node.metadata
+        hid = md.get("id") if isinstance(md, dict) else None
+        if hid is not None:
+            hap[int(r)] = str(hid)
+        if node.individual != -1:
+            imd = ts.individual(node.individual).metadata
+            iid = imd.get("id") if isinstance(imd, dict) else None
+            if iid is not None:
+                ind[int(r)] = str(iid)
+    return (hap or None), (ind or None)
 
 
 # --- Workflows 2 & 3: anonymous foreign tracts & ghost-source detection ----------------------
 
-def _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank"):
-    """Fit ``θ`` on the panel and return the per-sample foreignness track."""
-    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
-    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False, soft_refs=soft_refs)
+def _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank",
+                         n_jobs=None, progress=False):
+    """Fit ``θ`` on the panel and return the per-sample foreignness track (parallel over genome
+    chunks when ``n_jobs > 1``). ``Q0=None`` lets :func:`tspaint.fit` scale the initial generator to
+    the time axis (robust on a large / calibrated node-age scale)."""
+    from .parallel import foreignness_track_parallel
+    res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, estimate_pi=False, soft_refs=soft_refs,
+              n_jobs=n_jobs, progress=progress)
     em = build_emissions(ts, labels, res.w, res.pi)
-    return foreignness_track(ts, res.Q, res.pi, em, labels, focal=samples, depth=depth)
+    return foreignness_track_parallel(ts, res.Q, res.pi, w=res.w, labels=labels, emissions=em,
+                                      focal=samples, depth=depth, n_jobs=n_jobs, progress=progress)
 
 
 def _merge_scored(segs):
@@ -417,7 +534,7 @@ def _merge_intervals(intervals):
 
 
 def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="auto", K=2,
-                   Q0=None, max_iter=8, soft_refs=None):
+                   Q0=None, max_iter=8, soft_refs=None, n_jobs=None, progress=False):
     """Anonymous foreign-tract inference: where a haplotype is foreign to its expectation
     (CLAUDE.md §2.3, §9).
 
@@ -455,6 +572,11 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="
         queries; ``"label"`` / ``"fit"`` force one rule for all samples.
     K, Q0, max_iter, soft_refs
         Model / EM controls (see :func:`tspaint.fit`).
+    n_jobs : int, optional
+        Worker processes for the fit **and** the per-tree foreignness pass (split by genome chunk,
+        exactly equal to serial). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
+    progress : bool, optional
+        Show a progress bar for the fit / foreignness pass. Default ``False``.
 
     Returns
     -------
@@ -466,7 +588,8 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="
     from .ids import resolve_labels, resolve_ids
     labels = resolve_labels(ts, labels)          # keys may be sample-ID strings or node indices
     samples = resolve_ids(ts, samples)
-    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank")
+    ft = _fit_and_foreignness(ts, labels, samples, K, Q0, max_iter, soft_refs, depth="rank",
+                              n_jobs=n_jobs, progress=progress)
     out = {}
     for s in samples:
         use_label = (mode == "label") or (mode == "auto" and s in labels)

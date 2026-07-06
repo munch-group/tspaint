@@ -36,3 +36,44 @@ def test_singer_pin_is_full_sha():
 def test_install_singer_cli_registered():
     from tspaint.cli import cli
     assert "singer" in cli.commands["install"].commands
+
+
+# --- `tspaint install relate` plumbing (relate_lib Convert + Relate + EstimatePopulationSize) ----
+
+def test_relate_install_paths_respect_tools_dir(monkeypatch, tmp_path):
+    monkeypatch.setenv("TSPAINT_TOOLS_DIR", str(tmp_path))
+    import tspaint.io_relate as ir
+    assert ir.relate_lib_install_dir() == str(tmp_path / "relate_lib")
+    assert ir.relate_convert_path() == str(tmp_path / "relate_lib" / "bin" / "Convert")
+    assert ir.relate_install_dir() == str(tmp_path / "relate")
+    assert ir.relate_binary_path() == str(tmp_path / "relate" / "bin" / "Relate")
+    assert ir.relate_file_formats_path() == str(tmp_path / "relate" / "bin" / "RelateFileFormats")
+    assert ir.estimate_population_size_path() == str(
+        tmp_path / "relate" / "scripts" / "EstimatePopulationSize" / "EstimatePopulationSize.sh")
+
+
+def test_relate_default_convert_resolution(monkeypatch, tmp_path):
+    import tspaint.io_relate as ir
+    monkeypatch.setenv("TSPAINT_RELATE_CONVERT", "/custom/Convert")   # env override wins
+    assert ir._default_convert() == "/custom/Convert"
+    monkeypatch.delenv("TSPAINT_RELATE_CONVERT", raising=False)
+    monkeypatch.setenv("TSPAINT_TOOLS_DIR", str(tmp_path))            # no built binary -> PATH lookup
+    assert ir._default_convert() == "Convert"
+    built = tmp_path / "relate_lib" / "bin"                           # built binary present -> use it
+    built.mkdir(parents=True)
+    (built / "Convert").write_text("")
+    assert ir._default_convert() == str(built / "Convert")
+
+
+def test_relate_pins_are_full_shas_and_recipe_exists():
+    from tspaint.install import (RELATE_COMMIT, RELATE_LIB_COMMIT, RELATE_REPO, RELATE_LIB_REPO,
+                                 _relate_env_recipe)
+    for sha in (RELATE_COMMIT, RELATE_LIB_COMMIT):
+        assert len(sha) == 40 and all(c in "0123456789abcdef" for c in sha)
+    assert RELATE_REPO.endswith("/relate") and RELATE_LIB_REPO.endswith("/relate_lib")
+    assert os.path.exists(_relate_env_recipe())
+
+
+def test_install_relate_cli_registered():
+    from tspaint.cli import cli
+    assert "relate" in cli.commands["install"].commands

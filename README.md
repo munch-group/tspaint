@@ -110,22 +110,56 @@ painting.plot()                             # per-haplotype figure: soft posteri
 
 ```python
 labels = {"HG00096": 0, "NA20509": 1, ...}                            # sample id -> ancestry state
-Ne = tspaint.io.estimate_ne(vcf, mutation_rate=1.2e-8, groups=labels)  # π/4μ; Ne is required
-ensemble = tspaint.io.singer(vcf, Ne=Ne, m=1.2e-8, ratio=1.0)          # posterior ARGs (Bayesian SMC)
-painting = tspaint.paint(ensemble, labels)                             # mean posterior + uncertainty band
+Ne = tspaint.io.estimate_ne(vcf, mutation_rate=1.2e-8)                 # all-pairs π/4μ; Ne is required
+ensemble = tspaint.io.singer(vcf, _Ne=Ne, _m=1.2e-8, _ratio=1.0,      # posterior ARGs (Bayesian SMC)
+                             ts=20)                                    # 20 tree sequences returned
+painting = tspaint.paint(ensemble, labels)                            # mean posterior + uncertainty band
 ```
 
-`io.singer` needs an **explicit `Ne`** — the SINGER binary requires `-Ne`, so tspaint never estimates
-one silently. `tspaint.io.estimate_ne` gives the π/4μ estimate (`groups=labels` restricts to
-within-reference pairs; `exclude=` drops admixed refs). SINGER's options mirror its own flags (`m`,
-`r`/`ratio`, `n`, `thin`, `polar`, …, passed as-is); if it **over-recombines** (too many short trees),
-lower `ratio` (the recombination/mutation ratio) — `Ne` sets the timescale, `ratio` the tree density.
+Posterior sampling for **both** `io.singer` and `io.argweaver` is controlled by three unified knobs:
+`ts` (tree sequences returned; default 20), `mcmc_step` (MCMC iterations between saved samples; default
+50) and `mcmc_burnin` (burn-in iterations; default 200). The chain runs `ts*mcmc_step + mcmc_burnin`
+iterations; tspaint translates the knobs into each tool's native flags. Every native terminal flag is
+exposed **underscore-prefixed** to signal its 1:1 correspondence to the tool's CLI (`_Ne`/`_m`/`_r`/
+`_ratio`/… for SINGER; `_N`/`_m`/`_r`/`_ntimes`/… for ARGweaver); passing a plain knob *and* its
+`_`-counterpart (e.g. `ts` and `_n_samples`) raises, since the plain one takes precedence.
+
+`io.singer` needs an **explicit `_Ne`** — the SINGER binary requires `-Ne`, so tspaint never estimates
+one silently. SINGER calibrates its prior to `4·Ne·μ ≈ π`, so use the **all-pairs**
+`tspaint.io.estimate_ne(vcf, mutation_rate)` (the whole-sample π/4μ, matching SINGER's own auto-Ne);
+on a structured / multi-population panel that Ne is legitimately large. `exclude=` drops known-admixed
+refs; **don't** pass `groups=labels` here (a within-population Ne under-calibrates the prior and can
+push coalescence times off-scale). If it **over-recombines** (too many short trees), lower `_ratio` (the
+recombination/mutation ratio) — `_Ne` sets the timescale, `_ratio` the tree density.
 
 `tspaint.io.argweaver` is a **drop-in alternative** posterior-ARG sampler (ARGweaver; Rasmussen et
-al., 2014) with the same ensemble output — `argweaver(vcf, Ne=Ne, mutation_rate=…, recombination_rate=…)`.
-It also requires an explicit `Ne` (`arg-sample -N`) and mirrors ARGweaver's flags (`ntimes`, `maxtime`,
-`compress`, `iters`, …). Build the binary with `tspaint install argweaver` (needs a C++ compiler + make)
+al., 2014) with the same ensemble output and the same `ts`/`mcmc_step`/`mcmc_burnin` knobs —
+`argweaver(vcf, _N=Ne, _m=…, _r=…, ts=20)`. It also requires an explicit `_N`
+(`arg-sample -N`) and mirrors ARGweaver's other flags (`_ntimes`, `_maxtime`,
+`_compress`, …). Build the binary with `tspaint install argweaver` (needs a C++ compiler + make)
 or set `$TSPAINT_ARGWEAVER`.
+
+`tspaint.io.relate` is the **Relate** front end (Speidel et al., 2019) — genotypes in, tree sequence
+out, exactly like `io.tsinfer` / `io.singer`. It runs the whole Relate pipeline for you
+(RelateFileFormats → `Relate` → `EstimatePopulationSize` → `--compress` convert), so **no Relate
+command line is required**:
+
+```python
+ts = tspaint.io.relate(vcf, mutation_rate=1.2e-8, recombination_rate=1e-8)   # runs Relate end to end
+painting = tspaint.paint(ts, labels, n_jobs=8, smooth=True)                  # whole chromosome, multicore
+```
+
+Give it a **whole chromosome** so its `EstimatePopulationSize` coalescence-rate / Ne(t) step is
+estimated genome-wide (`Ne` defaults to `estimate_ne`; pass a `.poplabels` file for a structure-aware
+estimate; `estimate_population_size=False` skips that step). `paint(..., n_jobs=N)` already parallelises
+the whole-chromosome paint across cores. Only when the genome-wide **posterior table won't fit in RAM**,
+stream it: `paint(ts, labels, window_size=2_000_000, out_dir="chr20_paint/")` fits the model once, then
+paints and writes one `Painting` per window (bounded memory, **resumable**), returning a
+`WindowedPainting` — `.windows()` iterates lazily, `.painting()` reassembles the genome-wide painting.
+
+`tspaint install relate` builds Relate (inference + `EstimatePopulationSize`) and relate_lib's `Convert`
+from source (C++ compiler + cmake). (`io.relate_convert(anc, mut)` is the lower-level convert-only step
+if you already ran Relate; `io.relate_windows(ts, window_size)` the underlying splitter.)
 
 ## Command-line interface (GWF / cluster)
 

@@ -73,9 +73,9 @@ def _singer_ensemble(panel, *, Ne, mutation_rate, recombination_rate, n_singer, 
     if log:
         log(f"tspaint: running SINGER (n={n_singer}, burn_in={burn_in}, thin={thin}) on "
             f"{variants.positions.size} sites, {variants.genotypes.shape[1]} haplotypes")
-    ensemble = singer(variants, Ne=Ne, mutation_rate=mutation_rate,
-                      recombination_rate=recombination_rate, n_samples=n_singer + burn_in,
-                      thin=thin, burn_in=burn_in, seed=seed, singer_bin=singer_bin)
+    ensemble = singer(variants, _Ne=Ne, _m=mutation_rate,
+                      _r=recombination_rate, ts=n_singer,
+                      mcmc_step=thin, mcmc_burnin=burn_in * thin, _seed=seed, singer_bin=singer_bin)
     if not isinstance(ensemble, (list, tuple)):     # singer() collapses a 1-member ensemble
         ensemble = [ensemble]
     return list(ensemble), n_query, ref_states
@@ -104,7 +104,7 @@ def tspaint(query_vcf, ref_vcf=None, *, sample_map, arg="tsinfer", smooth=True, 
     max_iter : int, optional
         EM iterations (default 12).
     n_jobs : int, optional
-        Worker processes for the genome E-step / painting (default: SLURM allocation else 1).
+        Worker processes for the genome E-step / painting (default: SLURM allocation else all CPUs).
     Ne, mutation_rate, recombination_rate : float, optional
         Demographic / rate parameters passed to SINGER (``arg="singer"`` only).
     n_singer, thin, burn_in : int, optional

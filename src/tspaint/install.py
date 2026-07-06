@@ -18,7 +18,23 @@ import subprocess
 from .io_singer import singer_binary_path, singer_install_dir, repo_root
 
 __all__ = ["install_singer", "SINGER_REPO", "SINGER_COMMIT",
-           "install_argweaver", "ARGWEAVER_REPO", "ARGWEAVER_COMMIT"]
+           "install_argweaver", "ARGWEAVER_REPO", "ARGWEAVER_COMMIT",
+           "install_relate", "RELATE_REPO", "RELATE_COMMIT",
+           "RELATE_LIB_REPO", "RELATE_LIB_COMMIT"]
+
+#: Relate inference program (MyersGroup/relate) — built from source with CMake into ``<repo>/bin``
+#: (``Relate``, ``RelateFileFormats``); ``scripts/EstimatePopulationSize`` ship in the tree. Pinned to
+#: a commit for reproducibility; override via $TSPAINT_RELATE_REPO / _COMMIT.
+RELATE_REPO = os.environ.get("TSPAINT_RELATE_REPO", "https://github.com/MyersGroup/relate")
+RELATE_COMMIT = os.environ.get(
+    "TSPAINT_RELATE_COMMIT", "b54ede259cbb0be095bc9c9a8bd18cdaf7e88b74")
+
+#: relate_lib (leospeidel/relate_lib) — provides the ``Convert`` binary tspaint's Relate front end
+#: (:func:`tspaint.io.relate`) uses for the ``--compress`` conversion to tskit. Override via
+#: $TSPAINT_RELATE_LIB_REPO / _COMMIT.
+RELATE_LIB_REPO = os.environ.get("TSPAINT_RELATE_LIB_REPO", "https://github.com/leospeidel/relate_lib")
+RELATE_LIB_COMMIT = os.environ.get(
+    "TSPAINT_RELATE_LIB_COMMIT", "9a7e703d61d3c33196e0a53b94b5be31bf84d12a")
 
 #: ARGweaver source (mdrasmus/argweaver). Only the C++ ``arg-sample`` binary is built (``make``);
 #: the Python-2 ``make install`` step is skipped. Override via $TSPAINT_ARGWEAVER_REPO / _COMMIT.
@@ -43,6 +59,12 @@ def _env_recipe():
     editable or as a non-editable copy in site-packages (run from the repo either way).
     """
     return os.path.join(repo_root(), "external", "envs", "SINGER", "pixi.toml")
+
+
+def _relate_env_recipe():
+    """The tracked pixi CMake toolchain recipe dropped into the Relate / relate_lib clones
+    (``external/envs/relate/pixi.toml``). Resolved via :func:`tspaint.io_singer.repo_root`."""
+    return os.path.join(repo_root(), "external", "envs", "relate", "pixi.toml")
 
 
 def _run(cmd, *, cwd=None, log):
@@ -173,3 +195,108 @@ def install_argweaver(*, commit=None, force=False, tools_dir=None, log=print):
     os.chmod(binary, 0o755)
     log(f"argweaver built: {binary}")
     return binary
+
+
+def _clone_cmake_build(name, repo, commit, target, recipe, check_binary, *, force, log):
+    """Clone ``repo`` at ``commit`` into ``target`` and build it with CMake against ``recipe``'s env.
+
+    Both Relate and relate_lib are ``mkdir build && cd build && cmake .. && make`` CMake projects that
+    emit their executables into ``<repo>/bin``. Skips the build if ``check_binary`` already exists (and
+    not ``force``). If the expected binary is not at ``check_binary`` after the build, searches the
+    ``build/`` tree for it and copies it there, so the front-end path helpers stay deterministic.
+    """
+    if os.path.exists(check_binary) and not force:
+        log(f"{name} already built: {check_binary} (use --force to rebuild)")
+        return check_binary
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    if not os.path.isdir(os.path.join(target, ".git")):
+        log(f"cloning {name} @ {commit[:10]} -> {target}")
+        # blobless partial clone: fetch commits/trees now, file blobs on demand at checkout — much
+        # faster for a large history (Relate carries example data) than a full clone.
+        _run(["git", "clone", "--filter=blob:none", repo, target], log=log)
+    else:
+        _run(["git", "-C", target, "remote", "set-url", "origin", repo], log=log)
+        _run(["git", "-C", target, "fetch", "origin", commit], log=log)
+    _run(["git", "-C", target, "checkout", commit], log=log)
+
+    # drop in the CMake toolchain recipe (our glue; not upstream) and solve the env.
+    shutil.copyfile(recipe, os.path.join(target, "pixi.toml"))
+    log(f"solving build env for {name} (pixi install)")
+    _run([_PIXI, "install", "--manifest-path", target], log=log)
+
+    log(f"building {name} (cmake + make; a few minutes)")
+    # Relate / relate_lib declare ``cmake_minimum_required(VERSION 3.1)``; CMake >= 4 removed the
+    # pre-3.5 compatibility, so pass the official escape hatch (a no-op on older cmake).
+    build = ("mkdir -p build && cd build && "
+             "cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 && make -j")
+    _run([_PIXI, "run", "--manifest-path", target, "bash", "-c", build], cwd=target, log=log)
+
+    if not os.path.exists(check_binary):                       # CMake put it somewhere else — find it
+        import glob
+        base = os.path.basename(check_binary)
+        hits = glob.glob(os.path.join(target, "build", "**", base), recursive=True)
+        if not hits:
+            raise RuntimeError(f"{name} build finished but {base} was not produced (looked at "
+                               f"{check_binary} and {target}/build)")
+        os.makedirs(os.path.dirname(check_binary), exist_ok=True)
+        shutil.copyfile(hits[0], check_binary)
+    os.chmod(check_binary, 0o755)
+    log(f"{name} built: {check_binary}")
+    return check_binary
+
+
+def install_relate(*, force=False, tools_dir=None, relate_commit=None, relate_lib_commit=None,
+                   log=print):
+    """Clone + build Relate and relate_lib from source where tspaint finds them.
+
+    Builds two CMake C++ projects with a pixi-provided toolchain (reproducible — no system compiler
+    needed), on ``linux-64`` and ``osx-arm64``:
+
+    * **relate_lib** — the ``Convert`` binary tspaint's Relate front end (:func:`tspaint.io.relate`)
+      uses for the ``--compress`` conversion of Relate ``.anc`` / ``.mut`` output to tskit. This is
+      what tspaint calls directly.
+    * **Relate** — the inference program plus ``RelateFileFormats`` and the
+      ``scripts/EstimatePopulationSize`` step, so you can run Relate on a whole chromosome upstream
+      (``EstimatePopulationSize`` is best estimated genome-wide) and then window the result for
+      :func:`tspaint.io.relate_windows` → :func:`tspaint.paint`.
+
+    Parameters
+    ----------
+    force : bool, optional
+        Rebuild even if the binaries already exist.
+    tools_dir : str, optional
+        Override the clone root (default: ``$TSPAINT_TOOLS_DIR`` or ``<repo>/external``).
+    relate_commit, relate_lib_commit : str, optional
+        Commits to pin (defaults :data:`RELATE_COMMIT` / :data:`RELATE_LIB_COMMIT`).
+    log : callable, optional
+        Progress sink (default ``print``).
+
+    Returns
+    -------
+    dict
+        ``{"Convert", "Relate", "RelateFileFormats", "EstimatePopulationSize"}`` -> path.
+    """
+    from .io_relate import (relate_install_dir, relate_binary_path, relate_file_formats_path,
+                            estimate_population_size_path, relate_lib_install_dir, relate_convert_path)
+    recipe = _relate_env_recipe()
+    if not os.path.exists(recipe):
+        raise FileNotFoundError(f"Relate pixi toolchain recipe not found: {recipe}")
+
+    lib_dir = relate_lib_install_dir() if tools_dir is None else os.path.join(tools_dir, "relate_lib")
+    convert = (relate_convert_path() if tools_dir is None
+               else os.path.join(lib_dir, "bin", "Convert"))
+    _clone_cmake_build("relate_lib", RELATE_LIB_REPO, relate_lib_commit or RELATE_LIB_COMMIT,
+                       lib_dir, recipe, convert, force=force, log=log)
+
+    rel_dir = relate_install_dir() if tools_dir is None else os.path.join(tools_dir, "relate")
+    relate_bin = (relate_binary_path() if tools_dir is None
+                  else os.path.join(rel_dir, "bin", "Relate"))
+    _clone_cmake_build("relate", RELATE_REPO, relate_commit or RELATE_COMMIT,
+                       rel_dir, recipe, relate_bin, force=force, log=log)
+
+    eps = (estimate_population_size_path() if tools_dir is None
+           else os.path.join(rel_dir, "scripts", "EstimatePopulationSize", "EstimatePopulationSize.sh"))
+    rff = (relate_file_formats_path() if tools_dir is None
+           else os.path.join(rel_dir, "bin", "RelateFileFormats"))
+    return {"Convert": convert, "Relate": relate_bin, "RelateFileFormats": rff,
+            "EstimatePopulationSize": eps}

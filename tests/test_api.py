@@ -106,6 +106,24 @@ def test_painting_segments_deadband_and_accuracy():
 
 
 @pytest.mark.slow
+def test_paint_robust_to_large_time_scale():
+    """A large (e.g. tsdate-calibrated / deep) node-age scale must not wash out the CTMC. The default
+    Q0 scales to the time axis (Q0*t ~ 1), so inflating every node age leaves the painting essentially
+    unchanged instead of collapsing toward pi (regression: a fixed Q0 froze the EM and gave P(A)~0.5)."""
+    ts, labels, queries, truth = _admixture()
+    base = tspaint.paint(ts, labels, queries=queries)
+    t = ts.dump_tables()
+    t.nodes.time = np.asarray(t.nodes.time) * 50.0            # 50x deeper (as an over-scaled tsdate)
+    big = tspaint.paint(t.tree_sequence(), labels, queries=queries)
+
+    ba_base = tspaint.metrics.balanced_accuracy(base.posteriors, truth, samples=queries)
+    ba_big = tspaint.metrics.balanced_accuracy(big.posteriors, truth, samples=queries)
+    assert ba_big > 0.9 and abs(ba_big - ba_base) < 0.1       # ~scale-invariant, not collapsed
+    sd = np.std([s.posterior[0] for q in queries for s in big.posteriors[q]])
+    assert sd > 0.15                                          # posteriors keep their spread (not ~pi)
+
+
+@pytest.mark.slow
 def test_paint_smooth_option_reduces_switches():
     ts, labels, queries, _ = _admixture()
     plain = tspaint.paint(ts, labels)
@@ -250,7 +268,7 @@ def test_painting_ensemble_member_posteriors_and_dating():
 def test_painting_n_jobs_field():
     base = dict(posteriors={}, Q=np.eye(2), pi=np.array([0.5, 0.5]), w={}, loglik_history=[],
                 queries=[])
-    assert tspaint.Painting(**base, ts=None).n_jobs == 1              # default serial
+    assert tspaint.Painting(**base, ts=None).n_jobs is None           # default -> all CPUs (resolved at use)
     assert tspaint.Painting(**base, ts=None, n_jobs=4).n_jobs == 4    # stored from paint(n_jobs=)
 
 
@@ -301,3 +319,72 @@ def test_painting_plot_runs():
     p.plot(); plt.close("all")                                # single, no truth
     pe = tspaint.paint([ts, ranked_tree_sequence(ts)], labels, queries)
     pe.plot(truth=truth); plt.close("all")                    # ensemble mean
+
+
+def _grid_posterior(painting, queries, grid):
+    """Per-position P(state 0) on a genomic grid — comparable across different segmentations."""
+    out = {}
+    for q in queries:
+        pa = np.full(len(grid), np.nan)
+        for s in painting.posteriors[q]:
+            pa[(grid >= s.left) & (grid < s.right)] = np.asarray(s.posterior, float)[0]
+        out[q] = pa
+    return out
+
+
+def test_paint_window_size_streams_and_reassembles(tmp_path):
+    """paint(ts, window_size=W, out_dir=D) fits (Q, π, w) once, then paints each window with those
+    fixed params and STREAMS it to D (one Painting per window + manifest), returning a lightweight
+    WindowedPainting. Reassembling from disk reproduces the whole-genome painting exactly (no
+    smoothing), one window loaded at a time."""
+    ts, labels, queries, _ = _admixture(L=6e5)
+    out = tmp_path / "wp"
+    wp = tspaint.paint(ts, labels, queries, window_size=2e5, out_dir=str(out))   # 3 windows
+    assert isinstance(wp, tspaint.WindowedPainting)
+    assert wp.n_windows == 3
+    assert (out / "manifest.json").exists()
+    assert sorted(p.name for p in out.glob("window_*.npz")) == \
+        ["window_00000.npz", "window_00001.npz", "window_00002.npz"]
+
+    # lazy iteration yields each window's [lo, hi) slice, in order, covering [0, L)
+    seen = [(lo, hi) for lo, hi, _p in wp.windows()]
+    assert seen == [(0.0, 2e5), (2e5, 4e5), (4e5, 6e5)]
+
+    # reassembled-from-disk == whole-genome paint, per position, with the same fit
+    whole = tspaint.paint(ts, labels, queries)
+    full = wp.painting()
+    assert isinstance(full, tspaint.Painting) and np.allclose(wp.Q, whole.Q)
+    grid = np.arange(0, ts.sequence_length, 500)
+    gw, gf = _grid_posterior(whole, queries, grid), _grid_posterior(full, queries, grid)
+    for q in queries:
+        assert not np.isnan(gf[q]).any()                              # full [0, L) coverage, no gaps
+        assert np.allclose(gw[q], gf[q], atol=1e-9)                   # identical per position
+
+
+def test_windowed_painting_resume_and_load(tmp_path):
+    """A windowed run is resumable (existing window files are not rewritten) and the directory is
+    self-describing (WindowedPainting.load rebuilds the handle from manifest.json)."""
+    import os
+    ts, labels, queries, _ = _admixture(L=4e5)
+    out = str(tmp_path / "wp")
+    wp = tspaint.paint(ts, labels, queries, window_size=2e5, out_dir=out)
+    mtimes = {p: os.path.getmtime(p) for p in tmp_path.glob("wp/window_*.npz")}
+    tspaint.paint(ts, labels, queries, window_size=2e5, out_dir=out)               # rerun == resume
+    assert all(os.path.getmtime(p) == mtimes[p] for p in mtimes)                   # untouched
+
+    reopened = tspaint.WindowedPainting.load(out)
+    assert reopened.n_windows == wp.n_windows
+    assert np.allclose(reopened.Q, wp.Q) and np.allclose(reopened.pi, wp.pi)
+    assert list(reopened.queries) == list(wp.queries)
+
+
+def test_paint_window_size_guards(tmp_path):
+    """window_size <-> out_dir must be paired, and streaming is single-tree-sequence only."""
+    ts, labels, queries, _ = _admixture(L=2e5)
+    with pytest.raises(ValueError, match="requires out_dir"):
+        tspaint.paint(ts, labels, queries, window_size=1e5)                        # no out_dir
+    with pytest.raises(ValueError, match="only used with window_size"):
+        tspaint.paint(ts, labels, queries, out_dir=str(tmp_path / "x"))            # no window_size
+    with pytest.raises(ValueError, match="single"):
+        tspaint.paint([ts, ts], labels, queries, window_size=1e5,                  # ensemble
+                      out_dir=str(tmp_path / "y"))

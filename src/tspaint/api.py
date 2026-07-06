@@ -12,11 +12,10 @@ from dataclasses import dataclass
 import numpy as np
 
 from .em import fit, build_emissions
-from .model import make_generator_2state
-from .output import posterior_table, Segment
+from .output import posterior_table, Segment, DEFAULT_DEADBAND
 from .track import SoftTrack
 
-__all__ = ["paint", "Painting"]
+__all__ = ["paint", "Painting", "WindowedPainting"]
 
 
 @dataclass
@@ -63,10 +62,11 @@ class Painting(SoftTrack):
     queries: list
     ts: object = None
     labels: dict = None
-    default_deadband: float = 0.0
-    n_jobs: int = 1          # worker processes used to paint; the default for rate_through_time
+    default_deadband: float = DEFAULT_DEADBAND
+    n_jobs: int = None       # workers used to paint; the default for rate_through_time (None -> all CPUs)
     _seqlen: float = None    # sequence length carried by a reloaded painting (ts is None then)
     _member_posteriors: list = None    # per-member posterior tables for an ensemble (else None)
+    mask: dict = None        # fragment mask used to paint ({ref: [(l,r)]}); marks masked ref spans in plot()
 
     @property
     def length(self):
@@ -80,6 +80,36 @@ class Painting(SoftTrack):
     def samples(self):
         """The painted query haplotypes — the row order used by :meth:`plot`."""
         return self.queries
+
+    def plot(self, *args, refs=True, mark_masked=True, **kwargs):
+        """Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`).
+
+        To see a *reference's own* painting (and its introgression), include the reference in the
+        painted focal set: ``paint(ts, labels, queries=queries + [ref], mask=mask)``. Then, for any
+        painted row that is a labelled reference (in :attr:`labels`), this:
+
+        * labels the row with its **nominal ancestry** — e.g. ``ref 39 (A)`` instead of ``hapl. i`` —
+          so a reference that paints a foreign (e.g. B) tract stands out against its own A label; and
+        * when the painting was produced with a fragment ``mask``, **hatches each reference's masked
+          (unlabelled) spans** over its soft band, showing where the reference was un-anchored and its
+          posterior became tree-inferred (the mechanism that reveals its introgression).
+
+        Pass ``refs=False`` / ``mark_masked=False`` to suppress either. All other arguments
+        (``truth``, ``title``, ``cmap``, ``deadband``, ``return_plot`` …) pass through unchanged.
+        """
+        if refs and self.labels:
+            row_labels = dict(kwargs.pop("row_labels", None) or {})
+            for q in self.samples:
+                if q in self.labels:
+                    row_labels.setdefault(q, f"ref {q} ({chr(65 + int(self.labels[q]))})")
+            kwargs["row_labels"] = row_labels
+        if mark_masked and self.mask:
+            mark = dict(kwargs.pop("mark_spans", None) or {})
+            for q, spans in self.mask.items():
+                if q in self.samples:
+                    mark.setdefault(q, [(float(s[0]), float(s[1])) for s in spans])
+            kwargs["mark_spans"] = mark
+        return super().plot(*args, **kwargs)
 
     def save(self, path):
         """Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model).
@@ -101,7 +131,9 @@ class Painting(SoftTrack):
         m = load_painting_meta(path)
         return Painting(posteriors=tracks, Q=m.get("Q"), pi=m.get("pi"), w=m.get("w", {}),
                         loglik_history=[], queries=m.get("queries", []), ts=None,
-                        labels=m.get("labels"), default_deadband=m.get("deadband", 0.0) or 0.0,
+                        labels=m.get("labels"),
+                        default_deadband=(DEFAULT_DEADBAND if m.get("deadband") is None
+                                          else float(m["deadband"])),
                         _seqlen=m.get("seqlen"))
 
     def rate_through_time(self, edges=None, *, n_jobs=None, **kwargs):
@@ -150,10 +182,12 @@ class Painting(SoftTrack):
             # ensemble: date each member on the shared fit/grid (in parallel across members);
             # the per-member split-time estimates become a confidence interval on the split.
             from .dating import log_time_grid, split_time, EnsembleRateThroughTime
+            from .dating.grid import assert_calibrated
             from .parallel import date_members_parallel
             members = list(self.ts)
             if edges is None:                       # one shared grid so the member profiles align
                 nt = np.concatenate([np.asarray(g.tables.nodes.time, float) for g in members])
+                assert_calibrated(nt)               # reject uncalibrated (raw tsinfer) members
                 pos = nt[nt > 0]
                 n_cells = kwargs.pop("n_cells", 40)
                 edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
@@ -203,9 +237,153 @@ class Painting(SoftTrack):
                 f"pi={np.array2string(self.pi, precision=2)})")
 
 
+def _stitch_window_tables(tables, bounds, queries):
+    """Concatenate per-window posterior tables into one genome-wide table per query.
+
+    Each window was painted over the full ``[0, L)`` with its genealogy confined to its own
+    ``[lo, hi)`` (the flanks paint as missing-info); we keep each segment's slice inside ``[lo, hi)``
+    and lay the windows end to end. Segments are clipped at the window bounds, so the stitched track
+    tiles ``[0, L)`` exactly — the same result as painting the whole tree sequence at once.
+    """
+    stitched = {q: [] for q in queries}
+    for table, (lo, hi) in zip(tables, bounds):
+        for q in queries:
+            for s in table.get(q, []):
+                left, right = max(s.left, lo), min(s.right, hi)
+                if left < right:
+                    stitched[q].append(Segment(left, right, s.posterior, s.status))
+    return stitched
+
+
+@dataclass
+class WindowedPainting:
+    """Handle over a windowed, streamed painting written to a directory by
+    ``paint(ts, …, window_size=…, out_dir=…)``.
+
+    The heavy per-position posteriors stay on disk — one ``window_NNNNN.npz`` :class:`Painting` per
+    genomic window, plus a ``manifest.json`` describing the single shared fit — so this object is
+    lightweight (just the fit and the window index). Iterate windows lazily with :meth:`windows` (one
+    loaded at a time), or reassemble the whole genome with :meth:`painting` (holds it all).
+
+    Attributes
+    ----------
+    out_dir : str
+        Directory holding the ``window_NNNNN.npz`` files and ``manifest.json``.
+    window_size, seqlen : float
+        Window width and the painted genome's sequence length (bp).
+    bounds : list[tuple[int, float, float]]
+        ``(k, lo, hi)`` per window, in genome order.
+    Q, pi, w, queries, labels
+        The single shared fit — the same for every window.
+    """
+    out_dir: str
+    window_size: float
+    seqlen: float
+    bounds: list
+    Q: np.ndarray
+    pi: np.ndarray
+    w: dict
+    queries: list
+    labels: dict = None
+    default_deadband: float = DEFAULT_DEADBAND
+
+    def _window_path(self, k):
+        import os
+        return os.path.join(self.out_dir, f"window_{int(k):05d}.npz")
+
+    @property
+    def n_windows(self):
+        """Number of windows the genome was tiled into."""
+        return len(self.bounds)
+
+    def windows(self):
+        """Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory)."""
+        for k, lo, hi in self.bounds:
+            yield lo, hi, Painting.load(self._window_path(k))
+
+    def painting(self):
+        """Reassemble the full genome-wide :class:`Painting` from the per-window files.
+
+        Loads every window and concatenates by genomic position — this holds the whole-genome
+        posteriors in memory (the cost streaming avoided), so call it only when you can afford it,
+        or after narrowing to a manageable region.
+        """
+        tables, bnds = [], []
+        for lo, hi, p in self.windows():
+            tables.append(p.posteriors)
+            bnds.append((lo, hi))
+        stitched = _stitch_window_tables(tables, bnds, self.queries)
+        return Painting(posteriors=stitched, Q=self.Q, pi=self.pi, w=self.w, loglik_history=[],
+                        queries=self.queries, ts=None, labels=self.labels,
+                        default_deadband=self.default_deadband, _seqlen=self.seqlen)
+
+    @staticmethod
+    def load(out_dir):
+        """Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``)."""
+        import json
+        import os
+        with open(os.path.join(out_dir, "manifest.json")) as f:
+            m = json.load(f)
+        return WindowedPainting(
+            out_dir=out_dir, window_size=float(m["window_size"]), seqlen=float(m["seqlen"]),
+            bounds=[tuple(b) for b in m["bounds"]],
+            Q=np.asarray(m["Q"], float), pi=np.asarray(m["pi"], float),
+            w={int(k): float(v) for k, v in (m.get("w") or {}).items()},
+            queries=[int(q) for q in m["queries"]],
+            labels=({int(k): int(v) for k, v in m["labels"].items()} if m.get("labels") else None),
+            default_deadband=(DEFAULT_DEADBAND if m.get("deadband") is None
+                              else float(m["deadband"])))
+
+
+def _stream_windowed(ts, out_dir, window_size, res, labels, queries, paint_member, *,
+                     deadband=DEFAULT_DEADBAND, progress=False):
+    """Paint ``ts`` window-by-window with the fixed fit ``res``, streaming each window to ``out_dir``.
+
+    Writes the shared-fit ``manifest.json`` up front (so a crash mid-run still leaves a loadable
+    directory), then paints each window, saves its ``[lo, hi)`` slice, and releases it before cutting
+    the next. Skips a window whose ``.npz`` already exists — the run is resumable.
+    """
+    import json
+    import math
+    import os
+    from .io_relate import _iter_windows
+
+    os.makedirs(out_dir, exist_ok=True)
+    L = float(ts.sequence_length)
+    n = max(1, math.ceil(L / window_size))
+    bounds = [(k, k * window_size, min((k + 1) * window_size, L)) for k in range(n)]
+    with open(os.path.join(out_dir, "manifest.json"), "w") as f:
+        json.dump({"window_size": window_size, "seqlen": L, "bounds": bounds,
+                   "Q": np.asarray(res.Q).tolist(), "pi": np.asarray(res.pi).tolist(),
+                   "w": {int(k): float(v) for k, v in (res.w or {}).items()},
+                   "queries": [int(q) for q in queries],
+                   "labels": {int(k): int(v) for k, v in (labels or {}).items()},
+                   "deadband": float(deadband)}, f)
+
+    it = _iter_windows(ts, window_size)
+    if progress:
+        from tqdm.auto import tqdm
+        it = tqdm(it, total=n, desc="painting", unit="window")
+    for k, lo, hi, w in it:
+        path = os.path.join(out_dir, f"window_{k:05d}.npz")
+        if os.path.exists(path):                        # resume: already painted
+            del w
+            continue
+        table = paint_member(w)                         # fixed (Q, π, w) from the one global fit
+        clipped = _stitch_window_tables([table], [(lo, hi)], queries)   # this window's [lo, hi) slice
+        Painting(posteriors=clipped, Q=res.Q, pi=res.pi, w=res.w, loglik_history=res.loglik_history,
+                 queries=queries, ts=None, labels=labels, default_deadband=deadband,
+                 _seqlen=L).save(path)
+        del table, clipped, w                           # release before cutting the next window
+    return WindowedPainting(out_dir=out_dir, window_size=window_size, seqlen=L, bounds=bounds,
+                            Q=res.Q, pi=res.pi, w=res.w, queries=list(queries), labels=labels,
+                            default_deadband=deadband)
+
+
 def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate_pi=False,
-          deadband=0.0, smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0,
-          beta=1.0, priors=None, w0=0.9, n_jobs=1, progress=False):
+          deadband=DEFAULT_DEADBAND, smooth=False, epsilon=1e-2, Q0=None, max_iter=12, tol=1e-7, alpha=20.0,
+          beta=1.0, priors=None, w0=0.9, mask=None, window_size=None, out_dir=None, n_jobs=None,
+          progress=False):
     """Infer soft local ancestry along query haplotypes from a tree sequence.
 
     EM-fits the ancestry CTMC ``(Q[, π, per-tip credibility w])`` on the labelled reference tips
@@ -255,7 +433,9 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         ``π`` is a prior on the arbitrary GMRCA state and estimating it from washing deep
         branches is the degeneracy of CLAUDE.md §6; uniform is the robust choice.
     deadband : float
-        Stored as :attr:`Painting.default_deadband` for :meth:`Painting.segments`.
+        Stored as :attr:`Painting.default_deadband` for :meth:`Painting.segments` (and the plots).
+        Defaults to :data:`~tspaint.output.DEFAULT_DEADBAND` (``0.4``, the CLAUDE.md §9 dating value);
+        pass ``0.0`` for raw ``argmax`` tracts.
     smooth : bool
         Apply the horizontal BP/EP smoother (:mod:`tspaint.bp`) to the posteriors along the
         genome. **Recommended on inferred (tsinfer / Relate) ARGs**, where tree inference
@@ -263,15 +443,42 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         true/known ARG (CLAUDE.md §7). Default ``False``.
     epsilon : float
         Per-breakpoint switch penalty for ``smooth`` (smaller ⇒ more smoothing).
+    window_size : float, optional
+        **Stream** the painting of a genome-scale tree sequence in genomic windows of this width (bp),
+        writing one ``Painting`` per window to ``out_dir`` and returning a lightweight
+        :class:`WindowedPainting` handle instead of a single in-memory :class:`Painting`. The model is
+        fit **once** on the whole tree sequence, then each window is cut, painted with those fixed
+        ``(Q, π, w)``, saved, and **released** before the next — so peak memory is bounded by a single
+        window rather than the whole-genome posterior table. The run is **resumable**: a window whose
+        ``.npz`` already exists in ``out_dir`` is skipped. This is the memory-bounded path for a
+        genome-wide **Relate** ARG (:func:`tspaint.io.relate` → this), where ``EstimatePopulationSize``
+        wants the whole chromosome but the full painting will not fit in RAM. Requires ``out_dir``.
+        ``None`` (default) paints the whole tree sequence in one call — for the common case, prefer
+        that with ``n_jobs`` (which already parallelises the whole-genome paint across cores);
+        windowing is only worthwhile when the *output* is too large to hold. Note: with ``smooth=True``
+        the genome-axis smoother runs within each window, so smoothing does not cross window seams.
+    out_dir : str, optional
+        Destination directory for windowed streaming (see ``window_size``); created if absent. Holds
+        one ``window_NNNNN.npz`` per window plus a ``manifest.json`` describing the shared fit, so the
+        directory is self-contained — reassemble later with :meth:`WindowedPainting.painting` or
+        :meth:`WindowedPainting.load`. Required when ``window_size`` is set (and only used then).
     Q0 : (K, K) array, optional
         Initial generator (default a slow symmetric 2-state generator).
     priors : dict[int, tuple[float, float]], optional
         Per-tip ``Beta(alpha_i, beta_i)`` prior overrides for the graded-trust setting
         (keys ⊆ ``soft_refs``); see :func:`tspaint.fit`.
+    mask : dict, optional
+        **Fragment masking** (CLAUDE.md §2.3): ``{ref: [(left, right), ...]}`` per-reference spans to
+        treat as **unlabelled** (the reference emits the query emission there), so a contaminated
+        reference anchors only on its clean spans instead of being down-weighted as a whole
+        individual (``soft_refs``). Keys may be node ids or sample-ID strings. Feed it directly from
+        :meth:`tspaint.ReferenceQC.mask` or from :func:`tspaint.foreign_tracts`. Applied to both the
+        fit and the painting; exactly equal for any ``n_jobs``.
     max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tspaint.fit`).
     n_jobs : int
-        Worker processes for the genome E-step and painting. ``1`` (default) is serial and
-        byte-identical to single-core; ``>1`` saturates the node via a process pool
+        Worker processes for the genome E-step and painting. Default ``None`` → all CPUs / the SLURM
+        allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial (byte-identical to
+        single-core). ``>1`` saturates the node via a process pool
         (:mod:`tspaint.parallel`) — the painting is *exactly* equal to serial, the fit
         ``allclose`` (floating-point reduction order). The CLI resolves this from
         ``$SLURM_JOB_CPUS_PER_NODE``.
@@ -285,11 +492,13 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
 
     Returns
     -------
-    Painting
-        The soft per-position ancestry posteriors for each query plus the fitted
-        ``(Q, π, w)`` and EM log-likelihood history. For an ensemble input the posteriors are
-        the ensemble mean with an ARG-uncertainty band (:class:`~tspaint.ensemble.MergedSegment`,
-        with a ``posterior_std``).
+    Painting or WindowedPainting
+        A :class:`Painting` — the soft per-position ancestry posteriors for each query plus the fitted
+        ``(Q, π, w)`` and EM log-likelihood history. For an ensemble input the posteriors are the
+        ensemble mean with an ARG-uncertainty band (:class:`~tspaint.ensemble.MergedSegment`, with a
+        ``posterior_std``). When ``window_size`` is set, a :class:`WindowedPainting` handle over the
+        per-window files in ``out_dir`` instead (iterate windows lazily, or ``.painting()`` to
+        reassemble the full genome-wide painting).
 
     See Also
     --------
@@ -309,15 +518,17 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
     sequence came from a front end (:func:`tspaint.io.singer` / :func:`tspaint.io.tsinfer` stamp
     the source's ids); a diploid base id labels both its haplotypes:
 
-    >>> ts = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
+    >>> ts = tspaint.io.singer(vcf, _Ne=1e4, _m=1e-8, _r=1e-8)
     >>> painting = tspaint.paint(ts, {"NA12878": 0, "NA12889": 1})
 
     Paint from a SINGER posterior ensemble — the mean painting carries an uncertainty band:
 
-    >>> ensemble = tspaint.io.singer(vcf, Ne=1e4, mutation_rate=1e-8, recombination_rate=1e-8)
+    >>> ensemble = tspaint.io.singer(vcf, _Ne=1e4, _m=1e-8, _r=1e-8, ts=20)
     >>> painting = tspaint.paint(ensemble, labels)            # one pooled fit; averaged posteriors
     >>> painting.posteriors[q][0].posterior_std               # per-position ARG-uncertainty band
     """
+    from .parallel import resolve_cores
+    n_jobs = resolve_cores(n_jobs)          # None -> all CPUs / SLURM allocation (see resolve_cores)
     members = list(ts) if isinstance(ts, (list, tuple)) else None    # an ARG ensemble?
     if members is not None and not members:
         raise ValueError("paint() got an empty ensemble; pass at least one tree sequence")
@@ -330,6 +541,8 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         queries = [int(s) for s in ref_ts.samples() if int(s) not in labels]
     else:
         queries = resolve_ids(ref_ts, queries)
+    if mask:                                    # fragment masking (§2.3): {ref -> [(l,r)]}, id or node
+        mask = {node: spans for k, spans in mask.items() for node in resolve_nodes(ref_ts, k)}
 
     # Optionally paint the reference haplotypes too, framing the queries: group-0 refs ("ref1") as
     # the first (top) rows, the other reference groups ("ref2", ...) as the last (bottom) rows.
@@ -356,29 +569,47 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         bottom = [n for n in ref_nodes if labels[n] != 0]     # ref2 (other states) -> bottom rows
         queries = top + [q for q in queries if q not in ref_set] + bottom
 
-    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    # Q0 left as given; when None, fit() scales the initial generator to the tree-sequence time
+    # axis (so Q0*t ~ 1) — a fixed rate washes out on a large calibrated axis (e.g. tsdate node
+    # ages) and collapses the painting toward pi. Pass an explicit Q0 to override.
 
     # One pooled θ fit shared across the ensemble (the M-step is scale-invariant).
     res = fit(members if members is not None else ts,
               [labels] * len(members) if members is not None else labels,
               K=K, Q0=Q0, max_iter=max_iter, tol=tol, soft_refs=soft_refs,
               estimate_pi=estimate_pi, alpha=alpha, beta=beta, priors=priors, w0=w0,
-              n_jobs=n_jobs, progress=progress)
+              n_jobs=n_jobs, progress=progress, mask=mask)
 
     def _paint_member(g, member_progress=False):
         if n_jobs and int(n_jobs) > 1:
             from .parallel import posterior_table_parallel
             table = posterior_table_parallel(g, res.Q, res.pi, w=res.w, labels=labels,
                                              focal=queries, n_jobs=n_jobs,
-                                             progress=member_progress)
+                                             progress=member_progress, mask=mask)
         else:
-            emissions = build_emissions(g, labels, res.w, res.pi)
+            emissions = build_emissions(g, labels, res.w, res.pi, mask)
             table = posterior_table(g, res.Q, res.pi, emissions, focal=queries,
                                     progress=member_progress)
         if smooth:
             from .bp import bp_smooth_track
             table = {q: bp_smooth_track(t, res.pi, epsilon) for q, t in table.items()}
         return table
+
+    # Windowed streaming: fit once (above), then paint-and-release one window at a time to disk,
+    # returning a lightweight handle rather than a whole-genome Painting (bounded memory, resumable).
+    if window_size is not None:
+        if out_dir is None:
+            raise ValueError(
+                "window_size requires out_dir=...: it streams one Painting per window to that "
+                "directory (bounded memory, resumable). For a whole-genome painting in memory use "
+                "paint(ts, n_jobs=...) without window_size — n_jobs already parallelises it.")
+        if members is not None:
+            raise ValueError("window_size streams a single (chromosome-length) tree sequence; paint "
+                             "ensemble members separately")
+        return _stream_windowed(ts, out_dir, float(window_size), res, labels, queries,
+                                _paint_member, deadband=deadband, progress=progress)
+    if out_dir is not None:
+        raise ValueError("out_dir is only used with window_size=... (windowed streaming)")
 
     member_tables = None
     if members is None:
@@ -398,4 +629,4 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
     return Painting(posteriors=posteriors, Q=res.Q, pi=res.pi, w=res.w,
                     loglik_history=res.loglik_history, queries=queries,
                     ts=ts, labels=labels, default_deadband=deadband, n_jobs=n_jobs,
-                    _member_posteriors=member_tables)
+                    _member_posteriors=member_tables, mask=mask)

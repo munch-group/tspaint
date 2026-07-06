@@ -44,7 +44,8 @@ from .accumulate import accumulate_sufficient_statistics, SuffStats
 from .output import posterior_table
 
 __all__ = ["resolve_cores", "genome_chunks", "add_suffstats", "accumulate_parallel",
-           "posterior_table_parallel", "date_members_parallel", "make_pool", "as_path"]
+           "posterior_table_parallel", "loo_posterior_table_parallel", "date_members_parallel",
+           "foreignness_track_parallel", "depth_track_parallel", "make_pool", "as_path"]
 
 _BLAS_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
               "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS")
@@ -70,12 +71,13 @@ def _parse_slurm_cpus_per_node(v):
 
 
 def resolve_cores(requested=None):
-    """Resolve the worker count: explicit ``requested`` else the SLURM allocation else ``1``.
+    """Resolve the worker count: explicit ``requested`` else the SLURM allocation else **all CPUs**.
 
     Order: a positive ``requested`` wins; otherwise ``$SLURM_CPUS_PER_TASK`` (the clean per-task
-    value), then ``$SLURM_JOB_CPUS_PER_NODE`` (parsing its ``N(xM)`` form), then ``$TSPAINT_CORES``,
-    then ``1`` (serial — the safe library default). The CLI resolves this once and passes an
-    explicit integer down.
+    value), then ``$SLURM_JOB_CPUS_PER_NODE`` (parsing its ``N(xM)`` form), then ``$TSPAINT_CORES``
+    (a manual override / test hook), then ``os.cpu_count()``. So the **default** (``requested`` /
+    ``n_jobs`` left as ``None``) is the number of CPUs available, or the SLURM allocation when running
+    under SLURM. Pass an explicit ``n_jobs=1`` to force serial.
     """
     if requested is not None and _safe_int(requested) > 0:
         return _safe_int(requested)
@@ -86,7 +88,9 @@ def resolve_cores(requested=None):
     if n > 0:
         return n
     n = _safe_int(os.environ.get("TSPAINT_CORES"))
-    return n if n > 0 else 1
+    if n > 0:
+        return n
+    return os.cpu_count() or 1
 
 
 # --- chunking & reduction -------------------------------------------------------------------
@@ -128,18 +132,18 @@ def _load_cached(path):
     return ts
 
 
-def _accumulate_range(path, lo, hi, Q, pi, w, labels, soft_refs):
+def _accumulate_range(path, lo, hi, Q, pi, w, labels, soft_refs, mask=None):
     from .em import build_emissions
     ts = _load_cached(path)
-    emissions = build_emissions(ts, labels, w, pi)
+    emissions = build_emissions(ts, labels, w, pi, mask)
     return accumulate_sufficient_statistics(ts, Q, pi, emissions, labels=labels,
                                             soft_refs=soft_refs, tree_range=(lo, hi))
 
 
-def _paint_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol):
+def _paint_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol, mask=None):
     from .em import build_emissions
     ts = _load_cached(path)
-    emissions = build_emissions(ts, labels, w, pi)
+    emissions = build_emissions(ts, labels, w, pi, mask)
     return posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
                            tree_range=(lo, hi))
 
@@ -165,7 +169,7 @@ def make_pool(n_jobs):
     initializer could run, so parent-set is the reliable point). The parent's own numpy is
     already initialised, so this does not throttle it.
     """
-    n = max(1, int(n_jobs))
+    n = resolve_cores(n_jobs)                # None -> CPU count / SLURM allocation
     if n <= 1:
         return None
     _pin_blas()
@@ -198,13 +202,15 @@ def as_path(ts):
 # --- public parallel E-step / painter -------------------------------------------------------
 
 def accumulate_parallel(ts, Q, pi, *, w=None, labels=None, soft_refs=None, emissions=None,
-                        n_jobs=1, executor=None, exact=False):
+                        n_jobs=None, executor=None, exact=False):
     """Parallel genome E-step → pooled :class:`~tspaint.accumulate.SuffStats` (see module docstring).
 
     Workers rebuild emissions from ``(labels, w, pi)``; pass an ``executor`` to reuse a pool
     across EM iterations. ``exact=True`` forces the serial single loop (byte-identical to legacy).
+    ``n_jobs=None`` (default) uses all CPUs / the SLURM allocation (:func:`resolve_cores`).
     """
-    serial = exact or (executor is None and resolve_to_int(n_jobs) <= 1)
+    n_jobs = resolve_cores(n_jobs)
+    serial = exact or (executor is None and (n_jobs <= 1 or ts.num_trees <= 1))
     if serial:
         if emissions is None:
             from .em import build_emissions
@@ -213,7 +219,7 @@ def accumulate_parallel(ts, Q, pi, *, w=None, labels=None, soft_refs=None, emiss
                                                 soft_refs=soft_refs)
 
     own = executor is None
-    ex = executor or make_pool(n_jobs)
+    ex = executor or make_pool(min(n_jobs, ts.num_trees))   # no more workers than genome chunks
     try:
         with as_path(ts) as path:
             futures = [ex.submit(_accumulate_range, path, lo, hi, Q, pi, w, labels, soft_refs)
@@ -226,33 +232,80 @@ def accumulate_parallel(ts, Q, pi, *, w=None, labels=None, soft_refs=None, emiss
 
 
 def posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merge_tol=1e-12,
-                             emissions=None, n_jobs=1, executor=None, progress=False):
+                             emissions=None, n_jobs=None, executor=None, progress=False, mask=None):
     """Parallel :func:`~tspaint.output.posterior_table` — **exactly** equal to serial for any ``n_jobs``.
 
     Splits by tree-range, then stitches the per-range tracks in genome order, re-merging adjacent
-    equal segments at the seams (the same merge rule serial painting uses).
+    equal segments at the seams (the same merge rule serial painting uses). ``mask`` (fragment
+    masking, ``{ref -> [(l,r)]}``) makes flagged reference spans emit the query emission.
 
     ``progress=True`` shows a :mod:`tqdm` bar: per-marginal-tree when it falls back to serial
     (``n_jobs <= 1``), else one tick per completed genome chunk (the per-tree loop runs inside
     worker subprocesses, so per-chunk is the finest granularity the parent can observe).
     """
-    if executor is None and resolve_to_int(n_jobs) <= 1:
-        if emissions is None:
+    n_jobs = resolve_cores(n_jobs)
+    if executor is None and (n_jobs <= 1 or ts.num_trees <= 1):
+        if emissions is None or mask is not None:
             from .em import build_emissions
-            emissions = build_emissions(ts, labels, w, pi)
+            emissions = build_emissions(ts, labels, w, pi, mask)
         return posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
                                progress=progress)
 
     own = executor is None
-    ex = executor or make_pool(n_jobs)
+    ex = executor or make_pool(min(n_jobs, ts.num_trees))   # no more workers than genome chunks
     try:
         with as_path(ts) as path:
-            futures = [ex.submit(_paint_range, path, lo, hi, Q, pi, w, labels, focal, merge_tol)
+            futures = [ex.submit(_paint_range, path, lo, hi, Q, pi, w, labels, focal, merge_tol, mask)
                        for (lo, hi) in genome_chunks(ts, n_jobs)]
             results = futures
             if progress:
                 from tqdm.auto import tqdm
                 results = tqdm(futures, desc="painting", unit="chunk")
+            chunk_tracks = [f.result() for f in results]
+        return _stitch_tracks(chunk_tracks, merge_tol)
+    finally:
+        if own:
+            ex.shutdown()
+
+
+def _loo_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol, mask=None):
+    from .em import build_emissions
+    from .output import loo_posterior_table
+    ts = _load_cached(path)
+    emissions = build_emissions(ts, labels, w, pi, mask)
+    return loo_posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
+                               tree_range=(lo, hi))
+
+
+def loo_posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merge_tol=1e-12,
+                                 emissions=None, n_jobs=None, executor=None, progress=False, mask=None):
+    """Parallel :func:`~tspaint.output.loo_posterior_table` — **exactly** equal to serial for any ``n_jobs``.
+
+    The leave-one-out analogue of :func:`posterior_table_parallel`: split by tree-range (the outside
+    message for each tree is independent of which chunk it lands in), then stitch the per-range tracks
+    in genome order, re-merging adjacent equal segments at the seams. ``mask`` (fragment masking) is
+    threaded through. ``progress`` shows a per-tree bar when serial (``n_jobs <= 1``), else one tick
+    per completed genome chunk.
+    """
+    from .output import loo_posterior_table
+    n_jobs = resolve_cores(n_jobs)
+    if executor is None and (n_jobs <= 1 or ts.num_trees <= 1):
+        if emissions is None or mask is not None:
+            from .em import build_emissions
+            emissions = build_emissions(ts, labels, w, pi, mask)
+        return loo_posterior_table(ts, Q, pi, emissions, focal=focal, merge_tol=merge_tol,
+                                   progress=progress)
+
+    own = executor is None
+    ex = executor or make_pool(min(n_jobs, ts.num_trees))   # no more workers than genome chunks
+    try:
+        with as_path(ts) as path:
+            futures = [ex.submit(_loo_range, path, lo, hi, Q, pi, w, labels, focal, merge_tol, mask)
+                       for (lo, hi) in genome_chunks(ts, n_jobs)]
+            results = futures
+            if progress:
+                from tqdm.auto import tqdm
+                results = tqdm(futures, desc="loo", unit="chunk")
             chunk_tracks = [f.result() for f in results]
         return _stitch_tracks(chunk_tracks, merge_tol)
     finally:
@@ -275,7 +328,115 @@ def _stitch_tracks(chunk_tracks, merge_tol):
     return out
 
 
-def date_members_parallel(members, labels, warm, edges, kwargs=None, *, n_jobs=1):
+def _stitch_foreignness_tracks(chunk_tracks, merge_tol):
+    """Concatenate per-range ``ForeignnessSegment`` tracks (genome order), re-merging equal seams
+    (same rule as :func:`tspaint.introgression.foreignness_track`)."""
+    out = {}
+    for chunk in chunk_tracks:
+        for s, segs in chunk.items():
+            dst = out.setdefault(s, [])
+            for seg in segs:
+                p = dst[-1] if dst else None
+                same_depth = p is not None and (p.depth == seg.depth
+                                                 or (np.isnan(p.depth) and np.isnan(seg.depth)))
+                if (p is not None and p.right == seg.left and p.status == seg.status and same_depth
+                        and np.allclose(p.loo, seg.loo, atol=merge_tol, rtol=0)):
+                    p.right = seg.right
+                else:
+                    dst.append(seg)
+    return out
+
+
+def _stitch_depth_tracks(chunk_tracks):
+    """Concatenate per-range ``(left, right, depth)`` tracks (genome order), re-merging equal seams
+    (same rule as :func:`tspaint.archaic._depth_track`)."""
+    out = {}
+    for chunk in chunk_tracks:
+        for s, segs in chunk.items():
+            dst = out.setdefault(s, [])
+            for (l, r, d) in segs:
+                if dst:
+                    pl, pr, pd = dst[-1]
+                    if pr == l and (pd == d or (np.isnan(pd) and np.isnan(d))):
+                        dst[-1] = (pl, r, d)
+                        continue
+                dst.append((l, r, d))
+    return out
+
+
+def _foreignness_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol):
+    from .em import build_emissions
+    from .introgression import foreignness_track
+    ts = _load_cached(path)
+    emissions = build_emissions(ts, labels, w, pi)
+    return foreignness_track(ts, Q, pi, emissions, labels, focal=focal, depth="time",
+                             merge_tol=merge_tol, tree_range=(lo, hi))
+
+
+def foreignness_track_parallel(ts, Q, pi, *, w=None, labels=None, emissions=None, focal=None,
+                               depth="rank", merge_tol=1e-9, n_jobs=None, executor=None, progress=False):
+    """Parallel :func:`tspaint.introgression.foreignness_track` — split by tree-range, stitch the
+    per-range tracks in genome order, then apply the genome-wide rank normalisation (if
+    ``depth="rank"``) on the stitched result. Exactly equal to serial for any ``n_jobs``."""
+    from .introgression import foreignness_track, _rank_normalise_depth
+    n_jobs = resolve_cores(n_jobs)
+    if executor is None and (n_jobs <= 1 or ts.num_trees <= 1):
+        if emissions is None:
+            from .em import build_emissions
+            emissions = build_emissions(ts, labels, w, pi)
+        return foreignness_track(ts, Q, pi, emissions, labels, focal=focal, depth=depth,
+                                 merge_tol=merge_tol)
+    own = executor is None
+    ex = executor or make_pool(min(n_jobs, ts.num_trees))   # no more workers than genome chunks
+    try:
+        with as_path(ts) as path:
+            futures = [ex.submit(_foreignness_range, path, lo, hi, Q, pi, w, labels, focal, merge_tol)
+                       for (lo, hi) in genome_chunks(ts, n_jobs)]
+            results = futures
+            if progress:
+                from tqdm.auto import tqdm
+                results = tqdm(futures, desc="foreignness", unit="chunk")
+            chunk_tracks = [f.result() for f in results]
+        stitched = _stitch_foreignness_tracks(chunk_tracks, merge_tol)
+        if depth == "rank":
+            _rank_normalise_depth(stitched)      # genome-wide, after stitching the raw depths
+        return stitched
+    finally:
+        if own:
+            ex.shutdown()
+
+
+def _depth_track_range(path, lo, hi, modern_ids, focal):
+    from .archaic import _depth_track
+    ts = _load_cached(path)
+    return _depth_track(ts, modern_ids, focal, tree_range=(lo, hi))
+
+
+def depth_track_parallel(ts, modern_ids, samples, *, n_jobs=None, executor=None, progress=False):
+    """Parallel :func:`tspaint.archaic._depth_track` — split the nearest-modern-ref coalescence pass
+    by tree-range, stitch the per-range ``(left, right, depth)`` tracks. Exactly equal to serial."""
+    from .archaic import _depth_track
+    n_jobs = resolve_cores(n_jobs)
+    if executor is None and (n_jobs <= 1 or ts.num_trees <= 1):
+        return _depth_track(ts, modern_ids, samples)
+    own = executor is None
+    ex = executor or make_pool(min(n_jobs, ts.num_trees))   # no more workers than genome chunks
+    try:
+        with as_path(ts) as path:
+            futures = [ex.submit(_depth_track_range, path, lo, hi, modern_ids, samples)
+                       for (lo, hi) in genome_chunks(ts, n_jobs)]
+            results = futures
+            if progress:
+                from tqdm.auto import tqdm
+                results = tqdm(futures, desc="depth", unit="chunk")
+            chunk_tracks = [f.result() for f in results]
+        return _stitch_depth_tracks(chunk_tracks)
+    finally:
+        if own:
+            ex.shutdown()
+
+
+def date_members_parallel(members, labels, warm, edges, kwargs=None, *, n_jobs=None):
     """Fit the rate-through-time of each ensemble member in parallel (one worker per member).
 
     The coarse axis of :meth:`tspaint.Painting.rate_through_time` for an ensemble: each member is
@@ -286,12 +447,13 @@ def date_members_parallel(members, labels, warm, edges, kwargs=None, *, n_jobs=1
     """
     from .dating import fit_rate_through_time
     kwargs = kwargs or {}
-    if resolve_to_int(n_jobs) <= 1:
+    n_jobs = resolve_cores(n_jobs)
+    if n_jobs <= 1 or len(members) <= 1:
         return [fit_rate_through_time(g, labels, edges, fit_result=warm, **kwargs) for g in members]
     from contextlib import ExitStack
     with ExitStack() as stack:
         paths = [stack.enter_context(as_path(g)) for g in members]   # dump in-memory members once
-        ex = stack.enter_context(make_pool(n_jobs))
+        ex = stack.enter_context(make_pool(min(n_jobs, len(members))))   # one worker per member max
         futures = [ex.submit(_date_member, p, labels, warm, edges, kwargs) for p in paths]
         return [f.result() for f in futures]                         # member order; blocks in-context
 

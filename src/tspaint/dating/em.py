@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .grid import cell_centers, log_time_grid
+from .grid import cell_centers, log_time_grid, assert_calibrated
 from .estep import accumulate_time_binned_tv
 from .mstep import directional_rate_splines
 
@@ -229,17 +229,18 @@ def fit_rate_through_time(ts, labels, edges=None, *, n_cells=40, n_iter=15, em_i
     """
     from ..em import fit, build_emissions
     from ..ids import resolve_labels
-    from ..model import make_generator_2state
 
     labels = resolve_labels(ts, labels)                # keys may be sample-ID strings or node indices
     if edges is None:                                  # auto log-time grid from the node ages
         nt = np.asarray(ts.tables.nodes.time, float)
+        assert_calibrated(nt)                          # reject a raw (uncalibrated) tsinfer ARG
         pos = nt[nt > 0]
         edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
     if fit_result is not None:                         # warm-start: reuse a precomputed fit
         res = fit_result
     else:
-        Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+        # Q0=None -> fit() scales the initial generator to the (calibrated) node-age axis, so the
+        # warm-start fit does not wash out on a deep time scale (same guard as tspaint.paint).
         res = fit(ts, labels, Q0=Q0, max_iter=em_init, estimate_pi=estimate_pi, soft_refs=soft_refs)
     emissions = build_emissions(ts, labels, res.w, res.pi)
     pi = res.pi

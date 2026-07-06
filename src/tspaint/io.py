@@ -5,7 +5,8 @@ supported ways to get one, under a **unified template** — name = the tool, ret
 sequence (or, for SINGER, an ensemble of posterior samples):
 
 * :func:`tsinfer` — tsinfer point estimate;
-* :func:`relate` — Relate ``--compress`` conversion (run Relate upstream);
+* :func:`relate` — Relate, run end to end (RelateFileFormats → Relate → EstimatePopulationSize →
+  ``--compress`` convert); build the binaries once with ``tspaint install relate``;
 * :func:`singer` — SINGER Bayesian posterior ARG samples (a ``list`` — the input to the
   ensemble merge, CLAUDE.md §7.4). Needs an explicit ``Ne`` (SINGER's binary requires ``-Ne``);
   get one from :func:`estimate_ne` (π/4μ).
@@ -14,13 +15,15 @@ sequence (or, for SINGER, an ensemble of posterior samples):
   :func:`estimate_ne`); its ``.smc`` samples carry only trees (no mutations), which is all
   :func:`tspaint.paint` needs.
 
-The two **inference** front ends (:func:`tsinfer`, :func:`singer`) take the same ``source``: a
-:class:`tskit.TreeSequence` (with mutations), a **VCF Zarr** store, or a **VCF** file (normalised
-by :mod:`tspaint.io_genotypes`). :func:`relate` takes Relate's ``.anc`` / ``.mut`` output instead.
+All three **inference** front ends (:func:`tsinfer`, :func:`relate`, :func:`singer`) take the same
+``source``: a :class:`tskit.TreeSequence` (with mutations), a **VCF Zarr** store, or a **VCF** file
+(normalised by :mod:`tspaint.io_genotypes`). :func:`relate_convert` is the lower-level
+``.anc``/``.mut`` → tskit step for when you have already run Relate yourself.
 
 Helpers: :func:`add_mutations` (overlay variants on a bare ARG for the sim pipeline),
-:func:`check_persistence` (the §5.1 go/no-go). The pre-unification names (``infer_tree_sequence``,
-``singer_tree_sequences``, ``convert_relate``) remain as **deprecated aliases**.
+:func:`check_persistence` (the §5.1 go/no-go), :func:`relate_windows` (tile a chromosome for
+painting). The pre-unification names (``infer_tree_sequence``, ``singer_tree_sequences``,
+``convert_relate``) remain as **deprecated aliases**.
 
 RFMix is a *comparator* (genotype-native), not an ARG front end — see
 :func:`tspaint.compare.rfmix_paint`.
@@ -31,7 +34,8 @@ from .io_tsinfer import tsinfer, add_mutations, infer_tree_sequence
 from .io_singer import (singer, singer_windowed, singer_tree_sequences, write_haploid_vcf,
                         singer_window, build_merge_table, run_merge_arg)
 from .io_argweaver import argweaver, write_sites
-from .io_relate import relate, check_persistence, convert_relate
+from .io_relate import (relate, relate_convert, check_persistence, convert_relate,
+                        windows as relate_windows)
 from .io_genotypes import subset_data, resolve_variants, Variants, estimate_ne, pseudohaploid
 from .ids import attach_sample_ids, resolve_labels, resolve_ids, sample_id_index
 
@@ -40,6 +44,8 @@ __all__ = [
     "tsinfer", "relate", "singer", "argweaver",
     # SINGER long-region path: one call (many cores, no cluster) ...
     "singer_windowed",
+    # Relate genome-wide (best for EstimatePopulationSize) -> per-window tree sequences for paint()
+    "relate_windows",
     # ... or the per-window primitives it is built from (the cluster/GWF unit)
     "singer_window", "build_merge_table", "run_merge_arg",
     # data prep (normalise / slice a source before a front end)
@@ -47,7 +53,7 @@ __all__ = [
     # sample identity: front ends stamp source ids; labels/queries resolve str-or-int keys
     "attach_sample_ids", "resolve_labels", "resolve_ids", "sample_id_index",
     # helpers
-    "add_mutations", "write_haploid_vcf", "write_sites", "check_persistence",
+    "add_mutations", "write_haploid_vcf", "write_sites", "check_persistence", "relate_convert",
     # deprecated aliases (pre-unification names)
     "infer_tree_sequence", "singer_tree_sequences", "convert_relate",
 ]

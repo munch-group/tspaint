@@ -24,6 +24,9 @@ dependencies = [
     "click>=8.0",
 ]
 
+[project.optional-dependencies]
+dating = ["tsdate>=0.1.5"]   # io.tsinfer(date=True) calibration + tsdate-based node ages
+
 [project.urls]
 Homepage = "https://github.com/munch-group/tspaint"
 Repository = "https://github.com/munch-group/tspaint"
@@ -85,6 +88,7 @@ tqdm = ">=4.68.3,<5"
 
 [tool.pixi.pypi-dependencies]
 tspaint = { path = ".", editable = true }
+tsdate = ">=0.1.5"   # PyPI-only (no conda pkg); io.tsinfer(date=True) node-age calibration
 
 # External LAI comparators for the head-to-head (CLAUDE.md §9), isolated from the core env.
 # bioconda is scoped to this feature only (not the workspace) so it cannot perturb the

@@ -31,6 +31,29 @@ def test_deadband_keeps_confident_switch():
     assert hard_segments(track, deadband=0.5) == [(0, 100, 0), (100, 200, 1)]
 
 
+def _mirror(track, L):
+    """Same track on the reverse strand: mirror each interval about L and reverse the order."""
+    return [Segment(L - s.right, L - s.left, s.posterior, s.status) for s in reversed(track)]
+
+
+def test_deadband_border_is_reversal_invariant():
+    # A real 0->1 switch blurred across two sub-deadband loci that straddle the argmax crossover.
+    track = _track([
+        (0, 100, [0.9, 0.1], INFORMATIVE),         # confident 0
+        (100, 200, [0.55, 0.45], INFORMATIVE),     # ambiguous, leans 0
+        (200, 300, [0.45, 0.55], INFORMATIVE),     # ambiguous, leans 1
+        (300, 400, [0.1, 0.9], INFORMATIVE),       # confident 1
+    ])
+    L = 400
+    fwd = hard_segments(track, deadband=0.3)
+    # border sits at the argmax crossover (200), NOT at the first confident locus of either side
+    # (a one-pass L->R filter would place it at 300; R->L at 100).
+    assert fwd == [(0, 200, 0), (200, 400, 1)]
+    # segmenting the mirror image yields the same physical borders -> direction-independent
+    rev = hard_segments(_mirror(track, L), deadband=0.3)
+    assert sorted((L - r, L - l, st) for (l, r, st) in rev) == fwd
+
+
 def test_missing_info_carries_previous_state():
     track = _track([(0, 100, [0.8, 0.2], INFORMATIVE),
                     (100, 200, [0.5, 0.5], MISSING_INFO)])
@@ -60,4 +83,7 @@ def test_fragmentation_experiment_deadband_not_worse_than_argmax():
     # the deadband suppresses spurious flips, so it never fragments MORE than raw argmax
     assert m[db]["switches_per_mb"] <= m["tspaint_argmax"]["switches_per_mb"] + 1e-9
     for v in m.values():
-        assert 0.0 <= v["precision"] <= 1.0 and 0.0 <= v["recall"] <= 1.0
+        # precision/recall are nan by design when a method calls no switches (breakpoint_precision_recall);
+        # the deadband can fully suppress on weak signal (CLAUDE.md §9), so tolerate that degenerate case.
+        assert np.isnan(v["precision"]) or 0.0 <= v["precision"] <= 1.0
+        assert np.isnan(v["recall"]) or 0.0 <= v["recall"] <= 1.0

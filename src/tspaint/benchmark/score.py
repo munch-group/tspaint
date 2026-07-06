@@ -19,7 +19,7 @@ import os
 
 import numpy as np
 
-from ..output import hard_segments
+from ..output import hard_segments, DEFAULT_DEADBAND
 from ..serialize import load_painting
 from ..validate import (balanced_accuracy, per_base_accuracy, mean_confidence, global_proportion,
                         true_proportion, accuracy_by_segment_size, breakpoint_precision_recall,
@@ -53,7 +53,7 @@ def _switch_ratio(tracks, truth, samples, deadband):
     return inf / tru if tru > 0 else float("nan")
 
 
-def score(truth, paintings, *, deadband=0.4, K=2):
+def score(truth, paintings, *, deadband=DEFAULT_DEADBAND, K=2):
     """Score one or more tool paintings against ``truth``.
 
     Parameters
@@ -130,7 +130,7 @@ def _sequence_length(truth, painting_meta):
     return max((r for segs in truth.values() for (_l, r, _s) in segs), default=0.0)
 
 
-def score_full(truth, painting, *, name="", meta=None, bins=None, deadband=0.4, state=0, K=2):
+def score_full(truth, painting, *, name="", meta=None, bins=None, deadband=DEFAULT_DEADBAND, state=0, K=2):
     """Full benchmark metrics for one painting vs ``truth`` — the three families (CLAUDE.md §9).
 
     Parameters

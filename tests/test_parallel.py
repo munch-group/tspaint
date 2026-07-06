@@ -36,7 +36,7 @@ def test_resolve_cores(monkeypatch):
     for v in ("SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE", "TSPAINT_CORES"):
         monkeypatch.delenv(v, raising=False)
     assert parallel.resolve_cores(4) == 4            # explicit wins
-    assert parallel.resolve_cores(None) == 1         # serial default
+    assert parallel.resolve_cores(None) == (os.cpu_count() or 1)   # default -> all CPUs
     monkeypatch.setenv("SLURM_JOB_CPUS_PER_NODE", "8")
     assert parallel.resolve_cores() == 8
     monkeypatch.setenv("SLURM_JOB_CPUS_PER_NODE", "4(x2),3")   # compact SLURM form
@@ -143,6 +143,21 @@ def test_posterior_table_parallel_exact():
 
 
 @pytest.mark.slow
+def test_loo_posterior_table_parallel_exact():
+    from tspaint.output import loo_posterior_table
+    ts, labels, Q, pi, w, emissions = _setup()
+    refs = list(labels)                                            # LOO map is per reference
+    serial = loo_posterior_table(ts, Q, pi, emissions, focal=refs)
+    par = parallel.loo_posterior_table_parallel(ts, Q, pi, w=w, labels=labels, focal=refs, n_jobs=4)
+    assert serial.keys() == par.keys()
+    for q in refs:
+        assert len(serial[q]) == len(par[q])
+        for a, b in zip(serial[q], par[q]):
+            assert a.left == b.left and a.right == b.right and a.status == b.status
+            np.testing.assert_array_equal(a.posterior, b.posterior)   # leave-one-out is exact, any P
+
+
+@pytest.mark.slow
 def test_fit_parallel_close_to_serial():
     ts, labels, _Q, _pi, _w, _e = _setup()
     Q0 = make_generator_2state(1e-3, 1e-3)
@@ -152,3 +167,34 @@ def test_fit_parallel_close_to_serial():
     np.testing.assert_array_equal(r4.pi, r1.pi)                            # estimate_pi=False -> fixed
     np.testing.assert_allclose(np.array(r4.loglik_history), np.array(r1.loglik_history),
                                rtol=1e-12, atol=0)
+
+
+# --- n_jobs default resolution: all CPUs, or the SLURM allocation ------------------------------
+
+def test_resolve_cores_default_is_cpus_or_slurm(monkeypatch):
+    import os
+    from tspaint.parallel import resolve_cores
+    for v in ("SLURM_CPUS_PER_TASK", "SLURM_JOB_CPUS_PER_NODE", "TSPAINT_CORES"):
+        monkeypatch.delenv(v, raising=False)
+    ncpu = os.cpu_count() or 1
+    assert resolve_cores(None) == ncpu and resolve_cores() == ncpu   # default -> all CPUs
+    assert resolve_cores(3) == 3 and resolve_cores(1) == 1           # explicit wins
+    # SLURM_JOB_CPUS_PER_NODE respected, including the compact N(xM) form
+    monkeypatch.setenv("SLURM_JOB_CPUS_PER_NODE", "8")
+    assert resolve_cores(None) == 8
+    monkeypatch.setenv("SLURM_JOB_CPUS_PER_NODE", "4(x2)")
+    assert resolve_cores(None) == 8
+    assert resolve_cores(2) == 2                                     # explicit still wins over SLURM
+    monkeypatch.setenv("SLURM_CPUS_PER_TASK", "5")                   # cleaner per-task value wins
+    assert resolve_cores(None) == 5
+
+
+def test_public_n_jobs_defaults_are_none():
+    """Every public entry point defaults n_jobs to None (-> resolve_cores -> all CPUs / SLURM)."""
+    import inspect
+    import tspaint
+    from tspaint import em
+    for fn in (tspaint.paint, tspaint.fit, tspaint.reference_qc, tspaint.foreign_tracts,
+               tspaint.detect_ghost):
+        assert inspect.signature(fn).parameters["n_jobs"].default is None, fn.__name__
+    assert inspect.signature(tspaint.Painting.rate_through_time).parameters["n_jobs"].default is None

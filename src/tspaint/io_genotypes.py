@@ -416,9 +416,14 @@ def estimate_ne(source, mutation_rate, groups=None, exclude=None):
     ``ploidy``-column blocks of :attr:`Variants.sample_names` (as the readers lay them out).
 
     For a structured / admixed panel, all-pairs :math:`\pi` includes cross-population comparisons, so
-    it reflects the whole sample's deep between-population coalescent depth. Pass ``groups`` (e.g. the
-    painting ``labels``) to compare **only pairs of individuals in the same group** — within-reference
-    pairs — so cross-population divergence does not inflate :math:`N_e`; ``groups=None`` pools everyone.
+    it reflects the whole sample's deep between-population coalescent depth. **This all-pairs default
+    (``groups=None``) is what a SINGER prior needs** (:func:`tspaint.io.singer`): SINGER calibrates
+    ``4·Ne·μ ≈ π`` over the whole sample and must keep those deep coalescences on-scale, matching its
+    own ``singer_master`` auto-Ne. Passing ``groups`` (e.g. the painting ``labels``) instead compares
+    **only pairs of individuals in the same group** — a *smaller, within-population* :math:`N_e` that
+    will **under-calibrate** the SINGER prior on a structured sample; reach for it only when you
+    specifically want the within-population value. ``exclude`` (drop admixed / mislabelled individuals)
+    is the appropriate refinement when the estimate feeds SINGER.
 
     Parameters
     ----------
@@ -542,7 +547,7 @@ def subset_data(source, *, start=None, end=None, samples=None):
     --------
     >>> from tspaint.io import singer, subset_data
     >>> region = subset_data("chr20.vcz", start=0, end=2_000_000, samples=range(20))
-    >>> tss = singer(region, Ne=1e4, mutation_rate=1.25e-8, recombination_rate=1e-8)
+    >>> tss = singer(region, _Ne=1e4, _m=1.25e-8, _r=1e-8)
     """
     v = _variants_from_ts(source) if source_kind(source) == "ts" else resolve_variants(source)
 

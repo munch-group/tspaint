@@ -1,0 +1,18 @@
+# Toolchain env for building Relate + relate_lib from source — dropped into each clone by
+# `tspaint install relate` (our own glue; NOT in the upstream MyersGroup/relate or
+# leospeidel/relate_lib repos). Both are CMake C++ projects (`mkdir build && cd build &&
+# cmake .. && make`) that emit their binaries into `<repo>/bin/` (bin/Relate, bin/RelateFileFormats,
+# bin/Convert). The only build dependencies are a C++ compiler, cmake + make, and zlib (Relate reads
+# gzipped haps/sample files); `tspaint install relate` runs the CMake build against this env.
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge"]
+name = "relate-build"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+[dependencies]
+cxx-compiler = "*"
+cmake = "*"
+make = "*"
+zlib = "*"

@@ -88,19 +88,19 @@ def test_write_sites_format(tmp_path):
 def test_argweaver_requires_ne():
     ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
     with pytest.raises(ValueError, match="requires Ne"):
-        argweaver(ts, mutation_rate=1e-8, recombination_rate=1e-8)
+        argweaver(ts, _m=1e-8, _r=1e-8)
 
 
 def test_argweaver_requires_rates():
     ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
-    with pytest.raises(ValueError, match="mutation_rate"):
-        argweaver(ts, Ne=1000)
+    with pytest.raises(ValueError, match="_m"):
+        argweaver(ts, _N=1000)
 
 
 def test_argweaver_missing_binary(tmp_path):
     ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
     with pytest.raises(FileNotFoundError, match="arg-sample"):
-        argweaver(ts, Ne=1000, mutation_rate=1e-8, recombination_rate=1e-8,
+        argweaver(ts, _N=1000, _m=1e-8, _r=1e-8,
                   argweaver_bin=str(tmp_path / "nope"))
 
 
@@ -108,11 +108,9 @@ def test_argweaver_missing_binary(tmp_path):
 
 def test_signature_exposes_argweaver_flags():
     params = inspect.signature(argweaver).parameters
-    for flag in ("Ne", "mutation_rate", "recombination_rate", "ntimes", "maxtime", "compress",
-                 "iters", "sample_step", "burn_in", "thin", "seed", "argweaver_args"):
+    for flag in ("ts", "mcmc_step", "mcmc_burnin", "_N", "_m", "_r", "_ntimes", "_maxtime",
+                 "_compress", "_iters", "_sample_step", "_seed", "argweaver_args"):
         assert flag in params, flag
-    for alias in ("N", "m", "r", "n"):           # arg-sample short names as aliases
-        assert alias in params, alias
 
 
 def test_io_exposes_argweaver():
@@ -124,8 +122,8 @@ def test_cli_argweaver_and_install_present():
     from click.testing import CliRunner
     from tspaint.cli import cli
     out = CliRunner().invoke(cli, ["trees", "argweaver", "--help"]).output
-    for tok in ("--Ne", "-m", "-r", "--ntimes", "--maxtime", "-c", "-n", "--sample-step",
-                "--burnin", "--thin", "--seed", "--argweaver-arg"):
+    for tok in ("--Ne", "-m", "-r", "--ntimes", "--maxtime", "-c", "--ts", "--mcmc-step",
+                "--mcmc-burnin", "--seed", "--argweaver-arg"):
         assert tok in out, tok
     assert "argweaver" in CliRunner().invoke(cli, ["install", "--help"]).output
 
@@ -144,10 +142,24 @@ def test_argweaver_runs_end_to_end():
     A = next(p for p, nm in name.items() if nm == tspaint.sim.SOURCE_A)
     B = next(p for p, nm in name.items() if nm == tspaint.sim.SOURCE_B)
     labels = {int(s): (0 if pop[s] == A else 1) for s in ts.samples() if pop[s] in (A, B)}
-    ens = argweaver(ts, Ne=1000, mutation_rate=2e-8, recombination_rate=1e-8, compress=10,
-                    iters=20, sample_step=10, burn_in=0, seed=1)
+    ens = argweaver(ts, _N=1000, _m=2e-8, _r=1e-8, _compress=10,
+                    ts=3, mcmc_step=10, mcmc_burnin=0, _seed=1)
     ens = ens if isinstance(ens, list) else [ens]
     assert ens and ens[0].num_samples == ts.num_samples
     # the converted ensemble must be a valid, paintable tree-sequence list
     painting = tspaint.paint(ens, labels)
     assert set(painting.posteriors)     # produced per-query posteriors
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not os.path.exists(DEFAULT_ARGWEAVER), reason="arg-sample binary not available")
+def test_argweaver_unified_sampling_count():
+    """The unified ts / mcmc_step / mcmc_burnin return exactly ts posterior ARGs."""
+    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=1e4,
+                          recombination_rate=1e-8, random_seed=1, Ne=1000, T_split=5000),
+                          rate=2e-8, random_seed=1)
+    kw = dict(_N=1000, _m=2e-8, _r=1e-8, _compress=10, _seed=1)
+    single = argweaver(ts, ts=1, mcmc_step=10, mcmc_burnin=0, **kw)   # ts=1 -> a single ts
+    assert single.num_samples == ts.num_samples
+    ens = argweaver(ts, ts=3, mcmc_step=10, mcmc_burnin=0, **kw)
+    assert isinstance(ens, list) and len(ens) == 3

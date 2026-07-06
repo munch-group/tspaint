@@ -155,8 +155,10 @@ def test_exclude_drops_soft_ref_individuals():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not os.path.exists(DEFAULT_SINGER), reason="SINGER binary not available")
-def test_singer_estimates_ne_when_omitted(tmp_path):
-    """io.singer runs with Ne omitted (estimated internally) and preserves sample count/stamping."""
+def test_singer_from_vcf_with_estimated_ne_preserves_samples(tmp_path):
+    """The documented Ne path (Ne is **required** — never estimated silently, cf. ``_NE_REQUIRED``):
+    estimate Ne from the data with :func:`io.estimate_ne`, pass it to :func:`io.singer`; the VCF run
+    preserves the sample count and stamps sample ids onto the returned tree sequence."""
     ts = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=8e4,
                           recombination_rate=1e-8, random_seed=11, Ne=1000, T_admix=30,
                           T_split=5000, f_A=0.5), rate=6e-7, random_seed=11)
@@ -164,8 +166,9 @@ def test_singer_estimates_ne_when_omitted(tmp_path):
     with open(vcf, "w") as f:
         ts.write_vcf(f, individual_names=[f"samp{i}" for i in range(ts.num_individuals)],
                      position_transform=lambda x: 1 + np.floor(x).astype(int))
-    ens = io.singer(vcf, mutation_rate=6e-7, recombination_rate=1e-8,   # no Ne
-                    n_samples=6, thin=2, burn_in=2, seed=42)
+    Ne = io.estimate_ne(vcf, mutation_rate=6e-7)                        # all-pairs pi/4mu helper
+    ens = io.singer(vcf, _Ne=Ne, _m=6e-7, _r=1e-8,
+                    ts=4, mcmc_step=2, mcmc_burnin=4, _seed=42)
     g = ens[0] if isinstance(ens, list) else ens
     assert g.num_samples == ts.num_samples
     assert g.individual(0).metadata == {"id": "samp0"}

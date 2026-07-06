@@ -15,7 +15,7 @@ from .sim import (simulate_admixture, simulate_admixture_impure_refs, local_ance
                   SOURCE_A, SOURCE_B, ADMIXED, REF_A_IMPURE, REF_B_IMPURE)
 from .em import fit, build_emissions
 from .model import make_generator_2state
-from .output import posterior_table, loo_posterior_table, hard_segments, MISSING_INFO
+from .output import posterior_table, loo_posterior_table, hard_segments, MISSING_INFO, DEFAULT_DEADBAND
 from .ensemble import merge_posterior_tables
 from .validate import (map_truth, per_base_accuracy, balanced_accuracy,
                        mean_confidence, reliability_curve, breakpoint_flicker,
@@ -164,7 +164,7 @@ def _seg_metrics(seg_by_node, true_by_node, nodes, length, tol):
 
 def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_admix=200.0,
                              Ne=1000, T_split=5000.0, f_A=0.5, recombination_rate=1e-8,
-                             mutation_rate=4e-7, deadband=0.4, tol=1e5, seed=1,
+                             mutation_rate=4e-7, deadband=DEFAULT_DEADBAND, tol=1e5, seed=1,
                              include_rfmix=True):
     """Fragmentation / tract-length fidelity of hard segmentations vs. the true tracts.
 
@@ -483,9 +483,9 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
 
     tsm = msprime.sim_mutations(ts, rate=mutation_rate, random_seed=seed,
                                 model=msprime.BinaryMutationModel())
-    ensemble = singer(tsm, Ne=Ne, mutation_rate=mutation_rate,
-                                     recombination_rate=recombination_rate, n_samples=n_singer,
-                                     thin=thin, burn_in=burn_in, seed=singer_seed)
+    ensemble = singer(tsm, _Ne=Ne, _m=mutation_rate,
+                                     _r=recombination_rate, ts=n_singer - burn_in,
+                                     mcmc_step=thin, mcmc_burnin=burn_in * thin, _seed=singer_seed)
 
     Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
     res = fit(ensemble, [labels] * len(ensemble), K=2, Q0=Q0, max_iter=max_iter)
@@ -617,6 +617,40 @@ def _impure_config(ts, labels, queries, impure_refs, query_truth, ref_truth, len
     }
 
 
+def _impure_mask_config(ts, labels, queries, impure_refs, query_truth, ref_truth, length, *,
+                        Q0, max_iter, mask_deadband=0.5):
+    """**Fragment masking** arm (CLAUDE.md §2.3): two-pass — detect each impure reference's foreign
+    tracts from the leave-one-out map, mask those spans as unlabelled, then re-fit / re-paint so the
+    impure refs anchor **only on their clean spans** (the local alternative to whole-tip soft ``w``)."""
+    # Pass 1: hard-clamp fit -> LOO introgression map of the impure refs; flag their foreign tracts.
+    res = fit(ts, labels, K=2, Q0=Q0, max_iter=max_iter)
+    em = build_emissions(ts, labels, res.w, res.pi)
+    loo = loo_posterior_table(ts, res.Q, res.pi, em, focal=list(impure_refs))
+    mask = {}
+    for r in impure_refs:
+        lab = labels[r]
+        spans = [(s.left, s.right) for s in loo[r]
+                 if s.status != MISSING_INFO and (1.0 - float(s.posterior[lab])) >= mask_deadband]
+        if spans:
+            mask[int(r)] = spans
+    # Pass 2: re-fit + paint with the flagged impure fragments masked out (unlabelled there).
+    res2 = fit(ts, labels, K=2, Q0=Q0, max_iter=max_iter, mask=mask)
+    em2 = build_emissions(ts, labels, res2.w, res2.pi, mask)
+    tracks = posterior_table(ts, res2.Q, res2.pi, em2, focal=list(queries) + list(impure_refs))
+    self_bal = [balanced_accuracy(tracks, ref_truth, samples=[r]) for r in impure_refs]
+    foreign = [_foreign_recall(tracks[r], ref_truth[r], labels[r]) for r in impure_refs]
+    masked_frac = [sum(rr - l for (l, rr) in mask.get(int(r), [])) / length for r in impure_refs]
+    return {
+        "query_balanced_accuracy": balanced_accuracy(tracks, query_truth, samples=queries),
+        "query_confidence": mean_confidence(tracks, samples=queries),
+        "impure_self_balanced_accuracy": float(np.nanmean(self_bal)),
+        "impure_self_foreign_recall": float(np.nanmean(foreign)),   # down-pass now sees it (§2.3)
+        "mean_masked_fraction": float(np.mean(masked_frac)),
+        "n_masked_refs": len(mask),
+        "Q": res2.Q, "pi": res2.pi,
+    }
+
+
 def impure_reference_experiment(*, T_admix=300.0, n_admix=10, n_pure=6, n_impure=8,
                                 sequence_length=5e6, recombination_rate=1e-8, Ne=1000,
                                 T_split=5000.0, f_A=0.5, ref_impurity=0.15, seed=1,
@@ -723,6 +757,9 @@ def impure_reference_experiment(*, T_admix=300.0, n_admix=10, n_pure=6, n_impure
     graded_priors.update({int(r): (2.0, 1.0) for r in impure_refs[half:]})
     configs["graded"] = _impure_config(*args, soft_refs=soft, alpha=alpha, beta=beta,
                                        priors=graded_priors, **common)
+    # fragment masking: detect the impure refs' foreign tracts (LOO) and mask them, vs the
+    # whole-tip soft_strong down-weighting — the local vs global credibility contrast (§2.3, §6).
+    configs["fragment_mask"] = _impure_mask_config(*args, **common)
 
     sweep = []
     for a in alpha_grid:

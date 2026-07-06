@@ -99,6 +99,35 @@ def test_fit_rate_through_time_recovers_split():
     assert deep > 3 * recent + 1e-9                                         # onset recovered
 
 
+def test_assert_calibrated_rejects_uncalibrated_times():
+    from tspaint.dating.grid import assert_calibrated
+    assert_calibrated(np.array([0.0, 100.0, 5000.0]))              # calibrated -> no raise
+    for bad in (np.array([0.0, 0.5, 0.95]), np.array([0.0, 1.0])): # tsinfer-like ~[0,1]
+        with pytest.raises(ValueError, match="uncalibrated"):
+            assert_calibrated(bad)
+
+
+def test_dating_guards_uncalibrated_ts():
+    """The auto-grid dater refuses a ts with tsinfer-like (~[0,1]) node times rather than dating in
+    bogus units; an explicit edges= bypasses (the caller then vouches for the scale)."""
+    import msprime
+    from tspaint.dating import fit_rate_through_time, log_time_grid
+    d = msprime.Demography()
+    for nm in ("A", "B", "ANC"):
+        d.add_population(name=nm, initial_size=1000)
+    d.add_population_split(time=2000.0, derived=["A", "B"], ancestral="ANC")
+    ts = msprime.sim_ancestry(samples={"A": 4, "B": 4}, demography=d, sequence_length=1e5,
+                              recombination_rate=1e-8, random_seed=1, ploidy=1)
+    labels = {int(s): (0 if ts.tables.nodes.population[s] == 0 else 1) for s in ts.samples()}
+    t = ts.dump_tables()
+    t.nodes.time = np.asarray(t.nodes.time) * (5.0 / float(np.asarray(t.nodes.time).max()))   # -> [0,5] < 10
+    unc = t.tree_sequence()
+    with pytest.raises(ValueError, match="uncalibrated|GENERATIONS"):
+        fit_rate_through_time(unc, labels)                        # edges=None -> guarded
+    rtt = fit_rate_through_time(unc, labels, edges=log_time_grid(0.1, 5.0, 8), n_iter=1)  # bypass
+    assert rtt.centers.shape == (8,)
+
+
 def test_top_level_dating_exports():
     """The dating path is surfaced in the public API (top-level fn, class, and namespace)."""
     import tspaint
@@ -148,7 +177,6 @@ def test_fit_rate_through_time_warmstart_matches_cold():
     homogeneous fit is the only thing skipped), when seeded identically."""
     import msprime
     import tspaint
-    from tspaint.model import make_generator_2state
 
     N, T_split = 1000, 2000.0
     d = msprime.Demography()
@@ -161,9 +189,9 @@ def test_fit_rate_through_time_warmstart_matches_cold():
     pop = ts.tables.nodes.population
     labels = {int(s): (0 if pop[s] == 0 else 1) for s in ts.samples()}
 
-    # Cold start does fit(..., Q0=default, max_iter=em_init=8) internally; reproduce that fit.
-    warm = tspaint.fit(ts, labels, Q0=make_generator_2state(1e-3, 1e-3), max_iter=8,
-                     estimate_pi=False)
+    # Cold start does fit(..., Q0=None -> time-scaled default, max_iter=em_init=8) internally;
+    # reproduce that same fit here (same default Q0, so warm and cold coincide).
+    warm = tspaint.fit(ts, labels, max_iter=8, estimate_pi=False)
     rtt_cold = tspaint.fit_rate_through_time(ts, labels, n_iter=5)
     rtt_warm = tspaint.fit_rate_through_time(ts, labels, n_iter=5, fit_result=warm)
 

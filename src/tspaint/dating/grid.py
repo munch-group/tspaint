@@ -8,7 +8,33 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["log_time_grid", "cell_centers", "split_branch"]
+__all__ = ["log_time_grid", "cell_centers", "split_branch", "assert_calibrated",
+           "MIN_CALIBRATED_MAX_AGE"]
+
+#: A deepest node age (generations) below this almost certainly means the tree sequence is
+#: **uncalibrated** — e.g. a raw tsinfer ARG, whose frequency-ordered times are ~``[0, 1]`` — rather
+#: than a real coalescent genealogy, whose TMRCA is many generations. The auto time-grid guards
+#: against silently dating in these bogus units (bypass with an explicit ``edges=``).
+MIN_CALIBRATED_MAX_AGE = 10.0
+
+
+def assert_calibrated(node_time):
+    """Raise if node ages look **uncalibrated** (not in generations) for auto-grid dating.
+
+    Guards :func:`tspaint.dating.fit_rate_through_time` / :meth:`tspaint.Painting.rate_through_time`
+    against building a time grid from a raw tsinfer ARG (times ~``[0, 1]``), which collapses every
+    cell near 1 and makes the rate profile / split time meaningless. Bypass by passing an explicit
+    ``edges=`` grid (then you are asserting the times are what you intend).
+    """
+    nt = np.asarray(node_time, float)
+    tmax = float(nt.max()) if nt.size else 0.0
+    if tmax < MIN_CALIBRATED_MAX_AGE:
+        raise ValueError(
+            f"tree-sequence node ages look uncalibrated (deepest node = {tmax:.3g}; a real "
+            "coalescent genealogy is many generations deep) — dating needs node times in "
+            "GENERATIONS. A raw tsinfer ARG is uncalibrated: calibrate it with "
+            "io.tsinfer(source, date=True, mutation_rate=...) or tsdate, or use io.singer / "
+            "io.relate whose node times are already in generations. Pass edges= to bypass this check.")
 
 
 def log_time_grid(t_min, t_max, n_cells):

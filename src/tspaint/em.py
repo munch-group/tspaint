@@ -16,7 +16,7 @@ from functools import reduce
 import numpy as np
 
 from .accumulate import accumulate_sufficient_statistics
-from .model import make_generator_2state, tip_emission, query_emission
+from .model import make_generator_2state, tip_emission, query_emission, MaskedEmissions
 
 __all__ = ["m_step_Q", "m_step_pi", "m_step_w", "fit", "FitResult", "build_emissions"]
 
@@ -127,7 +127,7 @@ class FitResult:
     loglik_history: list     # observed-data log-likelihood per E-step (non-decreasing)
 
 
-def build_emissions(ts, labels, w, pi):
+def build_emissions(ts, labels, w, pi, mask=None):
     """Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2).
 
     Labelled tips get the soft-clamp ``w_i * 1[label] + (1 - w_i) * pi`` (anchors
@@ -157,12 +157,14 @@ def build_emissions(ts, labels, w, pi):
             emissions[s] = tip_emission(labels[s], w.get(s, 1.0), pi)
         else:
             emissions[s] = query_emission(pi)
-    return emissions
+    # ``mask`` (fragment masking, §2.3): a reference emits the query (unlabelled) emission over its
+    # masked spans, so it anchors only where it is clean — position-dependent, resolved per tree.
+    return MaskedEmissions(emissions, mask, pi) if mask else emissions
 
 
 def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         soft_refs=None, alpha=20.0, beta=1.0, priors=None, w0=0.9, estimate_pi=True,
-        n_jobs=1, progress=False):
+        n_jobs=None, progress=False, mask=None):
     """Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6).
 
     The E-step is exact Felsenstein pruning per marginal tree, per root; sufficient
@@ -212,8 +214,9 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         Re-estimate ``π`` each M-step rather than holding ``pi0`` fixed. Default
         ``True``. See Notes.
     n_jobs : int, optional
-        Worker processes for the E-step (the dominant cost). ``1`` (default) is the serial
-        path, **byte-identical** to single-core. ``>1`` runs the genome E-step over
+        Worker processes for the E-step (the dominant cost). Default ``None`` → all CPUs / the SLURM
+        allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for the serial path,
+        **byte-identical** to single-core. ``>1`` runs the genome E-step over
         member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor`
         (reused across EM iterations); the result is ``allclose`` to serial, differing only by
         floating-point reduction order (:mod:`tspaint.parallel`).
@@ -247,7 +250,20 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         soft_refs = resolve_ids(ts_list[0], soft_refs)
     if priors:
         priors = {node: pv for k, pv in priors.items() for node in resolve_nodes(ts_list[0], k)}
-    Q = np.array(Q0, float) if Q0 is not None else make_generator_2state(0.1, 0.1)
+    if mask:                                    # fragment masking: {ref -> [(l,r)]}, keys id or node
+        mask = {node: spans for k, spans in mask.items() for node in resolve_nodes(ts_list[0], k)}
+    if Q0 is not None:
+        Q = np.array(Q0, float)
+    else:
+        # Scale the initial generator to the tree-sequence TIME axis so ``Q0 * t`` starts at O(1) —
+        # an informative E-step — regardless of the absolute node-age scale. A fixed rate washes out
+        # (``expm(Q0 t) -> stationary``) on a large, calibrated axis (e.g. tsdate node ages, or a
+        # deep genealogy), which freezes the EM at the initial Q and collapses the painting toward
+        # ``pi``. Rate ``1 / mean(internal node age)`` puts the typical branch near ``Q t ~ 1``.
+        ages = np.concatenate([np.asarray(t.tables.nodes.time, float) for t in ts_list])
+        ages = ages[ages > 0]
+        r0 = 1.0 / float(np.mean(ages)) if ages.size else 0.1
+        Q = make_generator_2state(r0, r0)
     pi = np.array(pi0, float) if pi0 is not None else np.full(K, 1.0 / K)
 
     soft = set(int(s) for s in soft_refs) if soft_refs else set()
@@ -265,14 +281,15 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             "applies only to soft_refs (hard-clamped anchors have no learned w)")
     w = {s: float(w0) for s in soft}   # anchors stay at w = 1 implicitly
 
-    n_jobs = max(1, int(n_jobs)) if n_jobs else 1
+    from .parallel import resolve_cores
+    n_jobs = resolve_cores(n_jobs)          # None -> all CPUs / SLURM allocation
 
     def estep_serial():
         """The pooled E-step over the ensemble — byte-identical to single-core."""
         S_dwell, S_jumps = np.zeros(K), np.zeros((K, K))
         S_root, S_cred, loglik = np.zeros(K), {}, 0.0
         for tsi, labi in zip(ts_list, lab_list):
-            emissions = build_emissions(tsi, labi, w, pi)
+            emissions = build_emissions(tsi, labi, w, pi, mask)
             ss = accumulate_sufficient_statistics(tsi, Q, pi, emissions,
                                                   labels=labi, soft_refs=soft or None)
             S_dwell += ss.S_dwell
@@ -298,7 +315,7 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
             """Same statistics over member × tree-range chunks on the persistent pool."""
             from .parallel import _accumulate_range, add_suffstats, genome_chunks
             per_member = max(1, -(-n_jobs // len(ts_list)))   # ceil: ~n_jobs tasks total
-            tasks = [(paths[i], lo, hi, Q, pi, w, lab_list[i], soft or None)
+            tasks = [(paths[i], lo, hi, Q, pi, w, lab_list[i], soft or None, mask)
                      for i in range(len(ts_list))
                      for (lo, hi) in genome_chunks(ts_list[i], per_member)]
             futures = [executor.submit(_accumulate_range, *t) for t in tasks]

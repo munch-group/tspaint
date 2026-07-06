@@ -29,7 +29,7 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-from .output import Segment, INFORMATIVE
+from .output import Segment, INFORMATIVE, DEFAULT_DEADBAND
 from .track import SoftTrack
 
 __all__ = ["GhostResult", "detect_ghost", "ArchaicResult", "detect_archaic"]
@@ -52,16 +52,23 @@ def _nearest_modern_depth(tree, s, modern_ids, node_time):
     return float(best) if np.isfinite(best) else float("nan")
 
 
-def _depth_track(ts, modern_ids, samples):
+def _depth_track(ts, modern_ids, samples, tree_range=None):
     """Per sample, contiguous ``(left, right, depth)`` of nearest-modern-ref coalescence **time**.
 
     Raw coalescent time (``nan`` where no modern reference is reachable); the ``log`` (``depth="time"``)
     or genome-wide ``rank`` (``depth="rank"``) transform is applied afterwards by :func:`_make_transform`.
+    ``tree_range=(lo, hi)`` restricts the pass to that half-open marginal-tree-index range (a chunk
+    worker for :func:`tspaint.parallel.depth_track_parallel`); ``None`` = the whole genome.
     """
     node_time = ts.tables.nodes.time
     mids = [int(r) for r in modern_ids]
     tracks = {int(s): [] for s in samples}
-    for tree in ts.trees():
+    lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
+    for ti, tree in enumerate(ts.trees()):
+        if ti < lo:
+            continue
+        if ti >= hi:
+            break
         left, right = tree.interval.left, tree.interval.right
         for s in samples:
             d = _nearest_modern_depth(tree, int(s), mids, node_time)
@@ -203,7 +210,8 @@ class GhostResult(SoftTrack):
     loglik_history : list
         Pooled Baum–Welch log-likelihood per iteration (non-decreasing).
     default_deadband : float
-        Default dead-band passed to :meth:`~tspaint.track.SoftTrack.segments`. Default ``0.0``.
+        Default dead-band passed to :meth:`~tspaint.track.SoftTrack.segments`. Defaults to
+        :data:`~tspaint.output.DEFAULT_DEADBAND`.
     """
 
     # The ghost detector's "interesting" state is state 1 (ghost); the plot highlights P(ghost).
@@ -217,7 +225,7 @@ class GhostResult(SoftTrack):
     A: np.ndarray
     pi0: np.ndarray
     loglik_history: list
-    default_deadband: float = 0.0
+    default_deadband: float = DEFAULT_DEADBAND
     _seqlen: float = None
 
     def tracts(self, sample, threshold=0.5):
@@ -296,7 +304,7 @@ def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol
 
 
 def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-3, delta=None,
-                 init_archaic_burden=0.1, init_switch=0.02):
+                 init_archaic_burden=0.1, init_switch=0.02, n_jobs=None, progress=False):
     """Reference-free ghost / archaic introgression detection via a depth-emission HMM.
 
     The dedicated ghost-search tool (Task 2; CLAUDE.md §9). A 2-state (modern / ghost) HMM along the
@@ -328,6 +336,12 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
         ``depth`` units). Defaults to ``σ_modern``.
     init_archaic_burden, init_switch : float, optional
         Initial ghost fraction and per-breakpoint switch probability.
+    n_jobs : int, optional
+        Worker processes for the nearest-modern-ref coalescence pass (split by genome chunk, one
+        shared pool across ensemble members; exactly equal to serial). Default: all CPUs / the SLURM
+        allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
+    progress : bool, optional
+        Show a progress bar for the depth pass. Default ``False``.
 
     Returns
     -------
@@ -354,14 +368,24 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
     else:
         samples = resolve_ids(members[0], samples)
 
-    # per-member transformed depth tracks (log-time, or per-member calibration-invariant rank)
+    # per-member transformed depth tracks (log-time, or per-member calibration-invariant rank); the
+    # nearest-modern-ref coalescence pass is the heavy part -> parallelise it over genome chunks,
+    # sharing one worker pool across ensemble members.
+    from .parallel import make_pool, depth_track_parallel
     ref_per_member, samp_per_member = [], []
-    for g in members:
-        ref_t = _depth_track(g, modern_ids, modern_ids)
-        samp_t = _depth_track(g, modern_ids, samples)
-        tfm = _make_transform(depth, ref_t, samp_t)
-        ref_per_member.append(_apply_transform(ref_t, tfm))
-        samp_per_member.append(_apply_transform(samp_t, tfm))
+    ex = make_pool(n_jobs)                        # None when serial (n_jobs <= 1)
+    try:
+        for g in members:
+            ref_t = depth_track_parallel(g, modern_ids, modern_ids, executor=ex, n_jobs=n_jobs,
+                                         progress=progress)
+            samp_t = depth_track_parallel(g, modern_ids, samples, executor=ex, n_jobs=n_jobs,
+                                          progress=progress)
+            tfm = _make_transform(depth, ref_t, samp_t)
+            ref_per_member.append(_apply_transform(ref_t, tfm))
+            samp_per_member.append(_apply_transform(samp_t, tfm))
+    finally:
+        if ex is not None:
+            ex.shutdown()
 
     # anchor the modern state from the pooled reference observations across members
     pooled_ref = {}

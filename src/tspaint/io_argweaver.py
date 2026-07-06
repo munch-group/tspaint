@@ -33,7 +33,7 @@ import tempfile
 import numpy as np
 
 from .ids import attach_sample_ids
-from .io_singer import repo_root, _tools_dir, _source_sample_ids
+from .io_singer import repo_root, _tools_dir, _source_sample_ids, _argweaver_sampling, _select
 
 __all__ = ["argweaver", "write_sites", "argweaver_install_dir", "argweaver_binary_path"]
 
@@ -58,7 +58,7 @@ _NE_REQUIRED = (
     "argweaver requires Ne: arg-sample needs -N and errors without it. Estimate one from the data "
     "and pass it, e.g.\n"
     "    Ne = tspaint.io.estimate_ne(source, mutation_rate, groups=labels)  # optional exclude=soft_refs\n"
-    "    tspaint.io.argweaver(source, Ne=Ne, mutation_rate=mutation_rate, recombination_rate=r)")
+    "    tspaint.io.argweaver(source, _N=Ne, _m=mutation_rate, _r=r)")
 
 # ARGweaver treats the sequences as DNA; for a biallelic 0/1 site we emit two distinct bases (real
 # REF/ALT when they are single A/C/G/T characters, else a canonical pair), and 'N' for missing.
@@ -330,52 +330,53 @@ def _smc_path(out_prefix, i):
     return gzp if os.path.exists(gzp) else f"{out_prefix}.{i}.smc"
 
 
-def argweaver(source, *, Ne=None, mutation_rate=None, recombination_rate=None, ntimes=20,
-              maxtime=200e3, compress=1, iters=100, sample_step=None, burn_in=0, thin=1, seed=None,
+def argweaver(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
+              _N=None, _m=None, _r=None, _ntimes=20, _maxtime=200e3, _compress=1,
+              _iters=None, _sample_step=None, _seed=None,
               argweaver_args=None, workdir=None, argweaver_bin=None, sequence_length=None,
-              names=None, log=None,
-              N=None, r=None, m=None, n=None):
+              names=None, log=None):
     """Sample posterior ARGs from genotypes via ARGweaver (an alternative to :func:`singer`).
 
     Runs ARGweaver's ``arg-sample`` MCMC and returns its post-burn-in samples as tskit tree
     sequences — the same shape as :func:`singer` (a single tree sequence, or a list), so the
     ensemble merge / :func:`tspaint.paint` are unchanged.
 
-    The options mirror ARGweaver's own ``arg-sample`` flags, passed **as-is**: ``Ne`` (``-N``,
-    **required** — see below), ``mutation_rate`` (``-m``), ``recombination_rate`` (``-r``),
-    ``ntimes`` (``--ntimes``), ``maxtime`` (``--maxtime``), ``compress`` (``-c``), ``iters``
-    (``-n`` MCMC iterations), ``sample_step`` (``--sample-step``), ``seed`` (``--randseed``).
-    ARGweaver's short names ``N`` / ``m`` / ``r`` / ``n`` are accepted as aliases (the ARGweaver-flag
-    name wins if both are given); ``argweaver_args`` is a passthrough for anything else.
+    **Posterior sampling is controlled by the same three unified knobs as** :func:`tspaint.io.singer`
+    — ``ts`` (how many tree sequences you get back), ``mcmc_step`` (MCMC iterations between saved
+    samples) and ``mcmc_burnin`` (burn-in iterations). The chain runs ``ts * mcmc_step + mcmc_burnin``
+    iterations; tspaint translates the knobs into ARGweaver's native ``-n`` (iterations) and
+    ``--sample-step`` (see Returns). Every native terminal flag is exposed underscore-prefixed: ``_N``
+    (``-N``, **required**), ``_m`` (``-m``), ``_r`` (``-r``), ``_ntimes`` (``--ntimes``), ``_maxtime``
+    (``--maxtime``), ``_compress`` (``-c``), ``_seed`` (``--randseed``), and the raw sampling flags
+    ``_iters`` (``-n``) / ``_sample_step`` (``--sample-step``) — normally inferred from the three knobs.
+    Passing a plain knob **and** its ``_``-counterpart raises (the plain one takes precedence).
 
     Parameters
     ----------
     source : tskit.TreeSequence or str
         Genotypes — a tree sequence carrying mutations, a **VCF Zarr** store, or a **VCF** file
         (normalised by :mod:`tspaint.io_genotypes`); written out as an ARGweaver ``.sites`` file.
-    Ne : float
-        Diploid effective population size (``arg-sample -N``). **Required** — ARGweaver needs ``-N``
-        and errors without it, and tspaint does not estimate one silently. Get one from
-        :func:`tspaint.io.estimate_ne` (``pi / 4mu``) and pass it. Omitting it raises ``ValueError``.
-    mutation_rate, recombination_rate : float
-        Per-base mutation (``-m``) and recombination (``-r``) rates.
-    ntimes, maxtime : int, float, optional
+    ts : int, optional
+        Number of posterior tree sequences returned (default 20) — a single :class:`tskit.TreeSequence`
+        when 1, else a list. See Returns.
+    mcmc_step : int, optional
+        MCMC iterations between saved samples (``--sample-step``; default 50).
+    mcmc_burnin : int, optional
+        Burn-in MCMC iterations discarded before the kept samples (default 200).
+    _N : float
+        Diploid effective population size (``-N``). **Required** — ARGweaver needs it; tspaint does not
+        estimate one silently. Get one from :func:`tspaint.io.estimate_ne`. Omitting it raises ``ValueError``.
+    _m, _r : float
+        Per-base mutation (``-m``) and recombination (``-r``) rates. Required.
+    _ntimes, _maxtime : int, float, optional
         Discretised time grid: ``--ntimes`` steps up to ``--maxtime`` generations (defaults 20, 2e5).
-    compress : int, optional
+    _compress : int, optional
         Block compression in base pairs (``-c``, default 1 = none). **ARGweaver is much slower than
-        SINGER, with cost roughly ``sequence_length / compress``**, so raise ``compress`` (e.g.
-        10–100) and/or keep regions short (≈≤10–50 kb) — ``-c 1`` on a Mb-scale region will not
-        finish in reasonable time. For large data prefer :func:`singer`.
-    iters : int, optional
-        Number of MCMC iterations (``-n``, default 100).
-    sample_step : int, optional
-        Save a sample every this many iterations (``--sample-step``); ARGweaver's default if ``None``.
-    burn_in : int, optional
-        Number of leading saved samples to discard (default 0).
-    thin : int, optional
-        Keep every ``thin``-th sample after burn-in (default 1 = all).
-    seed : int, optional
-        Random seed (``--randseed``).
+        SINGER, with cost roughly ``sequence_length / _compress``**, so raise it (e.g. 10–100) and/or
+        keep regions short (≈≤10–50 kb). For large data prefer :func:`singer`.
+    _iters, _sample_step, _seed : optional
+        ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the
+        plain knob they correspond to) and ``--randseed``.
     workdir : str, optional
         Working directory for the ``.sites`` and ``.smc.gz`` (default: a fresh tempdir).
     argweaver_bin : str, optional
@@ -390,9 +391,13 @@ def argweaver(source, *, Ne=None, mutation_rate=None, recombination_rate=None, n
     Returns
     -------
     tskit.TreeSequence or list of tskit.TreeSequence
-        Post-burn-in posterior samples (no sites/mutations — ARGweaver's ``.smc`` carries only
-        trees, which is all :func:`tspaint.paint` needs). Sample ids are stamped onto the sample
-        nodes (:func:`tspaint.ids.attach_sample_ids`) for a VCF / Zarr / ``Variants`` source.
+        Exactly ``ts`` posterior samples — a **single** :class:`tskit.TreeSequence` when ``ts == 1``,
+        else a **list** of ``ts`` (same ``ts`` / ``mcmc_step`` / ``mcmc_burnin`` semantics and count
+        formula as :func:`singer`). ``arg-sample`` runs ``ts*mcmc_step + mcmc_burnin`` iterations
+        saving one every ``mcmc_step``; tspaint discards the ``mcmc_burnin // mcmc_step`` burn-in ARGs
+        and keeps ``ts``. No sites/mutations (ARGweaver's ``.smc`` carries only trees, all
+        :func:`tspaint.paint` needs); sample ids are stamped onto the sample nodes
+        (:func:`tspaint.ids.attach_sample_ids`) for a VCF / Zarr / ``Variants`` source.
 
     Raises
     ------
@@ -403,14 +408,12 @@ def argweaver(source, *, Ne=None, mutation_rate=None, recombination_rate=None, n
     RuntimeError
         If ``arg-sample`` exits nonzero.
     """
-    Ne = N if N is not None else Ne
-    mutation_rate = m if m is not None else mutation_rate
-    recombination_rate = r if r is not None else recombination_rate
-    iters = n if n is not None else iters
-    if Ne is None:
+    iters, sample_step, discard, keep = _argweaver_sampling(ts, mcmc_step, mcmc_burnin,
+                                                            _iters, _sample_step)
+    if _N is None:
         raise ValueError(_NE_REQUIRED)
-    if mutation_rate is None or recombination_rate is None:
-        raise ValueError("argweaver needs mutation_rate (-m) and recombination_rate (-r)")
+    if _m is None or _r is None:
+        raise ValueError("argweaver needs _m (-m) and _r (-r)")
 
     source, src_names, in_ploidy = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_argweaver_")
@@ -423,12 +426,12 @@ def argweaver(source, *, Ne=None, mutation_rate=None, recombination_rate=None, n
         orig_names = f.readline().rstrip("\n").split("\t")[1:]
 
     out = os.path.join(tmp, "out")
-    _run_argweaver(sites, out, N=Ne, recombination_rate=recombination_rate,
-                   mutation_rate=mutation_rate, ntimes=ntimes, maxtime=maxtime, compress=compress,
-                   iters=iters, sample_step=sample_step, seed=seed, argweaver_args=argweaver_args,
-                   argweaver_bin=argweaver_bin, log=log)
+    _run_argweaver(sites, out, N=_N, recombination_rate=_r,
+                   mutation_rate=_m, ntimes=_ntimes, maxtime=_maxtime, compress=_compress,
+                   iters=iters, sample_step=sample_step, seed=_seed,
+                   argweaver_args=argweaver_args, argweaver_bin=argweaver_bin, log=log)
 
-    kept = _argweaver_indices(out)[burn_in:][:: max(1, int(thin))]
+    kept = _select(_argweaver_indices(out), discard, keep)
     samples = []
     for i in kept:
         arg = read_argweaver_smc(_smc_path(out, i), orig_names=orig_names)

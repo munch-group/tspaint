@@ -1,87 +1,79 @@
-"""io.singer options mirror SINGER's own CLI flags, so recommendations from the SINGER authors or
-other SINGER users apply directly (``-m``/``-r``/``-ratio``/``-n``/``-thin``/``-polar``/…), with the
-descriptive tspaint names kept as aliases and a ``singer_args`` passthrough for anything else."""
+"""io.singer / io.argweaver options: the unified ts / mcmc_step / mcmc_burnin sampling knobs, the
+underscore-prefixed native terminal flags (_Ne / _m / _r / _n_samples / ...), and the precedence
+guard (a plain knob and its ``_``-counterpart cannot both be set)."""
 import inspect
 import os
+import warnings
 
 import pytest
 
 import tspaint
 from tspaint import io
 from tspaint.io_singer import (_resolve_singer_rates, singer, singer_window, singer_windowed,
-                               DEFAULT_SINGER)
+                               DEFAULT_SINGER, _singer_sampling, _argweaver_sampling)
+from tspaint.io_argweaver import argweaver
 
 
-# --- rate resolution: -ratio (default 1) -> r = m*ratio; -m/-r aliases -----------------------
+# --- rate resolution: -ratio (default 1) -> r = m*ratio; _r / _recomb_map short-circuit ------
 
 def test_ratio_derives_recombination_rate():
-    assert _resolve_singer_rates(mutation_rate=1e-8, m=None, recombination_rate=None, r=None,
-                                 ratio=2.0, mut_map=None, recomb_map=None) == (1e-8, 2e-8)
+    assert _resolve_singer_rates(_m=1e-8, _r=None, _ratio=2.0, _mut_map=None, _recomb_map=None) == (1e-8, 2e-8)
 
 
-def test_default_ratio_one_gives_r_equals_m():
-    assert _resolve_singer_rates(mutation_rate=1.2e-8, m=None, recombination_rate=None, r=None,
-                                 ratio=1.0, mut_map=None, recomb_map=None) == (1.2e-8, 1.2e-8)
-
-
-def test_singer_flag_aliases_win_over_descriptive():
-    assert _resolve_singer_rates(mutation_rate=9e-9, m=1e-8, recombination_rate=9e-9, r=2e-8,
-                                 ratio=1.0, mut_map=None, recomb_map=None) == (1e-8, 2e-8)
+def test_default_ratio_gives_r_equals_m():
+    assert _resolve_singer_rates(_m=1.2e-8, _r=None, _ratio=None, _mut_map=None, _recomb_map=None) == (1.2e-8, 1.2e-8)
 
 
 def test_explicit_r_overrides_ratio():
-    assert _resolve_singer_rates(mutation_rate=1e-8, m=None, recombination_rate=5e-8, r=None,
-                                 ratio=99.0, mut_map=None, recomb_map=None)[1] == 5e-8
+    assert _resolve_singer_rates(_m=1e-8, _r=5e-8, _ratio=99.0, _mut_map=None, _recomb_map=None)[1] == 5e-8
 
 
 def test_recomb_map_skips_rate_derivation():
-    assert _resolve_singer_rates(mutation_rate=1e-8, m=None, recombination_rate=None, r=None,
-                                 ratio=3.0, mut_map=None, recomb_map="rmap.txt") == (1e-8, None)
+    assert _resolve_singer_rates(_m=1e-8, _r=None, _ratio=3.0, _mut_map=None, _recomb_map="rmap.txt") == (1e-8, None)
 
 
 def test_missing_rate_raises():
     with pytest.raises(ValueError):
-        _resolve_singer_rates(mutation_rate=None, m=None, recombination_rate=None, r=None,
-                              ratio=1.0, mut_map=None, recomb_map=None)
+        _resolve_singer_rates(_m=None, _r=None, _ratio=1.0, _mut_map=None, _recomb_map=None)
 
 
-# --- the SINGER flags are all exposed as kwargs (plus the descriptive aliases) ---------------
+# --- signatures: unified sampling knobs + underscore native flags -----------------------------
 
-def test_signatures_expose_singer_flags():
-    singer_flags = ("m", "r", "n", "ratio", "polar", "burnin", "recomb_map", "mut_map",
-                    "penalty", "hmm_epsilon", "psmc_bins", "fast", "singer_args")
-    aliases = ("mutation_rate", "recombination_rate", "n_samples", "burn_in")
+def test_signatures_expose_unified_and_native_flags():
     for fn in (singer, singer_windowed):
         params = inspect.signature(fn).parameters
-        for flag in singer_flags:
-            assert flag in params, (fn.__name__, flag)
-        for old in aliases:
-            assert old in params, (fn.__name__, old)
-        assert "labels" not in params and "soft_refs" not in params   # moved to estimate_ne
-        # -resume / -debug are stateful resume-from-.log ops, not standalone kwargs
-        assert "resume" not in params and "debug" not in params
-    # the per-window primitive exposes the run-time flags (no burnin: it returns raw indices)
+        for p in ("ts", "mcmc_step", "mcmc_burnin",                     # unified sampling
+                  "_Ne", "_m", "_r", "_ratio", "_n_samples", "_thin",   # native terminal flags
+                  "_polar", "_ploidy", "_seed", "_recomb_map", "_mut_map"):
+            assert p in params, (fn.__name__, p)
+        for gone in ("Ne", "mutation_rate", "n_samples", "thin", "burn_in", "nr_samples",
+                     "mcmc_sample_spacing"):                            # old names removed
+            assert gone not in params, (fn.__name__, gone)
+    for fn in (argweaver,):
+        params = inspect.signature(fn).parameters
+        for p in ("ts", "mcmc_step", "mcmc_burnin", "_N", "_m", "_r", "_iters", "_sample_step",
+                  "_ntimes", "_maxtime", "_compress", "_seed"):
+            assert p in params, ("argweaver", p)
+    # the per-window primitive is native-only (no ts/mcmc_*; it returns raw indices)
     wp = inspect.signature(singer_window).parameters
-    for flag in ("m", "r", "n", "ratio", "polar", "recomb_map", "mut_map", "penalty",
-                 "hmm_epsilon", "psmc_bins", "fast", "singer_args"):
-        assert flag in wp, flag
+    for p in ("_Ne", "_m", "_r", "_ratio", "_n_samples", "_thin", "_polar", "_ploidy", "_seed"):
+        assert p in wp, p
+    assert "ts" not in wp and "mcmc_step" not in wp
 
 
-# --- Ne is required (no silent estimation); estimate_ne is the opt-in helper ------------------
+# --- Ne required ------------------------------------------------------------------------------
 
-def test_singer_requires_ne_pointing_at_estimate_ne():
+def test_singer_requires_ne():
     ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
-    for call in (lambda: io.singer(ts, m=1e-8),
-                 lambda: io.singer_windowed(ts, window_size=1e4, m=1e-8)):
-        with pytest.raises(ValueError, match="requires Ne"):     # no hidden pi/4mu estimation
+    for call in (lambda: io.singer(ts, _m=1e-8),
+                 lambda: io.singer_windowed(ts, window_size=1e4, _m=1e-8)):
+        with pytest.raises(ValueError, match="requires Ne"):
             call()
-    # the documented opt-in path: estimate Ne yourself, then pass it
     assert callable(io.estimate_ne)
 
 
 def test_run_singer_passes_every_flag_as_is(monkeypatch, tmp_path):
-    """_run_singer builds the SINGER command from every flag verbatim; singer_args is the escape
-    hatch (here a ``-resume`` passthrough) for anything without a dedicated kwarg."""
+    """_run_singer (the low-level engine, unchanged) builds the SINGER command from every flag."""
     import tspaint.io_singer as ios
     captured = {}
 
@@ -94,38 +86,68 @@ def test_run_singer_passes_every_flag_as_is(monkeypatch, tmp_path):
 
     monkeypatch.setattr(ios.subprocess, "run", fake_run)
     monkeypatch.setattr(ios, "_singer_indices", lambda out: [])
-    binp = tmp_path / "singer"; binp.write_text("")            # _run_singer checks the path exists
+    binp = tmp_path / "singer"; binp.write_text("")
     ios._run_singer("pre", "out", start=0, end=100, Ne=1000, mutation_rate=1e-8,
                     recombination_rate=2e-8, n_samples=5, thin=3, ploidy=2, seed=7, polar=0.9,
                     penalty=0.02, hmm_epsilon=0.1, psmc_bins=0.05, fast=True,
                     singer_args=["-resume"], singer_bin=str(binp))
     cmd = captured["cmd"]
     for flag in ("-Ne", "-m", "-r", "-polar", "-n", "-thin", "-ploidy", "-seed", "-penalty",
-                 "-hmm_epsilon", "-psmc_bins", "-fast", "-resume"):      # -resume via singer_args
+                 "-hmm_epsilon", "-psmc_bins", "-fast", "-resume"):
         assert flag in cmd, flag
 
 
-# --- CLI mirrors SINGER's flags: short single-dash, long two-dash; old names kept ------------
-
-def test_cli_singer_help_uses_singer_flag_names():
+def test_cli_singer_help_uses_unified_and_native_flags():
     from click.testing import CliRunner
     from tspaint.cli import cli
     out = CliRunner().invoke(cli, ["trees", "singer", "--help"]).output
-    for tok in ("-m", "--Ne", "--ratio", "-r", "-n", "--thin", "--burnin", "--polar",
+    for tok in ("--ts", "--mcmc-step", "--mcmc-burnin", "-m", "--Ne", "--ratio", "-r", "--polar",
                 "--recomb_map", "--mut_map", "--fast", "--singer-arg"):
         assert tok in out, tok
-    for old in ("--mut-rate", "--recomb-rate", "--burn-in"):     # aliases retained
-        assert old in out, old
+    for gone in ("--burnin", "--burn-in"):                             # old sampling flags removed
+        assert gone not in out, gone
 
 
-# --- live SINGER run driven entirely by SINGER-flag names ------------------------------------
+# --- the sampling resolvers: count formula + the plain/underscore precedence guard ------------
+
+def test_singer_sampling_counts():
+    # (n, thin, discard, keep) — SINGER writes n samples thin apart, drops discard, keeps keep.
+    assert _singer_sampling(None, None, None, None, None) == (24, 50, 4, 20)       # defaults
+    n, thin, discard, keep = _singer_sampling(20, 2, 200, None, None)              # spec example
+    assert (n, thin, discard, keep) == (120, 2, 100, 20) and n * thin == 20 * 2 + 200
+    assert _singer_sampling(4, 2, 4, None, None) == (6, 2, 2, 4)                   # ts=4
+    assert _singer_sampling(None, None, None, 10, None)[:2] == (10, 50)            # _n_samples override
+
+
+def test_argweaver_sampling_counts():
+    # (iters, sample_step, discard, keep)
+    iters, step, discard, keep = _argweaver_sampling(20, 2, 200, None, None)
+    assert (iters, step, discard, keep) == (240, 2, 100, 20) and iters == 20 * 2 + 200
+    assert _argweaver_sampling(None, None, None, None, None) == (1200, 50, 4, 20)  # defaults
+
+
+def test_plain_and_underscore_conflict_raises():
+    with pytest.raises(ValueError, match="precedence"):
+        _singer_sampling(20, None, None, 10, None)          # ts + _n_samples
+    with pytest.raises(ValueError, match="precedence"):
+        _singer_sampling(None, 5, None, None, 3)            # mcmc_step + _thin
+    with pytest.raises(ValueError, match="precedence"):
+        _argweaver_sampling(20, None, None, 100, None)      # ts + _iters
+    # and end-to-end through the public function
+    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    with pytest.raises(ValueError, match="precedence"):
+        io.singer(ts, ts=20, _n_samples=10, _Ne=1000, _m=1e-8)
+
+
+# --- live SINGER runs: exact count via ts, single tree sequence when ts == 1 ------------------
 
 @pytest.mark.slow
 @pytest.mark.skipif(not os.path.exists(DEFAULT_SINGER), reason="SINGER binary not available")
-def test_singer_runs_with_singer_flag_aliases():
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=1e5,
-                          recombination_rate=1e-8, random_seed=7, Ne=1000, T_admix=30,
-                          T_split=5000, f_A=0.5), rate=1.2e-8, random_seed=7)
-    ens = io.singer(ts, m=1.2e-8, ratio=1.0, Ne=1000, n=6, thin=2, burnin=2, polar=0.5, seed=42)
-    ens = ens if isinstance(ens, list) else [ens]
-    assert 1 <= len(ens) <= 4 and ens[0].num_samples == ts.num_samples
+def test_singer_ts_count_live():
+    ts_in = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=4e4,
+                             recombination_rate=1e-8, random_seed=7, Ne=1000, T_split=5000),
+                             rate=1.2e-8, random_seed=7)
+    single = io.singer(ts_in, _Ne=1000, _m=1.2e-8, ts=1, _seed=7)
+    assert single.num_samples == ts_in.num_samples                    # ts=1 -> a single tree sequence
+    ens = io.singer(ts_in, _Ne=1000, _m=1.2e-8, ts=3, mcmc_step=2, mcmc_burnin=4, _seed=7)
+    assert isinstance(ens, list) and len(ens) == 3
