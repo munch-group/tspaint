@@ -1672,7 +1672,7 @@ flagged foreign tracts: []</code></pre>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co">#         tract_lengths.append(rr - l)</span></span>
 <span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plt.hist(tract_lengths, bins=100);</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="98d74be0" class="cell">
+<div id="98d74be0" class="cell" data-execution_count="53">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>mask <span class="op">=</span> qc.mask()</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>painting <span class="op">=</span> tspaint.paint(ts_tsinfer, labels, queries<span class="op">=</span>queries <span class="op">+</span> <span class="bu">list</span>(mask), mask<span class="op">=</span>mask, </span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                         smooth<span class="op">=</span><span class="va">True</span>)</span>
@@ -1681,6 +1681,13 @@ flagged foreign tracts: []</code></pre>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>        pid[<span class="st">"B"</span>]: <span class="dv">1</span>, pid[<span class="st">"B_prox"</span>]: <span class="dv">1</span>}                 <span class="co"># both A-side pops -&gt; 0, both B-side -&gt; 1</span></span>
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>truth_plot <span class="op">=</span> map_truth({s: truth[s] <span class="cf">for</span> s <span class="kw">in</span> painting.samples}, side)</span>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>painting.plot(truth<span class="op">=</span>truth_states, refs<span class="op">=</span><span class="va">True</span>, mark_masked<span class="op">=</span><span class="va">True</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="showcase_files/figure-html/cell-17-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="showcase_files/figure-html/cell-17-output-1.svg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
 </div>
 <p>Paint sequences using <code>tsinfer</code> tree sequence:</p>
 <div id="c19657e7" class="cell" data-execution_count="41">
@@ -1695,7 +1702,7 @@ flagged foreign tracts: []</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="showcase_files/figure-html/cell-19-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="showcase_files/figure-html/cell-19-output-1.svg" class="img-fluid figure-img"></a></p>
+<p><a href="showcase_files/figure-html/cell-19-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="showcase_files/figure-html/cell-19-output-1.svg" class="img-fluid figure-img"></a></p>
 </figure>
 </div>
 </div>
@@ -1780,7 +1787,7 @@ flagged foreign tracts: []</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><a href="showcase_files/figure-html/cell-22-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="showcase_files/figure-html/cell-22-output-1.svg" class="img-fluid figure-img"></a></p>
+<p><a href="showcase_files/figure-html/cell-22-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="showcase_files/figure-html/cell-22-output-1.svg" class="img-fluid figure-img"></a></p>
 </figure>
 </div>
 </div>
