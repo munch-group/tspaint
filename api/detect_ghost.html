@@ -68,8 +68,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../api/detect_archaic.html" rel="next">
-<link href="../api/foreign_tracts.html" rel="prev">
+<link href="../api/GhostResult.html" rel="next">
+<link href="../api/introgression.ForeignnessSegment.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
@@ -160,7 +160,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../api/reference_qc.html">Reference QC, introgression &amp; archaic detection</a></li><li class="breadcrumb-item"><a href="../api/detect_ghost.html">detect_ghost</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../api/reference_qc.html">Reference QC &amp; ghost / archaic introgression</a></li><li class="breadcrumb-item"><a href="../api/detect_ghost.html">detect_ghost</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -197,6 +197,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/Painting.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Painting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/WindowedPainting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WindowedPainting</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -252,12 +258,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">output.posterior_at</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/SoftTrack.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SoftTrack</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/track.SegmentTrack.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">track.SegmentTrack</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/track.compare_tracks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">track.compare_tracks</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference QC, introgression &amp; archaic detection</span></a>
+ <span class="menu-text">Reference QC &amp; ghost / archaic introgression</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -271,20 +295,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/introgression.ReferenceQC.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">introgression.ReferenceQC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/foreign_tracts.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">foreign_tracts</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/detect_ghost.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">detect_ghost</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/detect_archaic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">detect_archaic</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -295,26 +313,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/introgression.ReferenceQC.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">introgression.ReferenceQC</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/introgression.GhostResult.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">introgression.GhostResult</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="../api/introgression.foreignness_track.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">introgression.foreignness_track</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/archaic.ArchaicResult.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">archaic.ArchaicResult</span></a>
+  <a href="../api/introgression.ForeignnessSegment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">introgression.ForeignnessSegment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/detect_ghost.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">detect_ghost</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/GhostResult.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GhostResult</span></a>
   </div>
 </li>
       </ul>
@@ -378,6 +396,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/validate.accuracy_by_segment_size.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.accuracy_by_segment_size</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/validate.global_proportion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.global_proportion</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/validate.true_proportion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.true_proportion</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/validate.map_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">validate.map_truth</span></a>
   </div>
@@ -428,12 +464,53 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Input front ends</span></a>
+ <span class="menu-text">VCF benchmark harness</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.run.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.run</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.export_vcf.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.export_vcf</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.score.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.score</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.setup</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.tool_status.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.tool_status</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Input front ends</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/io.tsinfer.html" class="sidebar-item-text sidebar-link">
@@ -450,6 +527,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/io.singer.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io.singer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.singer_window.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.singer_window</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.singer_windowed.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.singer_windowed</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.argweaver.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.argweaver</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.estimate_ne.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.estimate_ne</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -472,6 +573,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io_genotypes.source_kind</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io_genotypes.Variants.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io_genotypes.Variants</span></a>
   </div>
@@ -480,13 +587,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
  <span class="menu-text">Horizontal BP/EP smoother</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/bp.bp_paint.html" class="sidebar-item-text sidebar-link">
@@ -515,13 +622,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
  <span class="menu-text">Admixture dating (rate through time)</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/fit_rate_through_time.html" class="sidebar-item-text sidebar-link">
@@ -532,6 +639,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/RateThroughTime.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RateThroughTime</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/EnsembleRateThroughTime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">EnsembleRateThroughTime</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.split_time.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.split_time</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -594,17 +713,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">dating.composite_transition</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.accumulate_time_binned.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.accumulate_time_binned</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.accumulate_time_binned_tv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.accumulate_time_binned_tv</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.cell_centers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.cell_centers</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
  <span class="menu-text">Simulation (known truth)</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/simulate_admixture.html" class="sidebar-item-text sidebar-link">
@@ -631,6 +768,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_impure_refs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_impure_refs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_source_gene_flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/sim.simulate_admixture_with_ghost.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.simulate_admixture_with_ghost</span></a>
   </div>
@@ -645,13 +800,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
  <span class="menu-text">Generators &amp; model</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/make_generator_2state.html" class="sidebar-item-text sidebar-link">
@@ -684,6 +839,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/model.MaskedEmissions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.MaskedEmissions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/model.validate_generator.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">model.validate_generator</span></a>
   </div>
@@ -692,13 +853,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
  <span class="menu-text">Experiment drivers</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/experiments.admixture_experiment.html" class="sidebar-item-text sidebar-link">
@@ -749,6 +910,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/experiments.archaic_detection_experiment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">experiments.archaic_detection_experiment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/experiments.flicker_vs_true_boundaries.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">experiments.flicker_vs_true_boundaries</span></a>
   </div>
@@ -757,13 +924,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
  <span class="menu-text">ARG-posterior ensemble merge</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/ensemble.merge_posterior_tables.html" class="sidebar-item-text sidebar-link">
@@ -780,13 +947,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
  <span class="menu-text">Lower-level machinery</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/pruning.prune_tree.html" class="sidebar-item-text sidebar-link">
@@ -801,8 +968,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/pruning.PruneResult.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pruning.PruneResult</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/accumulate.accumulate_sufficient_statistics.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">accumulate.accumulate_sufficient_statistics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/accumulate.SuffStats.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">accumulate.SuffStats</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -813,8 +992,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.branch_kernel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.branch_kernel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.stats_from_kernel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.stats_from_kernel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.vanloan_integral.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.vanloan_integral</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/em.build_emissions.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">em.build_emissions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/model.emissions_for.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.emissions_for</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -875,12 +1078,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters">Parameters</a></li>
   <li><a href="#returns" id="toc-returns" class="nav-link" data-scroll-target="#returns">Returns</a></li>
+  <li><a href="#raises" id="toc-raises" class="nav-link" data-scroll-target="#raises">Raises</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../api/reference_qc.html">Reference QC, introgression &amp; archaic detection</a></li><li class="breadcrumb-item"><a href="../api/detect_ghost.html">detect_ghost</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../api/reference_qc.html">Reference QC &amp; ghost / archaic introgression</a></li><li class="breadcrumb-item"><a href="../api/detect_ghost.html">detect_ghost</a></li></ol></nav></header>
 
 
 
@@ -890,64 +1094,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tspaint.detect_ghost(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    ts,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    labels,</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    samples,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    samples<span class="op">=</span><span class="va">None</span>,</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    fit_thresh<span class="op">=</span><span class="fl">0.6</span>,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    depth_thresh<span class="op">=</span><span class="fl">0.9</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    K<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    Q0<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span><span class="dv">8</span>,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    soft_refs<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Ghost-source detection: tracts from a population <strong>not in the panel</strong> (Plan A Workflow 3).</p>
-<p>A ghost / archaic tract fits <strong>no</strong> panel source (low <code>fit</code>) <strong>and</strong> sits on an anomalously <strong>deep</strong> branch relative to every labelled reference (high <code>depth</code>). That second criterion is what separates a genuine unsampled-source tract from a merely uninformative (50/50, shallow) one. Detection, not attribution — it flags that a tract descends from something outside the panel, not what (CLAUDE.md §9).</p>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    depth<span class="op">=</span><span class="st">'time'</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    tol<span class="op">=</span><span class="fl">0.001</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    init_archaic_burden<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    init_switch<span class="op">=</span><span class="fl">0.02</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    n_jobs<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    progress<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Reference-free ghost / archaic introgression detection via a depth-emission HMM.</p>
+<p>The dedicated ghost-search tool (Task 2; CLAUDE.md §9). A 2-state (modern / ghost) HMM along the genome on nearest-modern-reference coalescence depth — the modern emission anchored by the panel, the <strong>ghost</strong> emission learned and constrained deeper. Returns a <strong>calibrated</strong> per-locus <code>P(ghost)</code> with no ghost/archaic reference required. The signal is depth, so it targets <strong>deep (archaic-like)</strong> ghosts. (Renamed from <code>detect_archaic</code>, which remains a deprecated alias.)</p>
 <section id="parameters" class="level2 doc-section doc-section-parameters">
 <h2 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h2>
 <dl>
-<dt><code><span class="parameter-name"><strong>ts</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tskit</code>.<code>TreeSequence</code></span></code></dt>
+<dt><code><span class="parameter-name"><strong>ts</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tskit</code>.<code>TreeSequence</code> or <a href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<code>tskit</code>.<code>TreeSequence</code>]</span></code></dt>
 <dd>
-<p>Tree sequence to analyse.</p>
+<p>One tree sequence, or <strong>an ensemble</strong> (e.g.&nbsp;SINGER posterior samples) — the HMM is fit once pooled across all members, decoded per member, and the per-locus <code>P(ghost)</code> <strong>averaged</strong> across members (marginalising ARG uncertainty for accuracy; CLAUDE.md §7.4). All members must share the same sample ids.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>labels</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span></code></dt>
+<dt><code><span class="parameter-name"><strong>labels</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>] or <code>iterable</code>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span></code></dt>
 <dd>
-<p>Reference sample id -&gt; ancestry-state label.</p>
+<p>The modern reference sample ids (a <code>{ref: state}</code> painting label dict is accepted — only the ids are used; every reference is “modern”). They anchor the modern depth distribution.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>samples</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>iterable</code>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span></code></dt>
+<dt><code><span class="parameter-name"><strong>samples</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>iterable</code>[<a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Samples to scan (typically the queries).</p>
+<p>Samples to scan; defaults to every non-reference sample.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>fit_thresh</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">0.6</span></code></dt>
+<dt><code><span class="parameter-name"><strong>depth</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation">('time', 'rank')</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">"time"</span></code></dt>
 <dd>
-<p>Flag where <code>fit &lt; fit_thresh</code> (fits no panel source). Default <code>0.6</code>.</p>
+<p>The depth observation: <code>"time"</code> (default) uses <code>log</code> nearest-reference coalescence time; <code>"rank"</code> uses its genome-wide span-weighted <strong>rank</strong> — a monotonic transform, hence <strong>calibration-invariant</strong> (robust to branch-length miscalibration, e.g.&nbsp;on a Relate ARG).</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>depth_thresh</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">0.9</span></code></dt>
+<dt><code><span class="parameter-name"><strong>max_iter</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation">(<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/functions.html#float">float</a>)</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">50</span></code></dt>
 <dd>
-<p>Flag where the rank-normalised nearest-reference <code>depth &gt;= depth_thresh</code> (a deep outlier). Default <code>0.9</code> (the deepest 10%) — measured on an archaic-like ghost sim: recall 0.58 at precision 1.0 and a ~1% false-positive burden on the no-ghost control; lower it to <code>0.8</code> for recall ~1.0 at precision ~0.86 (same control floor). The right value scales with how prevalent the ghost ancestry is — tune against your own no-ghost control. The genome-wide ghost <strong>burden</strong> separates ghost from no-ghost ~10x even when per-tract recall is partial.</p>
+<p>Baum–Welch iteration cap and log-likelihood tolerance.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>K</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">2</span></code></dt>
+<dt><code><span class="parameter-name"><strong>tol</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation">(<a href="https://docs.python.org/3/library/functions.html#int">int</a>, <a href="https://docs.python.org/3/library/functions.html#float">float</a>)</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">50</span></code></dt>
 <dd>
-<p>Model / EM controls (see :func:<code>tspaint.fit</code>).</p>
+<p>Baum–Welch iteration cap and log-likelihood tolerance.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>Q0</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">2</span></code></dt>
+<dt><code><span class="parameter-name"><strong>delta</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Model / EM controls (see :func:<code>tspaint.fit</code>).</p>
+<p>Minimum gap <code>μ_ghost - μ_modern</code> enforced above the panel’s deepest coalescence (in the <code>depth</code> units). Defaults to <code>σ_modern</code>.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>max_iter</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">2</span></code></dt>
+<dt><code><span class="parameter-name"><strong>init_archaic_burden</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">0.1</span></code></dt>
 <dd>
-<p>Model / EM controls (see :func:<code>tspaint.fit</code>).</p>
+<p>Initial ghost fraction and per-breakpoint switch probability.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>soft_refs</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">2</span></code></dt>
+<dt><code><span class="parameter-name"><strong>init_switch</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">0.1</span></code></dt>
 <dd>
-<p>Model / EM controls (see :func:<code>tspaint.fit</code>).</p>
+<p>Initial ghost fraction and per-breakpoint switch probability.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>n_jobs</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>Worker processes for the nearest-modern-ref coalescence pass (split by genome chunk, one shared pool across ensemble members; exactly equal to serial). Default: all CPUs / the SLURM allocation (:func:<code>tspaint.parallel.resolve_cores</code>); pass <code>1</code> for serial.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>progress</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">False</span></code></dt>
+<dd>
+<p>Show a progress bar for the depth pass. Default <code>False</code>.</p>
 </dd>
 </dl>
 </section>
 <section id="returns" class="level2 doc-section doc-section-returns">
 <h2 class="doc-section doc-section-returns anchored" data-anchor-id="returns">Returns</h2>
 <dl>
-<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="../api/introgression.GhostResult.html#tspaint.introgression.GhostResult">GhostResult</a></span></code></dt>
+<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="../api/GhostResult.html#tspaint.GhostResult">GhostResult</a></span></code></dt>
 <dd>
-<p><code>.burden</code> (per-sample flagged fraction) and <code>.tracts(sample)</code> (the merged ghost <code>(left, right)</code> tracts) — the same accessors as :class:<code>tspaint.archaic.ArchaicResult</code>.</p>
+<p>Per-sample <code>P(ghost)</code> posteriors / tracts / burden plus the learned HMM parameters. For an ensemble the posteriors are the per-member mean.</p>
+</dd>
+</dl>
+</section>
+<section id="raises" class="level2 doc-section doc-section-raises">
+<h2 class="doc-section doc-section-raises anchored" data-anchor-id="raises">Raises</h2>
+<dl>
+<dt><code><span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></span></code></dt>
+<dd>
+<p>If the modern anchor cannot be estimated (no informative reference depths), <code>depth</code> is invalid, or the ensemble is empty.</p>
 </dd>
 </dl>
 
@@ -1358,13 +1581,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../api/foreign_tracts.html" class="pagination-link" aria-label="foreign_tracts">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">foreign_tracts</span>
+      <a href="../api/introgression.ForeignnessSegment.html" class="pagination-link" aria-label="introgression.ForeignnessSegment">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">introgression.ForeignnessSegment</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../api/detect_archaic.html" class="pagination-link" aria-label="detect_archaic">
-        <span class="nav-page-text">detect_archaic</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../api/GhostResult.html" class="pagination-link" aria-label="GhostResult">
+        <span class="nav-page-text">GhostResult</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

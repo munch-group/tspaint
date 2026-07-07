@@ -61,7 +61,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -78,9 +78,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
-<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
-<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -108,10 +105,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
-<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
-
-<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
-<script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
 
 <link rel="stylesheet" href="../api/_styles-quartodoc.css">
@@ -203,7 +196,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<div id="c11a4e9a" class="cell" data-execution_count="1">
+<div id="c11a4e9a" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pickle</span>
@@ -212,57 +205,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> vscodenb <span class="im">import</span> set_vscode_theme</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>set_vscode_theme()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-
-        <style>
-        .cell-output-ipywidget-background {
-            background-color: transparent !important;
-        }
-       .jp-OutputArea-output {
-           background-color: transparent;
-        }  
-        /*
-        :root {
-            --jp-widgets-color: var(--vscode-editor-foreground);
-            --jp-widgets-font-size: var(--vscode-editor-font-size);
-        }  
-        */
-        /* tqdm styling: */
-        .widget-label,
-        .widget-html,
-        .widget-button,
-        .widget-dropdown,
-        .widget-text,
-        .widget-textarea {
-            font-size: 10px !important;      /* Font size */
-        }
-        div.widget-html-content > progress { /* Outer container */
-            height: 10px !important;
-        
-        }
-        div.jp-OutputArea-output td.output_html { /* tqdm HTML output area */
-            height: 5px !important;
-        }
-        div.progress { /* Jupyter Notebook (classic) */
-            height: 5px !important;
-            min-height: 5px !important;
-            margin-top: 12px !important;    
-        }
-        div.progress-bar { /* inner bar */
-            height: 5px !important;
-            min-height: 5px !important;
-            line-height: 5px !important;
-            color: 'white' !important;
-            padding-bottom: 0px !important;    
-        }
-        table {
-            font-variant-numeric: tabular-nums; 
-        }                     
-        </style>                          
-        
 </div>
-</div>
-<div id="2f0895ea" class="cell" data-execution_count="2">
+<div id="2f0895ea" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> <span class="op">!</span> head <span class="op">-</span>n <span class="dv">1000</span> ..<span class="op">/</span>..<span class="op">/</span>data<span class="op">/</span>chr20.phased.females.vcf.gz <span class="op">|</span> grep CHROM</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>ids_in_vcf <span class="op">=</span> pd.Series(<span class="bu">sorted</span>(s[<span class="dv">0</span>].split()[<span class="dv">9</span>:]))</span>
@@ -280,1128 +224,191 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>sample_ids <span class="op">=</span> admix_ids <span class="op">+</span> ref2_ids <span class="op">+</span> ref1_ids</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(sample_ids), <span class="bu">len</span>(ref1_ids), <span class="bu">len</span>(ref2_ids), <span class="bu">len</span>(admix_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="2">
-<pre><code>(23, 8, 11, 4)</code></pre>
 </div>
+<div id="66227732" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(ref2_ids <span class="op">+</span> ref1_ids <span class="op">+</span> admix_ids <span class="op">+</span> ref2_ids <span class="op">+</span> admix_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="66227732" class="cell" data-execution_count="3">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">len</span>(ref2_ids <span class="op">+</span> ref1_ids <span class="op">+</span> admix_ids <span class="op">+</span> ref2_ids <span class="op">+</span> admix_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="3">
-<pre><code>38</code></pre>
+<div id="9fa16e6a" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> {<span class="op">**</span>{n: <span class="dv">0</span> <span class="cf">for</span> n <span class="kw">in</span> ref1_ids}, <span class="op">**</span>{n: <span class="dv">1</span> <span class="cf">for</span> n <span class="kw">in</span> ref2_ids}}</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(labels) <span class="op">==</span> <span class="bu">len</span>(ref1_ids) <span class="op">+</span> <span class="bu">len</span>(ref2_ids)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>region <span class="op">=</span> tspaint.io.subset_data(<span class="st">"../../data/chr20.phased.females"</span>, start<span class="op">=</span><span class="dv">0</span>, end<span class="op">=</span><span class="dv">2_000_000</span>, samples<span class="op">=</span>sample_ids)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>mutation_rate <span class="op">=</span> <span class="fl">1.5e-8</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>recombination_rate <span class="op">=</span> <span class="fl">1e-8</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>Ne  <span class="op">=</span> tspaint.io.estimate_ne(region, mutation_rate<span class="op">=</span>mutation_rate)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>Ne</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div id="51a9fffc" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>tsinfer_ts <span class="op">=</span> tspaint.io.tsinfer(region, </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                date<span class="op">=</span><span class="va">True</span>, mutation_rate<span class="op">=</span><span class="fl">1.2e-8</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                )</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>tsinfer_ts.dump(<span class="st">"ts_tsinfer.trees"</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tsinfer_ts.num_trees, <span class="st">'trees'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="9fa16e6a" class="cell" data-execution_count="4">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> {<span class="op">**</span>{n: <span class="dv">0</span> <span class="cf">for</span> n <span class="kw">in</span> ref1_ids}, <span class="op">**</span>{n: <span class="dv">1</span> <span class="cf">for</span> n <span class="kw">in</span> ref2_ids}}</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(labels) <span class="op">==</span> <span class="bu">len</span>(ref1_ids) <span class="op">+</span> <span class="bu">len</span>(ref2_ids)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>region <span class="op">=</span> tspaint.io.subset_data(<span class="st">"../../data/chr20.phased.females"</span>, start<span class="op">=</span><span class="dv">0</span>, end<span class="op">=</span><span class="dv">2_000_000</span>, samples<span class="op">=</span>sample_ids)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>mutation_rate <span class="op">=</span> <span class="fl">1.5e-8</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>recombination_rate <span class="op">=</span> <span class="fl">1e-8</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>Ne  <span class="op">=</span> tspaint.io.estimate_ne(region, mutation_rate<span class="op">=</span>mutation_rate)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>Ne</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="4">
-<pre><code>57930.94532279315</code></pre>
+<div id="22773830" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(tsinfer_ts, labels, </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                        <span class="co">#   anchors=set(ref1_ids), </span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                          n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>soft_refs <span class="op">=</span> qc.soft_refs()</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>l <span class="op">=</span> qc.summary()</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({k: [d[k] <span class="cf">for</span> d <span class="kw">in</span> l] <span class="cf">for</span> k <span class="kw">in</span> l[<span class="dv">0</span>]})</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'soft_ref'</span>] <span class="op">=</span> df[<span class="st">'ref'</span>].isin(soft_refs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div id="89ac0107" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df.sort_values([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>]).set_index([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>])</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#df.sort_values('credibility')</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#df.set_index(['individual', 'haplotype'])#.sort_values('is_anchor')</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="51a9fffc" class="cell" data-execution_count="5">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>tsinfer_ts <span class="op">=</span> tspaint.io.tsinfer(region, </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                                date<span class="op">=</span><span class="va">True</span>, mutation_rate<span class="op">=</span><span class="fl">1.2e-8</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                                )</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>tsinfer_ts.dump(<span class="st">"ts_tsinfer.trees"</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tsinfer_ts.num_trees, <span class="st">'trees'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>10972 trees</code></pre>
-</div>
-</div>
-<div id="22773830" class="cell" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(tsinfer_ts, labels, </span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                        <span class="co">#   anchors=set(ref1_ids), </span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                          n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>soft_refs <span class="op">=</span> qc.soft_refs()</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>l <span class="op">=</span> qc.summary()</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({k: [d[k] <span class="cf">for</span> d <span class="kw">in</span> l] <span class="cf">for</span> k <span class="kw">in</span> l[<span class="dv">0</span>]})</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'soft_ref'</span>] <span class="op">=</span> df[<span class="st">'ref'</span>].isin(soft_refs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"070dc09cc60c4045906c31bfe71885fc","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"f5c74808a1d34ddca775faa89b7960b0","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"283c9d0e8ee54926aac7c8caa324567b","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"daea2a33820e4bcdab977e22b9a5b076","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-</div>
-<div id="89ac0107" class="cell" data-execution_count="7">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>df.sort_values([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>]).set_index([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>])</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#df.sort_values('credibility')</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#df.set_index(['individual', 'haplotype'])#.sort_values('is_anchor')</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="7">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">ref</th>
-<th data-quarto-table-cell-role="th">label</th>
-<th data-quarto-table-cell-role="th">credibility</th>
-<th data-quarto-table-cell-role="th">is_anchor</th>
-<th data-quarto-table-cell-role="th">foreign_fraction</th>
-<th data-quarto-table-cell-role="th">soft_ref</th>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">individual</th>
-<th data-quarto-table-cell-role="th">haplotype</th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th"></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0270</th>
-<th data-quarto-table-cell-role="th">PD_0270_1</th>
-<td>8</td>
-<td>1</td>
-<td>0.533680</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0270_2</th>
-<td>9</td>
-<td>1</td>
-<td>0.542716</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0271</th>
-<th data-quarto-table-cell-role="th">PD_0271_1</th>
-<td>10</td>
-<td>1</td>
-<td>0.623179</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0271_2</th>
-<td>11</td>
-<td>1</td>
-<td>0.584411</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0272</th>
-<th data-quarto-table-cell-role="th">PD_0272_1</th>
-<td>12</td>
-<td>1</td>
-<td>0.647707</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0272_2</th>
-<td>13</td>
-<td>1</td>
-<td>0.569580</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0721</th>
-<th data-quarto-table-cell-role="th">PD_0721_1</th>
-<td>30</td>
-<td>0</td>
-<td>0.495314</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0721_2</th>
-<td>31</td>
-<td>0</td>
-<td>0.496779</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0724</th>
-<th data-quarto-table-cell-role="th">PD_0724_1</th>
-<td>32</td>
-<td>0</td>
-<td>0.598061</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0724_2</th>
-<td>33</td>
-<td>0</td>
-<td>0.643815</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0726</th>
-<th data-quarto-table-cell-role="th">PD_0726_1</th>
-<td>34</td>
-<td>0</td>
-<td>0.502525</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0726_2</th>
-<td>35</td>
-<td>0</td>
-<td>0.498626</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0730</th>
-<th data-quarto-table-cell-role="th">PD_0730_1</th>
-<td>36</td>
-<td>0</td>
-<td>0.511525</td>
-<td>False</td>
-<td>0.000011</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0730_2</th>
-<td>37</td>
-<td>0</td>
-<td>0.505865</td>
-<td>False</td>
-<td>0.000004</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0736</th>
-<th data-quarto-table-cell-role="th">PD_0736_1</th>
-<td>38</td>
-<td>0</td>
-<td>0.651470</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0736_2</th>
-<td>39</td>
-<td>0</td>
-<td>0.639891</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0737</th>
-<th data-quarto-table-cell-role="th">PD_0737_1</th>
-<td>40</td>
-<td>0</td>
-<td>0.497218</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0737_2</th>
-<td>41</td>
-<td>0</td>
-<td>0.498255</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0738</th>
-<th data-quarto-table-cell-role="th">PD_0738_1</th>
-<td>42</td>
-<td>0</td>
-<td>0.613298</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0738_2</th>
-<td>43</td>
-<td>0</td>
-<td>0.550852</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0744</th>
-<th data-quarto-table-cell-role="th">PD_0744_1</th>
-<td>44</td>
-<td>0</td>
-<td>0.601501</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0744_2</th>
-<td>45</td>
-<td>0</td>
-<td>0.613044</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0745</th>
-<th data-quarto-table-cell-role="th">PD_0745_1</th>
-<td>14</td>
-<td>1</td>
-<td>0.543707</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0745_2</th>
-<td>15</td>
-<td>1</td>
-<td>0.536619</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0754</th>
-<th data-quarto-table-cell-role="th">PD_0754_1</th>
-<td>16</td>
-<td>1</td>
-<td>0.517615</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0754_2</th>
-<td>17</td>
-<td>1</td>
-<td>0.731155</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0765</th>
-<th data-quarto-table-cell-role="th">PD_0765_1</th>
-<td>18</td>
-<td>1</td>
-<td>0.536358</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0765_2</th>
-<td>19</td>
-<td>1</td>
-<td>0.527505</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0769</th>
-<th data-quarto-table-cell-role="th">PD_0769_1</th>
-<td>20</td>
-<td>1</td>
-<td>0.620208</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0769_2</th>
-<td>21</td>
-<td>1</td>
-<td>0.623571</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0770</th>
-<th data-quarto-table-cell-role="th">PD_0770_1</th>
-<td>22</td>
-<td>1</td>
-<td>0.837591</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0770_2</th>
-<td>23</td>
-<td>1</td>
-<td>0.843085</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0772</th>
-<th data-quarto-table-cell-role="th">PD_0772_1</th>
-<td>24</td>
-<td>1</td>
-<td>0.520311</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0772_2</th>
-<td>25</td>
-<td>1</td>
-<td>0.509423</td>
-<td>False</td>
-<td>0.000000</td>
-<td>True</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0773</th>
-<th data-quarto-table-cell-role="th">PD_0773_1</th>
-<td>26</td>
-<td>1</td>
-<td>0.628148</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0773_2</th>
-<td>27</td>
-<td>1</td>
-<td>0.679534</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="odd">
-<th rowspan="2" data-quarto-table-cell-role="th" data-valign="top">PD_0774</th>
-<th data-quarto-table-cell-role="th">PD_0774_1</th>
-<td>28</td>
-<td>1</td>
-<td>0.787692</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">PD_0774_2</th>
-<td>29</td>
-<td>1</td>
-<td>0.767312</td>
-<td>True</td>
-<td>0.000000</td>
-<td>False</td>
-</tr>
-</tbody>
-</table>
-
-</div>
-</div>
-</div>
-<div id="d447e48e" class="cell" data-execution_count="8">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary()[<span class="dv">0</span>][<span class="st">'ref'</span>]</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'suspect reference:'</span>, suspect)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'flagged foreign tracts:'</span>, qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>suspect reference: 30
-flagged foreign tracts: []</code></pre>
-</div>
+<div id="d447e48e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>suspect <span class="op">=</span> qc.summary()[<span class="dv">0</span>][<span class="st">'ref'</span>]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'suspect reference:'</span>, suspect)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'flagged foreign tracts:'</span>, qc.flagged_tracts(suspect, deadband<span class="op">=</span><span class="fl">0.4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="d7c1fbd8" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make foreign_tracts (and all others) take n_jobs arg and make id default to all available (also on slurm)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make foreign_tracts (and all others) take n_jobs arg and make id default to all available (also on slurm)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="af6ac358" class="cell" data-execution_count="9">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>ft <span class="op">=</span> tspaint.foreign_tracts(tsinfer_ts, labels, soft_refs, soft_refs<span class="op">=</span><span class="bu">set</span>(soft_refs), min_score<span class="op">=</span><span class="fl">0.4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="af6ac358" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ft <span class="op">=</span> tspaint.foreign_tracts(tsinfer_ts, labels, soft_refs, soft_refs<span class="op">=</span><span class="bu">set</span>(soft_refs), min_score<span class="op">=</span><span class="fl">0.4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="b7c8e4ff" class="cell" data-execution_count="10">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> {r: ft[r] <span class="cf">for</span> r <span class="kw">in</span> soft_refs <span class="cf">if</span> ft[r]}      <span class="co"># references carrying a foreign tract</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span><span class="bu">len</span>(flagged)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">len</span>(soft_refs)<span class="sc">}</span><span class="ss"> impure references carry a flagged foreign tract'</span>)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items())[:<span class="dv">3</span>]:</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  sample </span><span class="sc">{</span>r<span class="sc">}</span><span class="ss">:'</span>, [(<span class="bu">round</span>(l), <span class="bu">round</span>(rr), <span class="bu">round</span>(sc, <span class="dv">2</span>), <span class="bu">round</span>(rr <span class="op">-</span> l)) <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts])</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>tract_lengths <span class="op">=</span> []</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items()):</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts:</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># print(f'  sample {r}:', (round(l), round(rr), round(sc, 2), round(rr - l))) </span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        tract_lengths.append(rr <span class="op">-</span> l)</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>plt.hist(tract_lengths, bins<span class="op">=</span><span class="dv">100</span>)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>19/19 impure references carry a flagged foreign tract
-  sample 8: [(19, 217282, 0.49, 217263), (276381, 1217823, 0.49, 941442), (1241805, 1258093, 0.48, 16288), (1271513, 1360215, 0.47, 88702), (1376327, 1432999, 0.49, 56672), (1476030, 1476573, 0.49, 543), (1495408, 1588031, 0.49, 92623), (1669557, 1999897, 0.49, 330340)]
-  sample 9: [(19, 46763, 0.49, 46744), (88656, 241651, 0.49, 152995), (266543, 400713, 0.48, 134170), (461391, 578776, 0.48, 117385), (626151, 754021, 0.49, 127870), (757013, 871499, 0.49, 114486), (871543, 1190546, 0.49, 319003), (1191015, 1303629, 0.49, 112614), (1326618, 1341767, 0.49, 15149), (1469383, 1475921, 0.49, 6538), (1492288, 1774994, 0.49, 282706), (1780381, 1999897, 0.48, 219516)]
-  sample 13: [(19, 721831, 0.49, 721812), (836899, 864723, 0.49, 27824), (874345, 949121, 0.44, 74776), (1041118, 1092468, 0.49, 51350), (1092717, 1127325, 0.48, 34608), (1162823, 1167710, 0.49, 4887), (1255740, 1256178, 0.49, 438), (1257517, 1400526, 0.48, 143009), (1457688, 1458701, 0.49, 1013), (1560561, 1562572, 0.49, 2011), (1654939, 1689365, 0.48, 34426), (1700101, 1700109, 0.47, 8), (1704872, 1999897, 0.49, 295025)]</code></pre>
+<div id="b7c8e4ff" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>flagged <span class="op">=</span> {r: ft[r] <span class="cf">for</span> r <span class="kw">in</span> soft_refs <span class="cf">if</span> ft[r]}      <span class="co"># references carrying a foreign tract</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="sc">{</span><span class="bu">len</span>(flagged)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span><span class="bu">len</span>(soft_refs)<span class="sc">}</span><span class="ss"> impure references carry a flagged foreign tract'</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items())[:<span class="dv">3</span>]:</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  sample </span><span class="sc">{</span>r<span class="sc">}</span><span class="ss">:'</span>, [(<span class="bu">round</span>(l), <span class="bu">round</span>(rr), <span class="bu">round</span>(sc, <span class="dv">2</span>), <span class="bu">round</span>(rr <span class="op">-</span> l)) <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts])</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>tract_lengths <span class="op">=</span> []</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, tracts <span class="kw">in</span> <span class="bu">list</span>(flagged.items()):</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (l, rr, sc) <span class="kw">in</span> tracts:</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># print(f'  sample {r}:', (round(l), round(rr), round(sc, 2), round(rr - l))) </span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        tract_lengths.append(rr <span class="op">-</span> l)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>plt.hist(tract_lengths, bins<span class="op">=</span><span class="dv">100</span>)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-12-output-2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="baboons_files/figure-html/cell-12-output-2.svg" class="img-fluid figure-img"></a></p>
-</figure>
+<div id="a1e824d4" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting <span class="op">=</span> tspaint.paint(tsinfer_ts, labels, smooth<span class="op">=</span><span class="va">True</span>, </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                <span class="co">#  soft_refs=soft_refs, </span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                 n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.save(<span class="st">"tsinfer_painting.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div id="c8cc32ad" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.segments()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<div id="c5b59d63" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>idx <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>segments <span class="op">=</span> tsinfer_painting.segments()</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>lens <span class="op">=</span> [e<span class="op">-</span>s <span class="cf">for</span> (s, e, l) <span class="kw">in</span> segments[idx] <span class="cf">if</span> l <span class="op">==</span> <span class="dv">0</span>]</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">min</span>(lens), <span class="bu">max</span>(lens))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>plt.hist([np.log10(e<span class="op">-</span>s) <span class="cf">for</span> (s, e, l) <span class="kw">in</span> segments[idx] <span class="cf">if</span> l <span class="op">==</span> <span class="dv">0</span>], bins<span class="op">=</span><span class="dv">30</span>, alpha<span class="op">=</span><span class="fl">0.5</span>) <span class="op">;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co">#plt.hist([np.log10(e-s) for (s, e, l) in segments[idx] if l == 1], bins=30, alpha=0.5) ;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="a1e824d4" class="cell" data-execution_count="11">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting <span class="op">=</span> tspaint.paint(tsinfer_ts, labels, smooth<span class="op">=</span><span class="va">True</span>, </span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                <span class="co">#  soft_refs=soft_refs, </span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                 n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.save(<span class="st">"tsinfer_painting.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"5cfd8e8d7969445ba161d08ee8bb0fbd","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
+<div id="75cd113d" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"d2c48b384d574c2fb76f17dd23709f1c","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
+<div id="6a332a0d" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_painting.segments(deadband<span class="op">=</span><span class="fl">0.9</span>)).plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-</div>
-<div id="c8cc32ad" class="cell" data-execution_count="12">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.segments()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="12">
-<pre><code>{0: [(0.0, 31919.0, 1),
-  (31919.0, 32372.0, 0),
-  (32372.0, 154687.0, 1),
-  (154687.0, 157786.0, 0),
-  (157786.0, 274214.0, 1),
-  (274214.0, 275661.0, 0),
-  (275661.0, 390115.0, 1),
-  (390115.0, 390362.0, 0),
-  (390362.0, 411690.0, 1),
-  (411690.0, 413347.0, 0),
-  (413347.0, 440005.0, 1),
-  (440005.0, 442209.0, 0),
-  (442209.0, 466214.0, 1),
-  (466214.0, 485493.0, 0),
-  (485493.0, 487660.0, 1),
-  (487660.0, 492548.0, 0),
-  (492548.0, 493415.0, 1),
-  (493415.0, 530335.0, 0),
-  (530335.0, 715173.0, 1),
-  (715173.0, 715854.0, 0),
-  (715854.0, 723844.0, 1),
-  (723844.0, 726688.0, 0),
-  (726688.0, 758420.0, 1),
-  (758420.0, 784840.0, 0),
-  (784840.0, 790949.0, 1),
-  (790949.0, 803093.0, 0),
-  (803093.0, 820840.0, 1),
-  (820840.0, 825254.0, 0),
-  (825254.0, 860220.0, 1),
-  (860220.0, 862521.0, 0),
-  (862521.0, 863785.0, 1),
-  (863785.0, 865518.0, 0),
-  (865518.0, 869305.0, 1),
-  (869305.0, 876142.0, 0),
-  (876142.0, 1042002.0, 1),
-  (1042002.0, 1045118.0, 0),
-  (1045118.0, 1053669.0, 1),
-  (1053669.0, 1067143.0, 0),
-  (1067143.0, 1083353.0, 1),
-  (1083353.0, 1092883.0, 0),
-  (1092883.0, 1102867.0, 1),
-  (1102867.0, 1107752.0, 0),
-  (1107752.0, 1111690.0, 1),
-  (1111690.0, 1123076.0, 0),
-  (1123076.0, 1130852.0, 1),
-  (1130852.0, 1133397.0, 0),
-  (1133397.0, 1140299.0, 1),
-  (1140299.0, 1142611.0, 0),
-  (1142611.0, 1157501.0, 1),
-  (1157501.0, 1159224.0, 0),
-  (1159224.0, 1205193.0, 1),
-  (1205193.0, 1206936.0, 0),
-  (1206936.0, 1300963.0, 1),
-  (1300963.0, 1302516.0, 0),
-  (1302516.0, 1304068.0, 1),
-  (1304068.0, 1308743.0, 0),
-  (1308743.0, 1620312.0, 1),
-  (1620312.0, 1624752.0, 0),
-  (1624752.0, 1817378.0, 1),
-  (1817378.0, 1818006.0, 0),
-  (1818006.0, 1820688.0, 1),
-  (1820688.0, 1829134.0, 0),
-  (1829134.0, 2000000.0, 1)],
- 1: [(0.0, 125597.0, 1),
-  (125597.0, 135110.0, 0),
-  (135110.0, 270949.0, 1),
-  (270949.0, 273866.0, 0),
-  (273866.0, 278641.0, 1),
-  (278641.0, 285161.0, 0),
-  (285161.0, 574446.0, 1),
-  (574446.0, 575572.0, 0),
-  (575572.0, 577862.0, 1),
-  (577862.0, 590651.0, 0),
-  (590651.0, 601089.0, 1),
-  (601089.0, 605106.0, 0),
-  (605106.0, 626255.0, 1),
-  (626255.0, 627035.0, 0),
-  (627035.0, 634380.0, 1),
-  (634380.0, 637655.0, 0),
-  (637655.0, 677496.0, 1),
-  (677496.0, 680962.0, 0),
-  (680962.0, 720366.0, 1),
-  (720366.0, 728288.0, 0),
-  (728288.0, 868976.0, 1),
-  (868976.0, 872984.0, 0),
-  (872984.0, 1130820.0, 1),
-  (1130820.0, 1133397.0, 0),
-  (1133397.0, 1140299.0, 1),
-  (1140299.0, 1142611.0, 0),
-  (1142611.0, 1157501.0, 1),
-  (1157501.0, 1159224.0, 0),
-  (1159224.0, 1165273.0, 1),
-  (1165273.0, 1167372.0, 0),
-  (1167372.0, 1258092.0, 1),
-  (1258092.0, 1260381.0, 0),
-  (1260381.0, 1286296.0, 1),
-  (1286296.0, 1290668.0, 0),
-  (1290668.0, 1304191.0, 1),
-  (1304191.0, 1308743.0, 0),
-  (1308743.0, 2000000.0, 1)],
- 2: [(0.0, 155562.0, 1),
-  (155562.0, 158758.0, 0),
-  (158758.0, 274214.0, 1),
-  (274214.0, 275661.0, 0),
-  (275661.0, 284253.0, 1),
-  (284253.0, 285183.0, 0),
-  (285183.0, 574446.0, 1),
-  (574446.0, 575572.0, 0),
-  (575572.0, 577862.0, 1),
-  (577862.0, 590651.0, 0),
-  (590651.0, 601089.0, 1),
-  (601089.0, 605106.0, 0),
-  (605106.0, 626255.0, 1),
-  (626255.0, 627035.0, 0),
-  (627035.0, 634380.0, 1),
-  (634380.0, 637655.0, 0),
-  (637655.0, 677496.0, 1),
-  (677496.0, 680962.0, 0),
-  (680962.0, 715173.0, 1),
-  (715173.0, 715854.0, 0),
-  (715854.0, 723844.0, 1),
-  (723844.0, 726688.0, 0),
-  (726688.0, 758420.0, 1),
-  (758420.0, 784840.0, 0),
-  (784840.0, 790949.0, 1),
-  (790949.0, 803093.0, 0),
-  (803093.0, 820840.0, 1),
-  (820840.0, 825254.0, 0),
-  (825254.0, 860220.0, 1),
-  (860220.0, 862577.0, 0),
-  (862577.0, 863509.0, 1),
-  (863509.0, 865548.0, 0),
-  (865548.0, 869305.0, 1),
-  (869305.0, 876142.0, 0),
-  (876142.0, 1042002.0, 1),
-  (1042002.0, 1045118.0, 0),
-  (1045118.0, 1053669.0, 1),
-  (1053669.0, 1067143.0, 0),
-  (1067143.0, 1083353.0, 1),
-  (1083353.0, 1091087.0, 0),
-  (1091087.0, 1258092.0, 1),
-  (1258092.0, 1260381.0, 0),
-  (1260381.0, 1286296.0, 1),
-  (1286296.0, 1290668.0, 0),
-  (1290668.0, 1304068.0, 1),
-  (1304068.0, 1308743.0, 0),
-  (1308743.0, 1316263.0, 1),
-  (1316263.0, 1316393.0, 0),
-  (1316393.0, 1316497.0, 1),
-  (1316497.0, 1317036.0, 0),
-  (1317036.0, 1820261.0, 1),
-  (1820261.0, 1829134.0, 0),
-  (1829134.0, 2000000.0, 1)],
- 3: [(0.0, 31919.0, 1),
-  (31919.0, 32372.0, 0),
-  (32372.0, 125597.0, 1),
-  (125597.0, 135110.0, 0),
-  (135110.0, 270949.0, 1),
-  (270949.0, 273866.0, 0),
-  (273866.0, 278641.0, 1),
-  (278641.0, 285161.0, 0),
-  (285161.0, 390115.0, 1),
-  (390115.0, 390362.0, 0),
-  (390362.0, 411690.0, 1),
-  (411690.0, 413347.0, 0),
-  (413347.0, 440005.0, 1),
-  (440005.0, 442209.0, 0),
-  (442209.0, 466214.0, 1),
-  (466214.0, 485493.0, 0),
-  (485493.0, 487660.0, 1),
-  (487660.0, 492548.0, 0),
-  (492548.0, 493415.0, 1),
-  (493415.0, 530335.0, 0),
-  (530335.0, 725118.0, 1),
-  (725118.0, 728288.0, 0),
-  (728288.0, 869444.0, 1),
-  (869444.0, 872984.0, 0),
-  (872984.0, 919041.0, 1),
-  (919041.0, 919618.0, 0),
-  (919618.0, 937533.0, 1),
-  (937533.0, 938458.0, 0),
-  (938458.0, 955442.0, 1),
-  (955442.0, 956644.0, 0),
-  (956644.0, 983668.0, 1),
-  (983668.0, 986527.0, 0),
-  (986527.0, 1102867.0, 1),
-  (1102867.0, 1107752.0, 0),
-  (1107752.0, 1111690.0, 1),
-  (1111690.0, 1123076.0, 0),
-  (1123076.0, 1130852.0, 1),
-  (1130852.0, 1133397.0, 0),
-  (1133397.0, 1140299.0, 1),
-  (1140299.0, 1142611.0, 0),
-  (1142611.0, 1157501.0, 1),
-  (1157501.0, 1159224.0, 0),
-  (1159224.0, 1205193.0, 1),
-  (1205193.0, 1206936.0, 0),
-  (1206936.0, 1300963.0, 1),
-  (1300963.0, 1302516.0, 0),
-  (1302516.0, 1304068.0, 1),
-  (1304068.0, 1308743.0, 0),
-  (1308743.0, 1620312.0, 1),
-  (1620312.0, 1624752.0, 0),
-  (1624752.0, 1990710.0, 1),
-  (1990710.0, 2000000.0, 0)],
- 4: [(0.0, 20736.0, 1),
-  (20736.0, 21233.0, 0),
-  (21233.0, 31885.0, 1),
-  (31885.0, 32262.0, 0),
-  (32262.0, 46155.0, 1),
-  (46155.0, 104379.0, 0),
-  (104379.0, 299556.0, 1),
-  (299556.0, 300125.0, 0),
-  (300125.0, 399478.0, 1),
-  (399478.0, 400248.0, 0),
-  (400248.0, 752366.0, 1),
-  (752366.0, 754305.0, 0),
-  (754305.0, 1078428.0, 1),
-  (1078428.0, 1081230.0, 0),
-  (1081230.0, 1083353.0, 1),
-  (1083353.0, 1085193.0, 0),
-  (1085193.0, 1190499.0, 1),
-  (1190499.0, 1191306.0, 0),
-  (1191306.0, 1306132.0, 1),
-  (1306132.0, 1309124.0, 0),
-  (1309124.0, 1414732.0, 1),
-  (1414732.0, 1425710.0, 0),
-  (1425710.0, 1428966.0, 1),
-  (1428966.0, 1433512.0, 0),
-  (1433512.0, 1491762.0, 1),
-  (1491762.0, 1492481.0, 0),
-  (1492481.0, 1631072.0, 1),
-  (1631072.0, 1633072.0, 0),
-  (1633072.0, 1638552.0, 1),
-  (1638552.0, 1650599.0, 0),
-  (1650599.0, 1685509.0, 1),
-  (1685509.0, 1686262.0, 0),
-  (1686262.0, 1695638.0, 1),
-  (1695638.0, 1730917.0, 0),
-  (1730917.0, 1735296.0, 1),
-  (1735296.0, 1739837.0, 0),
-  (1739837.0, 1740552.0, 1),
-  (1740552.0, 1758738.0, 0),
-  (1758738.0, 1761184.0, 1),
-  (1761184.0, 1763763.0, 0),
-  (1763763.0, 1909290.0, 1),
-  (1909290.0, 1909791.0, 0),
-  (1909791.0, 2000000.0, 1)],
- 5: [(0.0, 20736.0, 1),
-  (20736.0, 21233.0, 0),
-  (21233.0, 31885.0, 1),
-  (31885.0, 32262.0, 0),
-  (32262.0, 46155.0, 1),
-  (46155.0, 104379.0, 0),
-  (104379.0, 160191.0, 1),
-  (160191.0, 163126.0, 0),
-  (163126.0, 171267.0, 1),
-  (171267.0, 173614.0, 0),
-  (173614.0, 206268.0, 1),
-  (206268.0, 209633.0, 0),
-  (209633.0, 214454.0, 1),
-  (214454.0, 225421.0, 0),
-  (225421.0, 284253.0, 1),
-  (284253.0, 285811.0, 0),
-  (285811.0, 321211.0, 1),
-  (321211.0, 329828.0, 0),
-  (329828.0, 377497.0, 1),
-  (377497.0, 381335.0, 0),
-  (381335.0, 399478.0, 1),
-  (399478.0, 400248.0, 0),
-  (400248.0, 439203.0, 1),
-  (439203.0, 449025.0, 0),
-  (449025.0, 467150.0, 1),
-  (467150.0, 548294.0, 0),
-  (548294.0, 621372.0, 1),
-  (621372.0, 622738.0, 0),
-  (622738.0, 625384.0, 1),
-  (625384.0, 626639.0, 0),
-  (626639.0, 949713.0, 1),
-  (949713.0, 951374.0, 0),
-  (951374.0, 961773.0, 1),
-  (961773.0, 962766.0, 0),
-  (962766.0, 982815.0, 1),
-  (982815.0, 988653.0, 0),
-  (988653.0, 1194519.0, 1),
-  (1194519.0, 1197565.0, 0),
-  (1197565.0, 1207005.0, 1),
-  (1207005.0, 1207329.0, 0),
-  (1207329.0, 1303226.0, 1),
-  (1303226.0, 1307098.0, 0),
-  (1307098.0, 1351411.0, 1),
-  (1351411.0, 1354551.0, 0),
-  (1354551.0, 2000000.0, 1)],
- 6: [(0.0, 47370.0, 1),
-  (47370.0, 50074.0, 0),
-  (50074.0, 54673.0, 1),
-  (54673.0, 89671.0, 0),
-  (89671.0, 94639.0, 1),
-  (94639.0, 97365.0, 0),
-  (97365.0, 390115.0, 1),
-  (390115.0, 390362.0, 0),
-  (390362.0, 411690.0, 1),
-  (411690.0, 413347.0, 0),
-  (413347.0, 440005.0, 1),
-  (440005.0, 442209.0, 0),
-  (442209.0, 466214.0, 1),
-  (466214.0, 485493.0, 0),
-  (485493.0, 487660.0, 1),
-  (487660.0, 529555.0, 0),
-  (529555.0, 682251.0, 1),
-  (682251.0, 687269.0, 0),
-  (687269.0, 839046.0, 1),
-  (839046.0, 841437.0, 0),
-  (841437.0, 860019.0, 1),
-  (860019.0, 862577.0, 0),
-  (862577.0, 997426.0, 1),
-  (997426.0, 997563.0, 0),
-  (997563.0, 1039078.0, 1),
-  (1039078.0, 1041895.0, 0),
-  (1041895.0, 1087919.0, 1),
-  (1087919.0, 1090418.0, 0),
-  (1090418.0, 1102867.0, 1),
-  (1102867.0, 1107752.0, 0),
-  (1107752.0, 1111690.0, 1),
-  (1111690.0, 1123076.0, 0),
-  (1123076.0, 1130852.0, 1),
-  (1130852.0, 1133397.0, 0),
-  (1133397.0, 1140299.0, 1),
-  (1140299.0, 1142611.0, 0),
-  (1142611.0, 1157501.0, 1),
-  (1157501.0, 1159224.0, 0),
-  (1159224.0, 1205193.0, 1),
-  (1205193.0, 1206936.0, 0),
-  (1206936.0, 1271677.0, 1),
-  (1271677.0, 1274498.0, 0),
-  (1274498.0, 1286296.0, 1),
-  (1286296.0, 1290668.0, 0),
-  (1290668.0, 1304191.0, 1),
-  (1304191.0, 1308743.0, 0),
-  (1308743.0, 1316393.0, 1),
-  (1316393.0, 1317036.0, 0),
-  (1317036.0, 1359507.0, 1),
-  (1359507.0, 1359590.0, 0),
-  (1359590.0, 1414732.0, 1),
-  (1414732.0, 1425710.0, 0),
-  (1425710.0, 1428966.0, 1),
-  (1428966.0, 1433512.0, 0),
-  (1433512.0, 1491762.0, 1),
-  (1491762.0, 1492481.0, 0),
-  (1492481.0, 1631072.0, 1),
-  (1631072.0, 1633072.0, 0),
-  (1633072.0, 1638552.0, 1),
-  (1638552.0, 1650599.0, 0),
-  (1650599.0, 1685509.0, 1),
-  (1685509.0, 1686262.0, 0),
-  (1686262.0, 1695638.0, 1),
-  (1695638.0, 1730917.0, 0),
-  (1730917.0, 1735296.0, 1),
-  (1735296.0, 1758738.0, 0),
-  (1758738.0, 1761184.0, 1),
-  (1761184.0, 1763763.0, 0),
-  (1763763.0, 2000000.0, 1)],
- 7: [(0.0, 321211.0, 1),
-  (321211.0, 329828.0, 0),
-  (329828.0, 377497.0, 1),
-  (377497.0, 381335.0, 0),
-  (381335.0, 399478.0, 1),
-  (399478.0, 400248.0, 0),
-  (400248.0, 439203.0, 1),
-  (439203.0, 449025.0, 0),
-  (449025.0, 574446.0, 1),
-  (574446.0, 575572.0, 0),
-  (575572.0, 578776.0, 1),
-  (578776.0, 590651.0, 0),
-  (590651.0, 601089.0, 1),
-  (601089.0, 605106.0, 0),
-  (605106.0, 626255.0, 1),
-  (626255.0, 627035.0, 0),
-  (627035.0, 629838.0, 1),
-  (629838.0, 631986.0, 0),
-  (631986.0, 636415.0, 1),
-  (636415.0, 637655.0, 0),
-  (637655.0, 677496.0, 1),
-  (677496.0, 680962.0, 0),
-  (680962.0, 725118.0, 1),
-  (725118.0, 728288.0, 0),
-  (728288.0, 758846.0, 1),
-  (758846.0, 784840.0, 0),
-  (784840.0, 790949.0, 1),
-  (790949.0, 803093.0, 0),
-  (803093.0, 820840.0, 1),
-  (820840.0, 825254.0, 0),
-  (825254.0, 860220.0, 1),
-  (860220.0, 862577.0, 0),
-  (862577.0, 863509.0, 1),
-  (863509.0, 865548.0, 0),
-  (865548.0, 869305.0, 1),
-  (869305.0, 876142.0, 0),
-  (876142.0, 1042002.0, 1),
-  (1042002.0, 1045118.0, 0),
-  (1045118.0, 1053669.0, 1),
-  (1053669.0, 1067143.0, 0),
-  (1067143.0, 1083353.0, 1),
-  (1083353.0, 1102505.0, 0),
-  (1102505.0, 1194519.0, 1),
-  (1194519.0, 1197565.0, 0),
-  (1197565.0, 1207005.0, 1),
-  (1207005.0, 1207329.0, 0),
-  (1207329.0, 1254731.0, 1),
-  (1254731.0, 1255536.0, 0),
-  (1255536.0, 1303226.0, 1),
-  (1303226.0, 1307098.0, 0),
-  (1307098.0, 2000000.0, 1)]}</code></pre>
-</div>
-</div>
-<div id="c5b59d63" class="cell" data-execution_count="13">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>idx <span class="op">=</span> <span class="dv">5</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>segments <span class="op">=</span> tsinfer_painting.segments()</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>lens <span class="op">=</span> [e<span class="op">-</span>s <span class="cf">for</span> (s, e, l) <span class="kw">in</span> segments[idx] <span class="cf">if</span> l <span class="op">==</span> <span class="dv">0</span>]</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">min</span>(lens), <span class="bu">max</span>(lens))</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>plt.hist([np.log10(e<span class="op">-</span>s) <span class="cf">for</span> (s, e, l) <span class="kw">in</span> segments[idx] <span class="cf">if</span> l <span class="op">==</span> <span class="dv">0</span>], bins<span class="op">=</span><span class="dv">30</span>, alpha<span class="op">=</span><span class="fl">0.5</span>) <span class="op">;</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co">#plt.hist([np.log10(e-s) for (s, e, l) in segments[idx] if l == 1], bins=30, alpha=0.5) ;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>324.0 81144.0</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-15-output-2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="baboons_files/figure-html/cell-15-output-2.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
-</div>
-<div id="75cd113d" class="cell" data-execution_count="14">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>tsinfer_painting.plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-16-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="baboons_files/figure-html/cell-16-output-1.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
-</div>
-<div id="6a332a0d" class="cell" data-execution_count="15">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_painting.segments(deadband<span class="op">=</span><span class="fl">0.9</span>)).plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-17-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="baboons_files/figure-html/cell-17-output-1.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
-</div>
-<div id="8713a309" class="cell" data-execution_count="16">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#tsinfer_painting = tspaint.Painting.load("tsinfer_painting.npz")</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_painting.segments()).plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-18-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="baboons_files/figure-html/cell-18-output-1.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
+<div id="8713a309" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#tsinfer_painting = tspaint.Painting.load("tsinfer_painting.npz")</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_painting.segments()).plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>RFmix on data simulated from same tree sequence:</p>
-<div id="63747029" class="cell" data-execution_count="17">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tsinfer_rfmix_segments <span class="op">=</span> tspaint.compare.rfmix_paint(</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    tsinfer_ts,</span>
+<div id="63747029" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>tsinfer_rfmix_segments <span class="op">=</span> tspaint.compare.rfmix_paint(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    tsinfer_ts,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    labels,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    admix_ids,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    K<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span>recombination_rate,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    mutation_rate<span class="op">=</span>mutation_rate</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"tsinfer_rfmix_segments.pkl"</span>, <span class="st">"wb"</span>) <span class="im">as</span> f:</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    pickle.dump(tsinfer_rfmix_segments, f)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_rfmix_segments).plot()     </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="c0a9a1c6" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>dated <span class="op">=</span> tspaint.io.tsinfer(region, date<span class="op">=</span><span class="va">True</span>, mutation_rate<span class="op">=</span><span class="fl">1.2e-8</span>)   <span class="co"># node ages in generations</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>rtt   <span class="op">=</span> tspaint.paint(dated, labels, n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>).rate_through_time()          <span class="co"># centers now meaningful</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="6e872322" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.2</span>, <span class="dv">4</span>))</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>rtt.plot(ax<span class="op">=</span>ax)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>ax.axvline(T_split, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="ss">f"true split (</span><span class="sc">{</span>T_split<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Cross-ancestry rate through time"</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="relate" class="level2">
+<h2 class="anchored" data-anchor-id="relate">Relate</h2>
+<div id="224179e2" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>ts_relate <span class="op">=</span> tspaint.io.relate(region, mutation_rate<span class="op">=</span>mutation_rate, recombination_rate<span class="op">=</span>recombination_rate)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>ts_relate.dump(<span class="st">"ts_relate.trees"</span>)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(ts_relate.num_trees, <span class="st">'trees'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="bf4a62cd" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts_relate, labels, </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                        <span class="co">#   anchors=set(ref1_ids), </span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                          n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>soft_refs <span class="op">=</span> qc.soft_refs()</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>l <span class="op">=</span> qc.summary()</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({k: [d[k] <span class="cf">for</span> d <span class="kw">in</span> l] <span class="cf">for</span> k <span class="kw">in</span> l[<span class="dv">0</span>]})</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'soft_ref'</span>] <span class="op">=</span> df[<span class="st">'ref'</span>].isin(soft_refs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="5d75f9f9" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co">#df.sort_values('credibility')</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.sort_values([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>]).set_index([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>])</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co">#print(df.to_string())</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="a6d62cd0" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>relate_painting <span class="op">=</span> tspaint.paint(ts_relate, labels, smooth<span class="op">=</span><span class="va">True</span>, soft_refs<span class="op">=</span>soft_refs, n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>relate_painting.save(<span class="st">"relate_painting.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="a2c5fd93" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>relate_painting.plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>RFmix on data simulated from same tree sequence:</p>
+<div id="e928e576" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>relate_rfmix_segments <span class="op">=</span> tspaint.compare.rfmix_paint(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    ts_relate,</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    labels,</span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    admix_ids,</span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    K<span class="op">=</span><span class="dv">2</span>,</span>
 <span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span>recombination_rate,</span>
 <span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    mutation_rate<span class="op">=</span>mutation_rate</span>
 <span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"tsinfer_rfmix_segments.pkl"</span>, <span class="st">"wb"</span>) <span class="im">as</span> f:</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    pickle.dump(tsinfer_rfmix_segments, f)</span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(tsinfer_rfmix_segments).plot()     </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-19-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-6"><img src="baboons_files/figure-html/cell-19-output-1.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
-</div>
-<div id="c0a9a1c6" class="cell" data-execution_count="18">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>dated <span class="op">=</span> tspaint.io.tsinfer(region, date<span class="op">=</span><span class="va">True</span>, mutation_rate<span class="op">=</span><span class="fl">1.2e-8</span>)   <span class="co"># node ages in generations</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>rtt   <span class="op">=</span> tspaint.paint(dated, labels, n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>).rate_through_time()          <span class="co"># centers now meaningful</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"4eb640d2aefa43fc8f2f0a555908918a","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-<div class="cell-output cell-output-display">
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id":"6ff13d5b42604a868d06bb3f2b7f3466","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
-</script>
-</div>
-</div>
-<div id="6e872322" class="cell" data-execution_count="19">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.2</span>, <span class="dv">4</span>))</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>rtt.plot(ax<span class="op">=</span>ax)</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>ax.axvline(T_split, color<span class="op">=</span><span class="st">"k"</span>, ls<span class="op">=</span><span class="st">"--"</span>, lw<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="ss">f"true split (</span><span class="sc">{</span>T_split<span class="sc">}</span><span class="ss">)"</span>)</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Cross-ancestry rate through time"</span>)</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-error">
-<div class="ansi-escaped-output">
-<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
-<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[19]</span><span class="ansi-green-fg">, line 3</span>
-<span class="ansi-green-fg">      1</span> fig, ax = plt.subplots(figsize=(<span class="ansi-green-fg">6.2</span>, <span class="ansi-green-fg">4</span>))
-<span class="ansi-green-fg">      2</span> rtt.plot(ax=ax)
-<span class="ansi-green-fg">----&gt; </span><span class="ansi-green-fg">3</span> ax.axvline(T_split, color=<span class="ansi-yellow-fg">"k"</span>, ls=<span class="ansi-yellow-fg">"--"</span>, lw=<span class="ansi-green-fg">1</span>, label=f"true split ({T_split})")
-<span class="ansi-green-fg">      4</span> ax.set_title(<span class="ansi-yellow-fg">"Cross-ancestry rate through time"</span>)
-<span class="ansi-green-fg">      5</span> fig.tight_layout()
-
-<span class="ansi-red-fg">NameError</span>: name 'T_split' is not defined</pre>
-</div>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><a href="baboons_files/figure-html/cell-21-output-2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-7"><img src="baboons_files/figure-html/cell-21-output-2.svg" class="img-fluid figure-img"></a></p>
-</figure>
-</div>
-</div>
-</div>
-<section id="relate" class="level2">
-<h2 class="anchored" data-anchor-id="relate">Relate</h2>
-<div id="224179e2" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>ts_relate <span class="op">=</span> tspaint.io.relate(region, mutation_rate<span class="op">=</span>mutation_rate, recombination_rate<span class="op">=</span>recombination_rate)</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>ts_relate.dump(<span class="st">"ts_relate.trees"</span>)</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(ts_relate.num_trees, <span class="st">'trees'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="bf4a62cd" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>qc <span class="op">=</span> tspaint.reference_qc(ts_relate, labels, </span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                        <span class="co">#   anchors=set(ref1_ids), </span></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                          n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>soft_refs <span class="op">=</span> qc.soft_refs()</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>l <span class="op">=</span> qc.summary()</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({k: [d[k] <span class="cf">for</span> d <span class="kw">in</span> l] <span class="cf">for</span> k <span class="kw">in</span> l[<span class="dv">0</span>]})</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'soft_ref'</span>] <span class="op">=</span> df[<span class="st">'ref'</span>].isin(soft_refs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="5d75f9f9" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co">#df.sort_values('credibility')</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.sort_values([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>]).set_index([<span class="st">'individual'</span>, <span class="st">'haplotype'</span>])</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="co">#print(df.to_string())</span></span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="a6d62cd0" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>relate_painting <span class="op">=</span> tspaint.paint(ts_relate, labels, smooth<span class="op">=</span><span class="va">True</span>, soft_refs<span class="op">=</span>soft_refs, n_jobs<span class="op">=</span><span class="dv">8</span>, progress<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>relate_painting.save(<span class="st">"relate_painting.npz"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="a2c5fd93" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>relate_painting.plot()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>RFmix on data simulated from same tree sequence:</p>
-<div id="e928e576" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>relate_rfmix_segments <span class="op">=</span> tspaint.compare.rfmix_paint(</span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    ts_relate,</span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    labels,</span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    admix_ids,</span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    K<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span>recombination_rate,</span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    mutation_rate<span class="op">=</span>mutation_rate</span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"relate_rfmix_segments.pkl"</span>, <span class="st">"wb"</span>) <span class="im">as</span> f:</span>
-<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>    pickle.dump(relate_rfmix_segments, f)</span>
-<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(relate_rfmix_segments).plot()     </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"relate_rfmix_segments.pkl"</span>, <span class="st">"wb"</span>) <span class="im">as</span> f:</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    pickle.dump(relate_rfmix_segments, f)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>tspaint.SegmentTrack(relate_rfmix_segments).plot()     </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="singer" class="level2">
 <h2 class="anchored" data-anchor-id="singer">Singer</h2>
 <div id="07d9230f" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # this samples 250 tree sequences from</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_ts = tspaint.io.singer(region, m=mutation_rate, ratio=1, Ne=Ne, n_samples=250, thin=20, burn_in=50)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # this samples 250 tree sequences from</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_ts = tspaint.io.singer(region, m=mutation_rate, ratio=1, Ne=Ne, n_samples=250, thin=20, burn_in=50)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="6accb609" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="co"># for i, ts in enumerate(singer_ts):</span></span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co">#     singer_ts[i].dump(f"ts_singer_{i}.trees")</span></span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="co">#     print(i, ts.num_trees, 'trees')</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co"># for i, ts in enumerate(singer_ts):</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co">#     singer_ts[i].dump(f"ts_singer_{i}.trees")</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co">#     print(i, ts.num_trees, 'trees')</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="e965654e" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="co"># # qc = tspaint.reference_qc(singer_ts, labels, anchors=set(ref1_ids))</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # qc.summary()</span></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># # soft_refs = qc.soft_refs()</span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># # with open("singer_soft_refs.pkl", "wb") as f:</span></span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="co"># #     pickle.dump(soft_refs, f)</span></span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="co"># # print(f'soft refs: {", ".join(map(str, soft_refs))}')</span></span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting = tspaint.paint(singer_ts[::20], # &lt;- this is a subset of the 250 samples, to reduce memory usage</span></span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                                 labels, smooth=True, soft_refs=mikumi_female_ids, n_jobs=8, progress=True)</span></span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting.save("singer_painting.npz")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="co"># # qc = tspaint.reference_qc(singer_ts, labels, anchors=set(ref1_ids))</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># # qc.summary()</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># # soft_refs = qc.soft_refs()</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="co"># # with open("singer_soft_refs.pkl", "wb") as f:</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="co"># #     pickle.dump(soft_refs, f)</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co"># # print(f'soft refs: {", ".join(map(str, soft_refs))}')</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting = tspaint.paint(singer_ts[::20], # &lt;- this is a subset of the 250 samples, to reduce memory usage</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                                 labels, smooth=True, soft_refs=mikumi_female_ids, n_jobs=8, progress=True)</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting.save("singer_painting.npz")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="a383148d" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># #painting = tspaint.Painting.load("singer_painting.npz")</span></span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting.plot() </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># #painting = tspaint.Painting.load("singer_painting.npz")</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="co"># singer_painting.plot() </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>SINGER — count = n_samples − burn_in</p>
 <p>SINGER draws n_samples ARGs, thin iterations apart, then tspaint discards the first burn_in of them.</p>
@@ -1430,39 +437,39 @@ flagged foreign tracts: []</code></pre>
 <section id="argweaver" class="level2">
 <h2 class="anchored" data-anchor-id="argweaver">ARGweaver</h2>
 <div id="0b2b7f34" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver = tspaint.io.argweaver(region, Ne=Ne, </span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="co">#                                         mutation_rate=mutation_rate, recombination_rate=recombination_rate,</span></span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                                         compress=10)</span></span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver_painting = tspaint.paint(ts_ens_argweaver, labels) </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver = tspaint.io.argweaver(region, Ne=Ne, </span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co">#                                         mutation_rate=mutation_rate, recombination_rate=recombination_rate,</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                                         compress=10)</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver_painting = tspaint.paint(ts_ens_argweaver, labels) </span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="ae6ad899" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver_painting.plot()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ts_ens_argweaver_painting.plot()</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="full-chr20" class="level2">
 <h2 class="anchored" data-anchor-id="full-chr20">Full chr20</h2>
 <div id="e8f62b5e" class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%monitor</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ref1_ids = mikumi_female_ids</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ref2_ids = gog_female_ids</span></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="co"># admixed_ids = ruaha_female_ids</span></span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="co"># sample_ids = ruaha_female_ids + ref1_ids + ref2_ids</span></span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="co"># labels = {**{n: 0 for n in ref1_ids}, **{n: 1 for n in ref2_ids}}</span></span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="co"># region = subset_data("../../data/chr20.phased.females", samples=sample_ids)</span></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a><span class="co"># ens = tspaint.io.singer_windowed(</span></span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a><span class="co">#     # "data/chr20.phased.females",          # ts / VCF / VCF-Zarr / Variants — or a subset_data(...) slice</span></span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a><span class="co">#     region,</span></span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     window_size=2_000_000, n_jobs=16, </span></span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     mutation_rate=1.25e-8, recombination_rate=1e-8,</span></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a><span class="co">#     # Ne=1e4, </span></span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     # n_samples=20, thin=10, burn_in=5,</span></span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     seed=42</span></span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a><span class="co"># # ens -&gt; list of stitched posterior ARGs, same shape as singer(); feed straight to:</span></span>
-<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a><span class="co"># painting = tspaint.paint(ens, labels)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># %%monitor</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ref1_ids = mikumi_female_ids</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ref2_ids = gog_female_ids</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="co"># admixed_ids = ruaha_female_ids</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co"># sample_ids = ruaha_female_ids + ref1_ids + ref2_ids</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="co"># labels = {**{n: 0 for n in ref1_ids}, **{n: 1 for n in ref2_ids}}</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="co"># region = subset_data("../../data/chr20.phased.females", samples=sample_ids)</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="co"># ens = tspaint.io.singer_windowed(</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="co">#     # "data/chr20.phased.females",          # ts / VCF / VCF-Zarr / Variants — or a subset_data(...) slice</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="co">#     region,</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     window_size=2_000_000, n_jobs=16, </span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     mutation_rate=1.25e-8, recombination_rate=1e-8,</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a><span class="co">#     # Ne=1e4, </span></span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a><span class="co">#     # n_samples=20, thin=10, burn_in=5,</span></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     seed=42</span></span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a><span class="co"># # ens -&gt; list of stitched posterior ARGs, same shape as singer(); feed straight to:</span></span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a><span class="co"># painting = tspaint.paint(ens, labels)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 
 
@@ -1871,38 +878,6 @@ flagged foreign tracts: []</code></pre>
   });
   </script>
 </div> <!-- /content -->
-<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
-(function() {
-  let previousOnload = window.onload;
-  window.onload = () => {
-    if (previousOnload) {
-      previousOnload();
-    }
-    lightboxQuarto.on('slide_before_load', (data) => {
-      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
-      const href = trigger.getAttribute('href');
-      if (href !== null) {
-        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
-        if (imgEl !== null) {
-          const srcAttr = imgEl.getAttribute("src");
-          if (srcAttr && srcAttr.startsWith("data:")) {
-            slideConfig.href = srcAttr;
-          }
-        }
-      } 
-    });
-  
-    lightboxQuarto.on('slide_after_load', (data) => {
-      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(slideNode);
-      }
-    });
-  
-  };
-  
-})();
-          </script>
 
 
 

@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../api/io.add_mutations.html" rel="next">
+<link href="../api/io.singer_window.html" rel="next">
 <link href="../api/io.relate.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -201,6 +201,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/WindowedPainting.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WindowedPainting</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/fit.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">fit</span></a>
   </div>
@@ -252,12 +258,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">output.posterior_at</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/SoftTrack.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SoftTrack</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/track.SegmentTrack.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">track.SegmentTrack</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/track.compare_tracks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">track.compare_tracks</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Reference QC, introgression &amp; archaic detection</span></a>
+ <span class="menu-text">Reference QC &amp; ghost / archaic introgression</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -271,20 +295,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/introgression.ReferenceQC.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">introgression.ReferenceQC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/foreign_tracts.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">foreign_tracts</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/detect_ghost.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">detect_ghost</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/detect_archaic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">detect_archaic</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -295,26 +313,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/introgression.ReferenceQC.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">introgression.ReferenceQC</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../api/introgression.GhostResult.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">introgression.GhostResult</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="../api/introgression.foreignness_track.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">introgression.foreignness_track</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/archaic.ArchaicResult.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">archaic.ArchaicResult</span></a>
+  <a href="../api/introgression.ForeignnessSegment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">introgression.ForeignnessSegment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/detect_ghost.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">detect_ghost</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/GhostResult.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GhostResult</span></a>
   </div>
 </li>
       </ul>
@@ -378,6 +396,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/validate.accuracy_by_segment_size.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.accuracy_by_segment_size</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/validate.global_proportion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.global_proportion</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/validate.true_proportion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">validate.true_proportion</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/validate.map_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">validate.map_truth</span></a>
   </div>
@@ -428,12 +464,53 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
- <span class="menu-text">Input front ends</span></a>
+ <span class="menu-text">VCF benchmark harness</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.run.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.run</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.export_vcf.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.export_vcf</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.score.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.score</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.setup</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/benchmark.tool_status.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">benchmark.tool_status</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Input front ends</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/io.tsinfer.html" class="sidebar-item-text sidebar-link">
@@ -450,6 +527,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/io.singer.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">io.singer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.singer_window.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.singer_window</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.singer_windowed.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.singer_windowed</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.argweaver.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.argweaver</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/io.estimate_ne.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.estimate_ne</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -472,6 +573,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io_genotypes.source_kind</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io_genotypes.Variants.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io_genotypes.Variants</span></a>
   </div>
@@ -480,13 +587,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
  <span class="menu-text">Horizontal BP/EP smoother</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/bp.bp_paint.html" class="sidebar-item-text sidebar-link">
@@ -515,13 +622,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
  <span class="menu-text">Admixture dating (rate through time)</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/fit_rate_through_time.html" class="sidebar-item-text sidebar-link">
@@ -532,6 +639,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/RateThroughTime.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">RateThroughTime</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/EnsembleRateThroughTime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">EnsembleRateThroughTime</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.split_time.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.split_time</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -594,17 +713,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">dating.composite_transition</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.accumulate_time_binned.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.accumulate_time_binned</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.accumulate_time_binned_tv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.accumulate_time_binned_tv</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/dating.cell_centers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">dating.cell_centers</span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
  <span class="menu-text">Simulation (known truth)</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/simulate_admixture.html" class="sidebar-item-text sidebar-link">
@@ -631,6 +768,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_impure_refs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_impure_refs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_source_gene_flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/sim.simulate_admixture_with_ghost.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.simulate_admixture_with_ghost</span></a>
   </div>
@@ -645,13 +800,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
  <span class="menu-text">Generators &amp; model</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/make_generator_2state.html" class="sidebar-item-text sidebar-link">
@@ -684,6 +839,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/model.MaskedEmissions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.MaskedEmissions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/model.validate_generator.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">model.validate_generator</span></a>
   </div>
@@ -692,13 +853,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
  <span class="menu-text">Experiment drivers</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/experiments.admixture_experiment.html" class="sidebar-item-text sidebar-link">
@@ -749,6 +910,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/experiments.archaic_detection_experiment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">experiments.archaic_detection_experiment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/experiments.flicker_vs_true_boundaries.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">experiments.flicker_vs_true_boundaries</span></a>
   </div>
@@ -757,13 +924,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
  <span class="menu-text">ARG-posterior ensemble merge</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/ensemble.merge_posterior_tables.html" class="sidebar-item-text sidebar-link">
@@ -780,13 +947,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
  <span class="menu-text">Lower-level machinery</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../api/pruning.prune_tree.html" class="sidebar-item-text sidebar-link">
@@ -801,8 +968,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/pruning.PruneResult.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pruning.PruneResult</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/accumulate.accumulate_sufficient_statistics.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">accumulate.accumulate_sufficient_statistics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/accumulate.SuffStats.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">accumulate.SuffStats</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -813,8 +992,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.branch_kernel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.branch_kernel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.stats_from_kernel.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.stats_from_kernel</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/branch_stats.vanloan_integral.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">branch_stats.vanloan_integral</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/em.build_emissions.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">em.build_emissions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/model.emissions_for.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.emissions_for</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -892,22 +1095,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tspaint.io.singer(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    source,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Ne,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    mutation_rate,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    recombination_rate,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">21</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    thin<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    burn_in<span class="op">=</span><span class="dv">20</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span><span class="dv">42</span>,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    ploidy<span class="op">=</span><span class="dv">1</span>,</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    workdir<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    singer_bin<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    with_mutations<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    max_retries<span class="op">=</span><span class="dv">50</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    sequence_length<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    ts<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    mcmc_step<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    mcmc_burnin<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    _Ne<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    _m<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    _r<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    _ratio<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    _n_samples<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    _thin<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    _polar<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    _ploidy<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    _seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    _penalty<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    _hmm_epsilon<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    _psmc_bins<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    _fast<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    _recomb_map<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    _mut_map<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    singer_args<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    workdir<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    singer_bin<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    with_mutations<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    max_retries<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    sequence_length<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4).</p>
 <p>SINGER’s MCMC samples ARGs from <code>P(ARG | genotypes)</code>; the thinned post-burn-in samples are the ideal input to :func:<code>tspaint.ensemble.merge_posterior_tables</code>, since they represent genuine ARG uncertainty (§7.4).</p>
+<p><strong>Posterior sampling is controlled by three unified knobs, shared with</strong> :func:<code>tspaint.io.argweaver</code> — <code>ts</code> (how many tree sequences you get back), <code>mcmc_step</code> (MCMC iterations between saved samples) and <code>mcmc_burnin</code> (burn-in iterations). The chain runs <code>ts * mcmc_step + mcmc_burnin</code> iterations; tspaint translates the knobs into SINGER’s native <code>-n</code> / <code>-thin</code> (see Returns). Every <strong>native terminal flag</strong> is exposed underscore-prefixed to mark its 1:1 correspondence to the SINGER CLI: <code>_Ne</code> (<code>-Ne</code>, <strong>required</strong>), <code>_m</code> (<code>-m</code>), <code>_r</code> (<code>-r</code>) or <code>_ratio</code> (<code>-ratio</code>, default 1 — so <code>r = m*ratio</code>), <code>_polar</code>, <code>_ploidy</code>, <code>_seed</code>, <code>_recomb_map</code> / <code>_mut_map</code>, <code>_penalty</code> / <code>_hmm_epsilon</code> / <code>_psmc_bins</code>, <code>_fast</code>, and the raw sampling flags <code>_n_samples</code> (<code>-n</code>) / <code>_thin</code> (<code>-thin</code>) — normally left to inference from the three unified knobs. Passing a plain knob <strong>and</strong> its <code>_</code>-counterpart (e.g.&nbsp;<code>ts</code> and <code>_n_samples</code>) raises: the plain one takes precedence.</p>
 <section id="parameters" class="level2 doc-section doc-section-parameters">
 <h2 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h2>
 <dl>
@@ -915,37 +1130,77 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <dd>
 <p>The genotypes to sample ARGs from — a tree sequence carrying mutations, a <strong>VCF Zarr</strong> store, or a <strong>VCF</strong> file (normalised by :mod:<code>tspaint.io_genotypes</code>). All are written out as a haploid VCF for SINGER.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>Ne</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span></code></dt>
+<dt><code><span class="parameter-name"><strong>ts</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Effective population size passed to SINGER (<code>-Ne</code>).</p>
+<p>Number of posterior tree sequences returned (default 20). Exactly this many come back (see Returns) — a single :class:<code>tskit.TreeSequence</code> when 1, else a list.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>mutation_rate</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span></code></dt>
+<dt><code><span class="parameter-name"><strong>mcmc_step</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Per-base mutation rate (<code>-m</code>).</p>
+<p>MCMC iterations between saved samples (SINGER <code>-thin</code>; default 50). Larger ⇒ more decorrelated returned samples.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>recombination_rate</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span></code></dt>
+<dt><code><span class="parameter-name"><strong>mcmc_burnin</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Per-base recombination rate (<code>-r</code>).</p>
+<p>Burn-in MCMC iterations discarded before the kept samples (default 200); <code>mcmc_burnin // mcmc_step</code> leading saved samples are dropped.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>n_samples</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">21</span></code></dt>
+<dt><code><span class="parameter-name">**_Ne**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Number of MCMC samples SINGER draws (<code>-n</code>, default 20).</p>
+<p>Diploid effective population size (<code>-Ne</code>). <strong>Required</strong> — SINGER needs it and tspaint does not estimate one silently. SINGER calibrates its prior so <code>4·_Ne·_m ≈ π</code> (observed diversity), so estimate _Ne over the <strong>whole analysed panel</strong> with :func:<code>tspaint.io.estimate_ne</code> (all-pairs <code>π/4μ</code>). On a structured / multi-species sample that value is legitimately large — a too-small _Ne pushes deep coalescences off SINGER’s representable range into noisy / failing runs. Omitting it raises <code>ValueError</code>.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>thin</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">10</span></code></dt>
+<dt><code><span class="parameter-name">**_m**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>MCMC thinning interval (<code>-thin</code>, default 10).</p>
+<p>Per-base mutation rate (<code>-m</code>). Required (or <code>_mut_map</code>).</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>burn_in</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">20</span></code></dt>
+<dt><code><span class="parameter-name">**_r**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Number of leading samples to discard as burn-in (default 5).</p>
+<p>Per-base recombination rate (<code>-r</code>). Defaults to <code>_m * _ratio</code>.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>seed</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">42</span></code></dt>
+<dt><code><span class="parameter-name">**_ratio**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Base random seed; retries derive fresh seeds from it (default 42).</p>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>ploidy</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1</span></code></dt>
+<dt><code><span class="parameter-name">**_polar**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Ploidy passed to SINGER (<code>-ploidy</code>, default 1).</p>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_ploidy**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_seed**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_penalty**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_hmm_epsilon**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_psmc_bins**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_fast**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_recomb_map**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_mut_map**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>The remaining SINGER terminal flags, 1:1 (<code>-ratio</code> default 1, <code>-polar</code> 0.5, <code>-ploidy</code> 1, <code>-seed</code> 42, <code>-fast</code> off; the rest optional).</p>
+</dd>
+<dt><code><span class="parameter-name">**_n_samples**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>SINGER’s raw <code>-n</code> / <code>-thin</code> — normally inferred from <code>ts</code> / <code>mcmc_step</code> / <code>mcmc_burnin</code>; set directly for full control (but not alongside the plain knob they correspond to).</p>
+</dd>
+<dt><code><span class="parameter-name">**_thin**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>SINGER’s raw <code>-n</code> / <code>-thin</code> — normally inferred from <code>ts</code> / <code>mcmc_step</code> / <code>mcmc_burnin</code>; set directly for full control (but not alongside the plain knob they correspond to).</p>
 </dd>
 <dt><code><span class="parameter-name"><strong>workdir</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
@@ -972,9 +1227,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="returns" class="level2 doc-section doc-section-returns">
 <h2 class="doc-section doc-section-returns anchored" data-anchor-id="returns">Returns</h2>
 <dl>
-<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation">list of tskit.TreeSequence</span></code></dt>
+<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation">tskit.TreeSequence or list of tskit.TreeSequence</span></code></dt>
 <dd>
-<p>Post-burn-in posterior samples (one per thinned MCMC sample), with sample order preserved (VCF column <code>i</code> -&gt; sample <code>i</code>).</p>
+<p>Exactly <code>ts</code> posterior samples — a <strong>single</strong> :class:<code>tskit.TreeSequence</code> when <code>ts == 1</code>, else a <strong>list</strong> of <code>ts</code>. SINGER runs <code>-n = ts + mcmc_burnin // mcmc_step</code> samples <code>-thin = mcmc_step</code> iterations apart (<code>ts*mcmc_step + mcmc_burnin</code> iterations total); tspaint discards the <code>mcmc_burnin // mcmc_step</code> burn-in samples and keeps <code>ts</code>. E.g. <code>ts=20, mcmc_step=2, mcmc_burnin=200</code> → 20 samples over 240 iterations. Sample order is preserved (VCF column <code>i</code> -&gt; sample <code>i</code>); for a VCF / VCF-Zarr / <code>Variants</code> source the sample ids are stamped onto the sample nodes (:func:<code>tspaint.ids.attach_sample_ids</code>), so :func:<code>tspaint.paint</code> accepts <code>labels</code> keyed by sample-ID string as well as by node index.</p>
 </dd>
 </dl>
 </section>
@@ -1407,8 +1662,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../api/io.add_mutations.html" class="pagination-link" aria-label="io.add_mutations">
-        <span class="nav-page-text">io.add_mutations</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../api/io.singer_window.html" class="pagination-link" aria-label="io.singer_window">
+        <span class="nav-page-text">io.singer_window</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
