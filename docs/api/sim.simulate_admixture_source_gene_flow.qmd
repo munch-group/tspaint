@@ -1,0 +1,20 @@
+# sim.simulate_admixture_source_gene_flow { #tspaint.sim.simulate_admixture_source_gene_flow }
+
+```python
+tspaint.sim.simulate_admixture_source_gene_flow(
+    n_admix=10,
+    n_ref=10,
+    sequence_length=2000000.0,
+    recombination_rate=1e-08,
+    ploidy=2,
+    random_seed=42,
+    **demography_kwargs,
+)
+```
+
+Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOURCE_B``
+introgressed tracts from a prior A↔B pulse (:func:`admixture_demography_source_gene_flow`).
+
+The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
+the ``SOURCE_B`` references are pure. The census labels each query lineage's proximate source, so
+:func:`local_ancestry_truth` gives the query A/B truth. Identify samples by node population.

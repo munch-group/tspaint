@@ -1,0 +1,10 @@
+# benchmark.run { #tspaint.benchmark.run }
+
+```python
+tspaint.benchmark.run(tool, query_vcf, ref_vcf=None, **kwargs)
+```
+
+Dispatch to a painter by name (``"tspaint"`` or an external comparator).
+
+Forwards ``query_vcf``, ``ref_vcf`` and any painter keyword arguments (e.g. ``sample_map=``,
+``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in :data:`PAINTERS`.

@@ -1,0 +1,41 @@
+# validate.global_proportion { #tspaint.validate.global_proportion }
+
+```python
+tspaint.validate.global_proportion(
+    tracks,
+    state=0,
+    samples=None,
+    exclude_missing=True,
+)
+```
+
+Painter's estimated global ancestry proportion of ``state``.
+
+Span-weighted mean of the posterior probability of ``state`` over all (sample, position) —
+i.e. the soft global ancestry fraction the painter assigns to ``state``. For a one-hot (hard)
+painter this is the fraction of the genome called ``state``. Compare to
+:func:`true_proportion`; the signed difference is the painter's global-proportion bias.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Posterior segment tracks per sample.
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry-state index whose proportion is estimated.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to include; defaults to all keys of ``tracks``.
+
+<code>[**exclude_missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   If True, skip :data:`tspaint.output.MISSING_INFO` spans.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-weighted mean posterior of ``state``, or ``nan`` if no span was scored.

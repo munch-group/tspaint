@@ -1,5 +1,5 @@
 ---
-title: "Admixture dating: rate through time"
+title: "Cross-ancestry rate"
 ---
 
 Painting answers *what* ancestry a haplotype carries at a locus. A different question is

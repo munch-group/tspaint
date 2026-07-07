@@ -11,7 +11,7 @@ tspaint.experiments.fragmentation_experiment(
     f_A=0.5,
     recombination_rate=1e-08,
     mutation_rate=4e-07,
-    deadband=0.4,
+    deadband=DEFAULT_DEADBAND,
     tol=100000.0,
     seed=1,
     include_rfmix=True,
@@ -65,7 +65,7 @@ confidence ``deadband``, ``nearest_reference``, and — if the rfmix binary is p
 
 :   Mutation rate for the sites RFMix needs.
 
-<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.4]{.parameter-default}</code>
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_DEADBAND]{.parameter-default}</code>
 
 :   Confidence deadband for the ``tspaint_deadband`` segmentation.
 

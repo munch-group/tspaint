@@ -1,0 +1,33 @@
+# pruning.PruneResult { #tspaint.pruning.PruneResult }
+
+```python
+tspaint.pruning.PruneResult(gamma, xi, root_marginal, missing_info, loo, loglik)
+```
+
+Down-pass result of pruning a marginal tree (CLAUDE.md §3.1).
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**gamma**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``node -> (K,) posterior marginal P(state \| tree)``.
+
+<code>[**xi**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``(parent, child) -> (K, K) joint posterior`` over endpoint states.
+
+<code>[**root_marginal**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``root -> (K,) posterior`` (also present in ``gamma``).
+
+<code>[**missing_info**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)]{.parameter-annotation}</code>
+
+:   Isolated-sample nodes the tree carries no information about (distinct from a 50-50 uncertain call; CLAUDE.md §4.2).
+
+<code>[**loo**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``node -> (K,) leave-one-out marginal``: the outside message excluding the node's OWN emission — credibility evidence that avoids a label confirming itself (CLAUDE.md §2.3, §3.3).
+
+<code>[**loglik**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Total log-likelihood, summed over roots.

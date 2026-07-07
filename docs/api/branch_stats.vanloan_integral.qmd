@@ -1,0 +1,31 @@
+# branch_stats.vanloan_integral { #tspaint.branch_stats.vanloan_integral }
+
+```python
+tspaint.branch_stats.vanloan_integral(Q, t, E)
+```
+
+Top-right block of ``expm([[Q, E], [0, Q]] * t)``.
+
+Equals ``∫_0^t expm(Q τ) E expm(Q (t-τ)) dτ`` (Van Loan, 1978). For a reward
+indicator ``E`` this is the joint (un-normalized) expected reward together with
+the branch endpoints.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**t**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Branch length.
+
+<code>[**E**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Reward indicator matrix (``e_m e_m^T`` for dwell time in state ``m``; ``q_{mn} e_m e_n^T`` for ``m -> n`` jumps).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) ndarray]{.parameter-annotation}</code>
+
+:   The top-right block ``∫_0^t expm(Q τ) E expm(Q (t-τ)) dτ``.

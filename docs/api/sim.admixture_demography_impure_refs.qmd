@@ -1,0 +1,61 @@
+# sim.admixture_demography_impure_refs { #tspaint.sim.admixture_demography_impure_refs }
+
+```python
+tspaint.sim.admixture_demography_impure_refs(
+    Ne=1000,
+    T_admix=30.0,
+    census_offset=1.0,
+    T_split=5000.0,
+    f_A=0.5,
+    ref_impurity=0.1,
+)
+```
+
+Admixture demography whose **reference panels are themselves slightly admixed**.
+
+Like :func:`admixture_demography` but adds two impure reference populations:
+``REF_A_IMPURE`` draws a fraction ``1 - ref_impurity`` from source A and
+``ref_impurity`` from B (and symmetrically ``REF_B_IMPURE``), so a panel nominally
+labelled "A" carries a known minority of genuine B tracts. All three derived
+populations (the queries ``ADMIX`` and the two reference panels) form at ``T_admix``;
+the post-pulse census at ``T_admix + census_offset`` still labels every lineage's
+true source per segment, so :func:`local_ancestry_truth` recovers the references'
+own foreign tracts as ground truth.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   Diploid effective size for every population.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [30.0]{.parameter-default}</code>
+
+:   Time (generations ago) of the admixture pulse forming all derived populations.
+
+<code>[**census_offset**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Offset added to ``T_admix`` to place the census (kept strictly between admixture and split).
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [5000.0]{.parameter-default}</code>
+
+:   Time at which A and B coalesce into ANCESTRAL.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Fraction of the admixed *query* population contributed by source A.
+
+<code>[**ref_impurity**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Minority (foreign-source) fraction of each impure reference panel, in ``[0, 0.5)``. ``0`` reproduces pure references.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   Demography with populations A, B, ADMIX, REF_A_IMPURE, REF_B_IMPURE and ANCESTRAL plus the admixture, census and split events.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``T_admix < T_admix + census_offset < T_split`` is violated or ``ref_impurity`` is outside ``[0, 0.5)``.

@@ -1,0 +1,28 @@
+# branch_stats.branch_kernel { #tspaint.branch_stats.branch_kernel }
+
+```python
+tspaint.branch_stats.branch_kernel(Q, t)
+```
+
+Per-reward conditional-expectation matrices ``E[reward | s_p, s_c]`` for a branch.
+
+The ``(Q, t)``-dependent part of :func:`branch_expected_stats`. **Cacheable by
+``t``** (the per-branch posterior ``xi`` is applied separately, cheaply, via
+:func:`stats_from_kernel`), so a sweep computes the Van Loan ``expm`` once per
+distinct branch length rather than once per edge (CLAUDE.md §3.3).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   CTMC generator (rows sum to zero).
+
+<code>[**t**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Branch length. ``t <= 0`` (root branches, skipped by the caller per §3.4) returns ``None``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   ``(dwell_cond, jump_cond, K)`` where ``dwell_cond`` is a length-``K`` list of ``(K, K)`` matrices ``E[time in m \| s_p, s_c]`` and ``jump_cond`` maps ``(m, n)`` to ``(K, K)`` matrices ``E[# m->n jumps \| s_p, s_c]``. ``None`` for ``t <= 0``.

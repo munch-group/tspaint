@@ -1,0 +1,27 @@
+# validate.true_proportion { #tspaint.validate.true_proportion }
+
+```python
+tspaint.validate.true_proportion(truth_states, state=0, samples=None)
+```
+
+True global ancestry proportion of ``state`` (span-weighted fraction of the truth).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`map_truth`).
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry-state index whose true proportion is computed.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Samples to include; defaults to all keys of ``truth_states``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-weighted fraction of the truth equal to ``state``, or ``nan`` if empty.

@@ -1,0 +1,20 @@
+# dating.accumulate_time_binned { #tspaint.dating.accumulate_time_binned }
+
+```python
+tspaint.dating.accumulate_time_binned(ts, Q, pi, emissions, edges)
+```
+
+Edge-blocked, span-weighted per-cell dwell + directional jumps (Stage-1, homogeneous Q).
+
+Mirrors :func:`tspaint.accumulate.accumulate_sufficient_statistics` (bank each entering edge
+once, weighted by its span) but bins each branch's rewards by time cell.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) ndarray]{.parameter-annotation}</code>
+
+:   Span-weighted expected dwell per cell per state.
+
+<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) ndarray]{.parameter-annotation}</code>
+
+:   Span-weighted expected directional jumps per cell.

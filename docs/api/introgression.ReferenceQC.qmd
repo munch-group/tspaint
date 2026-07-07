@@ -11,6 +11,8 @@ tspaint.introgression.ReferenceQC(
     Q,
     pi,
     _length=0.0,
+    sample_ids=None,
+    individual_ids=None,
 )
 ```
 
@@ -20,7 +22,7 @@ Result of :func:`reference_qc` — a per-reference admixture/mislabel audit.
 
 <code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
 
-:   Reference sample id -> its nominal ancestry-state label.
+:   Reference **sample-node (haplotype) index** -> its nominal ancestry-state label. Keys are haplotype nodes even when :func:`reference_qc` was called with base-id / individual labels, because credibility is learned per tip (per haplotype). Use :attr:`individual_ids` / :attr:`sample_ids` (or :meth:`summary`) to read them back as the ids you passed in.
 
 <code>[**credibility**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
 
@@ -46,6 +48,14 @@ Result of :func:`reference_qc` — a per-reference admixture/mislabel audit.
 
 :   The fitted generator and root frequencies (from the refined pass when refining).
 
+<code>[**sample_ids**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [str](`str`)\] or None]{.parameter-annotation}</code>
+
+:   Per-reference haplotype-node -> its stamped **haplotype** id (e.g. ``"PD_0213_1"``), when the tree sequence carried sample names (from :func:`tspaint.io.tsinfer` / ``singer`` / ``relate``); ``None`` for an unstamped (bare-sim) tree sequence.
+
+<code>[**individual_ids**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [str](`str`)\] or None]{.parameter-annotation}</code>
+
+:   Per-reference haplotype-node -> its **individual** id (e.g. ``"PD_0213"``) — a diploid reference's two haplotype nodes share one individual id. Lets :meth:`summary` / :meth:`soft_refs` speak in the ids you passed in rather than raw node indices.
+
 ## Methods
 
 | Name | Description |
@@ -53,12 +63,17 @@ Result of :func:`reference_qc` — a per-reference admixture/mislabel audit.
 | [flagged_tracts](#tspaint.introgression.ReferenceQC.flagged_tracts) | Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state. |
 | [foreign_fraction](#tspaint.introgression.ReferenceQC.foreign_fraction) | Fraction of ``ref``'s genome flagged foreign at the given ``deadband``. |
 | [introgression_map](#tspaint.introgression.ReferenceQC.introgression_map) | The leave-one-out introgression map (list of segments) for one reference. |
-| [summary](#tspaint.introgression.ReferenceQC.summary) | Per-reference QC rows, least-credible first (the audit table). |
+| [mask](#tspaint.introgression.ReferenceQC.mask) | Per-reference foreign spans to **mask** out before re-painting. |
+| [soft_refs](#tspaint.introgression.ReferenceQC.soft_refs) | References to soften when re-painting — feed straight to ``paint(..., soft_refs=...)``. |
+| [summary](#tspaint.introgression.ReferenceQC.summary) | Per-reference-**haplotype** QC rows, least-credible first (the audit table). |
 
 ### flagged_tracts { #tspaint.introgression.ReferenceQC.flagged_tracts }
 
 ```python
-tspaint.introgression.ReferenceQC.flagged_tracts(ref, deadband=0.3)
+tspaint.introgression.ReferenceQC.flagged_tracts(
+    ref,
+    deadband=DEFAULT_QC_DEADBAND,
+)
 ```
 
 Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label state.
@@ -69,7 +84,10 @@ the best non-label state). Returns merged ``[(left, right, foreign_state)]``.
 ### foreign_fraction { #tspaint.introgression.ReferenceQC.foreign_fraction }
 
 ```python
-tspaint.introgression.ReferenceQC.foreign_fraction(ref, deadband=0.3)
+tspaint.introgression.ReferenceQC.foreign_fraction(
+    ref,
+    deadband=DEFAULT_QC_DEADBAND,
+)
 ```
 
 Fraction of ``ref``'s genome flagged foreign at the given ``deadband``.
@@ -82,10 +100,58 @@ tspaint.introgression.ReferenceQC.introgression_map(ref)
 
 The leave-one-out introgression map (list of segments) for one reference.
 
+### mask { #tspaint.introgression.ReferenceQC.mask }
+
+```python
+tspaint.introgression.ReferenceQC.mask(deadband=DEFAULT_QC_DEADBAND)
+```
+
+Per-reference foreign spans to **mask** out before re-painting.
+
+The alternative Task-1 action to :meth:`soft_refs`: rather than down-weight a whole
+reference, drop only its contaminated spans. Returns ``{ref: [(left, right), ...]}`` from
+:meth:`flagged_tracts` (foreign state dropped) for the references that have at least one
+flagged tract.
+
+### soft_refs { #tspaint.introgression.ReferenceQC.soft_refs }
+
+```python
+tspaint.introgression.ReferenceQC.soft_refs(max_credibility=None, by='node')
+```
+
+References to soften when re-painting — feed straight to ``paint(..., soft_refs=...)``.
+
+The Task-1 action: down-weight the contaminated references so they stop anchoring the
+painting where they carry foreign ancestry. With ``max_credibility=None`` (default) returns
+the suspect set the QC already softened (the non-anchor references); pass a cutoff to take
+every reference with ``credibility < max_credibility`` instead. Keep the trusted anchors
+hard-clamped — never let the whole panel float (CLAUDE.md §6).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**max_credibility**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Cutoff (see above); default returns the QC's softened (non-anchor) set.
+
+<code>[**by**]{.parameter-name} [:]{.parameter-annotation-sep} [(\'node\', \'individual\')]{.parameter-annotation} [ = ]{.parameter-default-sep} [\"node\"]{.parameter-default}</code>
+
+:   ``"node"`` (default) returns sample-**node** indices; ``"individual"`` returns the distinct **individual** ids (e.g. ``"PD_0213"``) — more legible, and still accepted by ``paint(..., soft_refs=...)`` (which resolves ids). ``"individual"`` requires a stamped tree sequence; a diploid individual is included if *either* of its haplotypes is suspect.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\] or [set](`set`)\[[str](`str`)\]]{.parameter-annotation}</code>
+
+:   Node indices (``by="node"``) or individual ids (``by="individual"``) to pass as ``soft_refs``.
+
 ### summary { #tspaint.introgression.ReferenceQC.summary }
 
 ```python
-tspaint.introgression.ReferenceQC.summary(deadband=0.3)
+tspaint.introgression.ReferenceQC.summary(deadband=DEFAULT_QC_DEADBAND)
 ```
 
-Per-reference QC rows, least-credible first (the audit table).
+Per-reference-**haplotype** QC rows, least-credible first (the audit table).
+
+One row per reference haplotype (two per diploid individual — credibility is learned per
+tip). ``ref`` is the sample-node index; when the tree sequence carried sample names the row
+also names the ``individual`` (base id) and ``haplotype`` (per-haplotype id) so the table is
+legible in your own ids, not just node integers.

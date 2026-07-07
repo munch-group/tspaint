@@ -7,6 +7,7 @@ tspaint.sim.admixture_demography(
     census_offset=1.0,
     T_split=2000.0,
     f_A=0.3,
+    migration_rate=0.0,
 )
 ```
 
@@ -17,6 +18,18 @@ older than the admixture pulse. A and B contribute fractions ``f_A`` and
 ``1 - f_A`` to ADMIX at ``T_admix``; they merge into a common ancestor at
 ``T_split``. The census sits at ``T_admix + census_offset`` (strictly
 between admixture and split).
+
+Two demographic regimes (CLAUDE.md §9 — the harder, more realistic one is
+the migration model, where the sources are less differentiated):
+
+* ``migration_rate == 0`` — the sources are **isolated** between split and
+  admixture (the clean two-source pulse).
+* ``migration_rate > 0`` — symmetric **low-level gene flow** between A and B
+  over ``[census_time, T_split)`` (the interval where they coexist as
+  distinct populations after the census). The census still cleanly labels
+  each lineage's source — migration only acts *deeper* than the census — so
+  the local-ancestry truth is unchanged, but A and B share more recent
+  ancestry, making them harder to tell apart.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
@@ -40,14 +53,18 @@ between admixture and split).
 
 :   Fraction of ADMIX contributed by source A (B contributes ``1 - f_A``).
 
+<code>[**migration_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0]{.parameter-default}</code>
+
+:   Per-generation symmetric migration rate between A and B over ``[census_time, T_split)``. ``0`` (default) gives the isolated model.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
 
-:   Demography with populations A, B, ADMIX and ANCESTRAL plus the admixture, census and split events.
+:   Demography with populations A, B, ADMIX and ANCESTRAL plus the admixture, census and split events (and the A↔B migration if requested).
 
 ## Raises {.doc-section .doc-section-raises}
 
 <code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
 
-:   If ``T_admix < T_admix + census_offset < T_split`` is violated.
+:   If ``T_admix < T_admix + census_offset < T_split`` is violated, or ``migration_rate < 0``.

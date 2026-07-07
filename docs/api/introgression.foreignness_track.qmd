@@ -10,6 +10,7 @@ tspaint.introgression.foreignness_track(
     focal=None,
     depth='rank',
     merge_tol=1e-09,
+    tree_range=None,
 )
 ```
 

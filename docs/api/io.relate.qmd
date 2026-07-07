@@ -1,50 +1,128 @@
 # io.relate { #tspaint.io.relate }
 
 ```python
-tspaint.io.relate(anc, mut, *, out_prefix=None, compress=True, convert_bin=None)
+tspaint.io.relate(
+    source,
+    *,
+    mutation_rate=None,
+    recombination_rate=1e-08,
+    Ne=None,
+    genetic_map=None,
+    poplabels=None,
+    estimate_population_size=True,
+    seed=1,
+    memory=None,
+    num_iter=None,
+    compress=True,
+    workdir=None,
+    relate_bin=None,
+    file_formats_bin=None,
+    eps_script=None,
+    convert_bin=None,
+    relate_args=None,
+    m=None,
+    r=None,
+)
 ```
 
-Convert Relate output (``.anc`` / ``.mut``) to a tskit tree sequence (CLAUDE.md §5).
+Infer a tree sequence from genotypes with **Relate**, end to end (CLAUDE.md §5).
 
-Wraps ``relate_lib`` ``Convert --mode ConvertToTreeSequence [--compress]`` (run Relate itself
-upstream). ``--compress`` is **load-bearing** — it unifies persistent clades into one node id
-across adjacent trees, the persistence invariant the edge-blocking depends on (§5) — so keep
-it on. Run :func:`check_persistence` on the result before inference (§5.1).
+The real-data analogue of :func:`tspaint.io.tsinfer` / :func:`tspaint.io.singer`: hand it
+genotypes and get back a tskit tree sequence — it runs the whole Relate pipeline for you, so **no
+Relate command line is required**:
+
+1. write a haploid VCF and convert it to Relate haps/sample (``RelateFileFormats``);
+2. infer genome-wide genealogies (``Relate --mode All``);
+3. (default) re-estimate the coalescence-rate history and re-date branch lengths **genome-wide**
+   (``EstimatePopulationSize`` — best on a whole chromosome, so give it one);
+4. convert to tskit with ``--compress`` (:func:`relate_convert`; §5 persistence invariant).
+
+Build the binaries once with ``tspaint install relate``. Paint the result with
+``tspaint.paint(ts, labels, n_jobs=…)`` (or stream a huge chromosome with ``window_size=…,
+out_dir=…``).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**anc**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [tskit.TreeSequence, str, or Variants]{.parameter-annotation}</code>
 
-:   Path to the Relate ``.anc`` (``.gz``) file.
+:   Genotypes — a tree sequence with mutations, a **VCF**, a **VCF Zarr**, or a :class:`~tspaint.io_genotypes.Variants` (e.g. from :func:`~tspaint.io.subset_data`), resolved as for the other front ends. Each sample haplotype becomes one Relate haplotype, in order.
 
-<code>[**mut**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Path to the Relate ``.mut`` (``.gz``) file.
+:   Per-base, per-generation mutation rate (Relate ``-m``; alias ``m``). **Required.**
 
-<code>[**out_prefix**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
 
-:   Output prefix for the converted ``.trees`` (default: a tempfile prefix).
+:   Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``; alias ``r``). Ignored when ``genetic_map`` is given.
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Diploid effective size for Relate's initial prior (``-N`` receives the haploid ``2·Ne``). Relate re-estimates it via ``EstimatePopulationSize``, so it is only a starting point; the default estimates it from the data (:func:`tspaint.io.estimate_ne`, all-pairs ``π / 4μ``).
+
+<code>[**genetic_map**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to a Relate genetic map (``pos COMBINED_rate Genetic_Map``); default synthesises a flat one from ``recombination_rate``.
+
+<code>[**poplabels**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to a ``.poplabels`` file for ``EstimatePopulationSize`` (population/group/sex per sample, in ``.sample`` order); default treats all samples as one population. Pass per-population labels for a structure-aware coalescence-rate estimate on an admixed / multi-species panel.
+
+<code>[**estimate_population_size**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Run ``EstimatePopulationSize`` (step 3), the genome-wide branch-length recalibration (default ``True``). ``False`` converts Relate's initial ``--mode All`` trees directly (faster, less calibrated).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed for Relate and ``EstimatePopulationSize`` (default 1).
+
+<code>[**memory**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Relate ``--memory`` (GB) hint for large data.
+
+<code>[**num_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ``EstimatePopulationSize`` iterations (default: the script's own).
 
 <code>[**compress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
 
-:   Pass ``--compress`` (default ``True`` — load-bearing; do not turn off, §5).
+:   Convert with ``--compress`` (default ``True`` — load-bearing, §5).
+
+<code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Directory for the intermediate files (default: a fresh tempdir).
+
+<code>[**relate_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Override the ``Relate`` / ``RelateFileFormats`` / ``EstimatePopulationSize.sh`` / ``Convert`` paths (defaults: the ``tspaint install relate`` build locations).
+
+<code>[**file_formats_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Override the ``Relate`` / ``RelateFileFormats`` / ``EstimatePopulationSize.sh`` / ``Convert`` paths (defaults: the ``tspaint install relate`` build locations).
+
+<code>[**eps_script**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Override the ``Relate`` / ``RelateFileFormats`` / ``EstimatePopulationSize.sh`` / ``Convert`` paths (defaults: the ``tspaint install relate`` build locations).
 
 <code>[**convert_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Path to the ``relate_lib`` ``Convert`` binary (default: env ``TSPAINT_RELATE_CONVERT`` or ``Convert`` on ``PATH``).
+:   Override the ``Relate`` / ``RelateFileFormats`` / ``EstimatePopulationSize.sh`` / ``Convert`` paths (defaults: the ``tspaint install relate`` build locations).
+
+<code>[**relate_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra flags appended verbatim to ``Relate --mode All``.
 
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
 
-:   The converted tree sequence (node ids stable across trees thanks to ``--compress``).
+:   The Relate tree sequence (node ids stable across trees via ``--compress``; branch lengths in generations). Sample nodes are in input order; for a **VCF** / **VCF-Zarr** / ``Variants`` source the source's sample ids are stamped on them (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed by sample-ID string as well as by node index.
 
 ## Raises {.doc-section .doc-section-raises}
 
 <code>[:]{.parameter-annotation-sep} [[FileNotFoundError](`FileNotFoundError`)]{.parameter-annotation}</code>
 
-:   If the ``Convert`` binary or an input file is absent.
+:   If a required Relate binary is absent (build them with ``tspaint install relate``).
 
 <code>[:]{.parameter-annotation-sep} [[RuntimeError](`RuntimeError`)]{.parameter-annotation}</code>
 
-:   If ``Convert`` exits nonzero.
+:   If a Relate step fails.

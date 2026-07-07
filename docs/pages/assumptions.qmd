@@ -1,5 +1,5 @@
 ---
-title: Assumptions, identifiability & limitations
+title: Assumptions and limitations
 ---
 
 This page is the honest accounting of what `tspaint` assumes, where its parameters

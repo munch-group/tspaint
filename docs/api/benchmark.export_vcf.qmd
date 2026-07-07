@@ -1,0 +1,57 @@
+# benchmark.export_vcf { #tspaint.benchmark.export_vcf }
+
+```python
+tspaint.benchmark.export_vcf(
+    ts,
+    labels,
+    queries=None,
+    *,
+    outdir,
+    mutation_rate=4e-07,
+    seed=1,
+    chromosome='1',
+    prefix='',
+)
+```
+
+Write query/reference VCFs, a sample map, and a truth table from a tree sequence.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   Tree sequence with known local ancestry (census nodes; e.g. from :func:`tspaint.simulate_admixture`). Mutations are overlaid if it has no sites.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample-node id → ancestry state.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Query sample-node ids; defaults to every sample not in ``labels``. Must be an even count (haplotypes are paired into diploid VCF samples).
+
+<code>[**outdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Output directory (created if absent).
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [4e-07]{.parameter-default}</code>
+
+:   Rate for overlaid mutations if ``ts`` is bare (default ``4e-7``).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Seed for the mutation overlay (default 1).
+
+<code>[**chromosome**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'1\']{.parameter-default}</code>
+
+:   Contig label written into the VCFs (default ``"1"``).
+
+<code>[**prefix**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'\']{.parameter-default}</code>
+
+:   Filename prefix for the outputs.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Paths ``{"query_vcf", "ref_vcf", "sample_map", "truth"}``.

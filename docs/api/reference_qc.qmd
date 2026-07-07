@@ -13,6 +13,8 @@ tspaint.reference_qc(
     max_iter=8,
     alpha=20.0,
     beta=1.0,
+    n_jobs=None,
+    progress=False,
 )
 ```
 
@@ -32,13 +34,13 @@ sharpening their introgression maps.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [list](`list`)\[[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)\]]{.parameter-annotation}</code>
 
-:   Tree sequence whose samples include the references (no queries required).
+:   Tree sequence whose samples include the references (no queries required), or **an ensemble** (e.g. SINGER posterior samples). For an ensemble one ``theta`` is fit **pooled** across all members, each reference's leave-one-out introgression map is painted **per member** and **merged** (mean map + ARG-uncertainty ``posterior_std`` band), exactly as :func:`tspaint.paint` marginalises an ensemble (CLAUDE.md §7.4). Members must share samples and coordinates.
 
 <code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
 
-:   Reference sample id -> nominal ancestry-state label.
+:   Reference sample id -> nominal ancestry-state label (keyed on the first member for an ensemble).
 
 <code>[**anchors**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -71,6 +73,14 @@ sharpening their introgression maps.
 <code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20.0]{.parameter-default}</code>
 
 :   Beta prior for the softened references (refine pass).
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Worker processes for the EM fits and the leave-one-out paints (the slow, genome-scale part; the per-pass work parallelises exactly like :func:`tspaint.paint`). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial. (The result's :meth:`ReferenceQC.soft_refs` / :meth:`~ReferenceQC.summary` are cheap table lookups — nothing to parallelise there; this is where the compute lives.)
+
+<code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Show :mod:`tqdm` bars for the EM fits and LOO paints. Default ``False``.
 
 ## Returns {.doc-section .doc-section-returns}
 

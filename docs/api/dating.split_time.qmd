@@ -1,0 +1,30 @@
+# dating.split_time { #tspaint.dating.split_time }
+
+```python
+tspaint.dating.split_time(rtt, exposure_frac=0.01)
+```
+
+Estimate the split / divergence time from a :class:`RateThroughTime` profile.
+
+The combined cross-ancestry rate ``q_AB(t) + q_BA(t)`` is ~0 below the split (the two
+ancestries are still separate looking backward) and **rises** once ``t`` exceeds it (they
+coalesce) — the split shows up as the *onset*, not a peak. Returns the smallest cell centre
+(generations ago) at which the combined cross-rate first reaches **half** its
+exposure-guarded maximum (cells with negligible occupation ``D`` are ignored, so a deep
+no-data cell cannot masquerade as the onset).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**rtt**]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tspaint.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
+
+:   A fitted directional rate profile.
+
+<code>[**exposure_frac**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.01]{.parameter-default}</code>
+
+:   Ignore cells whose total occupation ``D`` is below this fraction of the max. Default 0.01.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   The split-time estimate (generations ago), or ``nan`` if the cross-rate never rises.

@@ -7,6 +7,9 @@ tspaint.io_genotypes.Variants(
     alleles,
     sequence_length,
     sample_names=None,
+    ploidy=1,
+    missing=None,
+    sample_index=None,
 )
 ```
 
@@ -32,4 +35,16 @@ A tool-agnostic biallelic variant matrix (one column per **haplotype**).
 
 <code>[**sample_names**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[str](`str`)\] or None]{.parameter-annotation}</code>
 
-:   Optional haplotype/sample names (length ``H``).
+:   Optional haplotype/sample names (length ``H``). For ``ploidy > 1`` these are the flattened per-haplotype names ``"<sample>_<k>"`` (0-based ``k``), as produced by the readers below.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Haplotypes per sample (``H = num_samples * ploidy``); ``1`` for haploid data. Lets the front ends recover the base sample id from :attr:`sample_names` when stamping the tree sequence (:func:`tspaint.ids.attach_sample_ids`).
+
+<code>[**missing**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
+
+:   Optional ``(S, H)`` boolean mask, ``True`` where the genotype was **missing** (``.`` in a VCF, negative in a Zarr) — in :attr:`genotypes` a missing call is stored as ``0`` (REF), so this mask is the only record of it. ``None`` when there is no missing data. Used by :func:`estimate_ne` to compare only the sites called in both haplotypes.
+
+<code>[**sample_index**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
+
+:   Optional ``(H,)`` integer array mapping each haplotype column to the **base sample / individual** it belongs to. ``None`` means uniform ploidy — column ``j`` belongs to individual ``j // ploidy`` — which is the common case. It is set only when the samples have **mixed ploidy** (e.g. a chrX VCF with diploid females and haploid males), where a scalar ``ploidy`` cannot express the grouping; :func:`estimate_ne` and the id helpers use it to keep individuals correct.

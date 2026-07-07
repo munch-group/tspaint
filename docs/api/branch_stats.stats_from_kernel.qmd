@@ -1,0 +1,27 @@
+# branch_stats.stats_from_kernel { #tspaint.branch_stats.stats_from_kernel }
+
+```python
+tspaint.branch_stats.stats_from_kernel(kernel, xi)
+```
+
+Apply an endpoint posterior to a cached branch kernel (cheap; no ``expm``).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**kernel**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)]{.parameter-annotation}</code>
+
+:   A cached :func:`branch_kernel` result ``(dwell_cond, jump_cond, K)``.
+
+<code>[**xi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Posterior over ``(parent_state, child_state)`` for this branch.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**dwell**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) ndarray]{.parameter-annotation}</code>
+
+:   Expected time spent in each state along the branch, under ``xi``.
+
+<code>[**jumps**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) ndarray]{.parameter-annotation}</code>
+
+:   Expected number of ``m -> n`` transitions (``m != n``), under ``xi``.

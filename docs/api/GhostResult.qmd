@@ -1,0 +1,70 @@
+# GhostResult { #tspaint.GhostResult }
+
+```python
+tspaint.GhostResult(
+    posteriors,
+    burden,
+    mu,
+    sd,
+    A,
+    pi0,
+    loglik_history,
+    default_deadband=DEFAULT_DEADBAND,
+    _seqlen=None,
+)
+```
+
+Result of :func:`detect_ghost` — per-locus ``P(ghost)`` from the depth-emission HMM.
+
+"Ghost" = ancestry from a population not in the reference panel; the signal is *depth*, so the
+detector targets **deep** (archaic-like) ghosts specifically (a shallow recent ghost will not
+trip it).
+
+A :class:`~tspaint.track.SoftTrack`, so it shares the painting read-out surface:
+:meth:`~tspaint.track.SoftTrack.segments` (hard ghost/modern tracts with the calibrated
+dead-band), :meth:`~tspaint.track.SoftTrack.posterior_at`, and
+:meth:`~tspaint.track.SoftTrack.plot` (whose colour scale highlights ``P(ghost)``).
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per sample, contiguous :class:`~tspaint.output.Segment`\ s tiling ``[0, L)`` whose ``(2,)`` ``posterior`` is ``[P(modern), P(ghost)]`` (state 0 modern, 1 ghost). For an **ensemble** input these are :class:`~tspaint.ensemble.MergedSegment`\ s — the per-member mean plus a ``posterior_std`` band — but behave identically.
+
+<code>[**burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [float](`float`)\]]{.parameter-annotation}</code>
+
+:   Per sample, the span-weighted mean ``P(ghost)`` (the genome-wide ghost burden).
+
+<code>[**mu, sd**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2,)`` learned emission means / stds on the depth observation — ``log`` coalescence time (``depth="time"``) or its genome-wide rank (``depth="rank"``); index 0 modern, 1 ghost.
+
+<code>[**A**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2, 2)`` learned per-breakpoint transition matrix.
+
+<code>[**pi0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(2,)`` learned initial distribution.
+
+<code>[**loglik_history**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation}</code>
+
+:   Pooled Baum–Welch log-likelihood per iteration (non-decreasing).
+
+<code>[**default_deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Default dead-band passed to :meth:`~tspaint.track.SoftTrack.segments`. Defaults to :data:`~tspaint.output.DEFAULT_DEADBAND`.
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [tracts](#tspaint.GhostResult.tracts) | Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``. |
+
+### tracts { #tspaint.GhostResult.tracts }
+
+```python
+tspaint.GhostResult.tracts(sample, threshold=0.5)
+```
+
+Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``.

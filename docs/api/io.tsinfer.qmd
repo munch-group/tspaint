@@ -1,7 +1,13 @@
 # io.tsinfer { #tspaint.io.tsinfer }
 
 ```python
-tspaint.io.tsinfer(source)
+tspaint.io.tsinfer(
+    source,
+    *,
+    date=False,
+    mutation_rate=None,
+    tsdate_kwargs=None,
+)
 ```
 
 Infer a tree sequence from genotypes via tsinfer (CLAUDE.md §5, §9).
@@ -11,15 +17,27 @@ binding constraint (§9).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [str](`str`)]{.parameter-annotation}</code>
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [tskit.TreeSequence, str, or Variants]{.parameter-annotation}</code>
 
-:   The genotypes to infer from — a tree sequence carrying variant sites (e.g. from :func:`add_mutations`), a **VCF Zarr** store, or a **VCF** file (see :mod:`tspaint.io_genotypes` for the unified handling and its v1 limits).
+:   The genotypes to infer from — a tree sequence carrying variant sites (e.g. from :func:`add_mutations`), a **VCF Zarr** store, a **VCF** file, or a :class:`~tspaint.io_genotypes.Variants` (e.g. from :func:`~tspaint.io.subset_data` / :func:`~tspaint.io.pseudohaploid`) — see :mod:`tspaint.io_genotypes` for the unified handling and its v1 limits.
+
+<code>[**date**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Calibrate the inferred node ages to **generations** with tsdate (default ``False``). A raw tsinfer ARG has *uncalibrated* times (~``[0, 1]``), which is fine for :func:`tspaint.paint` (it needs only relative branch lengths) but makes :meth:`tspaint.Painting.rate_through_time` meaningless. Set ``date=True`` (with ``mutation_rate``) to get times in generations.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-base mutation rate for tsdate's clock — **required** when ``date=True``.
+
+<code>[**tsdate_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra keyword arguments forwarded to :func:`tsdate.date` (e.g. ``method=``); the default method is ``variational_gamma`` (mutation-clock, no ``Ne`` needed).
 
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
 
-:   The tsinfer-inferred tree sequence. Sample nodes are preserved in input order, so per-sample labels and truth transfer by sample id.
+:   The tsinfer-inferred tree sequence (node ages in **generations** when ``date=True``, else uncalibrated). Sample nodes are preserved in input order, so per-sample labels and truth transfer by sample id. For a **VCF** / **VCF-Zarr** source the source's sample ids are stamped onto the sample nodes (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed by sample-ID string as well as by node index (the stamping survives dating). A bare **ts** source is returned unstamped.
 
 ## Notes {.doc-section .doc-section-notes}
 

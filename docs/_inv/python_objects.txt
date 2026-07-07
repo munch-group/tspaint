@@ -8268,10 +8268,15 @@ http.server.CGIHTTPRequestHandler.cgi_directories py:attribute 1 library/http.se
 http.server.CGIHTTPRequestHandler.do_POST py:method 1 library/http.server.html#$ -
 http.server.HTTPSServer py:class 1 library/http.server.html#$ -
 http.server.HTTPServer py:class 1 library/http.server.html#$ -
+http.server.HTTPServer.server_name py:attribute 1 library/http.server.html#$ -
+http.server.HTTPServer.server_port py:attribute 1 library/http.server.html#$ -
 http.server.SimpleHTTPRequestHandler py:class 1 library/http.server.html#$ -
 http.server.SimpleHTTPRequestHandler.do_GET py:method 1 library/http.server.html#$ -
 http.server.SimpleHTTPRequestHandler.do_HEAD py:method 1 library/http.server.html#$ -
 http.server.SimpleHTTPRequestHandler.extensions_map py:attribute 1 library/http.server.html#$ -
+http.server.SimpleHTTPRequestHandler.guess_type py:method 1 library/http.server.html#$ -
+http.server.SimpleHTTPRequestHandler.index_pages py:attribute 1 library/http.server.html#$ -
+http.server.SimpleHTTPRequestHandler.list_directory py:method 1 library/http.server.html#$ -
 http.server.SimpleHTTPRequestHandler.server_version py:attribute 1 library/http.server.html#$ -
 http.server.ThreadingHTTPSServer py:class 1 library/http.server.html#$ -
 http.server.ThreadingHTTPServer py:class 1 library/http.server.html#$ -
@@ -16417,9 +16422,9 @@ converting-argument-sequence std:label -1 library/subprocess.html#$ Converting a
 cookbook-ref-links std:label -1 howto/logging-cookbook.html#$ Other resources
 cookbook-rotator-namer std:label -1 howto/logging-cookbook.html#$ Using a rotator and namer to customize log rotation processing
 cookie-example std:label -1 library/http.cookies.html#$ Example
-cookie-jar-objects std:label -1 library/http.cookiejar.html#$ CookieJar and FileCookieJar Objects
+cookie-jar-objects std:label -1 library/http.cookiejar.html#$ CookieJar and FileCookieJar objects
 cookie-objects std:label -1 library/http.cookies.html#$ Cookie Objects
-cookie-policy-objects std:label -1 library/http.cookiejar.html#$ CookiePolicy Objects
+cookie-policy-objects std:label -1 library/http.cookiejar.html#$ CookiePolicy objects
 copyright std:doc -1 copyright.html Copyright
 coro-objects std:label -1 c-api/coro.html#$ Coroutine Objects
 coroutine std:label -1 library/asyncio-task.html#$ Coroutines
@@ -16534,7 +16539,7 @@ decompress-wbits std:label -1 library/zlib.html#$ -
 decorator std:term -1 glossary.html#term-$ -
 def std:label -1 reference/compound_stmts.html#$ Function definitions
 default std:label -1 library/argparse.html#$ -
-default-cookie-policy-objects std:label -1 library/http.cookiejar.html#$ DefaultCookiePolicy Objects
+default-cookie-policy-objects std:label -1 library/http.cookiejar.html#$ DefaultCookiePolicy objects
 default-memory-allocators std:label -1 c-api/memory.html#$ Default Memory Allocators
 default-warning-filter std:label -1 library/warnings.html#$ Default Warning Filter
 defining-new-types std:label -1 extending/newtypes_tutorial.html#$ Defining Extension Types: Tutorial
@@ -18409,6 +18414,7 @@ stdlib std:term -1 glossary.html#term-$ -
 stdtypes-fstrings std:label -1 library/stdtypes.html#$ Formatted String Literals (f-strings)
 stdtypes-mixed-arithmetic std:label -1 library/stdtypes.html#$ -
 stdtypes-tstrings std:label -1 library/stdtypes.html#$ Template String Literals (t-strings)
+steal std:term -1 glossary.html#term-$ -
 step std:pdbcommand 1 library/pdb.html#pdbcommand-$ -
 stream-handler std:label -1 library/logging.handlers.html#$ StreamHandler
 stream-reader-objects std:label -1 library/codecs.html#$ StreamReader Objects
@@ -18545,6 +18551,7 @@ timeit.-u std:cmdoption 1 library/timeit.html#cmdoption-timeit-u -
 timeit.-v std:cmdoption 1 library/timeit.html#cmdoption-timeit-v -
 timer-objects std:label -1 library/threading.html#$ Timer objects
 timerfd-howto std:label -1 howto/timerfd.html#$ timer file descriptor HOWTO
+tk-option-data-types std:label -1 library/tkinter.html#$ Tk option data types
 tkinter std:label -1 library/tk.html#$ Graphical user interfaces with Tk
 tkinter-file-handlers std:label -1 library/tkinter.html#$ File handlers
 tkinter-numeric-locale std:label -1 library/tkinter.html#$ -

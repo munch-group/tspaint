@@ -1,0 +1,101 @@
+# io.singer_window { #tspaint.io.singer_window }
+
+```python
+tspaint.io.singer_window(
+    source,
+    *,
+    start,
+    end,
+    out_prefix,
+    _Ne,
+    _m=None,
+    _r=None,
+    _ratio=None,
+    _n_samples=20,
+    _thin=10,
+    _ploidy=1,
+    _seed=42,
+    _polar=0.5,
+    _penalty=None,
+    _hmm_epsilon=None,
+    _psmc_bins=None,
+    _recomb_map=None,
+    _mut_map=None,
+    _fast=False,
+    singer_args=None,
+    max_retries=50,
+    singer_bin=None,
+)
+```
+
+Run SINGER on ONE genomic window ``[start, end)``, leaving the raw node/branch/mut tables.
+
+The per-window unit of a GWF window × member parallelisation: run this for each window, then
+stitch the per-window tables for each MCMC member into a chromosome-length ARG with
+:func:`build_merge_table` + :func:`run_merge_arg`. Uses the **bare SINGER binary** (not
+``singer_master``, whose ``-m`` rate path is broken in the bundled copy — an ``arggs.ploidy``
+typo and a dead ``-mut_map`` branch).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [str](`str`)]{.parameter-annotation}</code>
+
+:   Genotypes: a tree sequence (a haploid VCF is written next to ``out_prefix``), or a VCF path (used directly — SINGER reads ``<prefix>.vcf``; no rewrite, so a GWF grid shares it).
+
+<code>[**start**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Window bounds passed to SINGER ``-start`` / ``-end``.
+
+<code>[**end**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Window bounds passed to SINGER ``-start`` / ``-end``.
+
+<code>[**out_prefix**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Output prefix; SINGER writes ``{out_prefix}_nodes_<i>.txt`` etc.
+
+<code>[**_Ne**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_m**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_r**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_seed**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_polar**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**max_retries**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**singer_bin**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   The MCMC sample indices written for this window.

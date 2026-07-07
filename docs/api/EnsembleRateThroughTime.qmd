@@ -1,0 +1,55 @@
+# EnsembleRateThroughTime { #tspaint.EnsembleRateThroughTime }
+
+```python
+tspaint.EnsembleRateThroughTime(members, split_times)
+```
+
+Rate through time across an ARG ensemble — one :class:`RateThroughTime` per member, with a
+**confidence interval on the split time** from the ensemble spread.
+
+Returned by :meth:`tspaint.Painting.rate_through_time` when the painting was built from an
+ensemble of tree sequences (e.g. SINGER posterior samples): each member is dated on the shared
+fit, and the per-member split-time estimates (:func:`split_time`) become an interval — the
+ARG-uncertainty band on *when* the ancestries diverged.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**members**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[RateThroughTime](`tspaint.dating.em.RateThroughTime`)\]]{.parameter-annotation}</code>
+
+:   Per-member directional rate profiles, on a shared time grid (so they average).
+
+<code>[**split_times**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(M,)`` per-member split-time estimates (generations ago).
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [plot](#tspaint.EnsembleRateThroughTime.plot) | Per-member rate curves (faint) + the ensemble mean + the split-time CI band. |
+| [split_time](#tspaint.EnsembleRateThroughTime.split_time) | Point estimate of the split time over members (``"median"`` or ``"mean"``). |
+| [split_time_ci](#tspaint.EnsembleRateThroughTime.split_time_ci) | Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread. |
+
+### plot { #tspaint.EnsembleRateThroughTime.plot }
+
+```python
+tspaint.EnsembleRateThroughTime.plot(ax=None, scale=1.0, level=0.95)
+```
+
+Per-member rate curves (faint) + the ensemble mean + the split-time CI band.
+
+### split_time { #tspaint.EnsembleRateThroughTime.split_time }
+
+```python
+tspaint.EnsembleRateThroughTime.split_time(statistic='median')
+```
+
+Point estimate of the split time over members (``"median"`` or ``"mean"``).
+
+### split_time_ci { #tspaint.EnsembleRateThroughTime.split_time_ci }
+
+```python
+tspaint.EnsembleRateThroughTime.split_time_ci(level=0.95)
+```
+
+Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread.

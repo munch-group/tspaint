@@ -1,0 +1,8 @@
+# model.emissions_for { #tspaint.model.emissions_for }
+
+```python
+tspaint.model.emissions_for(emissions, left, right)
+```
+
+The emission dict for a marginal tree interval — position-dependent for a
+:class:`MaskedEmissions`, else the plain ``emissions`` dict unchanged (backward compatible).

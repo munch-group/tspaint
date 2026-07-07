@@ -499,8 +499,8 @@ def singer_window(source, *, start, end, out_prefix, _Ne, _m=None, _r=None,
         Window bounds passed to SINGER ``-start`` / ``-end``.
     out_prefix : str
         Output prefix; SINGER writes ``{out_prefix}_nodes_<i>.txt`` etc.
-    Ne, mutation_rate, recombination_rate, n_samples, thin, ploidy, seed, polar, max_retries, singer_bin
-        As for :func:`singer` / SINGER's flags.
+    _Ne, _m, _r, _n_samples, _thin, _ploidy, _seed, _polar, max_retries, singer_bin
+        The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
 
     Returns
     -------

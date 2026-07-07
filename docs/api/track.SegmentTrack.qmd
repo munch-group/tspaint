@@ -1,0 +1,49 @@
+# track.SegmentTrack { #tspaint.track.SegmentTrack }
+
+```python
+tspaint.track.SegmentTrack(
+    segments,
+    *,
+    length=None,
+    deadband=DEFAULT_DEADBAND,
+    hi_state=0,
+    hi_label=None,
+    K=None,
+)
+```
+
+Wrap any per-sample segments in a plottable track — hard tuples *or* soft posteriors.
+
+Gives ``painting.segments()`` (hard ``(left, right, state)`` tuples), the comparator painters
+(``rfmix_paint`` / ``gnomix`` / ``tspaint_paint`` — soft :class:`~tspaint.output.Segment`\ s), or any
+``{sample: segments}`` dict the same read-out as a :class:`~tspaint.Painting`: :meth:`plot`,
+:meth:`segments`, :meth:`posterior_at`. Hard tuples become one-hot segments and render as solid
+per-state bars; soft segments render as the posterior gradient — so different tools plot in one
+consistent style (compare several at once with :func:`compare_tracks`). Purely a view: it does not
+alter the segments it wraps.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**segments**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`) or [SoftTrack](`tspaint.track.SoftTrack`)]{.parameter-annotation}</code>
+
+:   ``{sample: [Segment \| (left, right, state)]}``, or an existing track / :class:`~tspaint.Painting` (its ``posteriors`` and length are reused).
+
+<code>[**length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Sequence length for the x-axis; defaults to the largest segment ``right``.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_DEADBAND]{.parameter-default}</code>
+
+:   Default dead-band for :meth:`segments`. Defaults to :data:`~tspaint.output.DEFAULT_DEADBAND`.
+
+<code>[**hi_state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   The state highlighted by :meth:`plot`'s colour scale (top of the colormap). Default ``0``.
+
+<code>[**hi_label**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Colour-bar label; defaults to the painting's ``"P(ancestry A)"``.
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Number of ancestry states (for one-hot conversion of hard tuples); inferred when ``None``.

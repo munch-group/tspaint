@@ -1,0 +1,47 @@
+# benchmark.setup { #tspaint.benchmark.setup }
+
+```python
+tspaint.benchmark.setup(
+    tools=None,
+    *,
+    tools_dir=None,
+    manifest=None,
+    force=False,
+    dry_run=False,
+    log=print,
+)
+```
+
+Clone + build the git-only comparators listed in the manifest.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tools**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Subset of tool names to provision; default all in the manifest.
+
+<code>[**tools_dir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Clone root (default :func:`default_tools_dir`).
+
+<code>[**manifest**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Manifest path (default :func:`default_manifest_path`).
+
+<code>[**force**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Re-provision even if the ``check`` path already exists.
+
+<code>[**dry_run**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Print the plan and make no changes.
+
+<code>[**log**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [print]{.parameter-default}</code>
+
+:   Progress sink (default ``print``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\]]{.parameter-annotation}</code>
+
+:   One row per tool: ``tool``, ``status`` (``already`` / ``planned`` / ``provisioned`` / ``incomplete`` / ``failed`` / ``unknown``), ``path`` and the ``steps`` (formatted).

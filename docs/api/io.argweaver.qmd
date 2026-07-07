@@ -1,0 +1,136 @@
+# io.argweaver { #tspaint.io.argweaver }
+
+```python
+tspaint.io.argweaver(
+    source,
+    *,
+    ts=None,
+    mcmc_step=None,
+    mcmc_burnin=None,
+    _N=None,
+    _m=None,
+    _r=None,
+    _ntimes=20,
+    _maxtime=200000.0,
+    _compress=1,
+    _iters=None,
+    _sample_step=None,
+    _seed=None,
+    argweaver_args=None,
+    workdir=None,
+    argweaver_bin=None,
+    sequence_length=None,
+    names=None,
+    log=None,
+)
+```
+
+Sample posterior ARGs from genotypes via ARGweaver (an alternative to :func:`singer`).
+
+Runs ARGweaver's ``arg-sample`` MCMC and returns its post-burn-in samples as tskit tree
+sequences — the same shape as :func:`singer` (a single tree sequence, or a list), so the
+ensemble merge / :func:`tspaint.paint` are unchanged.
+
+**Posterior sampling is controlled by the same three unified knobs as** :func:`tspaint.io.singer`
+— ``ts`` (how many tree sequences you get back), ``mcmc_step`` (MCMC iterations between saved
+samples) and ``mcmc_burnin`` (burn-in iterations). The chain runs ``ts * mcmc_step + mcmc_burnin``
+iterations; tspaint translates the knobs into ARGweaver's native ``-n`` (iterations) and
+``--sample-step`` (see Returns). Every native terminal flag is exposed underscore-prefixed: ``_N``
+(``-N``, **required**), ``_m`` (``-m``), ``_r`` (``-r``), ``_ntimes`` (``--ntimes``), ``_maxtime``
+(``--maxtime``), ``_compress`` (``-c``), ``_seed`` (``--randseed``), and the raw sampling flags
+``_iters`` (``-n``) / ``_sample_step`` (``--sample-step``) — normally inferred from the three knobs.
+Passing a plain knob **and** its ``_``-counterpart raises (the plain one takes precedence).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [str](`str`)]{.parameter-annotation}</code>
+
+:   Genotypes — a tree sequence carrying mutations, a **VCF Zarr** store, or a **VCF** file (normalised by :mod:`tspaint.io_genotypes`); written out as an ARGweaver ``.sites`` file.
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Number of posterior tree sequences returned (default 20) — a single :class:`tskit.TreeSequence` when 1, else a list. See Returns.
+
+<code>[**mcmc_step**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   MCMC iterations between saved samples (``--sample-step``; default 50).
+
+<code>[**mcmc_burnin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Burn-in MCMC iterations discarded before the kept samples (default 200).
+
+<code>[**_N**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Diploid effective population size (``-N``). **Required** — ARGweaver needs it; tspaint does not estimate one silently. Get one from :func:`tspaint.io.estimate_ne`. Omitting it raises ``ValueError``.
+
+<code>[**_m**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-base mutation (``-m``) and recombination (``-r``) rates. Required.
+
+<code>[**_r**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-base mutation (``-m``) and recombination (``-r``) rates. Required.
+
+<code>[**_ntimes**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   Discretised time grid: ``--ntimes`` steps up to ``--maxtime`` generations (defaults 20, 2e5).
+
+<code>[**_maxtime**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   Discretised time grid: ``--ntimes`` steps up to ``--maxtime`` generations (defaults 20, 2e5).
+
+<code>[**_compress**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Block compression in base pairs (``-c``, default 1 = none). **ARGweaver is much slower than SINGER, with cost roughly ``sequence_length / _compress``**, so raise it (e.g. 10–100) and/or keep regions short (≈≤10–50 kb). For large data prefer :func:`singer`.
+
+<code>[**_iters**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the plain knob they correspond to) and ``--randseed``.
+
+<code>[**_sample_step**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the plain knob they correspond to) and ``--randseed``.
+
+<code>[**_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the plain knob they correspond to) and ``--randseed``.
+
+<code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Working directory for the ``.sites`` and ``.smc.gz`` (default: a fresh tempdir).
+
+<code>[**argweaver_bin**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to ``arg-sample`` (default ``DEFAULT_ARGWEAVER`` / ``$TSPAINT_ARGWEAVER``).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Override the region length (VCF / Zarr sources; defaults to the max variant position).
+
+<code>[**names**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-haplotype names for the ``.sites`` NAMES line (default: the source's, else ``n0..``).
+
+<code>[**log**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Progress sink (e.g. ``print``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [tskit.TreeSequence or list of tskit.TreeSequence]{.parameter-annotation}</code>
+
+:   Exactly ``ts`` posterior samples — a **single** :class:`tskit.TreeSequence` when ``ts == 1``, else a **list** of ``ts`` (same ``ts`` / ``mcmc_step`` / ``mcmc_burnin`` semantics and count formula as :func:`singer`). ``arg-sample`` runs ``ts*mcmc_step + mcmc_burnin`` iterations saving one every ``mcmc_step``; tspaint discards the ``mcmc_burnin // mcmc_step`` burn-in ARGs and keeps ``ts``. No sites/mutations (ARGweaver's ``.smc`` carries only trees, all :func:`tspaint.paint` needs); sample ids are stamped onto the sample nodes (:func:`tspaint.ids.attach_sample_ids`) for a VCF / Zarr / ``Variants`` source.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``Ne`` is omitted.
+
+<code>[:]{.parameter-annotation-sep} [[FileNotFoundError](`FileNotFoundError`)]{.parameter-annotation}</code>
+
+:   If the ``arg-sample`` binary is absent.
+
+<code>[:]{.parameter-annotation-sep} [[RuntimeError](`RuntimeError`)]{.parameter-annotation}</code>
+
+:   If ``arg-sample`` exits nonzero.

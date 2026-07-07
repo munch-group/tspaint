@@ -16,7 +16,9 @@ tspaint.fit(
     priors=None,
     w0=0.9,
     estimate_pi=True,
-    n_jobs=1,
+    n_jobs=None,
+    progress=False,
+    mask=None,
 )
 ```
 
@@ -33,9 +35,9 @@ tolerance or ``max_iter``.
 
 :   One genome, or several independent tree sequences whose statistics are pooled.
 
-<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [dict\[int, int\] or list thereof]{.parameter-annotation}</code>
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [dict or list thereof]{.parameter-annotation}</code>
 
-:   Per-sample label index for the reference tips; samples absent are queries.
+:   Per-reference label index; samples absent are queries. Keys may be integer sample-node indices or sample-ID strings when ``ts`` was stamped by :func:`tspaint.io.singer` / :func:`tspaint.io.tsinfer` (:mod:`tspaint.ids`). ``soft_refs`` / ``priors`` keys likewise.
 
 <code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
 
@@ -81,9 +83,13 @@ tolerance or ``max_iter``.
 
 :   Re-estimate ``π`` each M-step rather than holding ``pi0`` fixed. Default ``True``. See Notes.
 
-<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Worker processes for the E-step (the dominant cost). ``1`` (default) is the serial path, **byte-identical** to single-core. ``>1`` runs the genome E-step over member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor` (reused across EM iterations); the result is ``allclose`` to serial, differing only by floating-point reduction order (:mod:`tspaint.parallel`).
+:   Worker processes for the E-step (the dominant cost). Default ``None`` → all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for the serial path, **byte-identical** to single-core. ``>1`` runs the genome E-step over member × tree-range chunks on a persistent :class:`~concurrent.futures.ProcessPoolExecutor` (reused across EM iterations); the result is ``allclose`` to serial, differing only by floating-point reduction order (:mod:`tspaint.parallel`).
+
+<code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Show a :mod:`tqdm.auto` ``EM fit`` bar over the iterations, with the running log-likelihood (notebook widget in Jupyter, text in a terminal). Default ``False``.
 
 ## Returns {.doc-section .doc-section-returns}
 

@@ -1,6 +1,5 @@
 ---
-title: "Code organization and data flow"
-toc: true
+title: "Code paths and data flow"
 ---
 
 This page is the map a reader or contributor needs to navigate the `tspaint`

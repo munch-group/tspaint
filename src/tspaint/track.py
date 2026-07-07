@@ -43,7 +43,7 @@ def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, yla
     hatched over the soft band.
     """
     import matplotlib
-    ymin = -0.25 if truth_segs is not None else 0.0
+    ymin = -0.5 if truth_segs is not None else 0.0
     if truth_segs is not None:
         for (l, r, s) in truth_segs:
             ax.barh(-0.25, r - l, left=l, height=0.5, color=sm.to_rgba(1.0 if s == hi else 0.0),
@@ -54,7 +54,7 @@ def _draw_track_row(ax, soft_segs, hard_segs, truth_segs, *, hi, sm, length, yla
     ax.axhline(0, c='black', lw=0.25)
     ax.axhline(0.5, c='black', lw=0.25)
     for seg in soft_segs:
-        ax.barh(1, seg.right - seg.left, left=seg.left, height=1,
+        ax.barh(0.75, seg.right - seg.left, left=seg.left, height=0.5,
                 color=sm.to_rgba(seg.posterior[hi]), edgecolor="none")
     for (l, r) in (mark_segs or ()):                # masked / unlabelled spans: hatch over the soft band
         ax.barh(1, r - l, left=l, height=1, facecolor="none", hatch="////",

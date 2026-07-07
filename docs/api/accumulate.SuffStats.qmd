@@ -1,0 +1,29 @@
+# accumulate.SuffStats { #tspaint.accumulate.SuffStats }
+
+```python
+tspaint.accumulate.SuffStats(S_dwell, S_jumps, S_root, S_cred, loglik)
+```
+
+Pooled, span-weighted sufficient statistics for the M-step (CLAUDE.md §3.3).
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**S_dwell**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Expected dwell per state, span-weighted.
+
+<code>[**S_jumps**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`), [K](`K`)))]{.parameter-annotation}</code>
+
+:   Expected jumps per ordered pair, span-weighted.
+
+<code>[**S_root**]{.parameter-name} [:]{.parameter-annotation-sep} [([numpy](`numpy`).[ndarray](`numpy.ndarray`), [shape](`shape`)([K](`K`)))]{.parameter-annotation}</code>
+
+:   Expected root-state mass, span-weighted.
+
+<code>[**S_cred**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``node -> array([agree, disagree])`` credibility evidence for the Beta update.
+
+<code>[**loglik**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-integrated per-locus log-likelihood (diagnostic).

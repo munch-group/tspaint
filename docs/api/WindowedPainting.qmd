@@ -1,0 +1,78 @@
+# WindowedPainting { #tspaint.WindowedPainting }
+
+```python
+tspaint.WindowedPainting(
+    out_dir,
+    window_size,
+    seqlen,
+    bounds,
+    Q,
+    pi,
+    w,
+    queries,
+    labels=None,
+    default_deadband=DEFAULT_DEADBAND,
+)
+```
+
+Handle over a windowed, streamed painting written to a directory by
+``paint(ts, …, window_size=…, out_dir=…)``.
+
+The heavy per-position posteriors stay on disk — one ``window_NNNNN.npz`` :class:`Painting` per
+genomic window, plus a ``manifest.json`` describing the single shared fit — so this object is
+lightweight (just the fit and the window index). Iterate windows lazily with :meth:`windows` (one
+loaded at a time), or reassemble the whole genome with :meth:`painting` (holds it all).
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**out_dir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Directory holding the ``window_NNNNN.npz`` files and ``manifest.json``.
+
+<code>[**window_size, seqlen**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Window width and the painted genome's sequence length (bp).
+
+<code>[**bounds**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[int](`int`), [float](`float`), [float](`float`)\]\]]{.parameter-annotation}</code>
+
+:   ``(k, lo, hi)`` per window, in genome order.
+
+<code>[**Q, pi, w, queries, labels**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   The single shared fit — the same for every window.
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [load](#tspaint.WindowedPainting.load) | Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``). |
+| [painting](#tspaint.WindowedPainting.painting) | Reassemble the full genome-wide :class:`Painting` from the per-window files. |
+| [windows](#tspaint.WindowedPainting.windows) | Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory). |
+
+### load { #tspaint.WindowedPainting.load }
+
+```python
+tspaint.WindowedPainting.load(out_dir)
+```
+
+Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``).
+
+### painting { #tspaint.WindowedPainting.painting }
+
+```python
+tspaint.WindowedPainting.painting()
+```
+
+Reassemble the full genome-wide :class:`Painting` from the per-window files.
+
+Loads every window and concatenates by genomic position — this holds the whole-genome
+posteriors in memory (the cost streaming avoided), so call it only when you can afford it,
+or after narrowing to a manageable region.
+
+### windows { #tspaint.WindowedPainting.windows }
+
+```python
+tspaint.WindowedPainting.windows()
+```
+
+Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory).

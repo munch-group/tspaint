@@ -7,16 +7,19 @@ tspaint.foreign_tracts(
     samples,
     *,
     min_score=0.5,
+    min_depth=None,
     mode='auto',
     K=2,
     Q0=None,
     max_iter=8,
     soft_refs=None,
+    n_jobs=None,
+    progress=False,
 )
 ```
 
 Anonymous foreign-tract inference: where a haplotype is foreign to its expectation
-(Plan A Workflow 2; CLAUDE.md §2.3, §9).
+(CLAUDE.md §2.3, §9).
 
 Flags tracts **without attributing a donor**. The foreignness score is per segment:
 
@@ -25,6 +28,11 @@ Flags tracts **without attributing a donor**. The foreignness score is per segme
 * an **unlabelled** query — ``(1 - fit) / (1 - 1/K)`` where ``fit = max_s loo[s]``: how
   poorly it fits any panel source ("fits nothing"), normalised so a maximally-ambiguous
   tract scores 1.
+
+With ``min_depth`` set, a segment must **also** sit on an anomalously deep branch (high
+rank-normalised nearest-reference coalescence depth) to be flagged — the fast, deterministic,
+calibration-robust **ghost flag** (this subsumes the former ``detect_ghost`` *flag*; the
+accurate generative ghost detector is now :func:`tspaint.detect_ghost`, the depth-emission HMM).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
@@ -43,6 +51,10 @@ Flags tracts **without attributing a donor**. The foreignness score is per segme
 <code>[**min_score**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
 
 :   Flag segments whose foreignness score ``>= min_score`` (default ``0.5`` — the expected ancestry gets less than half the support).
+
+<code>[**min_depth**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   If given, additionally require the rank-normalised nearest-reference depth ``>= min_depth`` (in ``[0, 1]``) — flag only *deep* foreign tracts (ghost-like; e.g. ``0.9`` for the deepest 10%). Default ``None`` (no depth filter). Combined with ``mode="fit"`` / ``min_score`` this reproduces the former ghost flag (``fit < f`` ⇔ ``score > 2(1-f)``).
 
 <code>[**mode**]{.parameter-name} [:]{.parameter-annotation-sep} [(\'auto\', \'label\', \'fit\')]{.parameter-annotation} [ = ]{.parameter-default-sep} [\"auto\"]{.parameter-default}</code>
 
@@ -63,6 +75,14 @@ Flags tracts **without attributing a donor**. The foreignness score is per segme
 <code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
 
 :   Model / EM controls (see :func:`tspaint.fit`).
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Worker processes for the fit **and** the per-tree foreignness pass (split by genome chunk, exactly equal to serial). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
+
+<code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Show a progress bar for the fit / foreignness pass. Default ``False``.
 
 ## Returns {.doc-section .doc-section-returns}
 

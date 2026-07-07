@@ -1,0 +1,8 @@
+# dating.accumulate_time_binned_tv { #tspaint.dating.accumulate_time_binned_tv }
+
+```python
+tspaint.dating.accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges)
+```
+
+Time-**inhomogeneous** E-step: per-cell dwell + directional jumps under ``Q_of_cell``,
+edge-blocked and span-weighted. Returns ``(D, J, loglik)`` (the full rung-4 E-step).

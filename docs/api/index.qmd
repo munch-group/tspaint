@@ -10,13 +10,16 @@ query haplotypes. `paint` returns a `Painting`; `fit` exposes the EM directly.
 | --- | --- |
 | [paint](paint.qmd#tspaint.paint) | Infer soft local ancestry along query haplotypes from a tree sequence. |
 | [Painting](Painting.qmd#tspaint.Painting) | Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted model. |
+| [WindowedPainting](WindowedPainting.qmd#tspaint.WindowedPainting) | Handle over a windowed, streamed painting written to a directory by |
 | [fit](fit.qmd#tspaint.fit) | Blocked EM for ``(Q, π, {w_i})`` (CLAUDE.md §3, §11.1.5-6). |
 | [FitResult](FitResult.qmd#tspaint.FitResult) | Fitted parameters returned by :func:`fit`. |
 
 ## Output & segmentation
 
 The soft per-haplotype posterior (`Segment` tracks) and its collapse into hard ancestry
-tracts for downstream tract-length / admixture-dating analysis.
+tracts for downstream tract-length / admixture-dating analysis. `SoftTrack` is the
+model-agnostic read-out surface (`segments` / `posterior_at` / `plot`) that both `Painting`
+and `GhostResult` subclass; `compare_tracks` plots several painters side by side.
 
 
 | | |
@@ -26,28 +29,34 @@ tracts for downstream tract-length / admixture-dating analysis.
 | [output.Segment](output.Segment.qmd#tspaint.output.Segment) | A contiguous span carrying one soft ancestry posterior. |
 | [output.missing_info_mask](output.missing_info_mask.qmd#tspaint.output.missing_info_mask) | Per-sample spans where the tree is uninformative (isolated sample). |
 | [output.posterior_at](output.posterior_at.qmd#tspaint.output.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [SoftTrack](SoftTrack.qmd#tspaint.SoftTrack) | Mixin providing the shared read-out surface for a per-locus soft posterior along the genome. |
+| [track.SegmentTrack](track.SegmentTrack.qmd#tspaint.track.SegmentTrack) | Wrap any per-sample segments in a plottable track — hard tuples *or* soft posteriors. |
+| [track.compare_tracks](track.compare_tracks.qmd#tspaint.track.compare_tracks) | Stack several tools' calls for **one haplotype**, one row per tool, for visual comparison. |
 
-## Reference QC, introgression & archaic detection
+## Reference QC & ghost / archaic introgression
 
-Audit a reference panel for admixture / mislabelling, flag foreign tracts of any
-haplotype without naming a donor, detect introgression from an unsampled ("ghost")
-source, and — with no reference at all — detect deep archaic tracts (the
-`tspaint.introgression` and `tspaint.archaic` namespaces). All read the leave-one-out
-map, which surfaces a sample's own foreign tracts the down-pass posterior hides;
-`detect_ghost` and `detect_archaic` return objects with a shared `.burden` / `.tracts()`.
+Two user-facing tasks. **Task 1 — reference QC:** audit a panel for admixture /
+mislabelling and control it, with `reference_qc` (a single tree sequence or a SINGER
+ensemble) whose result yields the actionable `.soft_refs()` / `.mask()` for a cleaned
+re-paint (`paint(soft_refs=…)` down-weight or `paint(mask=…)` fragment masking), plus
+`foreign_tracts` (anonymous foreign tracts; `min_depth=` gives the fast deterministic
+deep-ghost flag). **Task 2 — ghost search:** `detect_ghost`, the reference-free
+depth-emission HMM, for accurate calibrated
+per-locus `P(ghost)` — accepts a SINGER ensemble and a calibration-robust `depth="rank"`.
+Both read the leave-one-out map (`tspaint.introgression`, `tspaint.archaic`).
+(`detect_archaic` is a deprecated alias of `detect_ghost`.)
 
 
 | | |
 | --- | --- |
 | [reference_qc](reference_qc.qmd#tspaint.reference_qc) | Audit a reference panel for admixture / mislabelling (Plan A Workflow 1; CLAUDE.md §9). |
-| [foreign_tracts](foreign_tracts.qmd#tspaint.foreign_tracts) | Anonymous foreign-tract inference: where a haplotype is foreign to its expectation |
-| [detect_ghost](detect_ghost.qmd#tspaint.detect_ghost) | Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3). |
-| [detect_archaic](detect_archaic.qmd#tspaint.detect_archaic) | Reference-free archaic / ghost detection via a depth-emission HMM (Plan B). |
-| [output.loo_posterior_table](output.loo_posterior_table.qmd#tspaint.output.loo_posterior_table) | Per-sample **leave-one-out** ancestry posterior as contiguous segments. |
 | [introgression.ReferenceQC](introgression.ReferenceQC.qmd#tspaint.introgression.ReferenceQC) | Result of :func:`reference_qc` — a per-reference admixture/mislabel audit. |
-| [introgression.GhostResult](introgression.GhostResult.qmd#tspaint.introgression.GhostResult) | Result of :func:`detect_ghost` — per-sample ghost tracts + genome-wide burden. |
+| [foreign_tracts](foreign_tracts.qmd#tspaint.foreign_tracts) | Anonymous foreign-tract inference: where a haplotype is foreign to its expectation |
+| [output.loo_posterior_table](output.loo_posterior_table.qmd#tspaint.output.loo_posterior_table) | Per-sample **leave-one-out** ancestry posterior as contiguous segments. |
 | [introgression.foreignness_track](introgression.foreignness_track.qmd#tspaint.introgression.foreignness_track) | Per-sample foreignness components as contiguous segments covering ``[0, L)``. |
-| [archaic.ArchaicResult](archaic.ArchaicResult.qmd#tspaint.archaic.ArchaicResult) | Result of :func:`detect_archaic`. |
+| [introgression.ForeignnessSegment](introgression.ForeignnessSegment.qmd#tspaint.introgression.ForeignnessSegment) | A contiguous span carrying the per-locus foreignness components for one sample. |
+| [detect_ghost](detect_ghost.qmd#tspaint.detect_ghost) | Reference-free ghost / archaic introgression detection via a depth-emission HMM. |
+| [GhostResult](GhostResult.qmd#tspaint.GhostResult) | Result of :func:`detect_ghost` — per-locus ``P(ghost)`` from the depth-emission HMM. |
 
 ## Validation metrics
 
@@ -65,6 +74,9 @@ experiments (the `tspaint.metrics` namespace).
 | [validate.switch_density](validate.switch_density.qmd#tspaint.validate.switch_density) | Ancestry switches per unit length. |
 | [validate.tract_boundary_error](validate.tract_boundary_error.qmd#tspaint.validate.tract_boundary_error) | Tract-boundary localization error against the truth. |
 | [validate.breakpoint_flicker](validate.breakpoint_flicker.qmd#tspaint.validate.breakpoint_flicker) | Posterior discontinuity across a sample's segment boundaries (CLAUDE.md §7.3). |
+| [validate.accuracy_by_segment_size](validate.accuracy_by_segment_size.qmd#tspaint.validate.accuracy_by_segment_size) | Per-base painting accuracy stratified by **true** ancestry-tract length. |
+| [validate.global_proportion](validate.global_proportion.qmd#tspaint.validate.global_proportion) | Painter's estimated global ancestry proportion of ``state``. |
+| [validate.true_proportion](validate.true_proportion.qmd#tspaint.validate.true_proportion) | True global ancestry proportion of ``state`` (span-weighted fraction of the truth). |
 | [validate.map_truth](validate.map_truth.qmd#tspaint.validate.map_truth) | Remap truth tracts from population ids to ancestry-state indices. |
 
 ## Comparators (head-to-head)
@@ -81,23 +93,48 @@ ARG-native baseline, and the RFMix incumbent (the `tspaint.compare` namespace).
 | [compare.head_to_head](compare.head_to_head.qmd#tspaint.compare.head_to_head) | Score a panel of painters on one admixture scenario across ARG substrates. |
 | [compare.score_painter](compare.score_painter.qmd#tspaint.compare.score_painter) | Run a painter on ``ts`` and score it against the truth. |
 
+## VCF benchmark harness
+
+Run the field comparators (RFMix, gnomix, SALAI-Net, Recomb-Mix) from VCF input through one
+uniform contract and score them against simulated truth (the `tspaint.benchmark` namespace;
+CLI `tspaint benchmark`). `run` shells out to a tool's own pixi env and parses its calls into
+a tspaint painting `.npz`; `export_vcf` writes query / reference VCFs + a re-keyed truth table
+from a simulation; `score` builds the leaderboard; `setup` / `tool_status` provision and
+report the git-only tools.
+
+
+| | |
+| --- | --- |
+| [benchmark.run](benchmark.run.qmd#tspaint.benchmark.run) | Dispatch to a painter by name (``"tspaint"`` or an external comparator). |
+| [benchmark.export_vcf](benchmark.export_vcf.qmd#tspaint.benchmark.export_vcf) | Write query/reference VCFs, a sample map, and a truth table from a tree sequence. |
+| [benchmark.score](benchmark.score.qmd#tspaint.benchmark.score) | Score benchmark paintings against a truth table — the head-to-head leaderboard (CLAUDE.md §9). |
+| [benchmark.setup](benchmark.setup.qmd#tspaint.benchmark.setup) | Clone + build the git-only comparators listed in the manifest. |
+| [benchmark.tool_status](benchmark.tool_status.qmd#tspaint.benchmark.tool_status) | Resolved path + availability for every benchmark tool (incl. RFMix). |
+
 ## Input front ends
 
 Obtain a tspaint-ready tree sequence from genotypes (the `tspaint.io` namespace). The
-inference front ends `tsinfer` and `singer` take the same `source` — a tree sequence, a
-VCF Zarr, or a VCF; `relate` converts Relate `.anc` / `.mut` output. (The pre-unification
-names `infer_tree_sequence` / `singer_tree_sequences` / `convert_relate` remain as
-deprecated aliases.)
+inference front ends `tsinfer`, `singer` and `argweaver` take the same `source` (dispatched by
+`source_kind`) — a tree sequence, a VCF Zarr, or a VCF; `relate` converts Relate `.anc` /
+`.mut` output; `singer_window` / `singer_windowed` stream SINGER over genome windows.
+`estimate_ne` gives the whole-panel `Ne` SINGER's coalescent prior needs. (The pre-unification
+names `infer_tree_sequence` / `singer_tree_sequences` / `convert_relate` remain as deprecated
+aliases.)
 
 
 | | |
 | --- | --- |
 | [io.tsinfer](io.tsinfer.qmd#tspaint.io.tsinfer) | Infer a tree sequence from genotypes via tsinfer (CLAUDE.md §5, §9). |
-| [io.relate](io.relate.qmd#tspaint.io.relate) | Convert Relate output (``.anc`` / ``.mut``) to a tskit tree sequence (CLAUDE.md §5). |
+| [io.relate](io.relate.qmd#tspaint.io.relate) | Infer a tree sequence from genotypes with **Relate**, end to end (CLAUDE.md §5). |
 | [io.singer](io.singer.qmd#tspaint.io.singer) | Sample posterior ARGs from genotypes via SINGER (CLAUDE.md §7.4). |
+| [io.singer_window](io.singer_window.qmd#tspaint.io.singer_window) | Run SINGER on ONE genomic window ``[start, end)``, leaving the raw node/branch/mut tables. |
+| [io.singer_windowed](io.singer_windowed.qmd#tspaint.io.singer_windowed) | Sample posterior ARGs for a long region on ONE machine: window SINGER, then stitch. |
+| [io.argweaver](io.argweaver.qmd#tspaint.io.argweaver) | Sample posterior ARGs from genotypes via ARGweaver (an alternative to :func:`singer`). |
+| [io.estimate_ne](io.estimate_ne.qmd#tspaint.io.estimate_ne) | Estimate the (diploid) effective population size from between-individual diversity. |
 | [io.add_mutations](io.add_mutations.qmd#tspaint.io.add_mutations) | Overlay biallelic mutations on a tree sequence so the inference front ends have variant |
 | [io.write_haploid_vcf](io.write_haploid_vcf.qmd#tspaint.io.write_haploid_vcf) | Write one haploid VCF column per sample node. |
 | [io.check_persistence](io.check_persistence.qmd#tspaint.io.check_persistence) | Run the §5.1 persistence go/no-go on an already-loaded tree sequence. |
+| [io_genotypes.source_kind](io_genotypes.source_kind.qmd#tspaint.io_genotypes.source_kind) | Classify a front-end ``source`` as ``"ts"``, ``"zarr"`` or ``"vcf"``. |
 | [io_genotypes.Variants](io_genotypes.Variants.qmd#tspaint.io_genotypes.Variants) | A tool-agnostic biallelic variant matrix (one column per **haplotype**). |
 
 ## Horizontal BP/EP smoother
@@ -126,6 +163,8 @@ functions of (backward) time — locating divergence / gene-flow epochs and thei
 | --- | --- |
 | [fit_rate_through_time](fit_rate_through_time.qmd#tspaint.fit_rate_through_time) | Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM. |
 | [RateThroughTime](RateThroughTime.qmd#tspaint.RateThroughTime) | Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile. |
+| [EnsembleRateThroughTime](EnsembleRateThroughTime.qmd#tspaint.EnsembleRateThroughTime) | Rate through time across an ARG ensemble — one :class:`RateThroughTime` per member, with a |
+| [dating.split_time](dating.split_time.qmd#tspaint.dating.split_time) | Estimate the split / divergence time from a :class:`RateThroughTime` profile. |
 | [dating.paint_qt](dating.paint_qt.qmd#tspaint.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same |
 | [dating.rate_through_time_binned](dating.rate_through_time_binned.qmd#tspaint.dating.rate_through_time_binned) | Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the |
 | [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tspaint.dating.make_Q_of_cell) | Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates. |
@@ -136,6 +175,9 @@ functions of (backward) time — locating divergence / gene-flow epochs and thei
 | [dating.split_branch](dating.split_branch.qmd#tspaint.dating.split_branch) | Split a branch ``[t_c, t_p]`` (``t_c < t_p``) into per-cell sub-intervals. |
 | [dating.branch_cell_stats](dating.branch_cell_stats.qmd#tspaint.dating.branch_cell_stats) | Per-cell endpoint-conditioned expected dwell and directional jumps for one branch. |
 | [dating.composite_transition](dating.composite_transition.qmd#tspaint.dating.composite_transition) | Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a |
+| [dating.accumulate_time_binned](dating.accumulate_time_binned.qmd#tspaint.dating.accumulate_time_binned) | Edge-blocked, span-weighted per-cell dwell + directional jumps (Stage-1, homogeneous Q). |
+| [dating.accumulate_time_binned_tv](dating.accumulate_time_binned_tv.qmd#tspaint.dating.accumulate_time_binned_tv) | Time-**inhomogeneous** E-step: per-cell dwell + directional jumps under ``Q_of_cell``, |
+| [dating.cell_centers](dating.cell_centers.qmd#tspaint.dating.cell_centers) | Geometric centres of the cells defined by ``edges``. |
 
 ## Simulation (known truth)
 
@@ -149,13 +191,18 @@ track and the source of examples.
 | [local_ancestry_truth](local_ancestry_truth.qmd#tspaint.local_ancestry_truth) | True local ancestry per sample as source-population tracts. |
 | [sim.admixture_demography](sim.admixture_demography.qmd#tspaint.sim.admixture_demography) | Build a two-source admixture demography with a post-pulse census. |
 | [sim.simulate_admixture_impure_refs](sim.simulate_admixture_impure_refs.qmd#tspaint.sim.simulate_admixture_impure_refs) | Simulate admixed queries, a pure reference anchor core, and impure reference panels. |
+| [sim.admixture_demography_impure_refs](sim.admixture_demography_impure_refs.qmd#tspaint.sim.admixture_demography_impure_refs) | Admixture demography whose **reference panels are themselves slightly admixed**. |
+| [sim.simulate_admixture_source_gene_flow](sim.simulate_admixture_source_gene_flow.qmd#tspaint.sim.simulate_admixture_source_gene_flow) | Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOURCE_B`` |
+| [sim.admixture_demography_source_gene_flow](sim.admixture_demography_source_gene_flow.qmd#tspaint.sim.admixture_demography_source_gene_flow) | Two-source admixture where the **sources themselves exchanged genes via a prior pulse**. |
 | [sim.simulate_admixture_with_ghost](sim.simulate_admixture_with_ghost.qmd#tspaint.sim.simulate_admixture_with_ghost) | Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**. |
 | [sim.admixture_demography_with_ghost](sim.admixture_demography_with_ghost.qmd#tspaint.sim.admixture_demography_with_ghost) | Two-source admixture with a third **unsampled ("ghost") source** ``C``. |
 
 ## Generators & model
 
-The ancestry CTMC generator, transition matrices, stationary distribution, and tip
-emission model.
+The ancestry CTMC generator, transition matrices, stationary distribution, and the tip
+emission model — including `MaskedEmissions`, the position-dependent emission that lets a
+reference be masked (emit the query emission) over flagged spans, i.e. **fragment masking**
+(`paint(mask=)` / `fit(mask=)`, fed from `ReferenceQC.mask()` / `foreign_tracts`).
 
 
 | | |
@@ -165,6 +212,7 @@ emission model.
 | [model.stationary_distribution](model.stationary_distribution.qmd#tspaint.model.stationary_distribution) | Stationary distribution ``π`` of a CTMC generator. |
 | [model.tip_emission](model.tip_emission.qmd#tspaint.model.tip_emission) | Soft-clamp emission for a labelled tip (CLAUDE.md §2.2). |
 | [model.query_emission](model.query_emission.qmd#tspaint.model.query_emission) | Flat / root-frequency emission for an unlabelled query tip (CLAUDE.md §2.2). |
+| [model.MaskedEmissions](model.MaskedEmissions.qmd#tspaint.model.MaskedEmissions) | Position-dependent Felsenstein emissions — **fragment masking** (CLAUDE.md §2.3). |
 | [model.validate_generator](model.validate_generator.qmd#tspaint.model.validate_generator) | Check that ``Q`` is a valid CTMC generator. |
 
 ## Experiment drivers
@@ -183,6 +231,7 @@ namespace).
 | [experiments.singer_ensemble_experiment](experiments.singer_ensemble_experiment.qmd#tspaint.experiments.singer_ensemble_experiment) | Merge LAI across **SINGER posterior** ARG samples vs. a single sample vs. truth. |
 | [experiments.impure_reference_experiment](experiments.impure_reference_experiment.qmd#tspaint.experiments.impure_reference_experiment) | Hard-clamp vs strong-Beta-soft credibility for **slightly impure references**. |
 | [experiments.impure_reference_sweep](experiments.impure_reference_sweep.qmd#tspaint.experiments.impure_reference_sweep) | Sweep :func:`impure_reference_experiment` across regimes (and seeds); tabulate the |
+| [experiments.archaic_detection_experiment](experiments.archaic_detection_experiment.qmd#tspaint.experiments.archaic_detection_experiment) | Head-to-head: reference-free learned HMM vs the fixed-threshold flag (Plan B go/no-go). |
 | [experiments.flicker_vs_true_boundaries](experiments.flicker_vs_true_boundaries.qmd#tspaint.experiments.flicker_vs_true_boundaries) | Split a sample's segment-boundary flicker into at-true vs. off-true boundaries. |
 
 ## ARG-posterior ensemble merge
@@ -207,9 +256,15 @@ diagnostics.
 | --- | --- |
 | [pruning.prune_tree](pruning.prune_tree.qmd#tspaint.pruning.prune_tree) | Prune every root of a marginal tree and aggregate the results. |
 | [pruning.prune_root](pruning.prune_root.qmd#tspaint.pruning.prune_root) | Up/down sum-product pass for a single root of a marginal tree. |
+| [pruning.PruneResult](pruning.PruneResult.qmd#tspaint.pruning.PruneResult) | Down-pass result of pruning a marginal tree (CLAUDE.md §3.1). |
 | [accumulate.accumulate_sufficient_statistics](accumulate.accumulate_sufficient_statistics.qmd#tspaint.accumulate.accumulate_sufficient_statistics) | Single E-step sweep over the tree sequence (CLAUDE.md §3.3). |
+| [accumulate.SuffStats](accumulate.SuffStats.qmd#tspaint.accumulate.SuffStats) | Pooled, span-weighted sufficient statistics for the M-step (CLAUDE.md §3.3). |
 | [branch_stats.branch_expected_stats](branch_stats.branch_expected_stats.qmd#tspaint.branch_stats.branch_expected_stats) | Endpoint-conditioned expected dwell times and jump counts on one branch. |
+| [branch_stats.branch_kernel](branch_stats.branch_kernel.qmd#tspaint.branch_stats.branch_kernel) | Per-reward conditional-expectation matrices ``E[reward \| s_p, s_c]`` for a branch. |
+| [branch_stats.stats_from_kernel](branch_stats.stats_from_kernel.qmd#tspaint.branch_stats.stats_from_kernel) | Apply an endpoint posterior to a cached branch kernel (cheap; no ``expm``). |
+| [branch_stats.vanloan_integral](branch_stats.vanloan_integral.qmd#tspaint.branch_stats.vanloan_integral) | Top-right block of ``expm([[Q, E], [0, Q]] * t)``. |
 | [em.build_emissions](em.build_emissions.qmd#tspaint.em.build_emissions) | Build the per-sample Felsenstein emission vectors (CLAUDE.md §2.2). |
+| [model.emissions_for](model.emissions_for.qmd#tspaint.model.emissions_for) | The emission dict for a marginal tree interval — position-dependent for a |
 | [em.m_step_Q](em.m_step_Q.qmd#tspaint.em.m_step_Q) | Closed-form generator MLE from expected dwell times and jump counts. |
 | [em.m_step_pi](em.m_step_pi.qmd#tspaint.em.m_step_pi) | Closed-form root-frequency MLE: ``π = S_root / Σ S_root`` (CLAUDE.md §3.4). |
 | [em.m_step_w](em.m_step_w.qmd#tspaint.em.m_step_w) | Per-tip credibility MAP under a ``Beta(alpha, beta)`` prior (CLAUDE.md §3.4). |

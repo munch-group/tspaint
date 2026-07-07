@@ -5,6 +5,7 @@ website:
     - contents:
       - api/paint.qmd
       - api/Painting.qmd
+      - api/WindowedPainting.qmd
       - api/fit.qmd
       - api/FitResult.qmd
       section: Painting local ancestry
@@ -14,18 +15,20 @@ website:
       - api/output.Segment.qmd
       - api/output.missing_info_mask.qmd
       - api/output.posterior_at.qmd
+      - api/SoftTrack.qmd
+      - api/track.SegmentTrack.qmd
+      - api/track.compare_tracks.qmd
       section: Output & segmentation
     - contents:
       - api/reference_qc.qmd
-      - api/foreign_tracts.qmd
-      - api/detect_ghost.qmd
-      - api/detect_archaic.qmd
-      - api/output.loo_posterior_table.qmd
       - api/introgression.ReferenceQC.qmd
-      - api/introgression.GhostResult.qmd
+      - api/foreign_tracts.qmd
+      - api/output.loo_posterior_table.qmd
       - api/introgression.foreignness_track.qmd
-      - api/archaic.ArchaicResult.qmd
-      section: Reference QC, introgression & archaic detection
+      - api/introgression.ForeignnessSegment.qmd
+      - api/detect_ghost.qmd
+      - api/GhostResult.qmd
+      section: Reference QC & ghost / archaic introgression
     - contents:
       - api/validate.balanced_accuracy.qmd
       - api/validate.per_base_accuracy.qmd
@@ -35,6 +38,9 @@ website:
       - api/validate.switch_density.qmd
       - api/validate.tract_boundary_error.qmd
       - api/validate.breakpoint_flicker.qmd
+      - api/validate.accuracy_by_segment_size.qmd
+      - api/validate.global_proportion.qmd
+      - api/validate.true_proportion.qmd
       - api/validate.map_truth.qmd
       section: Validation metrics
     - contents:
@@ -45,12 +51,24 @@ website:
       - api/compare.score_painter.qmd
       section: Comparators (head-to-head)
     - contents:
+      - api/benchmark.run.qmd
+      - api/benchmark.export_vcf.qmd
+      - api/benchmark.score.qmd
+      - api/benchmark.setup.qmd
+      - api/benchmark.tool_status.qmd
+      section: VCF benchmark harness
+    - contents:
       - api/io.tsinfer.qmd
       - api/io.relate.qmd
       - api/io.singer.qmd
+      - api/io.singer_window.qmd
+      - api/io.singer_windowed.qmd
+      - api/io.argweaver.qmd
+      - api/io.estimate_ne.qmd
       - api/io.add_mutations.qmd
       - api/io.write_haploid_vcf.qmd
       - api/io.check_persistence.qmd
+      - api/io_genotypes.source_kind.qmd
       - api/io_genotypes.Variants.qmd
       section: Input front ends
     - contents:
@@ -62,6 +80,8 @@ website:
     - contents:
       - api/fit_rate_through_time.qmd
       - api/RateThroughTime.qmd
+      - api/EnsembleRateThroughTime.qmd
+      - api/dating.split_time.qmd
       - api/dating.paint_qt.qmd
       - api/dating.rate_through_time_binned.qmd
       - api/dating.make_Q_of_cell.qmd
@@ -72,12 +92,18 @@ website:
       - api/dating.split_branch.qmd
       - api/dating.branch_cell_stats.qmd
       - api/dating.composite_transition.qmd
+      - api/dating.accumulate_time_binned.qmd
+      - api/dating.accumulate_time_binned_tv.qmd
+      - api/dating.cell_centers.qmd
       section: Admixture dating (rate through time)
     - contents:
       - api/simulate_admixture.qmd
       - api/local_ancestry_truth.qmd
       - api/sim.admixture_demography.qmd
       - api/sim.simulate_admixture_impure_refs.qmd
+      - api/sim.admixture_demography_impure_refs.qmd
+      - api/sim.simulate_admixture_source_gene_flow.qmd
+      - api/sim.admixture_demography_source_gene_flow.qmd
       - api/sim.simulate_admixture_with_ghost.qmd
       - api/sim.admixture_demography_with_ghost.qmd
       section: Simulation (known truth)
@@ -87,6 +113,7 @@ website:
       - api/model.stationary_distribution.qmd
       - api/model.tip_emission.qmd
       - api/model.query_emission.qmd
+      - api/model.MaskedEmissions.qmd
       - api/model.validate_generator.qmd
       section: Generators & model
     - contents:
@@ -98,6 +125,7 @@ website:
       - api/experiments.singer_ensemble_experiment.qmd
       - api/experiments.impure_reference_experiment.qmd
       - api/experiments.impure_reference_sweep.qmd
+      - api/experiments.archaic_detection_experiment.qmd
       - api/experiments.flicker_vs_true_boundaries.qmd
       section: Experiment drivers
     - contents:
@@ -107,9 +135,15 @@ website:
     - contents:
       - api/pruning.prune_tree.qmd
       - api/pruning.prune_root.qmd
+      - api/pruning.PruneResult.qmd
       - api/accumulate.accumulate_sufficient_statistics.qmd
+      - api/accumulate.SuffStats.qmd
       - api/branch_stats.branch_expected_stats.qmd
+      - api/branch_stats.branch_kernel.qmd
+      - api/branch_stats.stats_from_kernel.qmd
+      - api/branch_stats.vanloan_integral.qmd
       - api/em.build_emissions.qmd
+      - api/model.emissions_for.qmd
       - api/em.m_step_Q.qmd
       - api/em.m_step_pi.qmd
       - api/em.m_step_w.qmd

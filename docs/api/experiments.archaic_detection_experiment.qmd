@@ -1,0 +1,78 @@
+# experiments.archaic_detection_experiment { #tspaint.experiments.archaic_detection_experiment }
+
+```python
+tspaint.experiments.archaic_detection_experiment(
+    ghost_fraction=0.25,
+    n_admix=10,
+    n_ref=8,
+    sequence_length=2000000.0,
+    T_admix=100.0,
+    T_split_AB=2000.0,
+    T_split_ABC=20000.0,
+    Ne=1000,
+    seed=1,
+    max_iter=40,
+    threshold=0.5,
+)
+```
+
+Head-to-head: reference-free learned HMM vs the fixed-threshold flag (Plan B go/no-go).
+
+Compares :func:`tspaint.detect_ghost` (the generative depth-emission HMM, which learns the
+ghost depth and gives a calibrated posterior) against the fixed-threshold deep **flag**
+(:func:`tspaint.foreign_tracts` with ``mode="fit", min_depth=...``) on one archaic-like ghost
+simulation plus a matched no-ghost control. Both run **reference-free** (no ghost reference).
+Per-locus ghost tracts are scored against the census truth. (The ``archaic`` result block is
+the HMM; the ``ghost`` block is the flag — names kept for back-compatibility.)
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ghost_fraction**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.25]{.parameter-default}</code>
+
+:   Fraction of the admixed population from the unsampled ghost source.
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**T_split_AB**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**T_split_ABC**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   msprime ghost-scenario parameters (``T_split_ABC`` is the deep outgroup split — the archaic divergence depth).
+
+<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+
+:   Random seed.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [40]{.parameter-default}</code>
+
+:   Baum–Welch iteration cap for the HMM.
+
+<code>[**threshold**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   ``P(archaic)`` threshold for the HMM's hard tracts.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``ghost_fraction``, ``seed``, ``n_queries``, ``true_burden`` and two detector blocks ``archaic`` / ``ghost`` each with ``recall``, ``precision``, ``burden`` and ``control_fp`` (no-ghost false-positive burden); ``archaic`` also reports the learned ``mu_archaic`` / ``mu_modern`` (log-depth).

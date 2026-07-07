@@ -1,0 +1,144 @@
+# SoftTrack { #tspaint.SoftTrack }
+
+```python
+tspaint.SoftTrack()
+```
+
+Mixin providing the shared read-out surface for a per-locus soft posterior along the genome.
+
+A subclass must be a :func:`~dataclasses.dataclass` that provides:
+
+* ``posteriors`` — ``dict[int, list[Segment | MergedSegment]]`` tiling ``[0, L)`` per haplotype
+  (e.g. from :func:`tspaint.output.posterior_table` or
+  :func:`tspaint.ensemble.merge_posterior_tables`);
+* ``default_deadband`` — :class:`float`, the default dead-band for :meth:`segments`;
+* ``_seqlen`` — the genome length (or override :attr:`length`).
+
+A subclass may set the class attributes ``_hi_state`` / ``_hi_label`` to control which state's
+probability drives the :meth:`plot` colour scale and how the colour bar is labelled (the
+"highlighted" state, drawn at the top of the diverging colormap). Defaults highlight state 0 and
+label it ``"P(ancestry A)"`` (so :class:`tspaint.Painting` needs no override).
+
+## Attributes
+
+| Name | Description |
+| --- | --- |
+| [length](#tspaint.SoftTrack.length) | Sequence length of the painted genome (default: the stored ``_seqlen``). |
+| [samples](#tspaint.SoftTrack.samples) | Ordered haplotype ids carried by this track — the row order used by :meth:`plot`. |
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [plot](#tspaint.SoftTrack.plot) | Stacked strip plot of the soft posterior — one row per haplotype. |
+| [posterior_at](#tspaint.SoftTrack.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [segments](#tspaint.SoftTrack.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
+
+### plot { #tspaint.SoftTrack.plot }
+
+```python
+tspaint.SoftTrack.plot(
+    truth=None,
+    title=None,
+    cmap='coolwarm',
+    colors=None,
+    return_plot=False,
+    deadband=None,
+    row_labels=None,
+    mark_spans=None,
+)
+```
+
+Stacked strip plot of the soft posterior — one row per haplotype.
+
+Each haplotype row shows, top to bottom: the **soft** per-position posterior for the
+highlighted state (``self._hi_label``, e.g. ``P(ancestry A)`` for a painting or ``P(ghost)``
+for the ghost detector) as a colour gradient, the **hard** segments (:meth:`segments` at the
+``deadband`` below), and — when ``truth`` is given — the true tracts as a reference track
+beneath. A shared colour bar maps the highlighted state's probability (highlighted state at
+the top of ``cmap``, the other at the bottom). For an ensemble result the rows show the
+ensemble-mean posterior. Requires matplotlib.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Ground-truth tracts ``(left, right, state)`` per haplotype, drawn as a reference track below each row. No truth track is drawn when ``None`` (default).
+
+<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Title placed on the top haplotype axes.
+
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [matplotlib](`matplotlib`).[colors](`matplotlib.colors`).[Colormap](`matplotlib.colors.Colormap`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   Diverging colormap mapping the highlighted state's probability ``∈ [0, 1]`` (highlighted state → ``1.0``, the other → ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g. ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
+
+<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save the plot, instead of ``None``. Default ``False``.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Dead-band for the hard-segment overlay. Defaults to :attr:`default_deadband` (so the plotted tracts match :meth:`segments`); pass a value to override for this plot only.
+
+<code>[**row_labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-sample y-axis label overriding the default ``hapl. i`` (e.g. mark reference rows with their nominal ancestry). Samples absent keep the default.
+
+<code>[**mark_spans**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-sample ``[(left, right), ...]`` spans to **hatch** over the soft band — e.g. a reference's masked / unlabelled spans, so the plot shows *where* a reference was un-anchored.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
+
+### posterior_at { #tspaint.SoftTrack.posterior_at }
+
+```python
+tspaint.SoftTrack.posterior_at(sample, position)
+```
+
+Posterior vector for ``sample`` at a genomic ``position``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample-node id to look up.
+
+<code>[**position**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Genomic position.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
+
+:   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
+
+### segments { #tspaint.SoftTrack.segments }
+
+```python
+tspaint.SoftTrack.segments(deadband=None)
+```
+
+Hard ancestry segments for downstream tract-length / dating analysis.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Confidence dead-band suppressing low-confidence flips that fragment long tracts. Defaults to :attr:`default_deadband`. See :func:`tspaint.output.hard_segments`.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per haplotype, hard ``(left, right, state)`` segments.

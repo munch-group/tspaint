@@ -1,0 +1,58 @@
+# track.compare_tracks { #tspaint.track.compare_tracks }
+
+```python
+tspaint.track.compare_tracks(
+    tracks,
+    sample,
+    *,
+    truth=None,
+    length=None,
+    cmap='coolwarm',
+    colors=None,
+    title=None,
+    return_plot=False,
+    deadband=None,
+)
+```
+
+Stack several tools' calls for **one haplotype**, one row per tool, for visual comparison.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tracks**]{.parameter-name} [:]{.parameter-annotation-sep} [[mapping](`mapping`)]{.parameter-annotation}</code>
+
+:   ``{tool name: segments}`` — each value a ``{sample: segments}`` dict, a :class:`~tspaint.Painting`, or a :class:`SegmentTrack` (soft or hard; normalised via :class:`SegmentTrack`).
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   The haplotype (sample id / key) to compare across tools. Call once per haplotype.
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Ground-truth ``{sample: [(left, right, state)]}`` drawn as a reference row at the bottom.
+
+<code>[**length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   x-axis length; defaults to the largest ``right`` across the tools.
+
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   As for :meth:`SoftTrack.plot`.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   As for :meth:`SoftTrack.plot`.
+
+<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   As for :meth:`SoftTrack.plot`.
+
+<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   As for :meth:`SoftTrack.plot`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   ``(figure, axes)`` if ``return_plot`` else ``None``.

@@ -1,0 +1,59 @@
+# io.estimate_ne { #tspaint.io.estimate_ne }
+
+```python
+tspaint.io.estimate_ne(source, mutation_rate, groups=None, exclude=None)
+```
+
+Estimate the (diploid) effective population size from between-individual diversity.
+
+Uses Tajima's pairwise estimator of :math:`\theta = 4 N_e \mu`: nucleotide diversity
+:math:`\pi` — the mean number of sequence differences per base pair between two haplotypes —
+computed over haplotype pairs drawn from **different individuals** (so it measures population
+diversity, not within-individual heterozygosity), then :math:`N_e = \pi / (4\mu)`.
+
+Only sites **called in both** haplotypes of a pair contribute (missing calls are excluded), and
+the per-pair denominator is the callable length in base pairs: the analysed region
+(:attr:`Variants.sequence_length`) minus the sites known to be uncalled in that pair. Sites not
+present in the variant table are treated as invariant and callable, so the estimate is correct
+whether the input is a variant-only or an all-sites VCF. Individuals are the consecutive
+``ploidy``-column blocks of :attr:`Variants.sample_names` (as the readers lay them out).
+
+For a structured / admixed panel, all-pairs :math:`\pi` includes cross-population comparisons, so
+it reflects the whole sample's deep between-population coalescent depth. **This all-pairs default
+(``groups=None``) is what a SINGER prior needs** (:func:`tspaint.io.singer`): SINGER calibrates
+``4·Ne·μ ≈ π`` over the whole sample and must keep those deep coalescences on-scale, matching its
+own ``singer_master`` auto-Ne. Passing ``groups`` (e.g. the painting ``labels``) instead compares
+**only pairs of individuals in the same group** — a *smaller, within-population* :math:`N_e` that
+will **under-calibrate** the SINGER prior on a structured sample; reach for it only when you
+specifically want the within-population value. ``exclude`` (drop admixed / mislabelled individuals)
+is the appropriate refinement when the estimate feeds SINGER.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [Variants, tskit.TreeSequence, or str]{.parameter-annotation}</code>
+
+:   Genotypes — a :class:`Variants`, a tree sequence, or a VCF / VCF-Zarr path (resolved as in :func:`resolve_variants`). Missing calls are honoured when the source records them.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Per-base, per-generation mutation rate :math:`\mu`.
+
+<code>[**groups**]{.parameter-name} [:]{.parameter-annotation-sep} [[mapping](`mapping`) or [array](`array`) - [like](`like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Restrict the comparison to pairs of individuals **in the same group**. A mapping is keyed by base sample id (as in :attr:`Variants.sample_names`) or integer individual index — the painting ``labels`` dict works directly; an array-like gives one value per individual (or per haplotype). Individuals with no entry (absent from the mapping, or ``None`` / NaN) are dropped from every pair. ``None`` (default) puts everyone in one group — the all-pairs behaviour.
+
+<code>[**exclude**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Individuals to leave out of the estimate entirely — by base sample id (as in :attr:`Variants.sample_names`) or integer individual index. Use it to drop **soft / suspect references** (admixed or mislabelled) whose inflated diversity would bias :math:`N_e`, so the SINGER prior is set from the clean panel only.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   The estimated diploid :math:`N_e = \pi / (4\mu)`.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If there are fewer than two haplotypes from distinct individuals, or no callable variation from which to estimate :math:`\pi`.

@@ -1,0 +1,48 @@
+# model.MaskedEmissions { #tspaint.model.MaskedEmissions }
+
+```python
+tspaint.model.MaskedEmissions(base, mask, pi)
+```
+
+Position-dependent Felsenstein emissions — **fragment masking** (CLAUDE.md §2.3).
+
+Wraps the base per-tip emission vectors and, for the marginal tree covering a genomic interval,
+returns them with each *masked* reference tip switched to the query (unlabelled) emission over
+its masked spans. So a contaminated reference anchors at full strength on its clean spans and is
+treated as a query (contributes no label information) exactly where it is flagged foreign —
+the local generalisation of the global per-tip credibility ``w_i``.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**base**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+
+:   Base per-tip emission vectors (:func:`build_emissions`).
+
+<code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per reference-node the half-open ``[left, right)`` spans to mask out (unlabel).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Root frequencies for the query emission used on masked spans.
+
+## Notes {.doc-section .doc-section-notes}
+
+A reference is masked for a tree if the tree interval's **midpoint** falls in one of its spans
+(tracts span many marginal trees, so the ≤1-interval boundary rounding is negligible). The
+per-interval emission depends only on that interval, so the E-step stays exactly summable over
+tree-range chunks (the byte-exact parallel property is preserved).
+
+## Methods
+
+| Name | Description |
+| --- | --- |
+| [for_interval](#tspaint.model.MaskedEmissions.for_interval) | The emission dict for the marginal tree covering ``[left, right)``. |
+
+### for_interval { #tspaint.model.MaskedEmissions.for_interval }
+
+```python
+tspaint.model.MaskedEmissions.for_interval(left, right)
+```
+
+The emission dict for the marginal tree covering ``[left, right)``.

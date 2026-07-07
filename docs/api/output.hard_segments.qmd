@@ -17,7 +17,7 @@ admixture-pulse dating analysis consumes.
 
 <code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.0]{.parameter-default}</code>
 
-:   Confidence dead-band on the top-two posterior **margin** ``max(P) - 2nd-max(P)``. A switch to a new ``argmax`` state is accepted only where ``margin >= deadband``; otherwise the previous state is carried forward. Default ``0.0`` (naive ``argmax``).
+:   Confidence dead-band on the top-two posterior **margin** ``max(P) - 2nd-max(P)``. It **confirms** switches: a locus is a *confident anchor* only where ``margin >= deadband``; a tract boundary is kept only between two confident anchors of different states (a low-confidence run that dips and returns to the same confident state is flicker and is suppressed). Default ``0.0`` (every ``argmax`` change is a boundary) for this low-level primitive; the high-level surface (:meth:`tspaint.Painting.segments`, :func:`tspaint.paint`, the plots) defaults to :data:`DEFAULT_DEADBAND`.
 
 ## Returns {.doc-section .doc-section-returns}
 
@@ -27,10 +27,21 @@ admixture-pulse dating analysis consumes.
 
 ## Notes {.doc-section .doc-section-notes}
 
-A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment
-long tracts under naive ``argmax`` (``deadband=0``). Because the posterior is
-calibrated, a modest dead-band (≈0.3–0.5) recovers the true switch density and
-tract-length distribution where naive argmax over-fragments ~3× (CLAUDE.md §9).
-This is a tunable precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF)
-does not expose. ``MISSING_INFO`` spans carry the previous state forward; the first
-interval takes its ``argmax``.
+**Reversal-invariant** (a chromosome has no privileged left/right): the deadband only
+decides *whether* a switch is real, while the boundary is placed at the **argmax
+crossover** (where the two states' posteriors cross) — a direction-free point in the
+data — rather than at the first confident locus reached by the scan. So segmenting the
+track or its mirror image yields the same physical borders. (Contrast a one-pass causal
+filter, which would attribute a blurred switch to whichever confident tract precedes it
+in the scan direction.) When a sub-deadband run separates two *different* confident
+anchors, the border is the argmax-change boundary nearest the run's midpoint (unique for
+a monotone transition, the usual case).
+
+A positive ``deadband`` suppresses the low-confidence (~P=0.5) flips that fragment long
+tracts under naive ``argmax`` (``deadband=0``). Because the posterior is calibrated, a
+modest dead-band (≈0.3–0.5) recovers the true switch density and tract-length
+distribution where naive argmax over-fragments ~3× (CLAUDE.md §9) — a tunable
+precision/recall dial a fixed hard segmenter (e.g. RFMix's CRF) does not expose.
+``MISSING_INFO`` spans are never anchors (missing ≠ a confident opposite call) and are
+filled by the nearest confident anchor; with no confident anchor at all the track falls
+back to raw per-locus ``argmax``.

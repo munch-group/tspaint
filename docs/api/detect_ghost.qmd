@@ -4,65 +4,81 @@
 tspaint.detect_ghost(
     ts,
     labels,
-    samples,
+    samples=None,
     *,
-    fit_thresh=0.6,
-    depth_thresh=0.9,
-    K=2,
-    Q0=None,
-    max_iter=8,
-    soft_refs=None,
+    depth='time',
+    max_iter=50,
+    tol=0.001,
+    delta=None,
+    init_archaic_burden=0.1,
+    init_switch=0.02,
+    n_jobs=None,
+    progress=False,
 )
 ```
 
-Ghost-source detection: tracts from a population **not in the panel** (Plan A Workflow 3).
+Reference-free ghost / archaic introgression detection via a depth-emission HMM.
 
-A ghost / archaic tract fits **no** panel source (low ``fit``) **and** sits on an
-anomalously **deep** branch relative to every labelled reference (high ``depth``). That
-second criterion is what separates a genuine unsampled-source tract from a merely
-uninformative (50/50, shallow) one. Detection, not attribution — it flags that a tract
-descends from something outside the panel, not what (CLAUDE.md §9).
+The dedicated ghost-search tool (Task 2; CLAUDE.md §9). A 2-state (modern / ghost) HMM along the
+genome on nearest-modern-reference coalescence depth — the modern emission anchored by the
+panel, the **ghost** emission learned and constrained deeper. Returns a **calibrated** per-locus
+``P(ghost)`` with no ghost/archaic reference required. The signal is depth, so it targets **deep
+(archaic-like)** ghosts. (Renamed from ``detect_archaic``, which remains a deprecated alias.)
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [list](`list`)\[[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)\]]{.parameter-annotation}</code>
 
-:   Tree sequence to analyse.
+:   One tree sequence, or **an ensemble** (e.g. SINGER posterior samples) — the HMM is fit once pooled across all members, decoded per member, and the per-locus ``P(ghost)`` **averaged** across members (marginalising ARG uncertainty for accuracy; CLAUDE.md §7.4). All members must share the same sample ids.
 
-<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\] or [iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
 
-:   Reference sample id -> ancestry-state label.
+:   The modern reference sample ids (a ``{ref: state}`` painting label dict is accepted — only the ids are used; every reference is "modern"). They anchor the modern depth distribution.
 
-<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation}</code>
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Samples to scan (typically the queries).
+:   Samples to scan; defaults to every non-reference sample.
 
-<code>[**fit_thresh**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.6]{.parameter-default}</code>
+<code>[**depth**]{.parameter-name} [:]{.parameter-annotation-sep} [(\'time\', \'rank\')]{.parameter-annotation} [ = ]{.parameter-default-sep} [\"time\"]{.parameter-default}</code>
 
-:   Flag where ``fit < fit_thresh`` (fits no panel source). Default ``0.6``.
+:   The depth observation: ``"time"`` (default) uses ``log`` nearest-reference coalescence time; ``"rank"`` uses its genome-wide span-weighted **rank** — a monotonic transform, hence **calibration-invariant** (robust to branch-length miscalibration, e.g. on a Relate ARG).
 
-<code>[**depth_thresh**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.9]{.parameter-default}</code>
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
 
-:   Flag where the rank-normalised nearest-reference ``depth >= depth_thresh`` (a deep outlier). Default ``0.9`` (the deepest 10%) — measured on an archaic-like ghost sim: recall 0.58 at precision 1.0 and a ~1% false-positive burden on the no-ghost control; lower it to ``0.8`` for recall ~1.0 at precision ~0.86 (same control floor). The right value scales with how prevalent the ghost ancestry is — tune against your own no-ghost control. The genome-wide ghost **burden** separates ghost from no-ghost ~10x even when per-tract recall is partial.
+:   Baum–Welch iteration cap and log-likelihood tolerance.
 
-<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [([int](`int`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [50]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Baum–Welch iteration cap and log-likelihood tolerance.
 
-<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**delta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Minimum gap ``μ_ghost - μ_modern`` enforced above the panel's deepest coalescence (in the ``depth`` units). Defaults to ``σ_modern``.
 
-<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**init_archaic_burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Initial ghost fraction and per-breakpoint switch probability.
 
-<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**init_switch**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Initial ghost fraction and per-breakpoint switch probability.
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Worker processes for the nearest-modern-ref coalescence pass (split by genome chunk, one shared pool across ensemble members; exactly equal to serial). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
+
+<code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Show a progress bar for the depth pass. Default ``False``.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[GhostResult](`tspaint.introgression.GhostResult`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[GhostResult](`tspaint.archaic.GhostResult`)]{.parameter-annotation}</code>
 
-:   ``.burden`` (per-sample flagged fraction) and ``.tracts(sample)`` (the merged ghost ``(left, right)`` tracts) — the same accessors as :class:`tspaint.archaic.ArchaicResult`.
+:   Per-sample ``P(ghost)`` posteriors / tracts / burden plus the learned HMM parameters. For an ensemble the posteriors are the per-member mean.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If the modern anchor cannot be estimated (no informative reference depths), ``depth`` is invalid, or the ensemble is empty.

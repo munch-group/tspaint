@@ -1,5 +1,5 @@
 ---
-title: "Inference: structured (blocked) EM"
+title: "Structured (blocked) EM"
 ---
 
 `tspaint` fits the ancestry CTMC to an inferred tree sequence by

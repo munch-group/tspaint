@@ -1,0 +1,7 @@
+# benchmark.tool_status { #tspaint.benchmark.tool_status }
+
+```python
+tspaint.benchmark.tool_status()
+```
+
+Resolved path + availability for every benchmark tool (incl. RFMix).

@@ -1,0 +1,7 @@
+# dating.cell_centers { #tspaint.dating.cell_centers }
+
+```python
+tspaint.dating.cell_centers(edges)
+```
+
+Geometric centres of the cells defined by ``edges``.

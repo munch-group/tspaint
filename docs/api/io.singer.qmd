@@ -4,14 +4,25 @@
 tspaint.io.singer(
     source,
     *,
-    Ne,
-    mutation_rate,
-    recombination_rate,
-    n_samples=21,
-    thin=10,
-    burn_in=20,
-    seed=42,
-    ploidy=1,
+    ts=None,
+    mcmc_step=None,
+    mcmc_burnin=None,
+    _Ne=None,
+    _m=None,
+    _r=None,
+    _ratio=None,
+    _n_samples=None,
+    _thin=None,
+    _polar=0.5,
+    _ploidy=1,
+    _seed=42,
+    _penalty=None,
+    _hmm_epsilon=None,
+    _psmc_bins=None,
+    _fast=False,
+    _recomb_map=None,
+    _mut_map=None,
+    singer_args=None,
     workdir=None,
     singer_bin=None,
     with_mutations=True,
@@ -26,43 +37,95 @@ SINGER's MCMC samples ARGs from ``P(ARG | genotypes)``; the thinned post-burn-in
 samples are the ideal input to :func:`tspaint.ensemble.merge_posterior_tables`,
 since they represent genuine ARG uncertainty (§7.4).
 
+**Posterior sampling is controlled by three unified knobs, shared with**
+:func:`tspaint.io.argweaver` — ``ts`` (how many tree sequences you get back), ``mcmc_step`` (MCMC
+iterations between saved samples) and ``mcmc_burnin`` (burn-in iterations). The chain runs
+``ts * mcmc_step + mcmc_burnin`` iterations; tspaint translates the knobs into SINGER's native
+``-n`` / ``-thin`` (see Returns). Every **native terminal flag** is exposed underscore-prefixed to
+mark its 1:1 correspondence to the SINGER CLI: ``_Ne`` (``-Ne``, **required**), ``_m`` (``-m``),
+``_r`` (``-r``) or ``_ratio`` (``-ratio``, default 1 — so ``r = m*ratio``), ``_polar``, ``_ploidy``,
+``_seed``, ``_recomb_map`` / ``_mut_map``, ``_penalty`` / ``_hmm_epsilon`` / ``_psmc_bins``,
+``_fast``, and the raw sampling flags ``_n_samples`` (``-n``) / ``_thin`` (``-thin``) — normally
+left to inference from the three unified knobs. Passing a plain knob **and** its ``_``-counterpart
+(e.g. ``ts`` and ``_n_samples``) raises: the plain one takes precedence.
+
 ## Parameters {.doc-section .doc-section-parameters}
 
 <code>[**source**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`) or [str](`str`)]{.parameter-annotation}</code>
 
 :   The genotypes to sample ARGs from — a tree sequence carrying mutations, a **VCF Zarr** store, or a **VCF** file (normalised by :mod:`tspaint.io_genotypes`). All are written out as a haploid VCF for SINGER.
 
-<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Effective population size passed to SINGER (``-Ne``).
+:   Number of posterior tree sequences returned (default 20). Exactly this many come back (see Returns) — a single :class:`tskit.TreeSequence` when 1, else a list.
 
-<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+<code>[**mcmc_step**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Per-base mutation rate (``-m``).
+:   MCMC iterations between saved samples (SINGER ``-thin``; default 50). Larger ⇒ more decorrelated returned samples.
 
-<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+<code>[**mcmc_burnin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Per-base recombination rate (``-r``).
+:   Burn-in MCMC iterations discarded before the kept samples (default 200); ``mcmc_burnin // mcmc_step`` leading saved samples are dropped.
 
-<code>[**n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [21]{.parameter-default}</code>
+<code>[**_Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Number of MCMC samples SINGER draws (``-n``, default 20).
+:   Diploid effective population size (``-Ne``). **Required** — SINGER needs it and tspaint does not estimate one silently. SINGER calibrates its prior so ``4·_Ne·_m ≈ π`` (observed diversity), so estimate _Ne over the **whole analysed panel** with :func:`tspaint.io.estimate_ne` (all-pairs ``π/4μ``). On a structured / multi-species sample that value is legitimately large — a too-small _Ne pushes deep coalescences off SINGER's representable range into noisy / failing runs. Omitting it raises ``ValueError``.
 
-<code>[**thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+<code>[**_m**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   MCMC thinning interval (``-thin``, default 10).
+:   Per-base mutation rate (``-m``). Required (or ``_mut_map``).
 
-<code>[**burn_in**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+<code>[**_r**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Number of leading samples to discard as burn-in (default 5).
+:   Per-base recombination rate (``-r``). Defaults to ``_m * _ratio``.
 
-<code>[**seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+<code>[**_ratio**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Base random seed; retries derive fresh seeds from it (default 42).
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
 
-<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1]{.parameter-default}</code>
+<code>[**_polar**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Ploidy passed to SINGER (``-ploidy``, default 1).
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_seed**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_penalty**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_hmm_epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_psmc_bins**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_fast**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_recomb_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_mut_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+
+<code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   SINGER's raw ``-n`` / ``-thin`` — normally inferred from ``ts`` / ``mcmc_step`` / ``mcmc_burnin``; set directly for full control (but not alongside the plain knob they correspond to).
+
+<code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   SINGER's raw ``-n`` / ``-thin`` — normally inferred from ``ts`` / ``mcmc_step`` / ``mcmc_burnin``; set directly for full control (but not alongside the plain knob they correspond to).
 
 <code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -86,9 +149,9 @@ since they represent genuine ARG uncertainty (§7.4).
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [list of tskit.TreeSequence]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [tskit.TreeSequence or list of tskit.TreeSequence]{.parameter-annotation}</code>
 
-:   Post-burn-in posterior samples (one per thinned MCMC sample), with sample order preserved (VCF column ``i`` -> sample ``i``).
+:   Exactly ``ts`` posterior samples — a **single** :class:`tskit.TreeSequence` when ``ts == 1``, else a **list** of ``ts``. SINGER runs ``-n = ts + mcmc_burnin // mcmc_step`` samples ``-thin = mcmc_step`` iterations apart (``ts*mcmc_step + mcmc_burnin`` iterations total); tspaint discards the ``mcmc_burnin // mcmc_step`` burn-in samples and keeps ``ts``. E.g. ``ts=20, mcmc_step=2, mcmc_burnin=200`` → 20 samples over 240 iterations. Sample order is preserved (VCF column ``i`` -> sample ``i``); for a VCF / VCF-Zarr / ``Variants`` source the sample ids are stamped onto the sample nodes (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed by sample-ID string as well as by node index.
 
 ## Raises {.doc-section .doc-section-raises}
 

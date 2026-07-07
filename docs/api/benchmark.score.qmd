@@ -1,0 +1,162 @@
+# benchmark.score { #tspaint.benchmark.score }
+
+`tspaint.benchmark.score`
+
+Score benchmark paintings against a truth table — the head-to-head leaderboard (CLAUDE.md §9).
+
+Given a ``truth.npz`` (from :func:`tspaint.benchmark.export.export_vcf` or ``tspaint simulate
+--truth``) and one or more tool painting ``.npz`` files (any source that wrote the
+``tspaint-painting`` format, including the native painter), reports per tool:
+
+* **balanced accuracy** — class-balanced per-base correctness (``tspaint.validate``);
+* **accuracy** — plain span-weighted per-base correctness;
+* **confidence** — mean ``|2·P − 1|`` (a calibrated soft caller relaxes toward 0 where it cannot
+  tell, so high accuracy with *moderate* confidence is the honest regime; CLAUDE.md §9);
+* **switch-density ratio** — inferred ÷ true ancestry switches/length at a confidence ``deadband``
+  (1.0 = faithful tract-length distribution for admixture dating; >1 over-fragments).
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [aggregate](#tspaint.benchmark.score.aggregate) | Collect :func:`score_full` JSONs into two tidy CSVs in ``out_dir``. |
+| [format_table](#tspaint.benchmark.score.format_table) | Render :func:`score` rows as a fixed-width text table. |
+| [load_truth](#tspaint.benchmark.score.load_truth) | Load a ``tspaint-truth`` ``.npz`` into ``{sample: [(left, right, state)]}``. |
+| [score](#tspaint.benchmark.score.score) | Score one or more tool paintings against ``truth``. |
+| [score_full](#tspaint.benchmark.score.score_full) | Full benchmark metrics for one painting vs ``truth`` — the three families (CLAUDE.md §9). |
+| [write_metrics](#tspaint.benchmark.score.write_metrics) | Write a :func:`score_full` result to ``path`` as JSON (NaN → null). |
+
+### aggregate { #tspaint.benchmark.score.aggregate }
+
+```python
+tspaint.benchmark.score.aggregate(json_paths, out_dir)
+```
+
+Collect :func:`score_full` JSONs into two tidy CSVs in ``out_dir``.
+
+Writes ``summary_scalar.csv`` (one row per painting: scenario ``meta`` columns + painter
+``name`` + the scalar metrics) and ``summary_by_size.csv`` (long form: one row per painting ×
+true-segment-length bin, with the bin's accuracy / weight / segment count) — ready for plotting
+the three metric families across the grid.
+
+Returns the two CSV paths.
+
+### format_table { #tspaint.benchmark.score.format_table }
+
+```python
+tspaint.benchmark.score.format_table(rows)
+```
+
+Render :func:`score` rows as a fixed-width text table.
+
+### load_truth { #tspaint.benchmark.score.load_truth }
+
+```python
+tspaint.benchmark.score.load_truth(path)
+```
+
+Load a ``tspaint-truth`` ``.npz`` into ``{sample: [(left, right, state)]}``.
+
+### score { #tspaint.benchmark.score.score }
+
+```python
+tspaint.benchmark.score.score(
+    truth,
+    paintings,
+    *,
+    deadband=DEFAULT_DEADBAND,
+    K=2,
+)
+```
+
+Score one or more tool paintings against ``truth``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [dict](`dict`)]{.parameter-annotation}</code>
+
+:   A ``tspaint-truth`` ``.npz`` path or an already-loaded ``{sample: [(l, r, state)]}``.
+
+<code>[**paintings**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[str](`str`), [str](`str`)\] or [iterable](`iterable`)\[[str](`str`)\]]{.parameter-annotation}</code>
+
+:   Tool paintings: ``{name: npz_path}``, or paths (named by basename).
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_DEADBAND]{.parameter-default}</code>
+
+:   Confidence dead-band for the hard segmentation used in the switch-density ratio (default 0.4; CLAUDE.md §9 — argmax-tspaint over-fragments, a deadband recovers the true tract-length distribution).
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states (default 2).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\]]{.parameter-annotation}</code>
+
+:   One row per painting with ``name``, ``balanced_accuracy``, ``accuracy``, ``confidence``, ``switch_density_ratio`` and ``n_samples``.
+
+### score_full { #tspaint.benchmark.score.score_full }
+
+```python
+tspaint.benchmark.score.score_full(
+    truth,
+    painting,
+    *,
+    name='',
+    meta=None,
+    bins=None,
+    deadband=DEFAULT_DEADBAND,
+    state=0,
+    K=2,
+)
+```
+
+Full benchmark metrics for one painting vs ``truth`` — the three families (CLAUDE.md §9).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [dict](`dict`)]{.parameter-annotation}</code>
+
+:   A ``tspaint-truth`` ``.npz`` path or a loaded ``{sample: [(l, r, state)]}``.
+
+<code>[**painting**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to a ``tspaint-painting`` ``.npz``.
+
+<code>[**name**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'\']{.parameter-default}</code>
+
+:   Painter label stored in the result.
+
+<code>[**meta**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Scenario metadata (model, T_split, …) stored verbatim for aggregation.
+
+<code>[**bins**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   True-segment-length bin edges (default :data:`tspaint.validate.DEFAULT_SIZE_BINS`).
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_DEADBAND]{.parameter-default}</code>
+
+:   Confidence dead-band for the hard segmentation in the fragmentation metric (default 0.4).
+
+<code>[**state**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0]{.parameter-default}</code>
+
+:   Ancestry state whose global proportion is reported (default 0).
+
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Number of ancestry states (default 2).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   ``name``, ``meta``, ``n_samples``; **overall proportions** (true/est/error); **accuracy** (balanced/per-base/confidence); **fragmentation** (true & inferred switches per Mb, ratio, breakpoint precision/recall); and **accuracy by true segment size** (``size_edges`` / ``size_accuracy`` / ``size_weight`` / ``size_n_segments``).
+
+### write_metrics { #tspaint.benchmark.score.write_metrics }
+
+```python
+tspaint.benchmark.score.write_metrics(path, result)
+```
+
+Write a :func:`score_full` result to ``path`` as JSON (NaN → null).

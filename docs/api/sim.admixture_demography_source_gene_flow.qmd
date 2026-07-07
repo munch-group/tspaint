@@ -1,0 +1,61 @@
+# sim.admixture_demography_source_gene_flow { #tspaint.sim.admixture_demography_source_gene_flow }
+
+```python
+tspaint.sim.admixture_demography_source_gene_flow(
+    Ne=1000,
+    T_admix=30.0,
+    census_offset=1.0,
+    T_prev_admix=1000.0,
+    T_split=5000.0,
+    f_A=0.5,
+    prev_migration=0.1,
+)
+```
+
+Two-source admixture where the **sources themselves exchanged genes via a prior pulse**.
+
+Like :func:`admixture_demography`, but with a mass migration ``SOURCE_A -> SOURCE_B`` (backward
+in time; = a forward-time pulse of ``SOURCE_B`` **into** ``SOURCE_A``) of fraction
+``prev_migration`` at ``T_prev_admix`` — placed between the census and the split. So the
+``SOURCE_A`` reference panel genuinely carries ``~prev_migration`` of ``SOURCE_B`` introgressed
+tracts: **real, localized reference contamination from a demographic event** (not a synthetic
+pure/impure mix). The post-pulse census at ``T_admix + census_offset`` still labels each query
+lineage's proximate source (A / B) — the prior pulse acts *deeper* than the census, so the query
+local-ancestry truth is unchanged. (The A-refs' B tracts sit below the census, so they are not
+in :func:`local_ancestry_truth`; the query A/B truth is the evaluation target.)
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   As for :func:`admixture_demography`.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   As for :func:`admixture_demography`.
+
+<code>[**census_offset**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   As for :func:`admixture_demography`.
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   As for :func:`admixture_demography`.
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000]{.parameter-default}</code>
+
+:   As for :func:`admixture_demography`.
+
+<code>[**T_prev_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000.0]{.parameter-default}</code>
+
+:   Time of the prior A↔B pulse (strictly between the census and ``T_split``).
+
+<code>[**prev_migration**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
+
+:   Fraction of ``SOURCE_A`` replaced (backward) by ``SOURCE_B`` at ``T_prev_admix`` — the ``SOURCE_A`` panel's foreign (B) fraction.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``T_admix < census < T_prev_admix < T_split`` is violated or ``prev_migration`` ∉ ``[0,1)``.

@@ -10,10 +10,11 @@ tspaint.Painting(
     queries,
     ts=None,
     labels=None,
-    default_deadband=0.0,
-    n_jobs=1,
+    default_deadband=DEFAULT_DEADBAND,
+    n_jobs=None,
     _seqlen=None,
     _member_posteriors=None,
+    mask=None,
 )
 ```
 
@@ -67,11 +68,9 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 | --- | --- |
 | [introgression_map](#tspaint.Painting.introgression_map) | Leave-one-out introgression map for ``sample``, reusing this painting's fit. |
 | [load](#tspaint.Painting.load) | Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`). |
-| [plot](#tspaint.Painting.plot) | Stacked strip plot of the painting — one row per query haplotype. |
-| [posterior_at](#tspaint.Painting.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [plot](#tspaint.Painting.plot) | Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`). |
 | [rate_through_time](#tspaint.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
 | [save](#tspaint.Painting.save) | Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model). |
-| [segments](#tspaint.Painting.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
 
 ### introgression_map { #tspaint.Painting.introgression_map }
 
@@ -110,75 +109,23 @@ Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`)
 ### plot { #tspaint.Painting.plot }
 
 ```python
-tspaint.Painting.plot(
-    truth=None,
-    title=None,
-    cmap='coolwarm',
-    colors=None,
-    return_plot=False,
-)
+tspaint.Painting.plot(*args, refs=True, mark_masked=True, **kwargs)
 ```
 
-Stacked strip plot of the painting — one row per query haplotype.
+Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`).
 
-Each haplotype row shows, top to bottom: the **soft** per-position posterior
-``P(ancestry A)`` as a colour gradient (the calibrated deliverable), the **hard**
-ancestry segments (:meth:`segments` at ``deadband=0.4``), and — when ``truth`` is given —
-the true ancestry tracts as a reference track beneath. A shared colour bar maps
-``P(ancestry A)`` (state A at the top of ``cmap``, state B at the bottom). Works for an
-ensemble painting too (the rows show the ensemble-mean posterior). Requires matplotlib.
+To see a *reference's own* painting (and its introgression), include the reference in the
+painted focal set: ``paint(ts, labels, queries=queries + [ref], mask=mask)``. Then, for any
+painted row that is a labelled reference (in :attr:`labels`), this:
 
-#### Parameters {.doc-section .doc-section-parameters}
+* labels the row with its **nominal ancestry** — e.g. ``ref 39 (A)`` instead of ``hapl. i`` —
+  so a reference that paints a foreign (e.g. B) tract stands out against its own A label; and
+* when the painting was produced with a fragment ``mask``, **hatches each reference's masked
+  (unlabelled) spans** over its soft band, showing where the reference was un-anchored and its
+  posterior became tree-inferred (the mechanism that reveals its introgression).
 
-<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
-
-:   Ground-truth ancestry tracts ``(left, right, state)`` per query — e.g. from :func:`tspaint.local_ancestry_truth` mapped to states ``0``/``1`` — drawn as a reference track below each haplotype. No truth track is drawn when ``None`` (default).
-
-<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
-
-:   Title placed on the top haplotype axes.
-
-<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [matplotlib](`matplotlib`).[colors](`matplotlib.colors`).[Colormap](`matplotlib.colors.Colormap`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
-
-:   Diverging colormap mapping ``P(ancestry A) ∈ [0, 1]`` (state A → ``1.0``, state B → ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
-
-<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
-
-:   Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g. ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
-
-<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
-
-:   Return the Matplotlib ``(figure, axes)`` so the caller can further customise or save the plot, instead of ``None``. Default ``False``.
-
-#### Returns {.doc-section .doc-section-returns}
-
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
-
-:   ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
-
-### posterior_at { #tspaint.Painting.posterior_at }
-
-```python
-tspaint.Painting.posterior_at(sample, position)
-```
-
-Posterior vector for ``sample`` at a genomic ``position``.
-
-#### Parameters {.doc-section .doc-section-parameters}
-
-<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
-
-:   Sample-node id to look up.
-
-<code>[**position**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
-
-:   Genomic position.
-
-#### Returns {.doc-section .doc-section-returns}
-
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`) or None]{.parameter-annotation}</code>
-
-:   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
+Pass ``refs=False`` / ``mark_masked=False`` to suppress either. All other arguments
+(``truth``, ``title``, ``cmap``, ``deadband``, ``return_plot`` …) pass through unchanged.
 
 ### rate_through_time { #tspaint.Painting.rate_through_time }
 
@@ -228,23 +175,3 @@ Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted m
 Reload with :meth:`load`. The painted tree sequence itself is **not** stored (keep the
 ``.trees`` file); a reloaded painting therefore has ``ts=None`` but retains
 :attr:`length`, the posteriors, ``Q``/``π``/``w`` and the labels.
-
-### segments { #tspaint.Painting.segments }
-
-```python
-tspaint.Painting.segments(deadband=None)
-```
-
-Hard ancestry segments for downstream tract-length / dating analysis.
-
-#### Parameters {.doc-section .doc-section-parameters}
-
-<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
-
-:   Confidence dead-band suppressing low-confidence flips that fragment long tracts. Defaults to :attr:`default_deadband`. See :func:`tspaint.output.hard_segments`.
-
-#### Returns {.doc-section .doc-section-returns}
-
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
-
-:   Per query, hard ``(left, right, state)`` segments.

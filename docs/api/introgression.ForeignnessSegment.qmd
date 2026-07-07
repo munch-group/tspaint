@@ -1,0 +1,29 @@
+# introgression.ForeignnessSegment { #tspaint.introgression.ForeignnessSegment }
+
+```python
+tspaint.introgression.ForeignnessSegment(left, right, loo, fit, depth, status)
+```
+
+A contiguous span carrying the per-locus foreignness components for one sample.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**left, right**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)``.
+
+<code>[**loo**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K,)`` leave-one-out posterior (the outside message excluding the sample's own emission).
+
+<code>[**fit**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   ``max_s loo[s]`` in ``[1/K, 1]`` — the genealogy's confidence in any panel state.
+
+<code>[**depth**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Coalescence depth to the nearest labelled reference: a genome-wide rank in ``[0, 1]`` (``depth="rank"``, default) or raw coalescent time (``depth="time"``); ``nan`` where no reference is reachable.
+
+<code>[**status**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   :data:`tspaint.output.INFORMATIVE` or :data:`tspaint.output.MISSING_INFO`.
