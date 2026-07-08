@@ -11,12 +11,13 @@ from tspaint.accumulate import accumulate_sufficient_statistics
 from tspaint.em import build_emissions, fit
 from tspaint.model import make_generator_2state
 from tspaint.output import posterior_table
-from tspaint.sim import SOURCE_A, SOURCE_B
+from tspaint.sim import SOURCE_A, SOURCE_B, admixture_demography
 
 
 def _setup(L=1e5, seed=1):
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=L, recombination_rate=1e-8,
-                                    random_seed=seed, Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                    n_query=4, n_reference=4, sequence_length=L, recombination_rate=1e-8,
+                                    random_seed=seed).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

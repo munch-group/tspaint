@@ -326,21 +326,15 @@ def simulate(n_admix, n_ref, length, recomb_rate, ploidy, seed, Ne, T_admix, T_s
              migration_rate, mutate, mu, out, labels_out, truth_out):
     """Simulate a 2-source admixture with known truth (the validation workhorse)."""
     import numpy as np
-    from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B
-    from .io_tsinfer import add_mutations
+    from .sim import simulate_admixture, admixture_demography
 
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=length,
-                            recombination_rate=recomb_rate, ploidy=ploidy, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A,
-                            migration_rate=migration_rate)
-    if mutate:
-        ts = add_mutations(ts, rate=mu, random_seed=seed)
+    sim = simulate_admixture(
+        admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A,
+                             migration_rate=migration_rate),
+        n_query=n_admix, n_reference=n_ref, sequence_length=length, recombination_rate=recomb_rate,
+        ploidy=ploidy, mutation_rate=(mu if mutate else None), random_seed=seed)
+    ts, labels = sim.ts, sim.labels
     ts.dump(out)
-
-    name = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
-    state_of_pop = {p: (0 if n == SOURCE_A else 1) for p, n in name.items() if n in (SOURCE_A, SOURCE_B)}
-    npop = ts.tables.nodes.population
-    labels = {int(s): state_of_pop[npop[s]] for s in ts.samples() if npop[s] in state_of_pop}
     _echo(f"simulate: {ts.num_samples} haplotypes, {ts.num_sites} sites, {len(labels)} refs -> {out}")
 
     if labels_out:
@@ -348,12 +342,10 @@ def simulate(n_admix, n_ref, length, recomb_rate, ploidy, seed, Ne, T_admix, T_s
             json.dump({str(k): v for k, v in labels.items()}, f)
         _echo(f"  labels -> {labels_out}")
     if truth_out:
-        tracts, _ = local_ancestry_truth(ts)
         samp, left, right, state = [], [], [], []
-        for s, segs in tracts.items():
-            for (lo, hi, pid) in segs:
-                if pid in state_of_pop:
-                    samp.append(s); left.append(lo); right.append(hi); state.append(state_of_pop[pid])
+        for s, segs in sim.truth_states.items():
+            for (lo, hi, st) in segs:
+                samp.append(s); left.append(lo); right.append(hi); state.append(st)
         with open(truth_out, "wb") as f:
             np.savez_compressed(f, _format="tspaint-truth", _version=1,
                                 sample=np.array(samp, np.int64), left=np.array(left, float),

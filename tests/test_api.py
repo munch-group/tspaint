@@ -6,12 +6,13 @@ import numpy as np
 import pytest
 
 import tspaint
-from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED
+from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED, admixture_demography
 
 
 def _admixture(L=5e5):
-    ts = tspaint.simulate_admixture(n_admix=6, n_ref=6, sequence_length=L, recombination_rate=1e-8,
-                                  random_seed=1, Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                  n_query=6, n_reference=6, sequence_length=L, recombination_rate=1e-8,
+                                  random_seed=1).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)
@@ -240,9 +241,9 @@ def test_painting_ensemble_member_posteriors_and_dating():
     """An ensemble painting keeps per-member posteriors; rate_through_time -> split-time CI."""
     from tspaint.dating import EnsembleRateThroughTime, RateThroughTime
     ts, labels, queries, _ = _admixture(L=1.5e5)
-    kw = dict(n_admix=6, n_ref=6, sequence_length=1.5e5, recombination_rate=1e-8,
-              Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
-    members = [ts] + [tspaint.simulate_admixture(random_seed=s, **kw) for s in (2, 3)]
+    demo = admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    kw = dict(n_query=6, n_reference=6, sequence_length=1.5e5, recombination_rate=1e-8)
+    members = [ts] + [tspaint.simulate_admixture(demo, random_seed=s, **kw).ts for s in (2, 3)]
 
     single = tspaint.paint(ts, labels, queries)
     assert single._member_posteriors is None                  # single ts: no member tables
@@ -278,9 +279,9 @@ def test_ensemble_rate_through_time_parallel_matches_serial():
     n_jobs is the default (so a parallel-painted ensemble dates in parallel)."""
     from tspaint.dating import EnsembleRateThroughTime
     ts, labels, queries, _ = _admixture(L=1.5e5)
-    kw = dict(n_admix=6, n_ref=6, sequence_length=1.5e5, recombination_rate=1e-8,
-              Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
-    members = [ts] + [tspaint.simulate_admixture(random_seed=s, **kw) for s in (2, 3)]
+    demo = admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    kw = dict(n_query=6, n_reference=6, sequence_length=1.5e5, recombination_rate=1e-8)
+    members = [ts] + [tspaint.simulate_admixture(demo, random_seed=s, **kw).ts for s in (2, 3)]
     p = tspaint.paint(members, labels, queries)
     assert p.n_jobs == 1
 

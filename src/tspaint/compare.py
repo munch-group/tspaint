@@ -234,12 +234,13 @@ def head_to_head(painters, *, T_admix=300.0, n_admix=12, n_ref=12, sequence_leng
     ValueError
         If a substrate other than ``"true"`` or ``"tsinfer"`` is requested.
     """
-    from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+    from .sim import (simulate_admixture, admixture_demography, local_ancestry_truth,
+                      SOURCE_A, SOURCE_B, ADMIXED)
     from .validate import map_truth
 
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
-                            recombination_rate=recombination_rate, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    ts = simulate_admixture(admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A),
+                            n_query=n_admix, n_reference=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == SOURCE_A)

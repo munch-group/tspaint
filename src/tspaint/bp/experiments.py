@@ -17,7 +17,11 @@ import numpy as np
 
 from ..compare import tspaint_paint
 from ..output import hard_segments
-from ..sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+from ..sim import (simulate_admixture, admixture_demography, local_ancestry_truth,
+                   SOURCE_A, SOURCE_B, ADMIXED)
+
+# keys forwarded to admixture_demography vs. to simulate_admixture's sampling
+_DEMO_KW = {"Ne", "T_split", "f_A", "migration_rate", "census_offset"}
 from ..validate import map_truth, breakpoint_precision_recall, balanced_accuracy
 from .horizontal import bp_smooth_track
 
@@ -45,7 +49,11 @@ def _setup(T_admix, seed, infer, mutation_rate, **sim_kw):
     tuple
         ``(work_ts, labels, queries, true_segs)``.
     """
-    ts = simulate_admixture(random_seed=seed, T_admix=T_admix, **sim_kw)
+    demo_kw = {k: v for k, v in sim_kw.items() if k in _DEMO_KW}
+    samp_kw = {("n_query" if k == "n_admix" else "n_reference" if k == "n_ref" else k): v
+               for k, v in sim_kw.items() if k not in _DEMO_KW}
+    ts = simulate_admixture(admixture_demography(T_admix=T_admix, **demo_kw),
+                            random_seed=seed, **samp_kw).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

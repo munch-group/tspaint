@@ -64,7 +64,8 @@ def test_signatures_expose_unified_and_native_flags():
 # --- Ne required ------------------------------------------------------------------------------
 
 def test_singer_requires_ne():
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     for call in (lambda: io.singer(ts, _m=1e-8),
                  lambda: io.singer_windowed(ts, window_size=1e4, _m=1e-8)):
         with pytest.raises(ValueError, match="requires Ne"):
@@ -134,7 +135,8 @@ def test_plain_and_underscore_conflict_raises():
     with pytest.raises(ValueError, match="precedence"):
         _argweaver_sampling(20, None, None, 100, None)      # ts + _iters
     # and end-to-end through the public function
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     with pytest.raises(ValueError, match="precedence"):
         io.singer(ts, ts=20, _n_samples=10, _Ne=1000, _m=1e-8)
 
@@ -144,8 +146,10 @@ def test_plain_and_underscore_conflict_raises():
 @pytest.mark.slow
 @pytest.mark.skipif(not os.path.exists(DEFAULT_SINGER), reason="SINGER binary not available")
 def test_singer_ts_count_live():
-    ts_in = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=4e4,
-                             recombination_rate=1e-8, random_seed=7, Ne=1000, T_split=5000),
+    ts_in = io.add_mutations(tspaint.simulate_admixture(
+                             tspaint.sim.admixture_demography(Ne=1000, T_split=5000),
+                             n_query=3, n_reference=3, sequence_length=4e4,
+                             recombination_rate=1e-8, random_seed=7).ts,
                              rate=1.2e-8, random_seed=7)
     single = io.singer(ts_in, _Ne=1000, _m=1.2e-8, ts=1, _seed=7)
     assert single.num_samples == ts_in.num_samples                    # ts=1 -> a single tree sequence

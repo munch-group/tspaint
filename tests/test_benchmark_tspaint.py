@@ -10,13 +10,15 @@ import pytest
 import tspaint
 import tspaint.benchmark as bm
 from tspaint.benchmark.score import load_truth
+from tspaint.sim import admixture_demography
 
 pytestmark = pytest.mark.slow
 
 
 def test_tspaint_vcf_painter_keys_match_truth(tmp_path):
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=5, sequence_length=5e5, recombination_rate=1e-8,
-                                    random_seed=2, Ne=10000, T_admix=100, T_split=2000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=10000, T_admix=100, T_split=2000, f_A=0.5),
+                                    n_query=4, n_reference=5, sequence_length=5e5,
+                                    recombination_rate=1e-8, random_seed=2).ts
     from tspaint.io_tsinfer import add_mutations
     ts = add_mutations(ts, rate=1e-7, random_seed=2)            # ensure plenty of sites for tsinfer
 

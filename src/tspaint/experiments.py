@@ -11,8 +11,8 @@ import time
 
 import numpy as np
 
-from .sim import (simulate_admixture, simulate_admixture_impure_refs, local_ancestry_truth,
-                  SOURCE_A, SOURCE_B, ADMIXED, REF_A_IMPURE, REF_B_IMPURE)
+from .sim import (simulate_admixture, admixture_demography, simulate_admixture_impure_refs,
+                  local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED, REF_A_IMPURE, REF_B_IMPURE)
 from .em import fit, build_emissions
 from .model import make_generator_2state
 from .output import posterior_table, loo_posterior_table, hard_segments, MISSING_INFO, DEFAULT_DEADBAND
@@ -69,9 +69,9 @@ def admixture_experiment(T_admix=30.0, n_admix=6, n_ref=8, sequence_length=2e5,
     """
     clk = time.perf_counter
     t0 = clk()
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
-                            recombination_rate=recombination_rate, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    ts = simulate_admixture(admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A),
+                            n_query=n_admix, n_reference=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed).ts
     t_sim = clk() - t0
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
@@ -201,9 +201,9 @@ def fragmentation_experiment(*, n_admix=10, n_ref=10, sequence_length=5e6, T_adm
     """
     from .compare import tspaint_paint, nearest_reference_paint
 
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
-                            recombination_rate=recombination_rate, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    ts = simulate_admixture(admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A),
+                            n_query=n_admix, n_reference=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == SOURCE_A)
@@ -373,9 +373,9 @@ def arg_ensemble_experiment(M=8, T_admix=300.0, n_admix=20, n_ref=20,
     """
     from .io_tsinfer import add_mutations, tsinfer
 
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
-                            recombination_rate=recombination_rate, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    ts = simulate_admixture(admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A),
+                            n_query=n_admix, n_reference=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == SOURCE_A)
@@ -466,9 +466,9 @@ def singer_ensemble_experiment(T_admix=300.0, n_admix=12, n_ref=12, sequence_len
     import msprime
     from .io_singer import singer
 
-    ts = simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
-                            recombination_rate=recombination_rate, random_seed=seed,
-                            Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+    ts = simulate_admixture(admixture_demography(Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A),
+                            n_query=n_admix, n_reference=n_ref, sequence_length=sequence_length,
+                            recombination_rate=recombination_rate, random_seed=seed).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == SOURCE_A)
@@ -716,7 +716,7 @@ def impure_reference_experiment(*, T_admix=300.0, n_admix=10, n_pure=6, n_impure
     ts = simulate_admixture_impure_refs(
         n_admix=n_admix, n_pure=n_pure, n_impure=n_impure, sequence_length=sequence_length,
         recombination_rate=recombination_rate, random_seed=seed, ref_impurity=ref_impurity,
-        Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A)
+        Ne=Ne, T_admix=T_admix, T_split=T_split, f_A=f_A).ts
     L = ts.sequence_length
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
@@ -885,7 +885,7 @@ def archaic_detection_experiment(*, ghost_fraction=0.25, n_admix=10, n_ref=8, se
     def setup(gf, sd):
         ts = simulate_admixture_with_ghost(n_admix=n_admix, n_ref=n_ref, sequence_length=sequence_length,
                 recombination_rate=1e-8, random_seed=sd, ghost_fraction=gf, T_admix=T_admix,
-                T_split_AB=T_split_AB, T_split_ABC=T_split_ABC, Ne=Ne)
+                T_split_AB=T_split_AB, T_split_ABC=T_split_ABC, Ne=Ne).ts
         names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
         pid = {n: p for p, n in names.items()}
         node_pop = ts.tables.nodes.population

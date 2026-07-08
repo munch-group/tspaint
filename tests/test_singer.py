@@ -51,8 +51,9 @@ def test_read_singer_arg_keeps_sites_across_whole_window(tmp_path):
 @needs_singer
 def test_singer_tree_sequences_sample_aligned():
     import msprime
-    ts = tspaint.simulate_admixture(n_admix=6, n_ref=6, sequence_length=4e4,
-                                  recombination_rate=1e-8, random_seed=1, Ne=1000, T_split=5000)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(Ne=1000, T_split=5000),
+                                  n_query=6, n_reference=6, sequence_length=4e4,
+                                  recombination_rate=1e-8, random_seed=1).ts
     tsm = msprime.sim_mutations(ts, rate=2.5e-7, random_seed=1,
                                 model=msprime.BinaryMutationModel())
     samples = tspaint.io.singer(tsm, _Ne=1000, _m=2.5e-7,

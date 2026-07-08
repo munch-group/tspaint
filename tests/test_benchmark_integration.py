@@ -16,7 +16,7 @@ import pytest
 import tspaint
 import tspaint.benchmark as bm
 from tspaint.benchmark import _common as C
-from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED
+from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED, admixture_demography
 
 LIVE = os.environ.get("TSPAINT_BENCHMARK_LIVE")
 pytestmark = [pytest.mark.slow,
@@ -24,9 +24,9 @@ pytestmark = [pytest.mark.slow,
 
 
 def _sim_export(tmp_path, seed=2):
-    ts = tspaint.simulate_admixture(n_admix=6, n_ref=10, sequence_length=1e6,
-                                    recombination_rate=1e-8, random_seed=seed, Ne=1000,
-                                    T_admix=30, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                    n_query=6, n_reference=10, sequence_length=1e6,
+                                    recombination_rate=1e-8, random_seed=seed).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

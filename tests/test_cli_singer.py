@@ -57,9 +57,10 @@ def test_singer_window_runs_and_is_local(tmp_path):
     from tspaint.io_singer import singer_window
     from tspaint.io_tsinfer import add_mutations
 
-    ts = add_mutations(tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e4,
-                       recombination_rate=1e-8, random_seed=3, Ne=1000, T_admix=30,
-                       T_split=5000, f_A=0.5), rate=2e-7, random_seed=3)
+    ts = add_mutations(tspaint.simulate_admixture(
+                       tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                       n_query=4, n_reference=4, sequence_length=4e4,
+                       recombination_rate=1e-8, random_seed=3).ts, rate=2e-7, random_seed=3)
     vcf = str(tmp_path / "data.vcf")
     write_haploid_vcf(ts, vcf)
     S, E = 2e4, 4e4
@@ -81,9 +82,10 @@ def test_singer_windowed_stitches_across_windows(tmp_path):
     from tspaint.io_tsinfer import add_mutations
     import tskit
 
-    ts = add_mutations(tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=6e4,
-                       recombination_rate=1e-8, random_seed=5, Ne=1000, T_admix=30,
-                       T_split=5000, f_A=0.5), rate=3e-7, random_seed=5)
+    ts = add_mutations(tspaint.simulate_admixture(
+                       tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                       n_query=4, n_reference=4, sequence_length=6e4,
+                       recombination_rate=1e-8, random_seed=5).ts, rate=3e-7, random_seed=5)
     ens = singer_windowed(ts, window_size=3e4, _Ne=1000, _m=3e-7,
                           _r=1e-8, ts=3, mcmc_step=2, mcmc_burnin=2,
                           _seed=11, n_jobs=2, workdir=str(tmp_path))

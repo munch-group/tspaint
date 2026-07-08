@@ -50,14 +50,16 @@ def test_read_helpers(tmp_path):
 
     # integer-looking ids still resolve to node indices on an (unstamped) ts — the CLI contract
     from tspaint.ids import resolve_labels, resolve_ids
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     assert resolve_labels(ts, read_labels(lab)) == {0: 0, 3: 1}
     assert resolve_ids(ts, read_id_list("3,4, 5")) == [3, 4, 5]
 
 
 def test_paint_needs_params_or_labels(tmp_path):
     t = tmp_path / "x.trees"
-    tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1).dump(str(t))
+    tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                               sequence_length=2e4, random_seed=1).ts.dump(str(t))
     res = CliRunner().invoke(cli, ["paint", str(t), "-o", str(tmp_path / "o.npz")])
     assert res.exit_code != 0 and "params or --labels" in res.output
 

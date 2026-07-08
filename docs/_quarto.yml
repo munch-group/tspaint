@@ -222,8 +222,9 @@ quartodoc:
         - io.estimate_ne
         - io.add_mutations
         - io.write_haploid_vcf
+        - io.write_vcz
         - io.check_persistence
-        - io_genotypes.source_kind
+        - io.source_kind
         - io_genotypes.Variants
     - title: Horizontal BP/EP smoother
       desc: |
@@ -261,16 +262,21 @@ quartodoc:
         - dating.cell_centers
     - title: Simulation (known truth)
       desc: |
-        msprime admixture scenarios with census-event ground truth — the primary validation
-        track and the source of examples.
+        msprime admixture scenarios with census-event ground truth — the primary validation track.
+        Call an `admixture_demography_*` builder (its populations are **role-tagged**), pass it to
+        `simulate_admixture`, and get a `Simulation` back — `.ts` (optionally mutated), `.queries`,
+        `.labels`, `.truth_states` and `.sample_sets` — with no population-name constants needed.
       contents:
         - simulate_admixture
+        - sim.Simulation
         - local_ancestry_truth
         - sim.admixture_demography
         - sim.simulate_admixture_impure_refs
         - sim.admixture_demography_impure_refs
         - sim.simulate_admixture_source_gene_flow
         - sim.admixture_demography_source_gene_flow
+        - sim.simulate_admixture_with_ref_proxies
+        - sim.admixture_demography_with_ref_proxies
         - sim.simulate_admixture_with_ghost
         - sim.admixture_demography_with_ghost
     - title: Generators & model

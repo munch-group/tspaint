@@ -36,7 +36,8 @@ from .io_singer import (singer, singer_windowed, singer_tree_sequences, write_ha
 from .io_argweaver import argweaver, write_sites
 from .io_relate import (relate, relate_convert, check_persistence, convert_relate,
                         windows as relate_windows)
-from .io_genotypes import subset_data, resolve_variants, Variants, estimate_ne, pseudohaploid
+from .io_genotypes import (subset_data, resolve_variants, Variants, estimate_ne, pseudohaploid,
+                           source_kind, write_vcz)
 from .ids import attach_sample_ids, resolve_labels, resolve_ids, sample_id_index
 
 __all__ = [
@@ -49,11 +50,11 @@ __all__ = [
     # ... or the per-window primitives it is built from (the cluster/GWF unit)
     "singer_window", "build_merge_table", "run_merge_arg",
     # data prep (normalise / slice a source before a front end)
-    "subset_data", "resolve_variants", "Variants", "estimate_ne", "pseudohaploid",
+    "subset_data", "resolve_variants", "Variants", "estimate_ne", "pseudohaploid", "source_kind",
     # sample identity: front ends stamp source ids; labels/queries resolve str-or-int keys
     "attach_sample_ids", "resolve_labels", "resolve_ids", "sample_id_index",
     # helpers
-    "add_mutations", "write_haploid_vcf", "write_sites", "check_persistence", "relate_convert",
+    "add_mutations", "write_haploid_vcf", "write_vcz", "write_sites", "check_persistence", "relate_convert",
     # deprecated aliases (pre-unification names)
     "infer_tree_sequence", "singer_tree_sequences", "convert_relate",
 ]

@@ -2,63 +2,76 @@
 
 ```python
 tspaint.simulate_admixture(
-    n_admix=10,
-    n_ref=10,
+    demography,
+    *,
+    n_query=10,
+    n_reference=10,
+    samples=None,
     sequence_length=1000000.0,
     recombination_rate=1e-08,
     ploidy=2,
+    mutation_rate=None,
     random_seed=42,
-    **demography_kwargs,
 )
 ```
 
-Simulate an admixed sample plus two reference panels.
+Simulate an admixture from a **role-tagged demography**, returning a :class:`Simulation`.
+
+Pass a demography from :func:`admixture_demography` (or any ``admixture_demography_*`` variant):
+its populations carry role metadata (query / source / reference + ancestry state), so this
+samples the query and reference panels, runs the coalescent, optionally lays down mutations, and
+packages the queries, reference ``labels`` and the census ``truth`` — the caller never touches a
+population-name constant.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+<code>[**demography**]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
 
-:   Number of admixed individuals (query haplotypes).
+:   A role-tagged demography (see :func:`admixture_demography`).
 
-<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+<code>[**n_query**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
 
-:   Number of individuals sampled from each reference source (A and B).
+:   Number of query (admixed) individuals to sample.
 
-<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
+<code>[**n_reference**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
 
-:   Length of the simulated sequence in base pairs.
+:   Number of individuals sampled from **each** reference / source population.
 
-<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[str](`str`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Per-base, per-generation recombination rate.
+:   Explicit ``{population_name: n_individuals}`` sampling, overriding ``n_query`` / ``n_reference`` — used by the variant wrappers to sample e.g. unequal pure / impure panels.
 
-<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
 
-:   Ploidy; each individual yields ``ploidy`` sample haplotypes.
+:   Passed to :func:`msprime.sim_ancestry`.
 
-<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [42]{.parameter-default}</code>
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
 
-:   Seed for :func:`msprime.sim_ancestry`.
+:   Passed to :func:`msprime.sim_ancestry`.
 
-<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
 
-:   Passed to :func:`admixture_demography` (e.g. ``T_admix``, ``T_split``, ``f_A``, ``Ne``).
+:   Passed to :func:`msprime.sim_ancestry`.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1000000.0]{.parameter-default}</code>
+
+:   Passed to :func:`msprime.sim_ancestry`.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   If given, lay down mutations at this per-base rate (:func:`tspaint.io.add_mutations`); the returned ``ts`` then carries sites. ``None`` (default) leaves the bare ancestry.
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
 
-:   Tree sequence whose sample nodes are haplotypes; the first ``ploidy * n_admix`` belong to the admixed population (queries), the rest to the two reference sources.
-
-## See Also {.doc-section .doc-section-see-also}
-
-local_ancestry_truth : Recover the ground-truth ancestry tracts.
+:   ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states`` and ``.sample_sets``.
 
 ## Examples {.doc-section .doc-section-examples}
 
 ```python
->>> ts = simulate_admixture(n_admix=5, n_ref=5, sequence_length=1e5,
-...                         random_seed=1)
->>> ts.num_samples
+>>> sim = simulate_admixture(admixture_demography(), n_query=5, n_reference=5,
+...                          sequence_length=1e5, random_seed=1)
+>>> sim.ts.num_samples
 30
 ```

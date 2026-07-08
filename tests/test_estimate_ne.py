@@ -12,6 +12,7 @@ import tspaint
 from tspaint import io
 from tspaint.io_genotypes import Variants, estimate_ne, variants_from_vcf
 from tspaint.io_singer import DEFAULT_SINGER
+from tspaint.sim import admixture_demography
 
 
 def _panmictic(Ne, mu, L=2e6, n=25, seed=3):
@@ -159,9 +160,9 @@ def test_singer_from_vcf_with_estimated_ne_preserves_samples(tmp_path):
     """The documented Ne path (Ne is **required** — never estimated silently, cf. ``_NE_REQUIRED``):
     estimate Ne from the data with :func:`io.estimate_ne`, pass it to :func:`io.singer`; the VCF run
     preserves the sample count and stamps sample ids onto the returned tree sequence."""
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=8e4,
-                          recombination_rate=1e-8, random_seed=11, Ne=1000, T_admix=30,
-                          T_split=5000, f_A=0.5), rate=6e-7, random_seed=11)
+    ts = io.add_mutations(tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30,
+                          T_split=5000, f_A=0.5), n_query=3, n_reference=3, sequence_length=8e4,
+                          recombination_rate=1e-8, random_seed=11).ts, rate=6e-7, random_seed=11)
     vcf = str(tmp_path / "cohort.vcf")
     with open(vcf, "w") as f:
         ts.write_vcf(f, individual_names=[f"samp{i}" for i in range(ts.num_individuals)],

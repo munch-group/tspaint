@@ -10,13 +10,13 @@ import os
 import tspaint
 from tspaint import io, io_genotypes, io_relate
 from tspaint.io_singer import DEFAULT_SINGER
-from tspaint.sim import simulate_admixture
+from tspaint.sim import simulate_admixture, admixture_demography
 
 
 def _mutated_ts(seed=1):
     return io.add_mutations(
-        simulate_admixture(n_admix=4, n_ref=4, sequence_length=5e4, recombination_rate=1e-8,
-                           random_seed=seed),
+        simulate_admixture(admixture_demography(), n_query=4, n_reference=4, sequence_length=5e4,
+                           recombination_rate=1e-8, random_seed=seed).ts,
         rate=3e-7, random_seed=seed)
 
 
@@ -25,23 +25,15 @@ def _write_haploid_vcf(ts, path):
 
 
 def _write_vcz(ts, path):
-    # minimal VCF-Zarr (vcz) the way bio2zarr would lay it out: core arrays + dimension attrs,
-    # which tsinfer.VariantData (the chunked reader) requires.
-    import zarr
-    G = ts.genotype_matrix()                                   # (sites, samples)
-    V, N = G.shape
-    root = zarr.open(path, mode="w")
-    def arr(name, data, dims):
-        root[name] = data
-        root[name].attrs["_ARRAY_DIMENSIONS"] = dims
-    arr("variant_position", np.asarray(ts.tables.sites.position).astype("i8"), ["variants"])
-    arr("call_genotype", G[:, :, None].astype("i1"), ["variants", "samples", "ploidy"])
-    arr("variant_allele", np.array([["0", "1"]] * V), ["variants", "alleles"])
-    arr("variant_contig", np.zeros(V, "i4"), ["variants"])
-    arr("contig_id", np.array(["1"]), ["contigs"])
-    arr("sample_id", np.array([f"n{i}" for i in range(N)]), ["samples"])
-    arr("variant_ancestral_allele", np.array(["0"] * V), ["variants"])
-    return path
+    return io.write_vcz(ts, path)          # dogfood the public tspaint.io.write_vcz
+
+
+def test_write_vcz_rejects_unmutated_ts(tmp_path):
+    """io.write_vcz needs sites — a bare (unmutated) tree sequence raises a helpful error."""
+    ts = simulate_admixture(admixture_demography(), n_query=2, n_reference=2, sequence_length=5e4,
+                            random_seed=1).ts
+    with pytest.raises(ValueError, match="mutated"):
+        io.write_vcz(ts, str(tmp_path / "bare.vcz"))
 
 
 def test_source_kind_dispatch(tmp_path):
@@ -113,8 +105,9 @@ def test_relate_frontend_paints(tmp_path):
     EstimatePopulationSize -> Convert) and returns a paintable, order-preserving tree sequence."""
     import tspaint
     ts = io.add_mutations(
-        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=2e5, recombination_rate=1e-8,
-                                   random_seed=1, Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+        tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                   n_query=4, n_reference=4, sequence_length=2e5,
+                                   recombination_rate=1e-8, random_seed=1).ts,
         rate=1.25e-8, random_seed=1)
     gts = io.relate(ts, mutation_rate=1.25e-8, recombination_rate=1e-8, Ne=1000, seed=1,
                     workdir=str(tmp_path))
@@ -228,8 +221,8 @@ def test_relate_windows_splits_for_painting():
     preserved so per-window paintings reassemble by position, samples preserved so the same labels
     paint every window, and each window holds only its interval's genealogy."""
     import tskit
-    ts = simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
-                            random_seed=2)
+    ts = simulate_admixture(admixture_demography(), n_query=4, n_reference=4, sequence_length=4e5,
+                            recombination_rate=1e-8, random_seed=2).ts
     L = float(ts.sequence_length)
     ws = io.relate_windows(ts, 1e5)
     assert len(ws) == 4                                        # 4e5 / 1e5, even division

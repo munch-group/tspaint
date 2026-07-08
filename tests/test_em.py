@@ -102,8 +102,8 @@ def test_em_loglik_monotone_nondecreasing():
 def test_em_single_treesequence_runs():
     # production call path: one genome (linked trees), refs labelled, queries free
     import tspaint
-    ts = tspaint.simulate_admixture(n_admix=3, n_ref=4, sequence_length=5e4,
-                                  recombination_rate=1e-8, random_seed=3)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=3, n_reference=4,
+                                  sequence_length=5e4, recombination_rate=1e-8, random_seed=3).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     src = {p for p, nm in names.items() if nm in ("A", "B")}

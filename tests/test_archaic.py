@@ -32,7 +32,7 @@ def _ghost_setup(gf, seed, L=1.2e6, n_admix=8, n_ref=8):
                              SOURCE_A, SOURCE_B, GHOST, ADMIXED)
     ts = simulate_admixture_with_ghost(n_admix=n_admix, n_ref=n_ref, sequence_length=L,
             recombination_rate=1e-8, random_seed=seed, ghost_fraction=gf,
-            T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000)
+            T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000).ts
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     pid = {n: p for p, n in names.items()}
     node_pop = ts.tables.nodes.population
@@ -185,8 +185,9 @@ def test_depth_track_parallel_byte_identical():
     from tspaint.archaic import _depth_track
     from tspaint.parallel import depth_track_parallel
     ts = tspaint.io.add_mutations(
-        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
-                                   random_seed=3, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        tspaint.simulate_admixture(tspaint.sim.admixture_demography(Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+                                   n_query=4, n_reference=4, sequence_length=4e5, recombination_rate=1e-8,
+                                   random_seed=3).ts,
         rate=2e-7, random_seed=3)
     assert ts.num_trees > 4
     modern = list(range(4, 12))
@@ -204,8 +205,9 @@ def test_depth_track_parallel_byte_identical():
 def test_detect_ghost_n_jobs_matches_serial():
     import tspaint
     ts = tspaint.io.add_mutations(
-        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
-                                   random_seed=3, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        tspaint.simulate_admixture(tspaint.sim.admixture_demography(Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+                                   n_query=4, n_reference=4, sequence_length=4e5, recombination_rate=1e-8,
+                                   random_seed=3).ts,
         rate=2e-7, random_seed=3)
     labels = {i: 0 for i in range(4, 12)}                        # modern refs
     samples = list(range(4))

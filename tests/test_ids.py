@@ -13,7 +13,7 @@ import tspaint
 from tspaint import io
 from tspaint.ids import attach_sample_ids, resolve_labels, resolve_ids, sample_id_index
 from tspaint.io_singer import DEFAULT_SINGER
-from tspaint.sim import simulate_admixture
+from tspaint.sim import simulate_admixture, admixture_demography
 
 
 def _bare(ts):
@@ -32,9 +32,9 @@ def _diploid_vcf(ts, path, names):
 
 
 def _sim(seed=1, n_admix=2, n_ref=2):
-    return simulate_admixture(n_admix=n_admix, n_ref=n_ref, sequence_length=6e4,
-                              recombination_rate=1e-8, random_seed=seed, Ne=1000,
-                              T_admix=30, T_split=5000, f_A=0.5)
+    return simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                              n_query=n_admix, n_reference=n_ref, sequence_length=6e4,
+                              recombination_rate=1e-8, random_seed=seed).ts
 
 
 # --- attach_sample_ids -----------------------------------------------------------------------

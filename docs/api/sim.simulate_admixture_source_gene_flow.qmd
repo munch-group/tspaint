@@ -8,6 +8,7 @@ tspaint.sim.simulate_admixture_source_gene_flow(
     recombination_rate=1e-08,
     ploidy=2,
     random_seed=42,
+    mutation_rate=None,
     **demography_kwargs,
 )
 ```
@@ -16,5 +17,5 @@ Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOU
 introgressed tracts from a prior A↔B pulse (:func:`admixture_demography_source_gene_flow`).
 
 The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
-the ``SOURCE_B`` references are pure. The census labels each query lineage's proximate source, so
-:func:`local_ancestry_truth` gives the query A/B truth. Identify samples by node population.
+the ``SOURCE_B`` references are pure. Returns a :class:`Simulation` (``.ts`` / ``.queries`` /
+``.labels`` / ``.truth_states`` / ``.sample_sets``); the query truth is the proximate A / B source.

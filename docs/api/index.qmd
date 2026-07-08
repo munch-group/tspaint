@@ -133,8 +133,9 @@ aliases.)
 | [io.estimate_ne](io.estimate_ne.qmd#tspaint.io.estimate_ne) | Estimate the (diploid) effective population size from between-individual diversity. |
 | [io.add_mutations](io.add_mutations.qmd#tspaint.io.add_mutations) | Overlay biallelic mutations on a tree sequence so the inference front ends have variant |
 | [io.write_haploid_vcf](io.write_haploid_vcf.qmd#tspaint.io.write_haploid_vcf) | Write one haploid VCF column per sample node. |
+| [io.write_vcz](io.write_vcz.qmd#tspaint.io.write_vcz) | Write a minimal **VCF-Zarr** store from a *mutated* tree sequence — a lightweight stand-in for |
 | [io.check_persistence](io.check_persistence.qmd#tspaint.io.check_persistence) | Run the §5.1 persistence go/no-go on an already-loaded tree sequence. |
-| [io_genotypes.source_kind](io_genotypes.source_kind.qmd#tspaint.io_genotypes.source_kind) | Classify a front-end ``source`` as ``"ts"``, ``"zarr"`` or ``"vcf"``. |
+| [io.source_kind](io.source_kind.qmd#tspaint.io.source_kind) | Classify a front-end ``source`` as ``"ts"``, ``"zarr"`` or ``"vcf"``. |
 | [io_genotypes.Variants](io_genotypes.Variants.qmd#tspaint.io_genotypes.Variants) | A tool-agnostic biallelic variant matrix (one column per **haplotype**). |
 
 ## Horizontal BP/EP smoother
@@ -181,19 +182,24 @@ functions of (backward) time — locating divergence / gene-flow epochs and thei
 
 ## Simulation (known truth)
 
-msprime admixture scenarios with census-event ground truth — the primary validation
-track and the source of examples.
+msprime admixture scenarios with census-event ground truth — the primary validation track.
+Call an `admixture_demography_*` builder (its populations are **role-tagged**), pass it to
+`simulate_admixture`, and get a `Simulation` back — `.ts` (optionally mutated), `.queries`,
+`.labels`, `.truth_states` and `.sample_sets` — with no population-name constants needed.
 
 
 | | |
 | --- | --- |
-| [simulate_admixture](simulate_admixture.qmd#tspaint.simulate_admixture) | Simulate an admixed sample plus two reference panels. |
+| [simulate_admixture](simulate_admixture.qmd#tspaint.simulate_admixture) | Simulate an admixture from a **role-tagged demography**, returning a :class:`Simulation`. |
+| [sim.Simulation](sim.Simulation.qmd#tspaint.sim.Simulation) | A simulated admixture with known truth — the return of :func:`simulate_admixture`. |
 | [local_ancestry_truth](local_ancestry_truth.qmd#tspaint.local_ancestry_truth) | True local ancestry per sample as source-population tracts. |
 | [sim.admixture_demography](sim.admixture_demography.qmd#tspaint.sim.admixture_demography) | Build a two-source admixture demography with a post-pulse census. |
 | [sim.simulate_admixture_impure_refs](sim.simulate_admixture_impure_refs.qmd#tspaint.sim.simulate_admixture_impure_refs) | Simulate admixed queries, a pure reference anchor core, and impure reference panels. |
 | [sim.admixture_demography_impure_refs](sim.admixture_demography_impure_refs.qmd#tspaint.sim.admixture_demography_impure_refs) | Admixture demography whose **reference panels are themselves slightly admixed**. |
 | [sim.simulate_admixture_source_gene_flow](sim.simulate_admixture_source_gene_flow.qmd#tspaint.sim.simulate_admixture_source_gene_flow) | Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOURCE_B`` |
 | [sim.admixture_demography_source_gene_flow](sim.admixture_demography_source_gene_flow.qmd#tspaint.sim.admixture_demography_source_gene_flow) | Two-source admixture where the **sources themselves exchanged genes via a prior pulse**. |
+| [sim.simulate_admixture_with_ref_proxies](sim.simulate_admixture_with_ref_proxies.qmd#tspaint.sim.simulate_admixture_with_ref_proxies) | Admixed queries plus, for each source, a deeply-divergent **proxy** reference and the **true** |
+| [sim.admixture_demography_with_ref_proxies](sim.admixture_demography_with_ref_proxies.qmd#tspaint.sim.admixture_demography_with_ref_proxies) | Two-source admixture with a deeply-divergent sister (**proxy**) of each source as a reference. |
 | [sim.simulate_admixture_with_ghost](sim.simulate_admixture_with_ghost.qmd#tspaint.sim.simulate_admixture_with_ghost) | Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**. |
 | [sim.admixture_demography_with_ghost](sim.admixture_demography_with_ghost.qmd#tspaint.sim.admixture_demography_with_ghost) | Two-source admixture with a third **unsampled ("ghost") source** ``C``. |
 

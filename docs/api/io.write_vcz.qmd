@@ -1,0 +1,31 @@
+# io.write_vcz { #tspaint.io.write_vcz }
+
+```python
+tspaint.io.write_vcz(ts, path)
+```
+
+Write a minimal **VCF-Zarr** store from a *mutated* tree sequence — a lightweight stand-in for
+``bio2zarr``'s ``vcf2zarr`` output, so a simulation can be fed through the zarr front ends.
+
+Writes the core arrays that :func:`variants_from_zarr` / :func:`variant_data_from_zarr` /
+:func:`sample_names_from_zarr` read — ``call_genotype`` ``(variants, samples, ploidy=1)``,
+``variant_position``, ``variant_allele``, ``variant_contig`` / ``contig_id``, ``sample_id`` and
+``variant_ancestral_allele`` — so it round-trips through :func:`tspaint.io.tsinfer` /
+:func:`tspaint.io.singer`. Each sample **node** becomes one haploid sample ``"n<i>"``; biallelic
+``0`` / ``1`` sites (e.g. from :func:`add_mutations`).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   A mutated tree sequence — must carry sites (overlay them with :func:`add_mutations` first).
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Output ``.vcz`` store path.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   ``path`` (for chaining).

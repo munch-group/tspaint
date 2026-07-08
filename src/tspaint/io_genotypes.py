@@ -24,7 +24,7 @@ import tskit
 
 __all__ = ["Variants", "source_kind", "resolve_variants", "subset_data", "variants_from_vcf",
            "variants_from_zarr", "variant_data_from_zarr", "to_sample_data", "write_haploid_vcf",
-           "sample_names_from_zarr", "estimate_ne", "pseudohaploid"]
+           "write_vcz", "sample_names_from_zarr", "estimate_ne", "pseudohaploid"]
 
 
 @dataclass
@@ -783,6 +783,51 @@ def variant_data_from_zarr(store):
         allele = np.asarray(root["variant_allele"])
         ancestral = np.array([_as_str(allele[i, 0]) for i in range(allele.shape[0])])
     return tsinfer.VariantData(store, ancestral_state=ancestral)
+
+
+def write_vcz(ts, path):
+    """Write a minimal **VCF-Zarr** store from a *mutated* tree sequence — a lightweight stand-in for
+    ``bio2zarr``'s ``vcf2zarr`` output, so a simulation can be fed through the zarr front ends.
+
+    Writes the core arrays that :func:`variants_from_zarr` / :func:`variant_data_from_zarr` /
+    :func:`sample_names_from_zarr` read — ``call_genotype`` ``(variants, samples, ploidy=1)``,
+    ``variant_position``, ``variant_allele``, ``variant_contig`` / ``contig_id``, ``sample_id`` and
+    ``variant_ancestral_allele`` — so it round-trips through :func:`tspaint.io.tsinfer` /
+    :func:`tspaint.io.singer`. Each sample **node** becomes one haploid sample ``"n<i>"``; biallelic
+    ``0`` / ``1`` sites (e.g. from :func:`add_mutations`).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        A mutated tree sequence — must carry sites (overlay them with :func:`add_mutations` first).
+    path : str
+        Output ``.vcz`` store path.
+
+    Returns
+    -------
+    str
+        ``path`` (for chaining).
+    """
+    import zarr
+    if ts.num_sites == 0:
+        raise ValueError("write_vcz needs a mutated tree sequence; overlay sites with "
+                         "add_mutations() first")
+    G = ts.genotype_matrix()                       # (sites, samples), biallelic 0/1
+    V, N = G.shape
+    root = zarr.open(path, mode="w")
+
+    def arr(nm, data, dims):
+        root[nm] = data
+        root[nm].attrs["_ARRAY_DIMENSIONS"] = dims
+
+    arr("variant_position", np.asarray(ts.tables.sites.position).astype("i8"), ["variants"])
+    arr("call_genotype", G[:, :, None].astype("i1"), ["variants", "samples", "ploidy"])
+    arr("variant_allele", np.array([["0", "1"]] * V), ["variants", "alleles"])
+    arr("variant_contig", np.zeros(V, "i4"), ["variants"])
+    arr("contig_id", np.array(["1"]), ["contigs"])
+    arr("sample_id", np.array([f"n{i}" for i in range(N)]), ["samples"])
+    arr("variant_ancestral_allele", np.array(["0"] * V), ["variants"])
+    return path
 
 
 def to_sample_data(variants):

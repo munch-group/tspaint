@@ -123,9 +123,12 @@ tspaint.io.add_mutations py:function 1 api/io.add_mutations.html#tspaint.io.add_
 tspaint.io_tsinfer.add_mutations py:function 1 api/io.add_mutations.html#tspaint.io.add_mutations tspaint.io.add_mutations
 tspaint.io.write_haploid_vcf py:function 1 api/io.write_haploid_vcf.html#tspaint.io.write_haploid_vcf -
 tspaint.io_singer.write_haploid_vcf py:function 1 api/io.write_haploid_vcf.html#tspaint.io.write_haploid_vcf tspaint.io.write_haploid_vcf
+tspaint.io.write_vcz py:function 1 api/io.write_vcz.html#tspaint.io.write_vcz -
+tspaint.io_genotypes.write_vcz py:function 1 api/io.write_vcz.html#tspaint.io.write_vcz tspaint.io.write_vcz
 tspaint.io.check_persistence py:function 1 api/io.check_persistence.html#tspaint.io.check_persistence -
 tspaint.io_relate.check_persistence py:function 1 api/io.check_persistence.html#tspaint.io.check_persistence tspaint.io.check_persistence
-tspaint.io_genotypes.source_kind py:function 1 api/io_genotypes.source_kind.html#tspaint.io_genotypes.source_kind -
+tspaint.io.source_kind py:function 1 api/io.source_kind.html#tspaint.io.source_kind -
+tspaint.io_genotypes.source_kind py:function 1 api/io.source_kind.html#tspaint.io.source_kind tspaint.io.source_kind
 tspaint.io_genotypes.Variants py:class 1 api/io_genotypes.Variants.html#tspaint.io_genotypes.Variants -
 tspaint.bp.bp_paint py:function 1 api/bp.bp_paint.html#tspaint.bp.bp_paint -
 tspaint.bp.horizontal.bp_paint py:function 1 api/bp.bp_paint.html#tspaint.bp.bp_paint tspaint.bp.bp_paint
@@ -183,6 +186,7 @@ tspaint.dating.cell_centers py:function 1 api/dating.cell_centers.html#tspaint.d
 tspaint.dating.grid.cell_centers py:function 1 api/dating.cell_centers.html#tspaint.dating.cell_centers tspaint.dating.cell_centers
 tspaint.simulate_admixture py:function 1 api/simulate_admixture.html#tspaint.simulate_admixture -
 tspaint.sim.simulate_admixture py:function 1 api/simulate_admixture.html#tspaint.simulate_admixture tspaint.simulate_admixture
+tspaint.sim.Simulation py:class 1 api/sim.Simulation.html#tspaint.sim.Simulation -
 tspaint.local_ancestry_truth py:function 1 api/local_ancestry_truth.html#tspaint.local_ancestry_truth -
 tspaint.sim.local_ancestry_truth py:function 1 api/local_ancestry_truth.html#tspaint.local_ancestry_truth tspaint.local_ancestry_truth
 tspaint.sim.admixture_demography py:function 1 api/sim.admixture_demography.html#tspaint.sim.admixture_demography -
@@ -190,6 +194,8 @@ tspaint.sim.simulate_admixture_impure_refs py:function 1 api/sim.simulate_admixt
 tspaint.sim.admixture_demography_impure_refs py:function 1 api/sim.admixture_demography_impure_refs.html#tspaint.sim.admixture_demography_impure_refs -
 tspaint.sim.simulate_admixture_source_gene_flow py:function 1 api/sim.simulate_admixture_source_gene_flow.html#tspaint.sim.simulate_admixture_source_gene_flow -
 tspaint.sim.admixture_demography_source_gene_flow py:function 1 api/sim.admixture_demography_source_gene_flow.html#tspaint.sim.admixture_demography_source_gene_flow -
+tspaint.sim.simulate_admixture_with_ref_proxies py:function 1 api/sim.simulate_admixture_with_ref_proxies.html#tspaint.sim.simulate_admixture_with_ref_proxies -
+tspaint.sim.admixture_demography_with_ref_proxies py:function 1 api/sim.admixture_demography_with_ref_proxies.html#tspaint.sim.admixture_demography_with_ref_proxies -
 tspaint.sim.simulate_admixture_with_ghost py:function 1 api/sim.simulate_admixture_with_ghost.html#tspaint.sim.simulate_admixture_with_ghost -
 tspaint.sim.admixture_demography_with_ghost py:function 1 api/sim.admixture_demography_with_ghost.html#tspaint.sim.admixture_demography_with_ghost -
 tspaint.make_generator_2state py:function 1 api/make_generator_2state.html#tspaint.make_generator_2state -

@@ -13,7 +13,7 @@ import tskit
 from tspaint.accumulate import accumulate_sufficient_statistics
 from tspaint.branch_stats import branch_expected_stats
 from tspaint.pruning import prune_tree
-from tspaint.sim import simulate_admixture
+from tspaint.sim import simulate_admixture, admixture_demography
 
 
 def random_Q(K, rng):
@@ -107,8 +107,8 @@ def test_persistent_edge_banked_once_not_per_tree():
 
 
 def test_branch_length_mass_invariant_on_msprime():
-    ts = simulate_admixture(n_admix=4, n_ref=4, sequence_length=1e6,
-                            recombination_rate=1e-8, random_seed=11)
+    ts = simulate_admixture(admixture_demography(), n_query=4, n_reference=4, sequence_length=1e6,
+                            recombination_rate=1e-8, random_seed=11).ts
     rng = np.random.default_rng(2)
     Q = random_Q(2, rng)
     pi = rng.random(2); pi /= pi.sum()

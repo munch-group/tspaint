@@ -9,6 +9,7 @@ tspaint.sim.simulate_admixture_impure_refs(
     recombination_rate=1e-08,
     ploidy=2,
     random_seed=42,
+    mutation_rate=None,
     ref_impurity=0.1,
     **demography_kwargs,
 )

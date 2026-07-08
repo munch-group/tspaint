@@ -1,0 +1,33 @@
+# sim.Simulation { #tspaint.sim.Simulation }
+
+```python
+tspaint.sim.Simulation(ts, queries, labels, truth_states, sample_sets)
+```
+
+A simulated admixture with known truth — the return of :func:`simulate_admixture`.
+
+Everything downstream needs (queries to paint, reference labels, ground-truth ancestry) is
+derived from the demography's own population **roles** (see :func:`admixture_demography`), so no
+caller ever needs the population-name constants.
+
+## Attributes {.doc-section .doc-section-attributes}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The simulated tree sequence — **with mutations** when ``mutation_rate`` was given.
+
+<code>[**queries**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[int](`int`)\]]{.parameter-annotation}</code>
+
+:   Query (admixed) haplotype node ids.
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Default reference panel: reference haplotype node id → ancestry-state index (``0`` / ``1``), ready to pass to :func:`tspaint.paint`.
+
+<code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready to score against a painting (e.g. :func:`tspaint.balanced_accuracy`).
+
+<code>[**sample_sets**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[str](`str`), [list](`list`)\[[int](`int`)\]\]]{.parameter-annotation}</code>
+
+:   Population name → its sample node ids, for building custom reference panels (e.g. proxy-only vs direct-source labels).

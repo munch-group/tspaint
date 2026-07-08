@@ -1,0 +1,10 @@
+# io.source_kind { #tspaint.io.source_kind }
+
+```python
+tspaint.io.source_kind(source)
+```
+
+Classify a front-end ``source`` as ``"ts"``, ``"zarr"`` or ``"vcf"``.
+
+A :class:`tskit.TreeSequence` is ``"ts"``; a path ending ``.vcf`` / ``.vcf.gz`` is ``"vcf"``;
+anything else path-like (a ``.zarr`` store / directory / mapping) is ``"zarr"``.

@@ -15,9 +15,9 @@ from tspaint.em import fit
 def _admixture_refs(seed=2, n_ref=8, L=5e4):
     # strong structure (small Ne, deep split) so source-specific coalescence completes
     # well before the split -> pure references cluster cleanly with their source
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=n_ref, sequence_length=L,
-                                  recombination_rate=1e-8, random_seed=seed,
-                                  Ne=1000, T_split=5000)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(Ne=1000, T_split=5000),
+                                  n_query=2, n_reference=n_ref, sequence_length=L,
+                                  recombination_rate=1e-8, random_seed=seed).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A_id = next(p for p, n in names.items() if n == "A")

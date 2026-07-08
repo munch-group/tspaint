@@ -11,13 +11,13 @@ from tspaint.benchmark import export_vcf, score, resolve_panel
 from tspaint.benchmark.score import load_truth
 from tspaint.output import Segment, INFORMATIVE
 from tspaint import serialize
-from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED
+from tspaint.sim import SOURCE_A, SOURCE_B, ADMIXED, admixture_demography
 
 
 def _admixture(seed=1):
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=5e5,
-                                    recombination_rate=1e-8, random_seed=seed, Ne=1000,
-                                    T_admix=30, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                    n_query=4, n_reference=4, sequence_length=5e5,
+                                    recombination_rate=1e-8, random_seed=seed).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

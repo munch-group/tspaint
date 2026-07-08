@@ -29,8 +29,10 @@ def test_migration_demography_adds_symmetric_migration():
 
 
 def test_migration_sim_runs_and_truth_defined():
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=5, sequence_length=2e5, random_seed=3,
-                                    Ne=10000, T_admix=100, T_split=2000, f_A=0.5, migration_rate=1e-4)
+    from tspaint.sim import admixture_demography
+    ts = tspaint.simulate_admixture(
+        admixture_demography(Ne=10000, T_admix=100, T_split=2000, f_A=0.5, migration_rate=1e-4),
+        n_query=4, n_reference=5, sequence_length=2e5, random_seed=3).ts
     truth, _ = tspaint.local_ancestry_truth(ts)
     # every sample's truth tiles [0, L) with no gaps
     for segs in truth.values():

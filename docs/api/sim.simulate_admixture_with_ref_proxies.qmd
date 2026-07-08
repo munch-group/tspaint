@@ -1,0 +1,63 @@
+# sim.simulate_admixture_with_ref_proxies { #tspaint.sim.simulate_admixture_with_ref_proxies }
+
+```python
+tspaint.sim.simulate_admixture_with_ref_proxies(
+    n_admix=10,
+    n_ref=10,
+    sequence_length=2000000.0,
+    recombination_rate=1e-08,
+    ploidy=2,
+    random_seed=42,
+    mutation_rate=None,
+    **demography_kwargs,
+)
+```
+
+Admixed queries plus, for each source, a deeply-divergent **proxy** reference and the **true**
+source (:func:`admixture_demography_with_ref_proxies`).
+
+Samples ``n_admix`` admixed individuals (queries) and ``n_ref`` from each of the two proxies
+(``A_prox`` / ``B_prox`` = ``REF_A_PROXY`` / ``REF_B_PROXY``) **and** the two true sources
+(``A`` / ``B``) — so you can label the proxies as references and compare against the
+direct-``A``/``B`` baseline on the same data and the same census truth. Identify samples by node
+population.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of admixed (query) individuals.
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of individuals sampled from **each** of the four reference populations (``A_prox``, ``B_prox``, ``A``, ``B``).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Passed to :func:`admixture_demography_with_ref_proxies` (e.g. ``T_split_A``, ``T_split_B``, ``T_split``, ``T_admix``, ``Ne``, ``f_A``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
+
+:   ``.ts`` / ``.queries`` / ``.labels`` / ``.truth_states`` / ``.sample_sets``. The default ``.labels`` are the **proxies** (``A_prox`` / ``B_prox``); the true sources ``A`` / ``B`` are sampled too (in ``.sample_sets``) for a direct-source baseline, and the query ``.truth_states`` is A / B.
+
+## See Also {.doc-section .doc-section-see-also}
+
+admixture_demography_with_ref_proxies : The underlying demography (proxy-closeness / root depth).

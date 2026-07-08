@@ -67,8 +67,9 @@ website:
       - api/io.estimate_ne.qmd
       - api/io.add_mutations.qmd
       - api/io.write_haploid_vcf.qmd
+      - api/io.write_vcz.qmd
       - api/io.check_persistence.qmd
-      - api/io_genotypes.source_kind.qmd
+      - api/io.source_kind.qmd
       - api/io_genotypes.Variants.qmd
       section: Input front ends
     - contents:
@@ -98,12 +99,15 @@ website:
       section: Admixture dating (rate through time)
     - contents:
       - api/simulate_admixture.qmd
+      - api/sim.Simulation.qmd
       - api/local_ancestry_truth.qmd
       - api/sim.admixture_demography.qmd
       - api/sim.simulate_admixture_impure_refs.qmd
       - api/sim.admixture_demography_impure_refs.qmd
       - api/sim.simulate_admixture_source_gene_flow.qmd
       - api/sim.admixture_demography_source_gene_flow.qmd
+      - api/sim.simulate_admixture_with_ref_proxies.qmd
+      - api/sim.admixture_demography_with_ref_proxies.qmd
       - api/sim.simulate_admixture_with_ghost.qmd
       - api/sim.admixture_demography_with_ghost.qmd
       section: Simulation (known truth)

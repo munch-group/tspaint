@@ -509,9 +509,8 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
     Examples
     --------
     >>> import tspaint
-    >>> ts = tspaint.simulate_admixture(n_admix=10, n_ref=10)
-    >>> labels = {0: 0, 1: 0, 2: 1, 3: 1}   # reference sample-node -> ancestry state
-    >>> painting = tspaint.paint(ts, labels)
+    >>> sim = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=10, n_reference=10)
+    >>> painting = tspaint.paint(sim.ts, sim.labels, queries=sim.queries)
     >>> painting.segments(deadband=0.4)      # hard ancestry tracts for dating
 
     Label references by **sample-ID string** — no need to know the node order — when the tree

@@ -6,10 +6,9 @@ ancestry CTMC fit by edge-blocked, span-weighted EM. See CLAUDE.md for the autho
 Quick start
 -----------
 >>> import tspaint
->>> ts = tspaint.simulate_admixture(n_admix=10, n_ref=10)   # or tspaint.io.tsinfer(...)
->>> labels = {0: 0, 1: 0, 2: 1, 3: 1}                     # reference sample-node -> ancestry state
->>> painting = tspaint.paint(ts, labels)                    # EM-fit on references, paint the queries
->>> painting.posteriors[q]                                # soft per-position posterior (Segments)
+>>> sim = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=10, n_reference=10)
+>>> painting = tspaint.paint(sim.ts, sim.labels, queries=sim.queries)   # EM-fit on refs, paint queries
+>>> painting.posteriors[sim.queries[0]]                   # soft per-position posterior (Segments)
 >>> painting.segments(deadband=0.4)                       # hard ancestry tracts (for dating)
 >>> painting.plot()                                       # per-haplotype figure (soft posterior + hard tracts)
 

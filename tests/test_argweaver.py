@@ -70,9 +70,10 @@ def test_read_smc_rejects_malformed(tmp_path):
 # --- .sites writer --------------------------------------------------------------------------
 
 def test_write_sites_format(tmp_path):
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4,
-                          recombination_rate=1e-8, random_seed=3, Ne=1000, T_admix=30,
-                          T_split=5000, f_A=0.5), rate=1.2e-8, random_seed=3)
+    ts = io.add_mutations(tspaint.simulate_admixture(
+                          tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                          n_query=2, n_reference=2, sequence_length=2e4,
+                          recombination_rate=1e-8, random_seed=3).ts, rate=1.2e-8, random_seed=3)
     p = tmp_path / "x.sites"
     L = write_sites(ts, str(p))
     lines = p.read_text().splitlines()
@@ -86,19 +87,22 @@ def test_write_sites_format(tmp_path):
 # --- run wrapper: Ne / rates required, binary surfaced --------------------------------------
 
 def test_argweaver_requires_ne():
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     with pytest.raises(ValueError, match="requires Ne"):
         argweaver(ts, _m=1e-8, _r=1e-8)
 
 
 def test_argweaver_requires_rates():
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     with pytest.raises(ValueError, match="_m"):
         argweaver(ts, _N=1000)
 
 
 def test_argweaver_missing_binary(tmp_path):
-    ts = tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=2e4, random_seed=1)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query=2, n_reference=2,
+                                    sequence_length=2e4, random_seed=1).ts
     with pytest.raises(FileNotFoundError, match="arg-sample"):
         argweaver(ts, _N=1000, _m=1e-8, _r=1e-8,
                   argweaver_bin=str(tmp_path / "nope"))
@@ -134,9 +138,10 @@ def test_cli_argweaver_and_install_present():
 @pytest.mark.skipif(not os.path.exists(DEFAULT_ARGWEAVER), reason="arg-sample binary not available")
 def test_argweaver_runs_end_to_end():
     # small region + coarse -c so ARGweaver finishes fast; sample_step=10 -> members at iters 0/10/20.
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=1e4,
-                          recombination_rate=1e-8, random_seed=7, Ne=1000, T_admix=30,
-                          T_split=5000, f_A=0.5), rate=2e-8, random_seed=7)
+    ts = io.add_mutations(tspaint.simulate_admixture(
+                          tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                          n_query=3, n_reference=3, sequence_length=1e4,
+                          recombination_rate=1e-8, random_seed=7).ts, rate=2e-8, random_seed=7)
     pop = ts.tables.nodes.population
     name = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, nm in name.items() if nm == tspaint.sim.SOURCE_A)
@@ -155,8 +160,10 @@ def test_argweaver_runs_end_to_end():
 @pytest.mark.skipif(not os.path.exists(DEFAULT_ARGWEAVER), reason="arg-sample binary not available")
 def test_argweaver_unified_sampling_count():
     """The unified ts / mcmc_step / mcmc_burnin return exactly ts posterior ARGs."""
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=2, n_ref=2, sequence_length=1e4,
-                          recombination_rate=1e-8, random_seed=1, Ne=1000, T_split=5000),
+    ts = io.add_mutations(tspaint.simulate_admixture(
+                          tspaint.sim.admixture_demography(Ne=1000, T_split=5000),
+                          n_query=2, n_reference=2, sequence_length=1e4,
+                          recombination_rate=1e-8, random_seed=1).ts,
                           rate=2e-8, random_seed=1)
     kw = dict(_N=1000, _m=2e-8, _r=1e-8, _compress=10, _seed=1)
     single = argweaver(ts, ts=1, mcmc_step=10, mcmc_burnin=0, **kw)   # ts=1 -> a single ts

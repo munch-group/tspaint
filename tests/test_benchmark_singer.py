@@ -80,12 +80,13 @@ def test_tspaint_singer_end_to_end(tmp_path):
     # Full path on a small sim where SINGER is installed: SINGER MCMC -> ensemble -> paint -> merge.
     import tspaint
     from tspaint.io_tsinfer import add_mutations
-    from tspaint.sim import ADMIXED, SOURCE_A, SOURCE_B
+    from tspaint.sim import ADMIXED, SOURCE_A, SOURCE_B, admixture_demography
     from tspaint.benchmark.score import load_truth
     from tspaint.validate import balanced_accuracy
 
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=5, sequence_length=5e5, recombination_rate=1e-8,
-                                    random_seed=2, Ne=10000, T_admix=100, T_split=2000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=10000, T_admix=100, T_split=2000, f_A=0.5),
+                                    n_query=4, n_reference=5, sequence_length=5e5,
+                                    recombination_rate=1e-8, random_seed=2).ts
     ts = add_mutations(ts, rate=1e-7, random_seed=2)
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}

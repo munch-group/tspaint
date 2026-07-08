@@ -50,12 +50,13 @@ def test_bp_smooth_track_preserves_intervals_and_status():
 @pytest.mark.slow
 def test_bp_paint_reduces_fragmentation():
     import tspaint
-    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED, admixture_demography
     from tspaint.compare import tspaint_paint
     from tspaint.validate import map_truth, switch_density
 
-    ts = tspaint.simulate_admixture(n_admix=6, n_ref=6, sequence_length=2e6, recombination_rate=1e-8,
-                                  random_seed=1, Ne=1000, T_admix=200, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+                                  n_query=6, n_reference=6, sequence_length=2e6, recombination_rate=1e-8,
+                                  random_seed=1).ts
     npop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

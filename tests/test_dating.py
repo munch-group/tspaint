@@ -155,8 +155,8 @@ def test_painting_rate_through_time_no_mutation():
     posteriors byte-for-byte unchanged (the dating path lives side by side with painting)."""
     import copy
     import tspaint
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=2e5, random_seed=1,
-                                  T_admix=100, Ne=1000, T_split=5000)
+    ts = tspaint.simulate_admixture(tspaint.sim.admixture_demography(T_admix=100, Ne=1000, T_split=5000),
+                                  n_query=4, n_reference=4, sequence_length=2e5, random_seed=1).ts
     labels = _admix_labels(ts)
     p = tspaint.paint(ts, labels)
     before = copy.deepcopy(p.posteriors)

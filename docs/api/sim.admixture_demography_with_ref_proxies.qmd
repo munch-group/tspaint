@@ -1,0 +1,69 @@
+# sim.admixture_demography_with_ref_proxies { #tspaint.sim.admixture_demography_with_ref_proxies }
+
+```python
+tspaint.sim.admixture_demography_with_ref_proxies(
+    Ne=10000,
+    T_admix=500.0,
+    census_offset=1.0,
+    T_split_A=50000.0,
+    T_split_B=30000.0,
+    T_split=150000.0,
+    f_A=0.5,
+)
+```
+
+Two-source admixture with a deeply-divergent sister (**proxy**) of each source as a reference.
+
+The nested tree ``((A_prox, A), (B_prox, B))``: source ``A`` and its proxy ``A_prox`` split at
+``T_split_A``, ``B`` and ``B_prox`` at ``T_split_B``, and the two sister pairs coalesce only at
+the deep ``T_split``. The admixed queries mix ``A`` and ``B`` at ``T_admix``. The point (CLAUDE.md
+§9–§10): paint the queries with the **proxies** ``A_prox`` / ``B_prox`` as references — a clean,
+well-sampled stand-in for a source that may be unsampled, ancient or contaminated. A query's ``A``
+tract coalesces with ``A_prox`` (its sister) at ``T_split_A`` but with ``B_prox`` only at the deep
+``T_split``, so the proxy-vs-proxy affinity still separates ancestry — strongly when the internal
+branches (``T_split - T_split_A``, ``T_split - T_split_B``) are long relative to ``Ne`` (low ILS).
+The post-pulse census at ``T_admix + census_offset`` labels each query lineage's **proximate**
+source (A / B): the proxies split *deeper* than the census, so the query truth is unchanged and
+:func:`local_ancestry_truth` returns A / B.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10000]{.parameter-default}</code>
+
+:   Diploid effective size for every population.
+
+<code>[**T_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [500.0]{.parameter-default}</code>
+
+:   Time (generations ago) of the admixture pulse forming ADMIX.
+
+<code>[**census_offset**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Offset added to ``T_admix`` for the census (kept strictly between the admixture and the most recent source/proxy split).
+
+<code>[**T_split_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [50000.0]{.parameter-default}</code>
+
+:   Times at which ``A`` / ``B`` split from their proxies ``A_prox`` / ``B_prox`` — proxy closeness (smaller = a closer, more informative proxy; larger internal branch = stronger, lower-ILS separation).
+
+<code>[**T_split_B**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [50000.0]{.parameter-default}</code>
+
+:   Times at which ``A`` / ``B`` split from their proxies ``A_prox`` / ``B_prox`` — proxy closeness (smaller = a closer, more informative proxy; larger internal branch = stronger, lower-ILS separation).
+
+<code>[**T_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [150000.0]{.parameter-default}</code>
+
+:   Deep split at which the two sister pairs coalesce into ANCESTRAL (the reference divergence the painting keys on).
+
+<code>[**f_A**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Fraction of the admixed queries contributed by source ``A`` (``B`` contributes ``1 - f_A``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   Populations ``A_prox``, ``A``, ``ADMIX``, ``B``, ``B_prox``, ``A_ANC``, ``B_ANC`` and ``ANCESTRAL`` plus the admixture, census and three split events.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``T_admix < T_admix + census_offset < min(T_split_A, T_split_B)`` or ``max(T_split_A, T_split_B) < T_split`` is violated, or ``f_A`` is outside ``[0, 1]``.

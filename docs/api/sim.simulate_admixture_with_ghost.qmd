@@ -8,6 +8,7 @@ tspaint.sim.simulate_admixture_with_ghost(
     recombination_rate=1e-08,
     ploidy=2,
     random_seed=42,
+    mutation_rate=None,
     ghost_fraction=0.1,
     **demography_kwargs,
 )

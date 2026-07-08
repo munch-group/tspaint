@@ -46,12 +46,12 @@ def test_parse_fb_maps_haplotypes_and_pops(tmp_path):
 @pytest.mark.slow
 @needs_rfmix
 def test_rfmix_paint_runs_and_scores():
-    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+    from tspaint.sim import local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED, admixture_demography
     from tspaint.validate import balanced_accuracy, map_truth
 
-    ts = tspaint.simulate_admixture(n_admix=4, n_ref=6, sequence_length=5e5,
-                                  recombination_rate=1e-8, random_seed=1, Ne=1000,
-                                  T_admix=30, T_split=5000, f_A=0.5)
+    ts = tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+                                  n_query=4, n_reference=6, sequence_length=5e5,
+                                  recombination_rate=1e-8, random_seed=1).ts
     np_ = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     A = next(p for p, n in names.items() if n == SOURCE_A)

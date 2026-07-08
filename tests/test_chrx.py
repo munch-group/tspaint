@@ -15,6 +15,7 @@ import tspaint
 from tspaint import io
 from tspaint.io_genotypes import (Variants, variants_from_vcf, estimate_ne, pseudohaploid,
                                   _resolve_sex_and_par, _positions_in_par, _group_columns)
+from tspaint.sim import admixture_demography
 
 
 # --- synthetic chrX: diploid females + males homozygous outside PAR, heterozygous inside ------
@@ -172,9 +173,9 @@ def test_estimate_ne_uses_sample_index_grouping():
 
 def test_pseudohaploid_feeds_tsinfer_and_paints():
     """A pseudo-haploid Variants flows through io.tsinfer (stamped) and paints by name."""
-    ts = io.add_mutations(tspaint.simulate_admixture(n_admix=3, n_ref=3, sequence_length=1e5,
-                          recombination_rate=1e-8, random_seed=4, Ne=1000, T_admix=30,
-                          T_split=5000, f_A=0.5), rate=6e-7, random_seed=4)
+    ts = io.add_mutations(tspaint.simulate_admixture(admixture_demography(Ne=1000, T_admix=30,
+                          T_split=5000, f_A=0.5), n_query=3, n_reference=3, sequence_length=1e5,
+                          recombination_rate=1e-8, random_seed=4).ts, rate=6e-7, random_seed=4)
     # emulate a diploid VCF read: haplotype columns grouped as diploids, all female (autosome-like)
     from tspaint.io_genotypes import _variants_from_ts
     v = _variants_from_ts(ts)

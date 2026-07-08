@@ -99,7 +99,7 @@ def test_reference_qc_flags_impure_minority():
     from tspaint.experiments import _foreign_recall
 
     ts = simulate_admixture_impure_refs(n_admix=2, n_pure=8, n_impure=3, sequence_length=2.5e6,
-            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     pid = {n: p for p, n in names.items()}
@@ -137,7 +137,7 @@ def test_reference_qc_ensemble_identical_members_matches_single():
     from tspaint.ensemble import MergedSegment
 
     ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=6e5,
-            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     pid = {n: p for p, n in names.items()}
@@ -172,7 +172,7 @@ def test_reference_qc_reports_ids_on_stamped_ts():
     from tspaint.ids import attach_sample_ids
 
     ts = simulate_admixture_impure_refs(n_admix=2, n_pure=3, n_impure=2, sequence_length=3e5,
-            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000).ts
     npop = ts.tables.nodes.population
     pname = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     pid = {n: p for p, n in pname.items()}
@@ -224,7 +224,7 @@ def test_reference_qc_n_jobs_matches_serial():
     ULPs, so credibility is allclose; the anchor set / soft_refs are identical) and progress runs."""
     from tspaint.sim import simulate_admixture_impure_refs, SOURCE_A, SOURCE_B, REF_A_IMPURE, REF_B_IMPURE
     ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=6e5,
-            recombination_rate=1e-8, random_seed=2, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+            recombination_rate=1e-8, random_seed=2, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000).ts
     node_pop = ts.tables.nodes.population
     pid = {ts.population(p).metadata.get("name", str(p)): p for p in range(ts.num_populations)}
     of = lambda nm: [int(s) for s in ts.samples() if node_pop[s] == pid[nm]]
@@ -250,7 +250,7 @@ def test_deep_foreign_flag_finds_unsampled_source():
                   T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000)
 
     def run(gf, seed):
-        ts = simulate_admixture_with_ghost(ghost_fraction=gf, random_seed=seed, **common)
+        ts = simulate_admixture_with_ghost(ghost_fraction=gf, random_seed=seed, **common).ts
         names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
         pid = {n: p for p, n in names.items()}
         node_pop = ts.tables.nodes.population
@@ -315,7 +315,7 @@ def test_foreign_tracts_flags_reference_introgression():
     from tspaint.validate import map_truth
 
     ts = simulate_admixture_impure_refs(n_admix=2, n_pure=6, n_impure=3, sequence_length=2e6,
-            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000)
+            recombination_rate=1e-8, random_seed=1, ref_impurity=0.3, Ne=1000, T_admix=150, T_split=5000).ts
     node_pop = ts.tables.nodes.population
     names = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
     pid = {n: p for p, n in names.items()}
@@ -342,8 +342,10 @@ def test_foreign_tracts_flags_reference_introgression():
 def _admix_ts(seed=3):
     import tspaint
     return tspaint.io.add_mutations(
-        tspaint.simulate_admixture(n_admix=4, n_ref=4, sequence_length=4e5, recombination_rate=1e-8,
-                                   random_seed=seed, Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+        tspaint.simulate_admixture(
+            tspaint.sim.admixture_demography(Ne=1000, T_admix=200, T_split=5000, f_A=0.5),
+            n_query=4, n_reference=4, sequence_length=4e5, recombination_rate=1e-8,
+            random_seed=seed).ts,
         rate=2e-7, random_seed=seed)
 
 

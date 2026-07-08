@@ -13,6 +13,8 @@ each lineage records that source per genomic segment.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import msprime
 import tskit
@@ -24,11 +26,18 @@ __all__ = [
     "ANCESTRAL",
     "REF_A_IMPURE",
     "REF_B_IMPURE",
+    "REF_A_PROXY",
+    "REF_B_PROXY",
     "GHOST",
+    "Simulation",
     "admixture_demography",
     "simulate_admixture",
     "admixture_demography_impure_refs",
     "simulate_admixture_impure_refs",
+    "admixture_demography_source_gene_flow",
+    "simulate_admixture_source_gene_flow",
+    "admixture_demography_with_ref_proxies",
+    "simulate_admixture_with_ref_proxies",
     "admixture_demography_with_ghost",
     "simulate_admixture_with_ghost",
     "local_ancestry_truth",
@@ -42,10 +51,64 @@ REF_A_IMPURE = "RA"   # impure reference panel: mostly A, a known minority B (CL
 REF_B_IMPURE = "RB"   # impure reference panel: mostly B, a known minority A
 GHOST = "GHOST"       # unsampled ("ghost") source contributing introgression (CLAUDE.md §9)
 AB_ANCESTRAL = "AB"   # intermediate ancestor of A and B; the ghost C is the deeper outgroup
+REF_A_PROXY = SOURCE_A + "_prox"   # deeply-divergent sister of A, used as a clean proxy reference (§9, §10)
+REF_B_PROXY = SOURCE_B + "_prox"   # deeply-divergent sister of B
+A_ANCESTRAL = "A_ANC"              # common ancestor of A and its proxy A_prox
+B_ANCESTRAL = "B_ANC"              # common ancestor of B and its proxy B_prox
 
 # msprime flags census-event nodes; fall back to time-based detection if the
 # constant is unavailable in the installed version.
 _CENSUS_FLAG = getattr(msprime, "NODE_IS_CEN_EVENT", 0)
+
+
+@dataclass
+class Simulation:
+    """A simulated admixture with known truth — the return of :func:`simulate_admixture`.
+
+    Everything downstream needs (queries to paint, reference labels, ground-truth ancestry) is
+    derived from the demography's own population **roles** (see :func:`admixture_demography`), so no
+    caller ever needs the population-name constants.
+
+    Attributes
+    ----------
+    ts : tskit.TreeSequence
+        The simulated tree sequence — **with mutations** when ``mutation_rate`` was given.
+    queries : list[int]
+        Query (admixed) haplotype node ids.
+    labels : dict[int, int]
+        Default reference panel: reference haplotype node id → ancestry-state index (``0`` / ``1``),
+        ready to pass to :func:`tspaint.paint`.
+    truth_states : dict[int, list[tuple[float, float, int]]]
+        Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready to
+        score against a painting (e.g. :func:`tspaint.balanced_accuracy`).
+    sample_sets : dict[str, list[int]]
+        Population name → its sample node ids, for building custom reference panels (e.g. proxy-only
+        vs direct-source labels).
+    """
+    ts: object
+    queries: list
+    labels: dict
+    truth_states: dict
+    sample_sets: dict
+
+
+def _pop_role(state=None, query=False, source=False, reference=False):
+    """Build the ``extra_metadata`` that tags a population's role for :func:`simulate_admixture`.
+
+    ``query`` = the admixed population (sampled as queries); ``source`` = a census source whose
+    ``state`` defines the ground truth; ``reference`` = sampled and included in the default
+    :attr:`Simulation.labels`. ``state`` is the ancestry-state index carried by sources / references.
+    """
+    m = {}
+    if query:
+        m["tspaint_query"] = True
+    if source:
+        m["tspaint_source"] = True
+    if reference:
+        m["tspaint_reference"] = True
+    if state is not None:
+        m["tspaint_state"] = int(state)
+    return m
 
 
 def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
@@ -106,9 +169,9 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
         raise ValueError("migration_rate must be non-negative")
 
     d = msprime.Demography()
-    d.add_population(name=SOURCE_A, initial_size=Ne)
-    d.add_population(name=SOURCE_B, initial_size=Ne)
-    d.add_population(name=ADMIXED, initial_size=Ne)
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True, reference=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True, reference=True))
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
     d.add_population(name=ANCESTRAL, initial_size=Ne)
     # Admixed pop forms (backward in time) as a mixture of the two sources.
     d.add_admixture(time=T_admix, derived=ADMIXED,
@@ -129,56 +192,81 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
     return d
 
 
-def simulate_admixture(n_admix=10, n_ref=10, sequence_length=1e6,
-                       recombination_rate=1e-8, ploidy=2, random_seed=42,
-                       **demography_kwargs):
-    """Simulate an admixed sample plus two reference panels.
+def simulate_admixture(demography, *, n_query=10, n_reference=10, samples=None,
+                       sequence_length=1e6, recombination_rate=1e-8, ploidy=2,
+                       mutation_rate=None, random_seed=42):
+    """Simulate an admixture from a **role-tagged demography**, returning a :class:`Simulation`.
+
+    Pass a demography from :func:`admixture_demography` (or any ``admixture_demography_*`` variant):
+    its populations carry role metadata (query / source / reference + ancestry state), so this
+    samples the query and reference panels, runs the coalescent, optionally lays down mutations, and
+    packages the queries, reference ``labels`` and the census ``truth`` — the caller never touches a
+    population-name constant.
 
     Parameters
     ----------
-    n_admix : int, optional
-        Number of admixed individuals (query haplotypes).
-    n_ref : int, optional
-        Number of individuals sampled from each reference source (A and B).
-    sequence_length : float, optional
-        Length of the simulated sequence in base pairs.
-    recombination_rate : float, optional
-        Per-base, per-generation recombination rate.
-    ploidy : int, optional
-        Ploidy; each individual yields ``ploidy`` sample haplotypes.
-    random_seed : int, optional
-        Seed for :func:`msprime.sim_ancestry`.
-    **demography_kwargs
-        Passed to :func:`admixture_demography` (e.g. ``T_admix``, ``T_split``,
-        ``f_A``, ``Ne``).
+    demography : msprime.Demography
+        A role-tagged demography (see :func:`admixture_demography`).
+    n_query : int, optional
+        Number of query (admixed) individuals to sample.
+    n_reference : int, optional
+        Number of individuals sampled from **each** reference / source population.
+    samples : dict[str, int], optional
+        Explicit ``{population_name: n_individuals}`` sampling, overriding ``n_query`` /
+        ``n_reference`` — used by the variant wrappers to sample e.g. unequal pure / impure panels.
+    sequence_length, recombination_rate, ploidy, random_seed : optional
+        Passed to :func:`msprime.sim_ancestry`.
+    mutation_rate : float, optional
+        If given, lay down mutations at this per-base rate (:func:`tspaint.io.add_mutations`); the
+        returned ``ts`` then carries sites. ``None`` (default) leaves the bare ancestry.
 
     Returns
     -------
-    tskit.TreeSequence
-        Tree sequence whose sample nodes are haplotypes; the first
-        ``ploidy * n_admix`` belong to the admixed population (queries), the
-        rest to the two reference sources.
-
-    See Also
-    --------
-    local_ancestry_truth : Recover the ground-truth ancestry tracts.
+    Simulation
+        ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states`` and
+        ``.sample_sets``.
 
     Examples
     --------
-    >>> ts = simulate_admixture(n_admix=5, n_ref=5, sequence_length=1e5,
-    ...                         random_seed=1)
-    >>> ts.num_samples
+    >>> sim = simulate_admixture(admixture_demography(), n_query=5, n_reference=5,
+    ...                          sequence_length=1e5, random_seed=1)
+    >>> sim.ts.num_samples
     30
     """
-    demography = admixture_demography(**demography_kwargs)
-    return msprime.sim_ancestry(
-        samples={ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},
-        demography=demography,
-        sequence_length=sequence_length,
-        recombination_rate=recombination_rate,
-        ploidy=ploidy,
-        random_seed=random_seed,
-    )
+    roles = {p.name: dict(p.extra_metadata or {}) for p in demography.populations}
+    query_pop = next((n for n, m in roles.items() if m.get("tspaint_query")), None)
+    if query_pop is None:
+        raise ValueError("demography has no query population; tag one with _pop_role(query=True)")
+    if samples is None:
+        ref_pops = [n for n, m in roles.items()
+                    if m.get("tspaint_reference") or m.get("tspaint_source")]
+        samples = {query_pop: n_query, **{r: n_reference for r in ref_pops}}
+    ts = msprime.sim_ancestry(samples=samples, demography=demography,
+                              sequence_length=sequence_length, recombination_rate=recombination_rate,
+                              ploidy=ploidy, random_seed=random_seed)
+    if mutation_rate:
+        from .io_tsinfer import add_mutations
+        ts = add_mutations(ts, rate=mutation_rate, random_seed=random_seed)
+
+    name = {p: ts.population(p).metadata.get("name", str(p)) for p in range(ts.num_populations)}
+    node_pop = ts.tables.nodes.population
+    sample_sets = {}
+    for s in ts.samples():
+        sample_sets.setdefault(name[node_pop[s]], []).append(int(s))
+    queries = sample_sets.get(query_pop, [])
+    # default reference labels: sampled reference-tagged populations, by their ancestry state
+    labels = {}
+    for pop_name, m in roles.items():
+        if m.get("tspaint_reference") and "tspaint_state" in m:
+            for s in sample_sets.get(pop_name, ()):
+                labels[s] = m["tspaint_state"]
+    # query truth: map each query lineage's census (source) population to its ancestry state
+    state_of_pop = {p: roles[name[p]]["tspaint_state"] for p in range(ts.num_populations)
+                    if "tspaint_state" in roles.get(name[p], {})}
+    tracts, _ = local_ancestry_truth(ts)
+    truth = {q: [(l, r, state_of_pop[pop]) for (l, r, pop) in tracts[q] if pop in state_of_pop]
+             for q in queries}
+    return Simulation(ts=ts, queries=queries, labels=labels, truth_states=truth, sample_sets=sample_sets)
 
 
 def admixture_demography_impure_refs(Ne=1000, T_admix=30.0, census_offset=1.0,
@@ -230,8 +318,12 @@ def admixture_demography_impure_refs(Ne=1000, T_admix=30.0, census_offset=1.0,
         raise ValueError("ref_impurity must be in [0, 0.5) (the panel must stay majority-source)")
 
     d = msprime.Demography()
-    for name in (SOURCE_A, SOURCE_B, ADMIXED, REF_A_IMPURE, REF_B_IMPURE, ANCESTRAL):
-        d.add_population(name=name, initial_size=Ne)
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True, reference=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True, reference=True))
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
+    d.add_population(name=REF_A_IMPURE, initial_size=Ne, extra_metadata=_pop_role(state=0, reference=True))
+    d.add_population(name=REF_B_IMPURE, initial_size=Ne, extra_metadata=_pop_role(state=1, reference=True))
+    d.add_population(name=ANCESTRAL, initial_size=Ne)
     # Queries: an admixed mixture of the two sources.
     d.add_admixture(time=T_admix, derived=ADMIXED,
                     ancestral=[SOURCE_A, SOURCE_B], proportions=[f_A, 1.0 - f_A])
@@ -248,7 +340,7 @@ def admixture_demography_impure_refs(Ne=1000, T_admix=30.0, census_offset=1.0,
 
 def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_length=2e6,
                                    recombination_rate=1e-8, ploidy=2, random_seed=42,
-                                   ref_impurity=0.1, **demography_kwargs):
+                                   mutation_rate=None, ref_impurity=0.1, **demography_kwargs):
     """Simulate admixed queries, a pure reference anchor core, and impure reference panels.
 
     Samples ``n_admix`` admixed individuals (queries), ``n_pure`` from each pure source
@@ -292,17 +384,12 @@ def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_le
     admixture_demography_impure_refs : The underlying demography.
     local_ancestry_truth : Recover the ground-truth ancestry tracts (references included).
     """
-    demography = admixture_demography_impure_refs(ref_impurity=ref_impurity,
-                                                  **demography_kwargs)
-    return msprime.sim_ancestry(
-        samples={ADMIXED: n_admix, SOURCE_A: n_pure, SOURCE_B: n_pure,
-                 REF_A_IMPURE: n_impure, REF_B_IMPURE: n_impure},
-        demography=demography,
-        sequence_length=sequence_length,
-        recombination_rate=recombination_rate,
-        ploidy=ploidy,
-        random_seed=random_seed,
-    )
+    demography = admixture_demography_impure_refs(ref_impurity=ref_impurity, **demography_kwargs)
+    return simulate_admixture(demography, sequence_length=sequence_length,
+                              recombination_rate=recombination_rate, ploidy=ploidy,
+                              mutation_rate=mutation_rate, random_seed=random_seed,
+                              samples={ADMIXED: n_admix, SOURCE_A: n_pure, SOURCE_B: n_pure,
+                                       REF_A_IMPURE: n_impure, REF_B_IMPURE: n_impure})
 
 
 def admixture_demography_source_gene_flow(Ne=1000, T_admix=30.0, census_offset=1.0,
@@ -341,8 +428,10 @@ def admixture_demography_source_gene_flow(Ne=1000, T_admix=30.0, census_offset=1
     if not (0.0 <= prev_migration < 1.0):
         raise ValueError("prev_migration must be in [0, 1)")
     d = msprime.Demography()
-    for name in (SOURCE_A, SOURCE_B, ADMIXED, ANCESTRAL):
-        d.add_population(name=name, initial_size=Ne)
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True, reference=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True, reference=True))
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
+    d.add_population(name=ANCESTRAL, initial_size=Ne)
     d.add_admixture(time=T_admix, derived=ADMIXED,
                     ancestral=[SOURCE_A, SOURCE_B], proportions=[f_A, 1.0 - f_A])
     d.add_census(time=census_time)
@@ -353,19 +442,136 @@ def admixture_demography_source_gene_flow(Ne=1000, T_admix=30.0, census_offset=1
 
 def simulate_admixture_source_gene_flow(n_admix=10, n_ref=10, sequence_length=2e6,
                                         recombination_rate=1e-8, ploidy=2, random_seed=42,
-                                        **demography_kwargs):
+                                        mutation_rate=None, **demography_kwargs):
     """Admixed queries + A/B references where the ``SOURCE_A`` panel carries real ``SOURCE_B``
     introgressed tracts from a prior A↔B pulse (:func:`admixture_demography_source_gene_flow`).
 
     The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
-    the ``SOURCE_B`` references are pure. The census labels each query lineage's proximate source, so
-    :func:`local_ancestry_truth` gives the query A/B truth. Identify samples by node population.
+    the ``SOURCE_B`` references are pure. Returns a :class:`Simulation` (``.ts`` / ``.queries`` /
+    ``.labels`` / ``.truth_states`` / ``.sample_sets``); the query truth is the proximate A / B source.
     """
     demography = admixture_demography_source_gene_flow(**demography_kwargs)
-    return msprime.sim_ancestry(
-        samples={ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},
-        demography=demography, sequence_length=sequence_length,
-        recombination_rate=recombination_rate, ploidy=ploidy, random_seed=random_seed)
+    return simulate_admixture(demography, n_query=n_admix, n_reference=n_ref,
+                              sequence_length=sequence_length, recombination_rate=recombination_rate,
+                              ploidy=ploidy, mutation_rate=mutation_rate, random_seed=random_seed)
+
+
+def admixture_demography_with_ref_proxies(Ne=10_000, T_admix=500.0, census_offset=1.0,
+                                          T_split_A=50_000.0, T_split_B=30_000.0,
+                                          T_split=150_000.0, f_A=0.5):
+    """Two-source admixture with a deeply-divergent sister (**proxy**) of each source as a reference.
+
+    The nested tree ``((A_prox, A), (B_prox, B))``: source ``A`` and its proxy ``A_prox`` split at
+    ``T_split_A``, ``B`` and ``B_prox`` at ``T_split_B``, and the two sister pairs coalesce only at
+    the deep ``T_split``. The admixed queries mix ``A`` and ``B`` at ``T_admix``. The point (CLAUDE.md
+    §9–§10): paint the queries with the **proxies** ``A_prox`` / ``B_prox`` as references — a clean,
+    well-sampled stand-in for a source that may be unsampled, ancient or contaminated. A query's ``A``
+    tract coalesces with ``A_prox`` (its sister) at ``T_split_A`` but with ``B_prox`` only at the deep
+    ``T_split``, so the proxy-vs-proxy affinity still separates ancestry — strongly when the internal
+    branches (``T_split - T_split_A``, ``T_split - T_split_B``) are long relative to ``Ne`` (low ILS).
+    The post-pulse census at ``T_admix + census_offset`` labels each query lineage's **proximate**
+    source (A / B): the proxies split *deeper* than the census, so the query truth is unchanged and
+    :func:`local_ancestry_truth` returns A / B.
+
+    Parameters
+    ----------
+    Ne : float, optional
+        Diploid effective size for every population.
+    T_admix : float, optional
+        Time (generations ago) of the admixture pulse forming ADMIX.
+    census_offset : float, optional
+        Offset added to ``T_admix`` for the census (kept strictly between the admixture and the most
+        recent source/proxy split).
+    T_split_A, T_split_B : float, optional
+        Times at which ``A`` / ``B`` split from their proxies ``A_prox`` / ``B_prox`` — proxy
+        closeness (smaller = a closer, more informative proxy; larger internal branch = stronger,
+        lower-ILS separation).
+    T_split : float, optional
+        Deep split at which the two sister pairs coalesce into ANCESTRAL (the reference divergence
+        the painting keys on).
+    f_A : float, optional
+        Fraction of the admixed queries contributed by source ``A`` (``B`` contributes ``1 - f_A``).
+
+    Returns
+    -------
+    msprime.Demography
+        Populations ``A_prox``, ``A``, ``ADMIX``, ``B``, ``B_prox``, ``A_ANC``, ``B_ANC`` and
+        ``ANCESTRAL`` plus the admixture, census and three split events.
+
+    Raises
+    ------
+    ValueError
+        If ``T_admix < T_admix + census_offset < min(T_split_A, T_split_B)`` or
+        ``max(T_split_A, T_split_B) < T_split`` is violated, or ``f_A`` is outside ``[0, 1]``.
+    """
+    census_time = T_admix + census_offset
+    if not (T_admix < census_time < min(T_split_A, T_split_B)):
+        raise ValueError("require T_admix < T_admix+census_offset < min(T_split_A, T_split_B)")
+    if not (max(T_split_A, T_split_B) < T_split):
+        raise ValueError("require max(T_split_A, T_split_B) < T_split")
+    if not (0.0 <= f_A <= 1.0):
+        raise ValueError("f_A must be in [0, 1]")
+    d = msprime.Demography()
+    # proxies are the DEFAULT reference panel; the true sources define the truth and are sampled
+    # too (for the direct-source baseline) but are not in the default labels
+    d.add_population(name=REF_A_PROXY, initial_size=Ne, extra_metadata=_pop_role(state=0, reference=True))
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True))
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True))
+    d.add_population(name=REF_B_PROXY, initial_size=Ne, extra_metadata=_pop_role(state=1, reference=True))
+    d.add_population(name=A_ANCESTRAL, initial_size=Ne)
+    d.add_population(name=B_ANCESTRAL, initial_size=Ne)
+    d.add_population(name=ANCESTRAL, initial_size=Ne)
+    d.add_admixture(time=T_admix, derived=ADMIXED,
+                    ancestral=[SOURCE_A, SOURCE_B], proportions=[f_A, 1.0 - f_A])
+    d.add_census(time=census_time)
+    # each source splits from its proxy; the two sister pairs coalesce only at the deep root
+    d.add_population_split(time=T_split_B, derived=[SOURCE_B, REF_B_PROXY], ancestral=B_ANCESTRAL)
+    d.add_population_split(time=T_split_A, derived=[SOURCE_A, REF_A_PROXY], ancestral=A_ANCESTRAL)
+    d.add_population_split(time=T_split, derived=[A_ANCESTRAL, B_ANCESTRAL], ancestral=ANCESTRAL)
+    return d
+
+
+def simulate_admixture_with_ref_proxies(n_admix=10, n_ref=10, sequence_length=2e6,
+                                        recombination_rate=1e-8, ploidy=2, random_seed=42,
+                                        mutation_rate=None, **demography_kwargs):
+    """Admixed queries plus, for each source, a deeply-divergent **proxy** reference and the **true**
+    source (:func:`admixture_demography_with_ref_proxies`).
+
+    Samples ``n_admix`` admixed individuals (queries) and ``n_ref`` from each of the two proxies
+    (``A_prox`` / ``B_prox`` = ``REF_A_PROXY`` / ``REF_B_PROXY``) **and** the two true sources
+    (``A`` / ``B``) — so you can label the proxies as references and compare against the
+    direct-``A``/``B`` baseline on the same data and the same census truth. Identify samples by node
+    population.
+
+    Parameters
+    ----------
+    n_admix : int, optional
+        Number of admixed (query) individuals.
+    n_ref : int, optional
+        Number of individuals sampled from **each** of the four reference populations (``A_prox``,
+        ``B_prox``, ``A``, ``B``).
+    sequence_length, recombination_rate, ploidy, random_seed : optional
+        As for :func:`simulate_admixture`.
+    **demography_kwargs
+        Passed to :func:`admixture_demography_with_ref_proxies` (e.g. ``T_split_A``, ``T_split_B``,
+        ``T_split``, ``T_admix``, ``Ne``, ``f_A``).
+
+    Returns
+    -------
+    Simulation
+        ``.ts`` / ``.queries`` / ``.labels`` / ``.truth_states`` / ``.sample_sets``. The default ``.labels``
+        are the **proxies** (``A_prox`` / ``B_prox``); the true sources ``A`` / ``B`` are sampled too
+        (in ``.sample_sets``) for a direct-source baseline, and the query ``.truth_states`` is A / B.
+
+    See Also
+    --------
+    admixture_demography_with_ref_proxies : The underlying demography (proxy-closeness / root depth).
+    """
+    demography = admixture_demography_with_ref_proxies(**demography_kwargs)
+    return simulate_admixture(demography, n_query=n_admix, n_reference=n_ref,
+                              sequence_length=sequence_length, recombination_rate=recombination_rate,
+                              ploidy=ploidy, mutation_rate=mutation_rate, random_seed=random_seed)
 
 
 def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
@@ -418,8 +624,12 @@ def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
 
     f = (1.0 - ghost_fraction) / 2.0
     d = msprime.Demography()
-    for name in (SOURCE_A, SOURCE_B, GHOST, ADMIXED, AB_ANCESTRAL, ANCESTRAL):
-        d.add_population(name=name, initial_size=Ne)
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True, reference=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True, reference=True))
+    d.add_population(name=GHOST, initial_size=Ne)   # unsampled ghost source (no role: not sampled)
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
+    d.add_population(name=AB_ANCESTRAL, initial_size=Ne)
+    d.add_population(name=ANCESTRAL, initial_size=Ne)
     d.add_admixture(time=T_admix, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B, GHOST],
                     proportions=[f, f, ghost_fraction])
     d.add_census(time=census_time)
@@ -430,7 +640,7 @@ def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
 
 def simulate_admixture_with_ghost(n_admix=10, n_ref=8, sequence_length=2e6,
                                   recombination_rate=1e-8, ploidy=2, random_seed=42,
-                                  ghost_fraction=0.10, **demography_kwargs):
+                                  mutation_rate=None, ghost_fraction=0.10, **demography_kwargs):
     """Simulate admixed queries + A/B reference panels, with an **unsampled ghost source**.
 
     The admixed individuals carry tracts from A, B and the ghost ``C``; only A and B are
@@ -469,14 +679,9 @@ def simulate_admixture_with_ghost(n_admix=10, n_ref=8, sequence_length=2e6,
     admixture_demography_with_ghost : The underlying demography (and the archaic-like regime).
     """
     demography = admixture_demography_with_ghost(ghost_fraction=ghost_fraction, **demography_kwargs)
-    return msprime.sim_ancestry(
-        samples={ADMIXED: n_admix, SOURCE_A: n_ref, SOURCE_B: n_ref},
-        demography=demography,
-        sequence_length=sequence_length,
-        recombination_rate=recombination_rate,
-        ploidy=ploidy,
-        random_seed=random_seed,
-    )
+    return simulate_admixture(demography, n_query=n_admix, n_reference=n_ref,
+                              sequence_length=sequence_length, recombination_rate=recombination_rate,
+                              ploidy=ploidy, mutation_rate=mutation_rate, random_seed=random_seed)
 
 
 def _census_mask(ts):

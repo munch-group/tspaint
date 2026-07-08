@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 
 from tspaint.sim import (
+    Simulation,
+    admixture_demography,
     simulate_admixture,
     simulate_admixture_impure_refs,
     simulate_admixture_with_ghost,
@@ -20,9 +22,14 @@ from tspaint.diagnostics import persistence_summary, edge_span_summary
 
 
 @pytest.fixture(scope="module")
-def ts():
-    return simulate_admixture(n_admix=8, n_ref=8, sequence_length=2e6,
-                              recombination_rate=1e-8, random_seed=7)
+def sim():
+    return simulate_admixture(admixture_demography(), n_query=8, n_reference=8,
+                              sequence_length=2e6, recombination_rate=1e-8, random_seed=7)
+
+
+@pytest.fixture(scope="module")
+def ts(sim):
+    return sim.ts
 
 
 def _names(ts):
@@ -33,6 +40,22 @@ def _names(ts):
         except Exception:
             out[p] = str(p)
     return out
+
+
+def test_simulation_shape(sim):
+    # the new sim API returns a Simulation carrying queries / labels / truth / sample_sets
+    assert isinstance(sim, Simulation)
+    # 8 admixed individuals x ploidy 2 -> 16 query haplotypes; A + B refs, 8 each x 2 -> 32 labels
+    assert len(sim.queries) == 16
+    assert len(sim.labels) == 32 and set(sim.labels.values()) == {0, 1}
+    # truth is keyed by query and covers the whole sequence with ancestry states 0/1
+    assert set(sim.truth_states) == set(sim.queries)
+    for tracts in sim.truth_states.values():
+        assert tracts[0][0] == 0.0 and tracts[-1][1] == sim.ts.sequence_length
+        assert all(st in (0, 1) for (_, _, st) in tracts)
+    # sample_sets group nodes by population name; queries are exactly the ADMIXED set
+    assert set(sim.sample_sets) >= {SOURCE_A, SOURCE_B, ADMIXED}
+    assert sorted(sim.queries) == sorted(sim.sample_sets[ADMIXED])
 
 
 def test_has_recombination(ts):
@@ -91,7 +114,7 @@ def test_impure_refs_carry_known_minority_ancestry():
     rho = 0.15
     ts = simulate_admixture_impure_refs(n_admix=4, n_pure=4, n_impure=8, sequence_length=4e6,
                                         recombination_rate=1e-8, random_seed=3,
-                                        ref_impurity=rho, Ne=1000, T_admix=300, T_split=5000)
+                                        ref_impurity=rho, Ne=1000, T_admix=300, T_split=5000).ts
     names = _names(ts)
     pid = {n: p for p, n in names.items()}
     node_pop = ts.tables.nodes.population
@@ -121,7 +144,7 @@ def test_ghost_source_tracts_and_no_ghost_control():
     # labels A/B/GHOST); refs are A/B only; ghost_fraction=0 is the matched control.
     common = dict(n_admix=12, n_ref=8, sequence_length=2e6, recombination_rate=1e-8,
                   random_seed=1, T_admix=100, T_split_AB=2000, T_split_ABC=20000, Ne=1000)
-    ts = simulate_admixture_with_ghost(ghost_fraction=0.25, **common)
+    ts = simulate_admixture_with_ghost(ghost_fraction=0.25, **common).ts
     names = _names(ts)
     pid = {n: p for p, n in names.items()}
     node_pop = ts.tables.nodes.population
@@ -137,7 +160,7 @@ def test_ghost_source_tracts_and_no_ghost_control():
     assert ghost_frac > 0.03                                          # detectable ghost ancestry
     assert all(names[node_pop[s]] in (SOURCE_A, SOURCE_B) for s in (of(SOURCE_A) + of(SOURCE_B)))
 
-    ts0 = simulate_admixture_with_ghost(ghost_fraction=0.0, **common)  # matched no-ghost control
+    ts0 = simulate_admixture_with_ghost(ghost_fraction=0.0, **common).ts  # matched no-ghost control
     names0 = _names(ts0)
     pid0 = {n: p for p, n in names0.items()}
     np0 = ts0.tables.nodes.population
