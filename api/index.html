@@ -531,14 +531,20 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io.write_vcz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.write_vcz</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io.check_persistence.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io.check_persistence</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">io_genotypes.source_kind</span></a>
+  <a href="../api/io.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.source_kind</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -714,6 +720,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.Simulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.Simulation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/local_ancestry_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">local_ancestry_truth</span></a>
   </div>
@@ -746,6 +758,18 @@ ul.task-list li input[type="checkbox"] {
   <div class="sidebar-item-container"> 
   <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_with_ref_proxies</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_with_ref_proxies</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -1328,14 +1352,18 @@ ul.task-list li input[type="checkbox"] {
 <td>Write one haploid VCF column per sample node.</td>
 </tr>
 <tr class="even">
+<td><a href="../api/io.write_vcz.html#tspaint.io.write_vcz">io.write_vcz</a></td>
+<td>Write a minimal <strong>VCF-Zarr</strong> store from a <em>mutated</em> tree sequence — a lightweight stand-in for</td>
+</tr>
+<tr class="odd">
 <td><a href="../api/io.check_persistence.html#tspaint.io.check_persistence">io.check_persistence</a></td>
 <td>Run the §5.1 persistence go/no-go on an already-loaded tree sequence.</td>
 </tr>
-<tr class="odd">
-<td><a href="../api/io_genotypes.source_kind.html#tspaint.io_genotypes.source_kind">io_genotypes.source_kind</a></td>
+<tr class="even">
+<td><a href="../api/io.source_kind.html#tspaint.io.source_kind">io.source_kind</a></td>
 <td>Classify a front-end <code>source</code> as <code>"ts"</code>, <code>"zarr"</code> or <code>"vcf"</code>.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="../api/io_genotypes.Variants.html#tspaint.io_genotypes.Variants">io_genotypes.Variants</a></td>
 <td>A tool-agnostic biallelic variant matrix (one column per <strong>haplotype</strong>).</td>
 </tr>
@@ -1444,42 +1472,54 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="simulation-known-truth" class="level2">
 <h2 class="anchored" data-anchor-id="simulation-known-truth">Simulation (known truth)</h2>
-<p>msprime admixture scenarios with census-event ground truth — the primary validation track and the source of examples.</p>
+<p>msprime admixture scenarios with census-event ground truth — the primary validation track. Call an <code>admixture_demography_*</code> builder (its populations are <strong>role-tagged</strong>), pass it to <code>simulate_admixture</code>, and get a <code>Simulation</code> back — <code>.ts</code> (optionally mutated), <code>.queries</code>, <code>.labels</code>, <code>.truth_states</code> and <code>.sample_sets</code> — with no population-name constants needed.</p>
 <table class="caption-top table">
 <tbody>
 <tr class="odd">
 <td><a href="../api/simulate_admixture.html#tspaint.simulate_admixture">simulate_admixture</a></td>
-<td>Simulate an admixed sample plus two reference panels.</td>
+<td>Simulate an admixture from a <strong>role-tagged demography</strong>, returning a :class:<code>Simulation</code>.</td>
 </tr>
 <tr class="even">
+<td><a href="../api/sim.Simulation.html#tspaint.sim.Simulation">sim.Simulation</a></td>
+<td>A simulated admixture with known truth — the return of :func:<code>simulate_admixture</code>.</td>
+</tr>
+<tr class="odd">
 <td><a href="../api/local_ancestry_truth.html#tspaint.local_ancestry_truth">local_ancestry_truth</a></td>
 <td>True local ancestry per sample as source-population tracts.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="../api/sim.admixture_demography.html#tspaint.sim.admixture_demography">sim.admixture_demography</a></td>
 <td>Build a two-source admixture demography with a post-pulse census.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="../api/sim.simulate_admixture_impure_refs.html#tspaint.sim.simulate_admixture_impure_refs">sim.simulate_admixture_impure_refs</a></td>
 <td>Simulate admixed queries, a pure reference anchor core, and impure reference panels.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="../api/sim.admixture_demography_impure_refs.html#tspaint.sim.admixture_demography_impure_refs">sim.admixture_demography_impure_refs</a></td>
 <td>Admixture demography whose <strong>reference panels are themselves slightly admixed</strong>.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="../api/sim.simulate_admixture_source_gene_flow.html#tspaint.sim.simulate_admixture_source_gene_flow">sim.simulate_admixture_source_gene_flow</a></td>
 <td>Admixed queries + A/B references where the <code>SOURCE_A</code> panel carries real <code>SOURCE_B</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="../api/sim.admixture_demography_source_gene_flow.html#tspaint.sim.admixture_demography_source_gene_flow">sim.admixture_demography_source_gene_flow</a></td>
 <td>Two-source admixture where the <strong>sources themselves exchanged genes via a prior pulse</strong>.</td>
 </tr>
+<tr class="odd">
+<td><a href="../api/sim.simulate_admixture_with_ref_proxies.html#tspaint.sim.simulate_admixture_with_ref_proxies">sim.simulate_admixture_with_ref_proxies</a></td>
+<td>Admixed queries plus, for each source, a deeply-divergent <strong>proxy</strong> reference and the <strong>true</strong></td>
+</tr>
 <tr class="even">
+<td><a href="../api/sim.admixture_demography_with_ref_proxies.html#tspaint.sim.admixture_demography_with_ref_proxies">sim.admixture_demography_with_ref_proxies</a></td>
+<td>Two-source admixture with a deeply-divergent sister (<strong>proxy</strong>) of each source as a reference.</td>
+</tr>
+<tr class="odd">
 <td><a href="../api/sim.simulate_admixture_with_ghost.html#tspaint.sim.simulate_admixture_with_ghost">sim.simulate_admixture_with_ghost</a></td>
 <td>Simulate admixed queries + A/B reference panels, with an <strong>unsampled ghost source</strong>.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="../api/sim.admixture_demography_with_ghost.html#tspaint.sim.admixture_demography_with_ghost">sim.admixture_demography_with_ghost</a></td>
 <td>Two-source admixture with a third <strong>unsampled (“ghost”) source</strong> <code>C</code>.</td>
 </tr>

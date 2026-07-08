@@ -567,14 +567,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io.write_vcz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.write_vcz</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io.check_persistence.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io.check_persistence</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">io_genotypes.source_kind</span></a>
+  <a href="../api/io.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.source_kind</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -750,6 +756,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.Simulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.Simulation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/local_ancestry_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">local_ancestry_truth</span></a>
   </div>
@@ -782,6 +794,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_with_ref_proxies</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_with_ref_proxies</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -1099,9 +1123,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span><span class="fl">1e-08</span>,</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    ploidy<span class="op">=</span><span class="dv">2</span>,</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    random_seed<span class="op">=</span><span class="dv">42</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    ref_impurity<span class="op">=</span><span class="fl">0.1</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">**</span>demography_kwargs,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    mutation_rate<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    ref_impurity<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">**</span>demography_kwargs,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Simulate admixed queries, a pure reference anchor core, and impure reference panels.</p>
 <p>Samples <code>n_admix</code> admixed individuals (queries), <code>n_pure</code> from each pure source (A, B — the trusted hard-clamp anchor core, CLAUDE.md §6) and <code>n_impure</code> from each impure reference panel (<code>REF_A_IMPURE</code>, <code>REF_B_IMPURE</code> — nominally A / B but carrying a <code>ref_impurity</code> minority of foreign tracts). The census truth covers every sample, so the impure references’ own foreign tracts are known ground truth.</p>
 <section id="parameters" class="level2 doc-section doc-section-parameters">

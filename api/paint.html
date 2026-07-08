@@ -567,14 +567,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io.write_vcz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.write_vcz</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io.check_persistence.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io.check_persistence</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">io_genotypes.source_kind</span></a>
+  <a href="../api/io.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.source_kind</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -750,6 +756,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.Simulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.Simulation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/local_ancestry_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">local_ancestry_truth</span></a>
   </div>
@@ -782,6 +794,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_with_ref_proxies</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_with_ref_proxies</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -1228,10 +1252,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="examples" class="level2 doc-section doc-section-examples">
 <h2 class="doc-section doc-section-examples anchored" data-anchor-id="examples">Examples</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> tspaint</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ts <span class="op">=</span> tspaint.simulate_admixture(n_admix<span class="op">=</span><span class="dv">10</span>, n_ref<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> labels <span class="op">=</span> {<span class="dv">0</span>: <span class="dv">0</span>, <span class="dv">1</span>: <span class="dv">0</span>, <span class="dv">2</span>: <span class="dv">1</span>, <span class="dv">3</span>: <span class="dv">1</span>}   <span class="co"># reference sample-node -&gt; ancestry state</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> painting <span class="op">=</span> tspaint.paint(ts, labels)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> painting.segments(deadband<span class="op">=</span><span class="fl">0.4</span>)      <span class="co"># hard ancestry tracts for dating</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> sim <span class="op">=</span> tspaint.simulate_admixture(tspaint.sim.admixture_demography(), n_query<span class="op">=</span><span class="dv">10</span>, n_reference<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> painting <span class="op">=</span> tspaint.paint(sim.ts, sim.labels, queries<span class="op">=</span>sim.queries)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> painting.segments(deadband<span class="op">=</span><span class="fl">0.4</span>)      <span class="co"># hard ancestry tracts for dating</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Label references by <strong>sample-ID string</strong> — no need to know the node order — when the tree sequence came from a front end (:func:<code>tspaint.io.singer</code> / :func:<code>tspaint.io.tsinfer</code> stamp the source’s ids); a diploid base id labels both its haplotypes:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ts <span class="op">=</span> tspaint.io.singer(vcf, _Ne<span class="op">=</span><span class="fl">1e4</span>, _m<span class="op">=</span><span class="fl">1e-8</span>, _r<span class="op">=</span><span class="fl">1e-8</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> painting <span class="op">=</span> tspaint.paint(ts, {<span class="st">"NA12878"</span>: <span class="dv">0</span>, <span class="st">"NA12889"</span>: <span class="dv">1</span>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>

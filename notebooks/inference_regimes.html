@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Inference regimes – tspaint</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-bba5ebae505b5c03f3f0d8040a416a6b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../api/_styles-quartodoc.css">
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">tspaint</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/overview.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../pages/results.html"> 
+<span class="menu-text">Results</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../api/"> 
+<span class="menu-text">API reference</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/munch-group/tspaint/"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#clean-references-no-ils" id="toc-clean-references-no-ils" class="nav-link active" data-scroll-target="#clean-references-no-ils">Clean references, no ILS</a></li>
+  <li><a href="#ils" id="toc-ils" class="nav-link" data-scroll-target="#ils">ILS</a></li>
+  <li><a href="#impure-references" id="toc-impure-references" class="nav-link" data-scroll-target="#impure-references">Impure references</a>
+  <ul class="collapse">
+  <li><a href="#references-with-independent-admixture" id="toc-references-with-independent-admixture" class="nav-link" data-scroll-target="#references-with-independent-admixture">References with independent admixture</a></li>
+  <li><a href="#references-with-past-admixture-from-same-population" id="toc-references-with-past-admixture-from-same-population" class="nav-link" data-scroll-target="#references-with-past-admixture-from-same-population">References with past admixture from same population</a></li>
+  </ul></li>
+  <li><a href="#reference-proxies" id="toc-reference-proxies" class="nav-link" data-scroll-target="#reference-proxies">Reference proxies</a></li>
+  <li><a href="#mixing-proxies-and-impure-references" id="toc-mixing-proxies-and-impure-references" class="nav-link" data-scroll-target="#mixing-proxies-and-impure-references">Mixing proxies and impure references</a></li>
+  <li><a href="#proxy-clean-anchor-core-impure-near-source-softened-or-masked" id="toc-proxy-clean-anchor-core-impure-near-source-softened-or-masked" class="nav-link" data-scroll-target="#proxy-clean-anchor-core-impure-near-source-softened-or-masked">proxy = clean anchor core; impure near-source softened (or masked)</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Inference regimes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div id="2933ff91" class="cell" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tspaint</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> msprime, demesdraw</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> vscodenb <span class="im">import</span> set_vscode_theme, vscode_theme</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>set_vscode_theme(style<span class="op">=</span><span class="st">'ticks'</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tspaint.sim <span class="im">import</span> SOURCE_A, ADMIXED, ANCESTRAL, SOURCE_B, REF_A_PROXY, REF_B_PROXY, A_ANCESTRAL, B_ANCESTRAL</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>WORK <span class="op">=</span> tempfile.mkdtemp(prefix<span class="op">=</span><span class="st">"tspaint_showcase_"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pops(ts):</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''sample-node -&gt; source name, and a {name: pop_id} lookup.'''</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    npop <span class="op">=</span> ts.tables.nodes.population</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> {p: ts.population(p).metadata.get(<span class="st">"name"</span>, <span class="bu">str</span>(p)) <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">range</span>(ts.num_populations)}</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    pid <span class="op">=</span> {n: p <span class="cf">for</span> p, n <span class="kw">in</span> name.items()}</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    samples_of <span class="op">=</span> <span class="kw">lambda</span> nm: [<span class="bu">int</span>(s) <span class="cf">for</span> s <span class="kw">in</span> ts.samples() <span class="cf">if</span> npop[s] <span class="op">==</span> pid[nm]]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> name, pid, samples_of</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> write_vcz(ts, path):</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">'''Write a minimal VCF-Zarr (vcz) store from a mutated ts (stand-in for vcf2zarr output).'''</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> zarr</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    G <span class="op">=</span> ts.genotype_matrix()                       <span class="co"># (sites, samples), biallelic 0/1</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    V, N <span class="op">=</span> G.shape</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    root <span class="op">=</span> zarr.<span class="bu">open</span>(path, mode<span class="op">=</span><span class="st">"w"</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> arr(nm, data, dims):</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        root[nm] <span class="op">=</span> data</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        root[nm].attrs[<span class="st">"_ARRAY_DIMENSIONS"</span>] <span class="op">=</span> dims</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_position"</span>, np.asarray(ts.tables.sites.position).astype(<span class="st">"i8"</span>), [<span class="st">"variants"</span>])</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"call_genotype"</span>, G[:, :, <span class="va">None</span>].astype(<span class="st">"i1"</span>), [<span class="st">"variants"</span>, <span class="st">"samples"</span>, <span class="st">"ploidy"</span>])</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_allele"</span>, np.array([[<span class="st">"0"</span>, <span class="st">"1"</span>]] <span class="op">*</span> V), [<span class="st">"variants"</span>, <span class="st">"alleles"</span>])</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_contig"</span>, np.zeros(V, <span class="st">"i4"</span>), [<span class="st">"variants"</span>])</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"contig_id"</span>, np.array([<span class="st">"1"</span>]), [<span class="st">"contigs"</span>])</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"sample_id"</span>, np.array([<span class="ss">f"n</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N)]), [<span class="st">"samples"</span>])</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    arr(<span class="st">"variant_ancestral_allele"</span>, np.array([<span class="st">"0"</span>] <span class="op">*</span> V), [<span class="st">"variants"</span>])</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> path</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>tubes_kwargs<span class="op">=</span><span class="bu">dict</span>(</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    colours<span class="op">=</span><span class="bu">dict</span>(<span class="bu">zip</span>([SOURCE_A, ADMIXED, ANCESTRAL, SOURCE_B], <span class="bu">list</span>(sns.color_palette().as_hex()))),</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    log_time<span class="op">=</span><span class="va">True</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>sequence_length <span class="op">=</span> <span class="fl">2e6</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>ploidy <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>recombination_rate <span class="op">=</span> <span class="fl">1e-8</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>mutation_rate <span class="op">=</span> <span class="fl">1.2e-8</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>random_seed <span class="op">=</span> <span class="dv">42</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+       .jp-OutputArea-output {
+           background-color: transparent;
+        }  
+        /*
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }  
+        */
+        /* tqdm styling: */
+        .widget-label,
+        .widget-html,
+        .widget-button,
+        .widget-dropdown,
+        .widget-text,
+        .widget-textarea {
+            font-size: 10px !important;      /* Font size */
+        }
+        div.widget-html-content > progress { /* Outer container */
+            height: 10px !important;
+        
+        }
+        div.jp-OutputArea-output td.output_html { /* tqdm HTML output area */
+            height: 5px !important;
+        }
+        div.progress { /* Jupyter Notebook (classic) */
+            height: 5px !important;
+            min-height: 5px !important;
+            margin-top: 12px !important;    
+        }
+        div.progress-bar { /* inner bar */
+            height: 5px !important;
+            min-height: 5px !important;
+            line-height: 5px !important;
+            color: 'white' !important;
+            padding-bottom: 0px !important;    
+        }
+        table {
+            font-variant-numeric: tabular-nums; 
+        }                     
+        </style>                          
+        
+</div>
+</div>
+<div id="47732426" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>n_admix <span class="op">=</span> <span class="dv">8</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>n_ref <span class="op">=</span> <span class="dv">8</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>Ne <span class="op">=</span> <span class="dv">10_000</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>T_split <span class="op">=</span> <span class="dv">150_000</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>T_split_A <span class="op">=</span> <span class="dv">50_000</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>T_split_B <span class="op">=</span> <span class="dv">30_000</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>T_admix <span class="op">=</span> <span class="dv">500</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>f_A <span class="op">=</span> <span class="fl">0.5</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>demography <span class="op">=</span> tspaint.sim.admixture_demography()</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>ts_true <span class="op">=</span> io.add_mutations(ts_true, rate<span class="op">=</span>mutation_rate, random_seed<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>name, pid, samples_of <span class="op">=</span> pops(ts_true)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>queries <span class="op">=</span> samples_of(<span class="st">"ADMIX"</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># PROXY references: A_prox anchors state 0 (like A), B_prox state 1 (like B)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>labels_proxy  <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(SOURCE_A <span class="op">+</span> <span class="st">'_prox'</span>)}</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>labels_proxy.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(SOURCE_B <span class="op">+</span> <span class="st">'_prox'</span>)})</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># DIRECT references (the usual head-to-head baseline)</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>labels_direct  <span class="op">=</span> {s: <span class="dv">0</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(SOURCE_A)}</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>labels_direct.update({s: <span class="dv">1</span> <span class="cf">for</span> s <span class="kw">in</span> samples_of(SOURCE_B)})</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>ts_true<span class="sc">.</span>num_samples<span class="sc">}</span><span class="ss"> haplotypes, </span><span class="sc">{</span>ts_true<span class="sc">.</span>num_sites<span class="sc">}</span><span class="ss"> sites; "</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"</span><span class="sc">{</span><span class="bu">len</span>(queries)<span class="sc">}</span><span class="ss"> query haplotypes, </span><span class="sc">{</span><span class="bu">len</span>(labels_proxy)<span class="sc">}</span><span class="ss"> labelled references (A=0, B=1)"</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>demesdraw.tubes(msprime.Demography.to_demes(demography), <span class="op">**</span>tubes_kwargs) <span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-error">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyError</span>                                  Traceback (most recent call last)
+<span class="ansi-cyan-fg">Cell</span><span class="ansi-cyan-fg"> </span><span class="ansi-green-fg">In[13]</span><span class="ansi-green-fg">, line 14</span>
+<span class="ansi-green-fg">     10</span> 
+<span class="ansi-green-fg">     11</span> 
+<span class="ansi-green-fg">     12</span> demography = tspaint.sim.admixture_demography()
+<span class="ansi-green-fg">     13</span> 
+<span class="ansi-green-fg">---&gt; </span><span class="ansi-green-fg">14</span> ts_true = msprime.sim_ancestry(
+<span class="ansi-green-fg">     15</span>     samples={ADMIXED: n_admix,
+<span class="ansi-green-fg">     16</span>             SOURCE_A + <span class="ansi-yellow-fg">'_prox'</span>: n_ref, SOURCE_B + <span class="ansi-yellow-fg">'_prox'</span>: n_ref,   <span style="font-style:italic;color:rgb(95,135,135)"># proxy references (C, D)</span>
+<span class="ansi-green-fg">     17</span>             SOURCE_A: n_ref,           SOURCE_B: n_ref},            <span style="font-style:italic;color:rgb(95,135,135)"># true sources — for the direct baseline</span>
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/msprime/ancestry.py:1297</span>, in <span class="ansi-cyan-fg">sim_ancestry</span><span class="ansi-blue-fg">(samples, demography, sequence_length, discrete_genome, recombination_rate, gene_conversion_rate, gene_conversion_tract_length, population_size, ploidy, model, initial_state, start_time, end_time, record_migrations, record_full_arg, additional_nodes, coalescing_segments_only, num_labels, random_seed, num_replicates, replicate_index, record_provenance, stop_at_local_mrca)</span>
+<span class="ansi-green-fg">   1271</span>     parameters = <span style="color:rgb(0,135,0)">dict</span>(
+<span class="ansi-green-fg">   1272</span>         command=<span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">sim_ancestry</span><span class="ansi-yellow-fg">"</span>,
+<span class="ansi-green-fg">   1273</span>         samples=samples,
+<span class="ansi-green-fg">   (...)</span><span class="ansi-green-fg">   1294</span>         <span style="font-style:italic;color:rgb(95,135,135)"># replicate index is excluded as it is inserted for each replicate</span>
+<span class="ansi-green-fg">   1295</span>     )
+<span class="ansi-green-fg">   1296</span>     provenance_dict = provenance.get_provenance_dict(parameters)
+<span class="ansi-green-fg">-&gt; </span><span class="ansi-green-fg">1297</span> sim = <span class="ansi-black-fg ansi-yellow-bg">_parse_sim_ancestry</span><span class="ansi-black-fg ansi-yellow-bg">(</span>
+<span class="ansi-green-fg">   1298</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">samples</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">samples</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1299</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">sequence_length</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">sequence_length</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1300</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">recombination_rate</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">recombination_rate</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1301</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">gene_conversion_rate</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">gene_conversion_rate</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1302</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">gene_conversion_tract_length</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">gene_conversion_tract_length</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1303</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">discrete_genome</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">discrete_genome</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1304</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">population_size</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">population_size</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1305</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">demography</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">demography</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1306</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">ploidy</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">ploidy</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1307</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">model</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">model</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1308</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">initial_state</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">initial_state</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1309</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">start_time</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">start_time</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1310</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">end_time</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">end_time</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1311</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">record_migrations</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">record_migrations</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1312</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">record_full_arg</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">record_full_arg</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1313</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">additional_nodes</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">additional_nodes</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1314</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">coalescing_segments_only</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">coalescing_segments_only</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1315</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">num_labels</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">num_labels</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1316</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">random_seed</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">random_seed</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1317</span> <span class="ansi-black-fg ansi-yellow-bg">    </span><span class="ansi-black-fg ansi-yellow-bg">stop_at_local_mrca</span><span class="ansi-black-fg ansi-yellow-bg">=</span><span class="ansi-black-fg ansi-yellow-bg">stop_at_local_mrca</span><span class="ansi-black-fg ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   1318</span> <span class="ansi-black-fg ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   1319</span> <span style="font-weight:bold;color:rgb(0,135,0)">return</span> _wrap_replicates(
+<span class="ansi-green-fg">   1320</span>     sim,
+<span class="ansi-green-fg">   1321</span>     num_replicates=num_replicates,
+<span class="ansi-green-fg">   1322</span>     replicate_index=replicate_index,
+<span class="ansi-green-fg">   1323</span>     provenance_dict=provenance_dict,
+<span class="ansi-green-fg">   1324</span> )
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/msprime/ancestry.py:1041</span>, in <span class="ansi-cyan-fg">_parse_sim_ancestry</span><span class="ansi-blue-fg">(samples, sequence_length, recombination_rate, gene_conversion_rate, gene_conversion_tract_length, discrete_genome, population_size, demography, ploidy, model, initial_state, start_time, end_time, record_migrations, record_full_arg, additional_nodes, coalescing_segments_only, num_labels, random_seed, stop_at_local_mrca, init_for_debugger)</span>
+<span class="ansi-green-fg">   1039</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> <span style="font-weight:bold;color:rgb(175,0,255)">not</span> init_for_debugger:
+<span class="ansi-green-fg">   1040</span>         sample_sets = _parse_samples(samples, demography)
+<span class="ansi-green-fg">-&gt; </span><span class="ansi-green-fg">1041</span>         <span class="ansi-black-fg ansi-yellow-bg">_insert_sample_sets</span><span class="ansi-black-fg ansi-yellow-bg">(</span><span class="ansi-black-fg ansi-yellow-bg">sample_sets</span><span class="ansi-black-fg ansi-yellow-bg">,</span><span class="ansi-black-fg ansi-yellow-bg"> </span><span class="ansi-black-fg ansi-yellow-bg">demography</span><span class="ansi-black-fg ansi-yellow-bg">,</span><span class="ansi-black-fg ansi-yellow-bg"> </span><span class="ansi-black-fg ansi-yellow-bg">ploidy</span><span class="ansi-black-fg ansi-yellow-bg">,</span><span class="ansi-black-fg ansi-yellow-bg"> </span><span class="ansi-black-fg ansi-yellow-bg">initial_state</span><span class="ansi-black-fg ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   1042</span> <span style="font-weight:bold;color:rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg">   1043</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> samples <span style="font-weight:bold;color:rgb(175,0,255)">is</span> <span style="font-weight:bold;color:rgb(175,0,255)">not</span> <span style="font-weight:bold;color:rgb(0,135,0)">None</span>:
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/msprime/ancestry.py:709</span>, in <span class="ansi-cyan-fg">_insert_sample_sets</span><span class="ansi-blue-fg">(sample_sets, demography, default_ploidy, tables)</span>
+<span class="ansi-green-fg">    707</span> <span style="font-weight:bold;color:rgb(0,135,0)">for</span> sample_set <span style="font-weight:bold;color:rgb(175,0,255)">in</span> sample_sets:
+<span class="ansi-green-fg">    708</span>     n = sample_set.num_samples
+<span class="ansi-green-fg">--&gt; </span><span class="ansi-green-fg">709</span>     population = <span class="ansi-black-fg ansi-yellow-bg">demography</span><span class="ansi-black-fg ansi-yellow-bg">[</span><span class="ansi-black-fg ansi-yellow-bg">sample_set</span><span class="ansi-black-fg ansi-yellow-bg">.</span><span class="ansi-black-fg ansi-yellow-bg">population</span><span class="ansi-black-fg ansi-yellow-bg">]</span>
+<span class="ansi-green-fg">    710</span>     time = (
+<span class="ansi-green-fg">    711</span>         population.default_sampling_time
+<span class="ansi-green-fg">    712</span>         <span style="font-weight:bold;color:rgb(0,135,0)">if</span> sample_set.time <span style="font-weight:bold;color:rgb(175,0,255)">is</span> <span style="font-weight:bold;color:rgb(0,135,0)">None</span>
+<span class="ansi-green-fg">    713</span>         <span style="font-weight:bold;color:rgb(0,135,0)">else</span> sample_set.time
+<span class="ansi-green-fg">    714</span>     )
+<span class="ansi-green-fg">    715</span>     ploidy = default_ploidy <span style="font-weight:bold;color:rgb(0,135,0)">if</span> sample_set.ploidy <span style="font-weight:bold;color:rgb(175,0,255)">is</span> <span style="font-weight:bold;color:rgb(0,135,0)">None</span> <span style="font-weight:bold;color:rgb(0,135,0)">else</span> sample_set.ploidy
+
+<span class="ansi-cyan-fg">File </span><span class="ansi-green-fg">~/tspaint/.pixi/envs/default/lib/python3.13/site-packages/msprime/demography.py:970</span>, in <span class="ansi-cyan-fg">Demography.__getitem__</span><span class="ansi-blue-fg">(self, identifier)</span>
+<span class="ansi-green-fg">    968</span>             <span style="font-weight:bold;color:rgb(0,135,0)">return</span> population
+<span class="ansi-green-fg">    969</span>     <span style="font-weight:bold;color:rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg">--&gt; </span><span class="ansi-green-fg">970</span>         <span style="font-weight:bold;color:rgb(0,135,0)">raise</span> <span style="font-weight:bold;color:rgb(215,95,95)">KeyError</span>(<span class="ansi-yellow-fg">f</span><span class="ansi-yellow-fg">"</span><span class="ansi-yellow-fg">Population with name </span><span class="ansi-yellow-fg">'</span><span style="font-weight:bold;color:rgb(175,95,135)">{</span>identifier<span style="font-weight:bold;color:rgb(175,95,135)">}</span><span class="ansi-yellow-fg">'</span><span class="ansi-yellow-fg"> not found</span><span class="ansi-yellow-fg">"</span>)
+<span class="ansi-green-fg">    971</span> <span style="font-weight:bold;color:rgb(0,135,0)">elif</span> <span style="color:rgb(0,135,0)">isinstance</span>(identifier, numbers.Integral):
+<span class="ansi-green-fg">    972</span>     <span style="font-style:italic;color:rgb(95,135,135)"># We don't support negative indexing here because -1 is used as</span>
+<span class="ansi-green-fg">    973</span>     <span style="font-style:italic;color:rgb(95,135,135)"># way to refer to *all* populations in demographic events, and</span>
+<span class="ansi-green-fg">    974</span>     <span style="font-style:italic;color:rgb(95,135,135)"># it would be too easy to introduce bugs in old code if we changed</span>
+<span class="ansi-green-fg">    975</span>     <span style="font-style:italic;color:rgb(95,135,135)"># the meaning of this.</span>
+<span class="ansi-green-fg">    976</span>     <span style="font-weight:bold;color:rgb(0,135,0)">if</span> identifier &lt; <span class="ansi-green-fg">0</span> <span style="font-weight:bold;color:rgb(175,0,255)">or</span> identifier &gt;= <span style="color:rgb(0,135,0)">self</span>.num_populations:
+
+<span class="ansi-red-fg">KeyError</span>: "Population with name 'A_prox' not found"</pre>
+</div>
+</div>
+</div>
+<div id="f3b17739" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>demography <span class="op">=</span> tspaint.sim.admixture_demography_impure_refs()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>demesdraw.tubes(msprime.Demography.to_demes(demography), <span class="op">**</span>tubes_kwargs) <span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="inference_regimes_files/figure-html/cell-4-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="inference_regimes_files/figure-html/cell-4-output-1.svg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="0bf8b51a" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>demography <span class="op">=</span> tspaint.sim.admixture_demography_source_gene_flow()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>demesdraw.tubes(msprime.Demography.to_demes(demography), <span class="op">**</span>tubes_kwargs) <span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="inference_regimes_files/figure-html/cell-5-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="inference_regimes_files/figure-html/cell-5-output-1.svg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="a5a3371e" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>demography <span class="op">=</span> tspaint.sim.admixture_demography_with_ghost()</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>demesdraw.tubes(msprime.Demography.to_demes(demography), <span class="op">**</span>tubes_kwargs) <span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="inference_regimes_files/figure-html/cell-6-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="inference_regimes_files/figure-html/cell-6-output-1.svg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="0aaa716c" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>demography <span class="op">=</span> tspaint.sim.admixture_demography_with_ref_proxies()</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>demesdraw.tubes(msprime.Demography.to_demes(demography), <span class="op">**</span>tubes_kwargs) <span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><a href="inference_regimes_files/figure-html/cell-7-output-1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4"><img src="inference_regimes_files/figure-html/cell-7-output-1.svg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="clean-references-no-ils" class="level2">
+<h2 class="anchored" data-anchor-id="clean-references-no-ils">Clean references, no ILS</h2>
+</section>
+<section id="ils" class="level2">
+<h2 class="anchored" data-anchor-id="ils">ILS</h2>
+</section>
+<section id="impure-references" class="level2">
+<h2 class="anchored" data-anchor-id="impure-references">Impure references</h2>
+<section id="references-with-independent-admixture" class="level3">
+<h3 class="anchored" data-anchor-id="references-with-independent-admixture">References with independent admixture</h3>
+</section>
+<section id="references-with-past-admixture-from-same-population" class="level3">
+<h3 class="anchored" data-anchor-id="references-with-past-admixture-from-same-population">References with past admixture from same population</h3>
+</section>
+</section>
+<section id="reference-proxies" class="level2">
+<h2 class="anchored" data-anchor-id="reference-proxies">Reference proxies</h2>
+</section>
+<section id="mixing-proxies-and-impure-references" class="level2">
+<h2 class="anchored" data-anchor-id="mixing-proxies-and-impure-references">Mixing proxies and impure references</h2>
+<p>The two reference types are complementary:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: left;">clean deep proxy (A_prox)</th>
+<th style="text-align: left;">impure near-source (A)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">coalescence with the</td>
+<td style="text-align: left;">deep (~T_CA) → weaker</td>
+<td style="text-align: left;">shallow → strong signal</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">query’s A-tract</td>
+<td style="text-align: left;">per-locus signal</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">contamination</td>
+<td style="text-align: left;">clean by construction</td>
+<td style="text-align: left;">carries foreign (B) tracts → wrong votes</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">role</td>
+<td style="text-align: left;">contamination-immune anchor</td>
+<td style="text-align: left;">high-resolution, but noisy</td>
+</tr>
+</tbody>
+</table>
+<p>Why combining them beats either alone</p>
+<p>Label both state 0 (they jointly define the “A-side”). Then: - Where the near-source is clean, the query coalesces shallowly with it → strong, correct signal, and the proxy just reinforces. - Where the near-source is contaminated (a B-tract in the A panel), it would vote “B” there — but the clean proxy has no B-tract at that locus, so it backstops the A-side. The proxy rescues exactly the loci where the near-source is wrong. - Identifiability (§6). The proxy is the ideal trusted hard-anchor core — clean by construction, a genuinely separate population. And that’s what makes it safe to soften or fragment-mask the impure near-source: softening alone risks the “whole panel floats” degeneracy, but with the proxy holding the A-side fixed, you can aggressively down-weight/mask the contaminated near-source without collapse.</p>
+<p>So it’s the §6 design — hard-clamped trusted core + softened suspects — with the proxy supplying a core you can actually trust.</p>
+<p>It fixes the exact regime that failed</p>
+<p>Recall the measured source-gene-flow result: all A-refs ~10 % B, no pure A core → soft-w and fragment-mask gave nothing or slightly worse, and the diagnosis was precisely “no clean anchor to fall back on.” A deep proxy is that missing clean anchor. So proxy + softened-impure-near-source should help right where impure-alone failed — that’s the concrete, testable prediction.</p>
+<p>There’s likely a second-order bonus too: the deep proxy discriminates at the deep level, which (per the earlier §9 discussion) tends to survive older admixture better than the shallow query↔︎near-source link. So the pair gives you strong resolution recently (near-source) and a deep backstop that reaches further back (proxy).</p>
+<p>The recipe (already supported — no new code)</p>
+<p>labels = {s: 0 for s in samples_of(“A_prox”) + samples_of(“A”)} labels.update({s: 1 for s in samples_of(“B_prox”) + samples_of(“B”)})</p>
+</section>
+<section id="proxy-clean-anchor-core-impure-near-source-softened-or-masked" class="level1">
+<h1>proxy = clean anchor core; impure near-source softened (or masked)</h1>
+<p>qc = tspaint.reference_qc(ts, labels, anchors=set(samples_of(“A_prox”) + samples_of(“B_prox”))) painting = tspaint.paint(ts, labels, queries=queries, soft_refs=qc.soft_refs()) # or mask=qc.mask() reference_qc would auto-select the proxy as the anchor anyway (it’s the most self-consistent), but passing anchors= the proxies is the robust, explicit choice.</p>
+<p>Caveats</p>
+<ul>
+<li>Don’t just hard-clamp the impure near-source alongside the proxy — its contamination still votes wrong (the proxy only dilutes it). The benefit needs the near-source softened/masked, with the proxy as the anchor that makes that safe.</li>
+<li>The proxy must be a good proxy (close sister, long internal branch). A poor proxy (T_CA ≈ T_root) adds little and can dilute.</li>
+<li>Mixing shallow + deep references on one side is fine for the model — both are state 0, so intra-A-side coalescences carry no A↔︎B transition; the adaptive Q0 handles the timescale.</li>
+</ul>
+<p>This is worth measuring directly, and it’s a small extension of what you’re already building: take the source-gene-flow sim (impure A/B, the case that failed), add A_prox/B_prox, and compare proxy-only vs impure-only(soft/mask) vs proxy + impure(soft/mask). My prediction is the combination wins — proxy restores the anchor, near-source restores the resolution. Want me to wire that arm into the impure-reference experiment?</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/munch-group\.github\.io\/tspaint\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>

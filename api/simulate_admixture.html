@@ -68,7 +68,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<link href="../api/local_ancestry_truth.html" rel="next">
+<link href="../api/sim.Simulation.html" rel="next">
 <link href="../api/dating.cell_centers.html" rel="prev">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -567,14 +567,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/io.write_vcz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.write_vcz</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/io.check_persistence.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">io.check_persistence</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../api/io_genotypes.source_kind.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">io_genotypes.source_kind</span></a>
+  <a href="../api/io.source_kind.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">io.source_kind</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -750,6 +756,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../api/sim.Simulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.Simulation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../api/local_ancestry_truth.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">local_ancestry_truth</span></a>
   </div>
@@ -782,6 +794,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../api/sim.admixture_demography_source_gene_flow.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">sim.admixture_demography_source_gene_flow</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.simulate_admixture_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.simulate_admixture_with_ref_proxies</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../api/sim.admixture_demography_with_ref_proxies.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">sim.admixture_demography_with_ref_proxies</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -1078,7 +1102,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters">Parameters</a></li>
   <li><a href="#returns" id="toc-returns" class="nav-link" data-scroll-target="#returns">Returns</a></li>
-  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">See Also</a></li>
   <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
   </ul></li>
   </ul>
@@ -1093,66 +1116,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="tspaint.simulate_admixture" class="level1">
 <h1>simulate_admixture</h1>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tspaint.simulate_admixture(</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    n_admix<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    n_ref<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    sequence_length<span class="op">=</span><span class="fl">1000000.0</span>,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span><span class="fl">1e-08</span>,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    ploidy<span class="op">=</span><span class="dv">2</span>,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    random_seed<span class="op">=</span><span class="dv">42</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">**</span>demography_kwargs,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Simulate an admixed sample plus two reference panels.</p>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    demography,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    n_query<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    n_reference<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    samples<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    sequence_length<span class="op">=</span><span class="fl">1000000.0</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    recombination_rate<span class="op">=</span><span class="fl">1e-08</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    ploidy<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    mutation_rate<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    random_seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Simulate an admixture from a <strong>role-tagged demography</strong>, returning a :class:<code>Simulation</code>.</p>
+<p>Pass a demography from :func:<code>admixture_demography</code> (or any <code>admixture_demography_*</code> variant): its populations carry role metadata (query / source / reference + ancestry state), so this samples the query and reference panels, runs the coalescent, optionally lays down mutations, and packages the queries, reference <code>labels</code> and the census <code>truth</code> — the caller never touches a population-name constant.</p>
 <section id="parameters" class="level2 doc-section doc-section-parameters">
 <h2 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h2>
 <dl>
-<dt><code><span class="parameter-name"><strong>n_admix</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">10</span></code></dt>
+<dt><code><span class="parameter-name"><strong>demography</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>msprime</code>.<code>Demography</code></span></code></dt>
 <dd>
-<p>Number of admixed individuals (query haplotypes).</p>
+<p>A role-tagged demography (see :func:<code>admixture_demography</code>).</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>n_ref</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">10</span></code></dt>
+<dt><code><span class="parameter-name"><strong>n_query</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">10</span></code></dt>
 <dd>
-<p>Number of individuals sampled from each reference source (A and B).</p>
+<p>Number of query (admixed) individuals to sample.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>sequence_length</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1000000.0</span></code></dt>
+<dt><code><span class="parameter-name"><strong>n_reference</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">10</span></code></dt>
 <dd>
-<p>Length of the simulated sequence in base pairs.</p>
+<p>Number of individuals sampled from <strong>each</strong> reference / source population.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>recombination_rate</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1e-08</span></code></dt>
+<dt><code><span class="parameter-name"><strong>samples</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a href="https://docs.python.org/3/library/functions.html#int">int</a>]</span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
 <dd>
-<p>Per-base, per-generation recombination rate.</p>
+<p>Explicit <code>{population_name: n_individuals}</code> sampling, overriding <code>n_query</code> / <code>n_reference</code> — used by the variant wrappers to sample e.g.&nbsp;unequal pure / impure panels.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>ploidy</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">2</span></code></dt>
+<dt><code><span class="parameter-name"><strong>sequence_length</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>optional</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1000000.0</span></code></dt>
 <dd>
-<p>Ploidy; each individual yields <code>ploidy</code> sample haplotypes.</p>
+<p>Passed to :func:<code>msprime.sim_ancestry</code>.</p>
 </dd>
-<dt><code><span class="parameter-name"><strong>random_seed</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">42</span></code></dt>
+<dt><code><span class="parameter-name"><strong>recombination_rate</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>optional</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1000000.0</span></code></dt>
 <dd>
-<p>Seed for :func:<code>msprime.sim_ancestry</code>.</p>
+<p>Passed to :func:<code>msprime.sim_ancestry</code>.</p>
 </dd>
-<dt><code><span class="parameter-name">****demography_kwargs**</span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">{}</span></code></dt>
+<dt><code><span class="parameter-name"><strong>ploidy</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>optional</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1000000.0</span></code></dt>
 <dd>
-<p>Passed to :func:<code>admixture_demography</code> (e.g.&nbsp;<code>T_admix</code>, <code>T_split</code>, <code>f_A</code>, <code>Ne</code>).</p>
+<p>Passed to :func:<code>msprime.sim_ancestry</code>.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>random_seed</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>optional</code></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">1000000.0</span></code></dt>
+<dd>
+<p>Passed to :func:<code>msprime.sim_ancestry</code>.</p>
+</dd>
+<dt><code><span class="parameter-name"><strong>mutation_rate</strong></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="parameter-default-sep">=</span> <span class="parameter-default">None</span></code></dt>
+<dd>
+<p>If given, lay down mutations at this per-base rate (:func:<code>tspaint.io.add_mutations</code>); the returned <code>ts</code> then carries sites. <code>None</code> (default) leaves the bare ancestry.</p>
 </dd>
 </dl>
 </section>
 <section id="returns" class="level2 doc-section doc-section-returns">
 <h2 class="doc-section doc-section-returns anchored" data-anchor-id="returns">Returns</h2>
 <dl>
-<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><code>tskit</code>.<code>TreeSequence</code></span></code></dt>
+<dt><code><span class="parameter-name"></span> <span class="parameter-annotation-sep">:</span> <span class="parameter-annotation"><a href="../api/sim.Simulation.html#tspaint.sim.Simulation">Simulation</a></span></code></dt>
 <dd>
-<p>Tree sequence whose sample nodes are haplotypes; the first <code>ploidy * n_admix</code> belong to the admixed population (queries), the rest to the two reference sources.</p>
+<p><code>.ts</code> (mutated iff <code>mutation_rate</code> given), <code>.queries</code>, <code>.labels</code>, <code>.truth_states</code> and <code>.sample_sets</code>.</p>
 </dd>
 </dl>
 </section>
-<section id="see-also" class="level2 doc-section doc-section-see-also">
-<h2 class="doc-section doc-section-see-also anchored" data-anchor-id="see-also">See Also</h2>
-<p>local_ancestry_truth : Recover the ground-truth ancestry tracts.</p>
-</section>
 <section id="examples" class="level2 doc-section doc-section-examples">
 <h2 class="doc-section doc-section-examples anchored" data-anchor-id="examples">Examples</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ts <span class="op">=</span> simulate_admixture(n_admix<span class="op">=</span><span class="dv">5</span>, n_ref<span class="op">=</span><span class="dv">5</span>, sequence_length<span class="op">=</span><span class="fl">1e5</span>,</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>...                         random_seed<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ts.num_samples</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> sim <span class="op">=</span> simulate_admixture(admixture_demography(), n_query<span class="op">=</span><span class="dv">5</span>, n_reference<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>...                          sequence_length<span class="op">=</span><span class="fl">1e5</span>, random_seed<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> sim.ts.num_samples</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dv">30</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
@@ -1567,8 +1598,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../api/local_ancestry_truth.html" class="pagination-link" aria-label="local_ancestry_truth">
-        <span class="nav-page-text">local_ancestry_truth</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../api/sim.Simulation.html" class="pagination-link" aria-label="sim.Simulation">
+        <span class="nav-page-text">sim.Simulation</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
