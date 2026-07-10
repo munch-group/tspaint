@@ -147,6 +147,19 @@ def sample_id_index(ts):
     Builds ``{id_string: [sample_node, ...]}`` from the individual metadata (a base id → *all* its
     haplotype nodes) and the per-haplotype node metadata (→ that one node) written by
     :func:`attach_sample_ids`. Empty when ``ts`` was never stamped (integer keys still resolve).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        A tree sequence whose sample nodes / individuals may carry ``{"id": ...}`` metadata (as
+        stamped by :func:`attach_sample_ids`).
+
+    Returns
+    -------
+    dict[str, list[int]]
+        Maps each stamped id string — every base/individual id and every per-haplotype node id — to
+        the sample-node ids it names, in sample order with duplicates removed. Empty if ``ts``
+        carries no stamped ids.
     """
     index = {}
     for s in ts.samples():
@@ -168,6 +181,25 @@ def resolve_nodes(ts, key, index=None):
     An ``int`` (or integer-valued key) is a node index. A ``str`` is matched against the stamped
     ids (:func:`sample_id_index`); a digit-only string with no id match falls back to an integer
     index. Pass a prebuilt ``index`` to avoid rebuilding it per key.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The tree sequence whose stamped ids ``key`` is resolved against.
+    key : int or str
+        A label/query key: an ``int`` (or ``numpy`` integer) sample-node index used as-is; or a
+        sample-ID string — a base/individual id (expands to *all* its haplotype nodes) or a
+        per-haplotype node id (that one node). A digit-only string with no id match falls back
+        to an integer node index.
+    index : dict[str, list[int]], optional
+        A prebuilt :func:`sample_id_index` to reuse across keys. Default ``None`` — built on demand
+        (and skipped entirely for an integer ``key``).
+
+    Returns
+    -------
+    list[int]
+        The sample-node ids named by ``key`` — one for an integer key or a per-haplotype id, or
+        several for a base id naming a whole (diploid / polyploid) sample.
 
     Raises
     ------
@@ -193,6 +225,27 @@ def resolve_labels(ts, labels):
 
     Keys may be integer node indices or sample-ID strings (base or per-haplotype); a base id
     expands to *all* the sample's haplotype nodes. See the module docstring for the rules.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The stamped tree sequence to resolve against.
+    labels : dict
+        Maps each key — an integer sample-node index or a sample-ID string (base/individual id or
+        per-haplotype node id) — to an ancestry-state index (cast to ``int``). A base id assigns
+        its state to *all* the sample's haplotype nodes.
+
+    Returns
+    -------
+    dict[int, int]
+        Keyed by **sample-node id**, each mapped to its integer state. A base id that expands to
+        several nodes gives them each that state; if two keys resolve to one node the last wins.
+
+    Raises
+    ------
+    KeyError
+        Propagated from :func:`resolve_nodes` when a string key matches no stamped id and is not an
+        integer index.
     """
     index = sample_id_index(ts)
     out = {}
@@ -207,6 +260,26 @@ def resolve_ids(ts, ids):
 
     ``None`` passes through as ``None``. Order is preserved and duplicates removed (a base id that
     expands to several haplotype nodes contributes each once).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The stamped tree sequence to resolve against.
+    ids : iterable or None
+        Keys to resolve — integer sample-node indices and/or sample-ID strings (base or
+        per-haplotype), as accepted by :func:`resolve_nodes`. ``None`` passes straight through.
+
+    Returns
+    -------
+    list[int] or None
+        The resolved sample-node ids in first-appearance order with duplicates removed, or ``None``
+        when ``ids`` is ``None``.
+
+    Raises
+    ------
+    KeyError
+        Propagated from :func:`resolve_nodes` when a string id matches no stamped id and is not an
+        integer index.
     """
     if ids is None:
         return None

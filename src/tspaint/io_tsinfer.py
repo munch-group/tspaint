@@ -145,7 +145,23 @@ def tsinfer(source, *, date=False, mutation_rate=None, tsdate_kwargs=None):
 
 
 def infer_tree_sequence(ts_with_mutations):
-    """Deprecated alias for :func:`tsinfer`."""
+    """Deprecated alias for :func:`tsinfer`.
+
+    Kept for backward compatibility; call :func:`tsinfer` instead. Forwards its argument as the
+    ``source`` of :func:`tsinfer` (every other option left at its default, notably ``date=False``),
+    emitting a ``DeprecationWarning``, so it returns *uncalibrated* inferred node times.
+
+    Parameters
+    ----------
+    ts_with_mutations : tskit.TreeSequence
+        A tree sequence carrying variant sites (e.g. from :func:`add_mutations`), passed straight
+        through as :func:`tsinfer`'s ``source``.
+
+    Returns
+    -------
+    tskit.TreeSequence
+        The tsinfer-inferred tree sequence (uncalibrated node times); see :func:`tsinfer`.
+    """
     warnings.warn("tspaint.io.infer_tree_sequence is deprecated; use tspaint.io.tsinfer",
                   DeprecationWarning, stacklevel=2)
     return tsinfer(ts_with_mutations)

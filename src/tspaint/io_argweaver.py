@@ -39,12 +39,27 @@ __all__ = ["argweaver", "write_sites", "argweaver_install_dir", "argweaver_binar
 
 
 def argweaver_install_dir():
-    """Clone root that ``tspaint install argweaver`` builds into (``<tools-dir>/argweaver``)."""
+    """Clone root that ``tspaint install argweaver`` builds into (``<tools-dir>/argweaver``).
+
+    Returns
+    -------
+    str
+        The path ``<tools-dir>/argweaver``, where ``tools-dir`` is ``$TSPAINT_TOOLS_DIR`` if set,
+        else ``<repo>/external`` (:func:`tspaint.io_singer.repo_root`).
+    """
     return os.path.join(_tools_dir(), "argweaver")
 
 
 def argweaver_binary_path():
-    """Path to the ``arg-sample`` binary built by ``tspaint install argweaver``."""
+    """Path to the ``arg-sample`` binary built by ``tspaint install argweaver``.
+
+    Returns
+    -------
+    str
+        The binary path under :func:`argweaver_install_dir` (so it honours ``$TSPAINT_TOOLS_DIR``).
+        This is the build location only; the runtime default ``DEFAULT_ARGWEAVER`` additionally
+        honours ``$TSPAINT_ARGWEAVER``.
+    """
     return os.path.join(argweaver_install_dir(), "bin", "arg-sample")
 
 
@@ -377,6 +392,9 @@ def argweaver(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     _iters, _sample_step, _seed : optional
         ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the
         plain knob they correspond to) and ``--randseed``.
+    argweaver_args : list, optional
+        Extra raw ``arg-sample`` command-line tokens appended after tspaint's own flags. Default
+        ``None``.
     workdir : str, optional
         Working directory for the ``.sites`` and ``.smc.gz`` (default: a fresh tempdir).
     argweaver_bin : str, optional
@@ -438,6 +456,6 @@ def argweaver(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
         samples.append(attach_sample_ids(arg, src_names, in_ploidy))
     if not samples:
         raise RuntimeError(
-            f"no post-burn-in ARGweaver samples (iters={iters}, burn_in={burn_in}); "
-            f"raise iters / lower burn_in")
+            f"no post-burn-in ARGweaver samples (iters={iters}, sample_step={sample_step}, "
+            f"discarded={discard}, wanted={keep}); raise ts / _iters or lower mcmc_burnin")
     return samples[0] if len(samples) == 1 else samples

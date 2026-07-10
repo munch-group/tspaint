@@ -29,6 +29,13 @@ __all__ = [
     "REF_A_PROXY",
     "REF_B_PROXY",
     "GHOST",
+    "ROLE_QUERY",
+    "ROLE_SOURCE",
+    "ROLE_REFERENCE",
+    "ROLE_STATE",
+    "ROLE_GHOST",
+    "pop_role",
+    "check_admixture_contract",
     "Simulation",
     "admixture_demography",
     "simulate_admixture",
@@ -56,6 +63,16 @@ REF_B_PROXY = SOURCE_B + "_prox"   # deeply-divergent sister of B
 A_ANCESTRAL = "A_ANC"              # common ancestor of A and its proxy A_prox
 B_ANCESTRAL = "B_ANC"              # common ancestor of B and its proxy B_prox
 
+# --- the population-role contract (CLAUDE.md §9) --------------------------------------------------
+# A hand-built demography tags each population's role by writing these keys into its
+# ``extra_metadata`` (via :func:`pop_role`); :func:`simulate_admixture` reads them to produce the
+# Simulation. These five strings are the *only* coupling between a demography and tspaint.
+ROLE_QUERY = "tspaint_query"          # the admixed population; its samples are the queries to paint
+ROLE_SOURCE = "tspaint_source"        # a census source that defines ground truth; sampled as a panel
+ROLE_REFERENCE = "tspaint_reference"  # sampled and placed in the default Simulation.labels panel
+ROLE_STATE = "tspaint_state"          # the ancestry-state index a source/reference/ghost carries
+ROLE_GHOST = "tspaint_ghost"          # a deliberate UNSAMPLED foreign source (its truth is embedded)
+
 # msprime flags census-event nodes; fall back to time-based detection if the
 # constant is unavailable in the installed version.
 _CENSUS_FLAG = getattr(msprime, "NODE_IS_CEN_EVENT", 0)
@@ -79,36 +96,181 @@ class Simulation:
         Default reference panel: reference haplotype node id → ancestry-state index (``0`` / ``1``),
         ready to pass to :func:`tspaint.paint`.
     truth_states : dict[int, list[tuple[float, float, int]]]
-        Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready to
-        score against a painting (e.g. :func:`tspaint.balanced_accuracy`).
+        Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready
+        to score against a painting (e.g. :func:`tspaint.validate.balanced_accuracy`). **Ghost
+        tracts are embedded here** with their own state index (beyond the source states), so they
+        appear in the truth band of :meth:`tspaint.Painting.plot`\\ 's truth track alongside the
+        source segments.
     sample_sets : dict[str, list[int]]
         Population name → its sample node ids, for building custom reference panels (e.g. proxy-only
         vs direct-source labels).
+    ghost_states : dict[int, list[tuple[float, float, int]]]
+        Per query, the ghost-only subset of :attr:`truth_states` — tracts descending from a
+        ``ghost``-tagged (unsampled, un-paintable) source. Empty when the demography has no ghost.
+        The ground truth to score a reference-free :func:`tspaint.detect_ghost` against.
+    source_states : tuple[int, ...]
+        The **paintable** ancestry-state indices (from ``source``/``reference`` populations), sorted —
+        e.g. ``(0, 1, 2)`` for three sources. Pass ``K=len(source_states)`` to :func:`tspaint.paint`;
+        any state in :attr:`truth_states` beyond these is a ghost.
+    demography : msprime.Demography
+        The role-tagged demography the tree sequence was simulated under (the ``demography`` argument
+        to :func:`simulate_admixture`), retained so the true split / admixture times and population
+        structure are recoverable from the result (e.g. to check a dated split against the truth).
     """
     ts: object
     queries: list
     labels: dict
     truth_states: dict
     sample_sets: dict
+    ghost_states: dict = None
+    source_states: tuple = ()
+    demography: object = None
 
 
-def _pop_role(state=None, query=False, source=False, reference=False):
-    """Build the ``extra_metadata`` that tags a population's role for :func:`simulate_admixture`.
+def pop_role(*, state=None, query=False, source=False, reference=False, ghost=False):
+    """Tag a population's role in the admixture contract — pass to ``add_population(extra_metadata=…)``.
 
-    ``query`` = the admixed population (sampled as queries); ``source`` = a census source whose
-    ``state`` defines the ground truth; ``reference`` = sampled and included in the default
-    :attr:`Simulation.labels`. ``state`` is the ancestry-state index carried by sources / references.
+    The one function a user needs to hand-build a demography :func:`simulate_admixture` can interpret:
+    build any :class:`msprime.Demography`, then tag each population with ``extra_metadata=pop_role(…)``.
+    The roles (all optional, combinable except as noted):
+
+    * ``query`` — the admixed population; its samples become :attr:`Simulation.queries` and receive the
+      census truth. Exactly one population must be a query.
+    * ``source`` — a census source population whose ``state`` defines the ground truth; sampled as a
+      panel. Must carry a ``state``.
+    * ``reference`` — sampled and placed in the default :attr:`Simulation.labels` (the panel
+      :func:`tspaint.paint` uses). Must carry a ``state``. Usually combined with ``source``.
+    * ``state`` — the ancestry-state index (``0, 1, 2, …``) a source / reference / ghost carries.
+    * ``ghost`` — a **deliberate unsampled foreign source** (e.g. a Neanderthal-like ghost): not
+      sampled and not in ``labels``, but its census tracts are still embedded in
+      :attr:`Simulation.truth_states` (with a state beyond the source states) and surfaced in
+      :attr:`Simulation.ghost_states`. Mutually exclusive with ``query`` / ``source`` / ``reference``.
+      A ``state`` is optional (auto-assigned above the source states if omitted).
+
+    An **untagged** population (no ``pop_role``) is a structural join (e.g. an ancestral node) that is
+    never sampled and carries no truth. Returns the ``extra_metadata`` dict.
+
+    Parameters
+    ----------
+    state : int, optional
+        Ancestry-state index (``0, 1, 2, …``) the population carries, stored under ``ROLE_STATE``.
+        Required for a ``source`` / ``reference`` (its census tracts map to this state); optional
+        for a ``ghost`` (auto-assigned above the source states when omitted). ``None`` (default)
+        writes no state key.
+    query : bool, optional
+        Tag the admixed query population (its samples become :attr:`Simulation.queries`); exactly
+        one population must be the query. Default ``False``.
+    source : bool, optional
+        Tag a census source population that defines the ground truth and is sampled as a panel.
+        Default ``False``.
+    reference : bool, optional
+        Tag a population to sample into the default :attr:`Simulation.labels` panel (usually
+        combined with ``source``). Default ``False``.
+    ghost : bool, optional
+        Tag a deliberately unsampled foreign source (mutually exclusive with ``query`` / ``source``
+        / ``reference``). Default ``False``.
+
+    Returns
+    -------
+    dict
+        The ``extra_metadata`` dict of role flags (plus ``state`` when given) to hand to
+        :meth:`msprime.Demography.add_population`\\ 's ``extra_metadata=`` argument — empty when
+        nothing is set.
+
+    Examples
+    --------
+    >>> d.add_population(name="A", initial_size=Ne,
+    ...                  extra_metadata=pop_role(state=0, source=True, reference=True))
+    >>> d.add_population(name="GHOST", initial_size=Ne, extra_metadata=pop_role(ghost=True))
     """
     m = {}
     if query:
-        m["tspaint_query"] = True
+        m[ROLE_QUERY] = True
     if source:
-        m["tspaint_source"] = True
+        m[ROLE_SOURCE] = True
     if reference:
-        m["tspaint_reference"] = True
+        m[ROLE_REFERENCE] = True
+    if ghost:
+        m[ROLE_GHOST] = True
     if state is not None:
-        m["tspaint_state"] = int(state)
+        m[ROLE_STATE] = int(state)
     return m
+
+
+# Backwards-compatible private alias (the preset builders below still call it).
+def _pop_role(state=None, query=False, source=False, reference=False, ghost=False):
+    return pop_role(state=state, query=query, source=source, reference=reference, ghost=ghost)
+
+
+def check_admixture_contract(demography, *, samples=None):
+    """Validate a role-tagged demography — raise clear errors instead of silently-wrong truth.
+
+    Checks the :func:`pop_role` contract on ``demography`` and raises :class:`ValueError` on the
+    mistakes that would otherwise pass silently and corrupt the ground truth:
+
+    * **no census** event (``d.add_census(...)``) — truth would fall back to a fragile
+      most-common-node-time heuristic;
+    * **no query** population (``pop_role(query=True)``);
+    * a **source / reference** without a ``state`` — its census tracts would be silently dropped;
+    * a **ghost** combined with ``query`` / ``source`` / ``reference`` — a ghost is unsampled;
+    * two **truth-defining** populations (source / stated ghost) sharing a ``state`` — that would
+      collapse two ancestries into one (a reference/proxy may reuse a source's state as a panel);
+    * a ``samples=`` key that is not a population name in the demography.
+
+    Called automatically by :func:`simulate_admixture` (opt out with ``validate=False``); also handy
+    standalone while building a demography. Note the "untagged population that carries census
+    ancestry" case needs the simulated tree sequence and so is checked inside
+    :func:`simulate_admixture`, not here.
+
+    Parameters
+    ----------
+    demography : msprime.Demography
+        A role-tagged demography whose populations carry :func:`pop_role` ``extra_metadata``.
+    samples : dict[str, int], optional
+        The ``{population_name: n_individuals}`` sampling scheme, if any — only its **keys** are
+        checked, and each must name a population in ``demography``. ``None`` (default) skips that
+        check.
+
+    Raises
+    ------
+    ValueError
+        On any contract violation: no census event, no query population, a source / reference
+        without a ``state``, a ghost combined with query / source / reference, two truth-defining
+        populations (a source or a stated ghost) sharing a ``state``, or a ``samples`` key that is
+        not a population name in ``demography``.
+    """
+    roles = {p.name: dict(p.extra_metadata or {}) for p in demography.populations}
+    if not any(type(ev).__name__ == "CensusEvent" for ev in demography.events):
+        raise ValueError(
+            "no census in the demography; add d.add_census(time=...) just older than the admixture "
+            "pulse. Without it local_ancestry_truth falls back to a time heuristic and is silently wrong")
+    if not any(m.get(ROLE_QUERY) for m in roles.values()):
+        raise ValueError("no query population; tag the admixed population with pop_role(query=True)")
+    for nm, m in roles.items():
+        if m.get(ROLE_GHOST) and (m.get(ROLE_QUERY) or m.get(ROLE_SOURCE) or m.get(ROLE_REFERENCE)):
+            raise ValueError(f"population '{nm}' is ghost AND query/source/reference; a ghost is "
+                             "unsampled — use pop_role(ghost=True) alone (a state is optional)")
+        if (m.get(ROLE_SOURCE) or m.get(ROLE_REFERENCE)) and ROLE_STATE not in m:
+            raise ValueError(f"source/reference population '{nm}' has no ancestry state; pass "
+                             "pop_role(state=..., source=True) (or reference=True)")
+    # Each truth-defining population — every source, and every explicitly-stated ghost — must own a
+    # DISTINCT state; otherwise the census→state truth map collapses two sources into one ancestry.
+    # A reference / proxy MAY reuse a source's state (it is a sampled panel *for* that ancestry, e.g.
+    # the proxy or impure-reference presets), so references are exempt from this uniqueness check.
+    seen = {}
+    for nm, m in roles.items():
+        if (m.get(ROLE_SOURCE) or m.get(ROLE_GHOST)) and ROLE_STATE in m:
+            st = m[ROLE_STATE]
+            if st in seen:
+                raise ValueError(
+                    f"populations '{seen[st]}' and '{nm}' both declare ancestry state {st}; each "
+                    "truth-defining source/ghost must have a distinct state (a reference/proxy may "
+                    "reuse a source's state as a panel for that ancestry)")
+            seen[st] = nm
+    if samples is not None:
+        unknown = set(samples) - set(roles)
+        if unknown:
+            raise ValueError(f"samples names {sorted(unknown)} are not populations in the demography")
 
 
 def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
@@ -194,19 +356,21 @@ def admixture_demography(Ne=10_000, T_admix=30.0, census_offset=1.0,
 
 def simulate_admixture(demography, *, n_query=10, n_reference=10, samples=None,
                        sequence_length=1e6, recombination_rate=1e-8, ploidy=2,
-                       mutation_rate=None, random_seed=42):
+                       mutation_rate=None, random_seed=42, validate=True):
     """Simulate an admixture from a **role-tagged demography**, returning a :class:`Simulation`.
 
-    Pass a demography from :func:`admixture_demography` (or any ``admixture_demography_*`` variant):
-    its populations carry role metadata (query / source / reference + ancestry state), so this
-    samples the query and reference panels, runs the coalescent, optionally lays down mutations, and
-    packages the queries, reference ``labels`` and the census ``truth`` — the caller never touches a
+    Pass any :class:`msprime.Demography` whose populations you have tagged with :func:`pop_role`
+    (query / source / reference / ghost + ancestry state) — either hand-built for full control, or
+    one of the :func:`admixture_demography` presets. This samples the query and reference panels,
+    runs the coalescent, optionally lays down mutations, and packages the queries, reference
+    ``labels`` and the census ``truth`` (ghost tracts embedded); the caller never touches a
     population-name constant.
 
     Parameters
     ----------
     demography : msprime.Demography
-        A role-tagged demography (see :func:`admixture_demography`).
+        A role-tagged demography — hand-built with :func:`pop_role` (must include an ``add_census``
+        just older than the admixture pulse), or from an :func:`admixture_demography` preset.
     n_query : int, optional
         Number of query (admixed) individuals to sample.
     n_reference : int, optional
@@ -219,27 +383,59 @@ def simulate_admixture(demography, *, n_query=10, n_reference=10, samples=None,
     mutation_rate : float, optional
         If given, lay down mutations at this per-base rate (:func:`tspaint.io.add_mutations`); the
         returned ``ts`` then carries sites. ``None`` (default) leaves the bare ancestry.
+    validate : bool, optional
+        Run :func:`check_admixture_contract` first (default ``True``): raise a clear error on a
+        missing census, no query, a state-less source, a mis-combined ghost, or an untagged
+        census-bearing population, instead of silently producing wrong truth. Set ``False`` to skip.
 
     Returns
     -------
     Simulation
-        ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states`` and
-        ``.sample_sets``.
+        ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states``
+        (ghost tracts embedded with a state above the sources), ``.sample_sets``, ``.ghost_states``
+        (the ghost-only truth) and ``.source_states`` (the paintable state indices).
 
     Examples
     --------
+    Two-source preset:
+
     >>> sim = simulate_admixture(admixture_demography(), n_query=5, n_reference=5,
     ...                          sequence_length=1e5, random_seed=1)
     >>> sim.ts.num_samples
     30
+
+    Hand-built: three sampled sources A/B/C + one unsampled ghost, painted at ``K=3`` while
+    :func:`tspaint.detect_ghost` finds the ghost; the ghost shows in the truth band of the plot:
+
+    >>> import msprime, tspaint
+    >>> from tspaint.sim import pop_role, simulate_admixture
+    >>> Ne = 2000
+    >>> d = msprime.Demography()
+    >>> for i, n in enumerate("ABC"):
+    ...     d.add_population(name=n, initial_size=Ne,
+    ...                      extra_metadata=pop_role(state=i, source=True, reference=True))
+    >>> d.add_population(name="GHOST", initial_size=Ne, extra_metadata=pop_role(ghost=True))
+    >>> d.add_population(name="ADMIX", initial_size=Ne, extra_metadata=pop_role(query=True))
+    >>> for n in ("AB", "ANC", "ROOT"):
+    ...     d.add_population(name=n, initial_size=Ne)
+    >>> d.add_admixture(time=100, derived="ADMIX", ancestral=["A", "B", "C"], proportions=[.3, .3, .4])
+    >>> d.add_mass_migration(time=90, source="ADMIX", dest="GHOST", proportion=0.05)
+    >>> d.add_census(time=101.0)
+    >>> d.add_population_split(time=2000, derived=["A", "B"], ancestral="AB")
+    >>> d.add_population_split(time=6000, derived=["AB", "C"], ancestral="ANC")
+    >>> d.add_population_split(time=20000, derived=["ANC", "GHOST"], ancestral="ROOT")
+    >>> d.sort_events()                       # events added out of time order -> sort before simulating
+    >>> sim = simulate_admixture(d, n_query=8, n_reference=6, sequence_length=1e6)
+    >>> painting = tspaint.paint(sim.ts, sim.labels, sim.queries, K=len(sim.source_states))
     """
+    if validate:
+        check_admixture_contract(demography, samples=samples)
     roles = {p.name: dict(p.extra_metadata or {}) for p in demography.populations}
-    query_pop = next((n for n, m in roles.items() if m.get("tspaint_query")), None)
+    query_pop = next((n for n, m in roles.items() if m.get(ROLE_QUERY)), None)
     if query_pop is None:
-        raise ValueError("demography has no query population; tag one with _pop_role(query=True)")
+        raise ValueError("demography has no query population; tag one with pop_role(query=True)")
     if samples is None:
-        ref_pops = [n for n, m in roles.items()
-                    if m.get("tspaint_reference") or m.get("tspaint_source")]
+        ref_pops = [n for n, m in roles.items() if m.get(ROLE_REFERENCE) or m.get(ROLE_SOURCE)]
         samples = {query_pop: n_query, **{r: n_reference for r in ref_pops}}
     ts = msprime.sim_ancestry(samples=samples, demography=demography,
                               sequence_length=sequence_length, recombination_rate=recombination_rate,
@@ -257,16 +453,68 @@ def simulate_admixture(demography, *, n_query=10, n_reference=10, samples=None,
     # default reference labels: sampled reference-tagged populations, by their ancestry state
     labels = {}
     for pop_name, m in roles.items():
-        if m.get("tspaint_reference") and "tspaint_state" in m:
+        if m.get(ROLE_REFERENCE) and ROLE_STATE in m:
             for s in sample_sets.get(pop_name, ()):
-                labels[s] = m["tspaint_state"]
-    # query truth: map each query lineage's census (source) population to its ancestry state
-    state_of_pop = {p: roles[name[p]]["tspaint_state"] for p in range(ts.num_populations)
-                    if "tspaint_state" in roles.get(name[p], {})}
+                labels[s] = m[ROLE_STATE]
+
+    # Ancestry states. Sources / references define the paintable states (0..K-1). A ghost gets a state
+    # ABOVE them — explicit, else auto-assigned — so its census tracts embed in the query truth (and
+    # so render in painting-plot truth bands) while staying distinct from the paintable sources.
+    source_state = {nm: m[ROLE_STATE] for nm, m in roles.items()
+                    if ROLE_STATE in m and not m.get(ROLE_GHOST)}
+    # auto-assign ghost states above the paintable ones, skipping any already used (by a source or an
+    # explicitly-stated ghost) so an auto-assigned ghost never collides — states stay one-per-source.
+    used = set(source_state.values()) | {int(m[ROLE_STATE]) for m in roles.values()
+                                         if m.get(ROLE_GHOST) and ROLE_STATE in m}
+    nxt = (max(used) + 1) if used else 0
+    ghost_state = {}
+    for nm, m in roles.items():
+        if m.get(ROLE_GHOST):
+            s = m.get(ROLE_STATE)
+            if s is not None:
+                ghost_state[nm] = int(s)
+            else:
+                while nxt in used:
+                    nxt += 1
+                ghost_state[nm] = nxt
+                used.add(nxt)
+    src_of_pop = {p: source_state[name[p]] for p in range(ts.num_populations) if name[p] in source_state}
+    ghost_of_pop = {p: ghost_state[name[p]] for p in range(ts.num_populations) if name[p] in ghost_state}
+    state_of_pop = {**src_of_pop, **ghost_of_pop}      # truth = sources + ghosts (embedded)
+
     tracts, _ = local_ancestry_truth(ts)
+    if validate:                                        # a census pop under a query must be tagged
+        untagged = {name[pop] for q in queries for (_, _, pop) in tracts[q] if pop not in state_of_pop}
+        if untagged:
+            # Diagnose the common cause: the census sits *older* than a population split, so its nodes
+            # land in the ancestral join (e.g. ANC) instead of the sources — a misplaced census, not a
+            # forgotten tag. Distinguish it from a genuinely-untagged leaf source.
+            split_anc = {ev.ancestral: float(ev.time) for ev in demography.events
+                         if type(ev).__name__ == "PopulationSplit"}
+            census_t = next((float(ev.time) for ev in demography.events
+                             if type(ev).__name__ == "CensusEvent"), None)
+            joins = sorted(untagged & set(split_anc))
+            if joins and census_t is not None:
+                s = joins[0]
+                raise ValueError(
+                    f"the census (time={census_t:g}) is older than the split that forms '{s}' "
+                    f"(time={split_anc[s]:g}), so census nodes land in the ancestral join {joins} "
+                    f"instead of the sources and the truth would be meaningless. Place the census just "
+                    f"older than the admixture pulse — between the pulse and the first split, e.g. "
+                    f"d.add_census(time=T_admix + 1). (If '{s}' really is a source, tag it "
+                    f"pop_role(source=True, state=...).)")
+            raise ValueError(
+                f"populations {sorted(untagged)} carry census ancestry under a query but have no "
+                "role; tag them source/reference (with a state) or ghost — a forgotten tag silently "
+                "drops that ancestry from the truth")
     truth = {q: [(l, r, state_of_pop[pop]) for (l, r, pop) in tracts[q] if pop in state_of_pop]
              for q in queries}
-    return Simulation(ts=ts, queries=queries, labels=labels, truth_states=truth, sample_sets=sample_sets)
+    ghost_states = {q: [(l, r, ghost_of_pop[pop]) for (l, r, pop) in tracts[q] if pop in ghost_of_pop]
+                    for q in queries}
+    return Simulation(ts=ts, queries=queries, labels=labels, truth_states=truth,
+                      sample_sets=sample_sets, ghost_states=ghost_states,
+                      source_states=tuple(sorted(set(source_state.values()))),
+                      demography=demography)
 
 
 def admixture_demography_impure_refs(Ne=1000, T_admix=30.0, census_offset=1.0,
@@ -365,6 +613,10 @@ def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_le
         Ploidy; each individual yields ``ploidy`` sample haplotypes.
     random_seed : int, optional
         Seed for :func:`msprime.sim_ancestry`.
+    mutation_rate : float, optional
+        If given, overlay mutations on the ARG at this per-base rate so the returned ``.ts`` carries
+        sites (:func:`tspaint.io.add_mutations`); ``None`` (default) leaves the bare ancestry. As
+        for :func:`simulate_admixture`.
     ref_impurity : float, optional
         Minority foreign fraction of each impure reference panel (see
         :func:`admixture_demography_impure_refs`).
@@ -374,10 +626,10 @@ def simulate_admixture_impure_refs(n_admix=10, n_pure=6, n_impure=6, sequence_le
 
     Returns
     -------
-    tskit.TreeSequence
-        Tree sequence whose sample nodes are haplotypes from the admixed, pure-source
-        and impure-reference populations; identify them by node population (as the
-        experiments do) rather than by index.
+    Simulation
+        A :class:`Simulation` (use ``.ts`` for the tree sequence); its sample nodes are haplotypes
+        from the admixed, pure-source and impure-reference populations — identify them by node
+        population (as the experiments do) rather than by index.
 
     See Also
     --------
@@ -417,6 +669,13 @@ def admixture_demography_source_gene_flow(Ne=1000, T_admix=30.0, census_offset=1
         Fraction of ``SOURCE_A`` replaced (backward) by ``SOURCE_B`` at ``T_prev_admix`` — the
         ``SOURCE_A`` panel's foreign (B) fraction.
 
+    Returns
+    -------
+    msprime.Demography
+        Demography with populations A, B, ADMIX and ANCESTRAL plus the admixture and census events,
+        the prior ``SOURCE_A -> SOURCE_B`` mass-migration pulse at ``T_prev_admix``, and the A/B
+        split at ``T_split``.
+
     Raises
     ------
     ValueError
@@ -449,6 +708,26 @@ def simulate_admixture_source_gene_flow(n_admix=10, n_ref=10, sequence_length=2e
     The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
     the ``SOURCE_B`` references are pure. Returns a :class:`Simulation` (``.ts`` / ``.queries`` /
     ``.labels`` / ``.truth_states`` / ``.sample_sets``); the query truth is the proximate A / B source.
+
+    Parameters
+    ----------
+    n_admix : int, optional
+        Number of admixed (query) individuals.
+    n_ref : int, optional
+        Number of individuals sampled from **each** of the two sources (A and B).
+    sequence_length, recombination_rate, ploidy, mutation_rate, random_seed : optional
+        As for :func:`simulate_admixture`.
+    **demography_kwargs
+        Passed to :func:`admixture_demography_source_gene_flow` (e.g. ``T_admix``, ``T_split``,
+        ``T_prev_admix``, ``prev_migration``, ``f_A``, ``Ne``).
+
+    Returns
+    -------
+    Simulation
+        A :class:`~tspaint.sim.Simulation`; its default ``.labels`` panel pairs the contaminated
+        ``SOURCE_A`` references (nominally A, carrying ~``prev_migration`` genuine B tracts) with
+        the pure ``SOURCE_B`` references, and each query's ``.truth_states`` is its proximate A / B
+        source.
     """
     demography = admixture_demography_source_gene_flow(**demography_kwargs)
     return simulate_admixture(demography, n_query=n_admix, n_reference=n_ref,
@@ -551,7 +830,7 @@ def simulate_admixture_with_ref_proxies(n_admix=10, n_ref=10, sequence_length=2e
     n_ref : int, optional
         Number of individuals sampled from **each** of the four reference populations (``A_prox``,
         ``B_prox``, ``A``, ``B``).
-    sequence_length, recombination_rate, ploidy, random_seed : optional
+    sequence_length, recombination_rate, ploidy, mutation_rate, random_seed : optional
         As for :func:`simulate_admixture`.
     **demography_kwargs
         Passed to :func:`admixture_demography_with_ref_proxies` (e.g. ``T_split_A``, ``T_split_B``,
@@ -626,7 +905,7 @@ def admixture_demography_with_ghost(Ne=1000, T_admix=100.0, census_offset=1.0,
     d = msprime.Demography()
     d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=_pop_role(state=0, source=True, reference=True))
     d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=_pop_role(state=1, source=True, reference=True))
-    d.add_population(name=GHOST, initial_size=Ne)   # unsampled ghost source (no role: not sampled)
+    d.add_population(name=GHOST, initial_size=Ne, extra_metadata=_pop_role(ghost=True))  # unsampled foreign source; truth embedded
     d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=_pop_role(query=True))
     d.add_population(name=AB_ANCESTRAL, initial_size=Ne)
     d.add_population(name=ANCESTRAL, initial_size=Ne)
@@ -661,6 +940,10 @@ def simulate_admixture_with_ghost(n_admix=10, n_ref=8, sequence_length=2e6,
         Ploidy; each individual yields ``ploidy`` sample haplotypes.
     random_seed : int, optional
         Seed for :func:`msprime.sim_ancestry`.
+    mutation_rate : float, optional
+        If given, overlay mutations on the ARG at this per-base rate so the returned ``.ts`` carries
+        sites (:func:`tspaint.io.add_mutations`); ``None`` (default) leaves the bare ancestry. As
+        for :func:`simulate_admixture`.
     ghost_fraction : float, optional
         Fraction of the admixed population contributed by the unsampled ghost source.
     **demography_kwargs
@@ -669,10 +952,11 @@ def simulate_admixture_with_ghost(n_admix=10, n_ref=8, sequence_length=2e6,
 
     Returns
     -------
-    tskit.TreeSequence
-        Tree sequence whose samples are admixed queries and A/B references; identify them by
-        node population. Census truth (:func:`local_ancestry_truth`) labels tracts A / B /
-        GHOST.
+    Simulation
+        A :class:`Simulation` (use ``.ts`` for the tree sequence); samples are admixed queries and
+        A/B references. The ``GHOST`` source is ghost-tagged, so its tracts are embedded in
+        ``.truth_states`` (and surfaced in ``.ghost_states``); ``local_ancestry_truth`` still labels
+        tracts A / B / GHOST by population.
 
     See Also
     --------

@@ -11,6 +11,7 @@ from scipy.linalg import expm
 
 __all__ = [
     "make_generator_2state",
+    "make_generator_symmetric",
     "validate_generator",
     "transition_matrix",
     "stationary_distribution",
@@ -41,6 +42,47 @@ def make_generator_2state(q_AB, q_BA):
            [ 0.001, -0.001]])
     """
     return np.array([[-q_AB, q_AB], [q_BA, -q_BA]], float)
+
+
+def make_generator_symmetric(K, rate):
+    """Symmetric ``K``-state ancestry CTMC generator (CLAUDE.md §2.1, K-way).
+
+    Every ordered state pair ``m != n`` gets rate ``rate / (K - 1)``, so each state's **total exit
+    rate is ``rate``** — this equals :func:`make_generator_2state` at ``K = 2``
+    (``make_generator_symmetric(2, r)`` is ``make_generator_2state(r, r)``). The default initial
+    generator :func:`tspaint.fit` uses for a K-way fit: a slow, source-symmetric start with no
+    built-in preference between ancestries.
+
+    Parameters
+    ----------
+    K : int
+        Number of ancestry states (``>= 2``).
+    rate : float
+        Total per-state exit rate.
+
+    Returns
+    -------
+    numpy.ndarray
+        The ``(K, K)`` symmetric generator (rows sum to zero, off-diagonals equal).
+
+    Raises
+    ------
+    ValueError
+        If ``K < 2``.
+
+    Examples
+    --------
+    >>> make_generator_symmetric(3, 1e-3)
+    array([[-0.001 ,  0.0005,  0.0005],
+           [ 0.0005, -0.001 ,  0.0005],
+           [ 0.0005,  0.0005, -0.001 ]])
+    """
+    K = int(K)
+    if K < 2:
+        raise ValueError("K must be >= 2")
+    Q = np.full((K, K), float(rate) / (K - 1), float)
+    np.fill_diagonal(Q, -float(rate))
+    return Q
 
 
 def validate_generator(Q, atol=1e-9):
@@ -201,7 +243,29 @@ class MaskedEmissions:
         self._active = None                      # cache: (frozenset masked-here, overlay dict)
 
     def for_interval(self, left, right):
-        """The emission dict for the marginal tree covering ``[left, right)``."""
+        """The emission dict for the marginal tree covering ``[left, right)``.
+
+        Parameters
+        ----------
+        left, right : float
+            Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+        Returns
+        -------
+        dict[int, numpy.ndarray]
+            The per-tip emission dict for this interval: ``base`` with every reference masked
+            here switched to the query (unlabelled) emission. Returns the ``base`` dict itself
+            unchanged (an identity fast path) when the mask is empty or nothing is masked over
+            this interval.
+
+        Notes
+        -----
+        A reference is masked here iff the interval **midpoint** ``0.5 * (left + right)`` falls
+        in one of its masked spans (the ≤1-interval boundary rounding is negligible against
+        tract lengths). The returned dict is shared — the ``base`` dict on the fast path, else
+        a cached overlay reused across identical intervals — so the caller must **not** mutate
+        it.
+        """
         if not self.mask:
             return self.base
         mid = 0.5 * (float(left) + float(right))
@@ -220,6 +284,22 @@ class MaskedEmissions:
 
 def emissions_for(emissions, left, right):
     """The emission dict for a marginal tree interval — position-dependent for a
-    :class:`MaskedEmissions`, else the plain ``emissions`` dict unchanged (backward compatible)."""
+    :class:`MaskedEmissions`, else the plain ``emissions`` dict unchanged (backward compatible).
+
+    Parameters
+    ----------
+    emissions : dict[int, numpy.ndarray] or MaskedEmissions
+        A plain per-tip emission dict, or a :class:`MaskedEmissions`. Duck-typed: any object
+        exposing a ``for_interval(left, right)`` method is dispatched to it, anything else is
+        returned unchanged.
+    left, right : float
+        Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+    Returns
+    -------
+    dict[int, numpy.ndarray]
+        For a :class:`MaskedEmissions`, ``emissions.for_interval(left, right)`` (the
+        per-interval dict); for a plain dict, ``emissions`` itself unchanged.
+    """
     fn = getattr(emissions, "for_interval", None)
     return fn(left, right) if fn is not None else emissions

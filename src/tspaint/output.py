@@ -116,6 +116,13 @@ def posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_rang
     merge_tol : float, optional
         Absolute tolerance for merging adjacent segments with equal posterior.
         Default ``1e-12``.
+    tree_range : tuple[int, int], optional
+        Half-open ``(lo, hi)`` range of marginal-tree indices to paint; trees outside it are
+        skipped. Default ``None`` → the whole genome (``(0, ts.num_trees)``). Enables the
+        chunked / parallel pass: since each segment's posterior comes from its own tree's
+        pruning (independent of which trees a chunk covers), concatenating the per-range tracks
+        in genome order and re-merging at the seams reproduces the full-genome result exactly
+        (:func:`tspaint.parallel.posterior_table_parallel`).
     progress : bool, optional
         Show a per-marginal-tree :mod:`tqdm` progress bar (full-genome pass only).
         Default ``False``.
@@ -145,7 +152,7 @@ def loo_posterior_table(ts, Q, pi, emissions, focal=None, merge_tol=1e-12, tree_
 
     Parameters
     ----------
-    ts, Q, pi, emissions, focal, merge_tol, progress
+    ts, Q, pi, emissions, focal, merge_tol, tree_range, progress
         As for :func:`posterior_table` (``progress`` shows a per-marginal-tree bar for the
         full-genome pass). For a parallel leave-one-out paint use
         :func:`tspaint.parallel.loo_posterior_table_parallel`.
@@ -228,7 +235,7 @@ def posterior_at(tracks, sample, position):
 DEFAULT_DEADBAND = 0.4
 
 #: The default dead-band for the **introgression / reference-QC** read-out
-#: (:meth:`tspaint.ReferenceQC.summary` / ``.mask`` / ``.flagged_tracts``). This is a **different
+#: (:meth:`tspaint.introgression.ReferenceQC.summary` / ``.mask`` / ``.flagged_tracts``). This is a **different
 #: quantity** from :data:`DEFAULT_DEADBAND`: it gates the leave-one-out *dissent margin*
 #: ``loo[foreign] - loo[label]`` (how strongly a reference's own genealogy disowns its label),
 #: not the top-two segmentation margin — hence its own value (``0.3``). Override with ``deadband=``.

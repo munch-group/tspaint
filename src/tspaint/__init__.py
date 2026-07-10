@@ -53,12 +53,14 @@ from .track import SoftTrack, SegmentTrack, compare_tracks
 from .em import fit, FitResult
 from .output import (posterior_table, loo_posterior_table, hard_segments, Segment,
                      INFORMATIVE, MISSING_INFO, DEFAULT_DEADBAND)
-from .model import make_generator_2state
+from .model import make_generator_2state, make_generator_symmetric
 from .io_genotypes import subset_data
-from .sim import simulate_admixture, local_ancestry_truth, SOURCE_A, SOURCE_B, ADMIXED
+from .sim import (simulate_admixture, local_ancestry_truth, pop_role, check_admixture_contract,
+                  SOURCE_A, SOURCE_B, ADMIXED)
 from .dating import fit_rate_through_time, RateThroughTime, EnsembleRateThroughTime
 from .introgression import reference_qc, foreign_tracts
 from .archaic import detect_ghost, GhostResult, detect_archaic
+from .validate import painting_summary, PaintingSummary
 
 # Namespaces (grouped functionality; submodules also importable directly) -------------------
 from . import (  # noqa: F401  (exposed as tspaint.<name>)
@@ -83,16 +85,20 @@ __all__ = [
     "FitResult",
     "posterior_table", "hard_segments", "Segment", "INFORMATIVE", "MISSING_INFO", "DEFAULT_DEADBAND",
     "make_generator_2state",
+    "make_generator_symmetric",
     # data prep (slice / normalise a genotype source before a front end)
     "subset_data",
     # simulation
-    "simulate_admixture", "local_ancestry_truth", "SOURCE_A", "SOURCE_B", "ADMIXED",
+    "simulate_admixture", "local_ancestry_truth", "pop_role", "check_admixture_contract",
+    "SOURCE_A", "SOURCE_B", "ADMIXED",
     # dating (admixture rate through time)
     "fit_rate_through_time", "RateThroughTime", "EnsembleRateThroughTime",
     # Task 1 — reference QC (control panel contamination via soft_refs / masking)
     "reference_qc", "foreign_tracts", "loo_posterior_table",
     # Task 2 — dedicated ghost / archaic introgression search (depth-emission HMM)
     "detect_ghost", "GhostResult", "detect_archaic",
+    # validation metrics summary object (Painting.summary())
+    "painting_summary", "PaintingSummary",
     # namespaces
     "metrics", "compare", "io", "bp", "dating", "experiments", "benchmark", "introgression",
     "archaic", "__version__",

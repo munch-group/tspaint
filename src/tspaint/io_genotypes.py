@@ -73,18 +73,32 @@ class Variants:
 
     @property
     def num_sites(self):
+        """Number of variant sites ``S`` (length of :attr:`positions`)."""
         return int(self.positions.shape[0])
 
     @property
     def num_haplotypes(self):
+        """Number of haplotype columns ``H`` (``num_samples * ploidy``)."""
         return int(self.genotypes.shape[1])
 
 
 def source_kind(source):
     """Classify a front-end ``source`` as ``"ts"``, ``"zarr"`` or ``"vcf"``.
 
-    A :class:`tskit.TreeSequence` is ``"ts"``; a path ending ``.vcf`` / ``.vcf.gz`` is ``"vcf"``;
-    anything else path-like (a ``.zarr`` store / directory / mapping) is ``"zarr"``.
+    A :class:`tskit.TreeSequence` is ``"ts"``; a path ending ``.vcf`` / ``.vcf.gz`` / ``.vcf.bgz``
+    (case-insensitively) is ``"vcf"``; anything else path-like (a ``.zarr`` store / directory /
+    mapping) is ``"zarr"``.
+
+    Parameters
+    ----------
+    source : tskit.TreeSequence, str, or zarr store / mapping
+        The front-end genotype source to classify.
+
+    Returns
+    -------
+    str
+        Exactly one of ``"ts"`` (a :class:`tskit.TreeSequence`), ``"vcf"`` (a VCF path), or
+        ``"zarr"`` (any other path-like source, read by :func:`variants_from_zarr`).
     """
     if isinstance(source, tskit.TreeSequence):
         return "ts"
@@ -95,7 +109,27 @@ def source_kind(source):
 
 
 def resolve_variants(source):
-    """Normalise a ``source`` into :class:`Variants` (a :class:`Variants` is returned as-is)."""
+    """Normalise a ``source`` into :class:`Variants` (a :class:`Variants` is returned as-is).
+
+    Parameters
+    ----------
+    source : Variants, str, or zarr store / mapping
+        A genotype source to load: an existing :class:`Variants` (returned unchanged), a **VCF**
+        path (read by :func:`variants_from_vcf`), or a **VCF Zarr** store (read by
+        :func:`variants_from_zarr`). A :class:`tskit.TreeSequence` is **not** accepted here — the
+        ``ts`` path is handled by each front end directly (see Raises).
+
+    Returns
+    -------
+    Variants
+        The normalised variant matrix.
+
+    Raises
+    ------
+    ValueError
+        If ``source`` is a :class:`tskit.TreeSequence` (kind ``"ts"``); resolve a tree sequence
+        through the front end's own ``ts`` path instead.
+    """
     if isinstance(source, Variants):
         return source
     kind = source_kind(source)
@@ -740,6 +774,11 @@ def sample_names_from_zarr(store):
     ``sample_id`` array and infers ploidy from ``call_genotype``'s shape metadata (no chunk I/O), so
     :func:`tspaint.io.tsinfer` can stamp whole-genome tree sequences with sample ids affordably.
 
+    Parameters
+    ----------
+    store : str or zarr store / mapping
+        A VCF Zarr store (e.g. produced by ``bio2zarr``'s ``vcf2zarr``).
+
     Returns
     -------
     (list[str] or None, int)
@@ -836,6 +875,17 @@ def to_sample_data(variants):
     Missing calls (:attr:`Variants.missing`) are passed to tsinfer as ``tskit.MISSING_DATA`` (``-1``)
     rather than reference, so a :func:`pseudohaploid` ``keep_par=True`` male's absent non-PAR second
     copy is treated as missing (tsinfer supports it) instead of a spurious reference lineage.
+
+    Parameters
+    ----------
+    variants : Variants
+        The variant matrix to convert (one site per :attr:`Variants.positions` entry).
+
+    Returns
+    -------
+    tsinfer.SampleData
+        A finalised ``SampleData`` with one site per variant, missing calls encoded as
+        ``tskit.MISSING_DATA``.
     """
     import tsinfer
     miss = variants.missing
@@ -849,7 +899,22 @@ def to_sample_data(variants):
 
 
 def write_haploid_vcf(variants, path):
-    """Write :class:`Variants` as a haploid VCF (one column per haplotype) for SINGER."""
+    """Write :class:`Variants` as a haploid VCF (one column per haplotype) for SINGER.
+
+    Parameters
+    ----------
+    variants : Variants
+        The variant matrix to write. Each haplotype column becomes a VCF sample column, named from
+        :attr:`Variants.sample_names` (falling back to ``"h0"``, ``"h1"``, ... when absent).
+    path : str
+        Output VCF path to write (an existing file is overwritten).
+
+    Notes
+    -----
+    Site positions are floored to distinct, strictly increasing 1-based integers; genotypes are
+    written haploid (a single ``0`` / ``1`` per column). Returns nothing — contrast
+    :func:`write_vcz`, which returns its ``path``.
+    """
     H = variants.num_haplotypes
     names = variants.sample_names or [f"h{j}" for j in range(H)]
     with open(path, "w") as f:

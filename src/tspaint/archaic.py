@@ -229,7 +229,21 @@ class GhostResult(SoftTrack):
     _seqlen: float = None
 
     def tracts(self, sample, threshold=0.5):
-        """Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``."""
+        """Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``.
+
+        Parameters
+        ----------
+        sample : int
+            Sample-node id whose ghost tracts to extract (a key of :attr:`posteriors`).
+        threshold : float, optional
+            Minimum ``P(ghost)`` — ``posterior[1]``, the ghost state (state 1) — for a locus to
+            count as ghost. Default ``0.5``.
+
+        Returns
+        -------
+        list[tuple[float, float]]
+            Merged ``(left, right)`` ghost spans (adjacent qualifying segments joined).
+        """
         out = []
         for seg in self.posteriors[int(sample)]:
             if float(seg.posterior[1]) >= threshold:
@@ -238,6 +252,29 @@ class GhostResult(SoftTrack):
                 else:
                     out.append((seg.left, seg.right))
         return out
+
+    def _summary_title(self, truth=None, deadband=None, samples=None):
+        # The detector's states are [modern, ghost], not ancestry A/B, so opt out of SoftTrack's
+        # ancestry-summary default title (plot() stays title-less unless a title is passed).
+        return None
+
+    def _prepare_truth(self, truth):
+        # The truth for a ghost detector is a set of ghost tracts (e.g. Simulation.ghost_states): each
+        # segment marks a truly-ghost region, whatever its own state index (the sources embed the ghost
+        # above them, so it is 2/3/…). Binarise every segment to the detector's ghost state (state 1) so
+        # the truth band reads white (non-ghost gaps) + one ghost colour — the same scheme as the soft
+        # and hard bands — instead of the ancestry A/B/ghost legend.
+        if not truth:
+            return truth
+        hi = self._hi_state
+        return {q: [(float(l), float(r), hi) for (l, r, *_rest) in segs] for q, segs in truth.items()}
+
+    def _make_colorizer(self, K, n_source, *, cmap, colors, alpha):
+        # Single-colour "ghost highlight": state 1 (ghost) gets one hue, state 0 (modern) is white,
+        # legend is the P(ghost) colour bar — not the ancestry A/B/… scheme (CLAUDE.md §9).
+        from .track import _Colorizer
+        return _Colorizer(K, hi=self._hi_state, hi_label=self._hi_label, n_source=n_source,
+                          cmap=cmap, colors=colors, alpha=alpha, highlight=True)
 
 
 def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol,
@@ -332,8 +369,16 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
     max_iter, tol : int, float, optional
         Baum–Welch iteration cap and log-likelihood tolerance.
     delta : float, optional
-        Minimum gap ``μ_ghost - μ_modern`` enforced above the panel's deepest coalescence (in the
-        ``depth`` units). Defaults to ``σ_modern``.
+        Margin placing the ghost emission floor above ``q_ref``, the panel's deepest-coalescence
+        quantile (in the ``depth`` units), so the ghost state stays identifiable (CLAUDE.md §6).
+        Its default and bounds depend on ``depth``:
+
+        * ``depth="time"`` — the floor is ``q_ref + delta``, unbounded; defaults to ``σ_modern``.
+        * ``depth="rank"`` — rank space is bounded in ``[0, 1]``, so the log-time rule would
+          overshoot the ceiling and park the ghost above every observation. The floor is instead
+          ``q_ref + min(delta, room / 2)`` with ``room = max(1 - q_ref, 1e-3)``; a supplied
+          ``delta`` is therefore **capped at half the remaining room**, and the default (``None``)
+          is ``room / 2``. ``σ_modern`` is not used in this mode.
     init_archaic_burden, init_switch : float, optional
         Initial ghost fraction and per-breakpoint switch probability.
     n_jobs : int, optional
@@ -462,7 +507,18 @@ ArchaicResult = GhostResult
 
 
 def detect_archaic(*args, **kwargs):
-    """Deprecated alias for :func:`detect_ghost`."""
+    """Deprecated alias for :func:`detect_ghost` (the detector was renamed ``detect_archaic`` ->
+    ``detect_ghost``).
+
+    Forwards every positional and keyword argument to :func:`detect_ghost` unchanged and emits a
+    :class:`DeprecationWarning`; prefer :func:`detect_ghost` in new code.
+
+    Returns
+    -------
+    GhostResult
+        Exactly what :func:`detect_ghost` returns (``ArchaicResult`` is a deprecated alias of
+        :class:`GhostResult`).
+    """
     import warnings
     warnings.warn("tspaint.detect_archaic is deprecated; use tspaint.detect_ghost",
                   DeprecationWarning, stacklevel=2)

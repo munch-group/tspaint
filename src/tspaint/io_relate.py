@@ -27,27 +27,62 @@ __all__ = ["relate", "relate_convert", "windows", "check_persistence", "convert_
 
 
 def relate_lib_install_dir():
-    """Clone root that ``tspaint install relate`` builds ``relate_lib`` into (``<tools-dir>/relate_lib``)."""
+    """Clone root that ``tspaint install relate`` builds ``relate_lib`` into (``<tools-dir>/relate_lib``).
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate_lib``. The tools root ``<tools-dir>`` is ``$TSPAINT_TOOLS_DIR`` if set,
+        else ``<repo>/external``.
+    """
     return os.path.join(_tools_dir(), "relate_lib")
 
 
 def relate_convert_path():
-    """Path to the ``relate_lib`` ``Convert`` binary built by ``tspaint install relate``."""
+    """Path to the ``relate_lib`` ``Convert`` binary built by ``tspaint install relate``.
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate_lib/bin/Convert`` (``<tools-dir>`` honours ``$TSPAINT_TOOLS_DIR``). The
+        build location only; the binary :func:`relate_convert` actually runs can instead be
+        redirected with ``$TSPAINT_RELATE_CONVERT`` (see :data:`DEFAULT_CONVERT`).
+    """
     return os.path.join(relate_lib_install_dir(), "bin", "Convert")
 
 
 def relate_install_dir():
-    """Clone root that ``tspaint install relate`` builds Relate into (``<tools-dir>/relate``)."""
+    """Clone root that ``tspaint install relate`` builds Relate into (``<tools-dir>/relate``).
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate``. The tools root ``<tools-dir>`` is ``$TSPAINT_TOOLS_DIR`` if set,
+        else ``<repo>/external``.
+    """
     return os.path.join(_tools_dir(), "relate")
 
 
 def relate_binary_path():
-    """Path to the ``Relate`` inference binary built by ``tspaint install relate``."""
+    """Path to the ``Relate`` inference binary built by ``tspaint install relate``.
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate/bin/Relate`` (``<tools-dir>`` honours ``$TSPAINT_TOOLS_DIR``).
+    """
     return os.path.join(relate_install_dir(), "bin", "Relate")
 
 
 def relate_file_formats_path():
-    """Path to ``RelateFileFormats`` (VCF/haps <-> Relate conversion) built by ``tspaint install relate``."""
+    """Path to ``RelateFileFormats`` (VCF/haps <-> Relate conversion) built by ``tspaint install relate``.
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate/bin/RelateFileFormats`` (``<tools-dir>`` honours
+        ``$TSPAINT_TOOLS_DIR``).
+    """
     return os.path.join(relate_install_dir(), "bin", "RelateFileFormats")
 
 
@@ -58,6 +93,12 @@ def estimate_population_size_path():
     history and re-dates the branch lengths from the full genealogy, so the calibrated times feeding
     :func:`tspaint.paint` reflect genome-scale signal. Split the resulting chromosome-length tree
     sequence into paint-sized pieces with :func:`windows`.
+
+    Returns
+    -------
+    str
+        ``<tools-dir>/relate/scripts/EstimatePopulationSize/EstimatePopulationSize.sh``
+        (``<tools-dir>`` honours ``$TSPAINT_TOOLS_DIR``).
     """
     return os.path.join(relate_install_dir(), "scripts", "EstimatePopulationSize",
                         "EstimatePopulationSize.sh")
@@ -206,11 +247,13 @@ def relate(source, *, mutation_rate=None, recombination_rate=1e-8, Ne=None, gene
         Genotypes — a tree sequence with mutations, a **VCF**, a **VCF Zarr**, or a
         :class:`~tspaint.io_genotypes.Variants` (e.g. from :func:`~tspaint.io.subset_data`), resolved
         as for the other front ends. Each sample haplotype becomes one Relate haplotype, in order.
-    mutation_rate : float
-        Per-base, per-generation mutation rate (Relate ``-m``; alias ``m``). **Required.**
-    recombination_rate : float, optional
-        Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``;
-        alias ``r``). Ignored when ``genetic_map`` is given.
+    mutation_rate, m : float
+        Per-base, per-generation mutation rate (Relate ``-m``). **Required** (via either name).
+        ``m`` is a short alias; if both are given ``m`` takes precedence.
+    recombination_rate, r : float, optional
+        Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``).
+        Ignored when ``genetic_map`` is given. ``r`` is a short alias; if both are given ``r`` takes
+        precedence.
     Ne : float, optional
         Diploid effective size for Relate's initial prior (``-N`` receives the haploid ``2·Ne``).
         Relate re-estimates it via ``EstimatePopulationSize``, so it is only a starting point; the
@@ -252,6 +295,8 @@ def relate(source, *, mutation_rate=None, recombination_rate=1e-8, Ne=None, gene
 
     Raises
     ------
+    ValueError
+        If no mutation rate is given (neither ``mutation_rate`` nor ``m``).
     FileNotFoundError
         If a required Relate binary is absent (build them with ``tspaint install relate``).
     RuntimeError
@@ -391,15 +436,59 @@ def _iter_windows(ts, window_size):
 
 
 def check_persistence(ts):
-    """Run the §5.1 persistence go/no-go on an already-loaded tree sequence."""
+    """Run the §5.1 persistence go/no-go on an already-loaded tree sequence.
+
+    Thin wrapper over :func:`tspaint.diagnostics.persistence_summary`: it summarises how many
+    distinct marginal trees each internal node survives in — the go/no-go on the method's central
+    premise (CLAUDE.md §5.1). A persistent clade must keep **one** node id across adjacent trees
+    (delivered by Relate ``--compress``, or natively by tsinfer/msprime). The key field is
+    ``frac_singletons``: near 1 means persistence is spiked at a single tree, so ``--compress`` did
+    not take (or the input is otherwise wrong) and the autocorrelation benefit is lost; mass in
+    ``median`` / ``max`` above 1 means horizontal coupling has signal — proceed.
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence
+        The already-loaded tree sequence to diagnose, e.g. from :func:`relate_convert`.
+
+    Returns
+    -------
+    dict
+        Internal-node persistence summary: ``median`` (float), ``max`` (int), ``frac_singletons``
+        (float — fraction of internal nodes appearing in exactly one tree) and ``n_internal`` (int).
+        On a tree sequence with no internal nodes, ``median`` / ``max`` / ``n_internal`` are 0 and
+        ``frac_singletons`` is NaN.
+    """
     return persistence_summary(ts)
 
 
-def convert_relate(anc, mut, out_prefix, compress=True, convert_bin="Convert"):  # pragma: no cover
+def convert_relate(anc, mut, out_prefix, compress=True, convert_bin=None):  # pragma: no cover
     """Deprecated alias for :func:`relate_convert` (the ``.anc``/``.mut`` → tskit Convert step).
 
     Note ``tspaint.io.relate`` is now the **genotypes → tree sequence** front end (it runs Relate for
-    you); the Convert-only step you probably want is :func:`relate_convert`.
+    you); the Convert-only step you probably want is :func:`relate_convert`. Emits a
+    ``DeprecationWarning`` and forwards to :func:`relate_convert`.
+
+    Parameters
+    ----------
+    anc : str
+        Path to the Relate ``.anc`` (``.gz``) file.
+    mut : str
+        Path to the Relate ``.mut`` (``.gz``) file.
+    out_prefix : str
+        Output prefix for the converted ``.trees`` (required here, unlike :func:`relate_convert`).
+    compress : bool, optional
+        Pass ``--compress`` (default ``True`` — load-bearing; do not turn off, §5).
+    convert_bin : str, optional
+        Path to the ``relate_lib`` ``Convert`` binary. Default ``None`` — resolved exactly as in
+        :func:`relate_convert` (env ``TSPAINT_RELATE_CONVERT``, else the ``tspaint install relate``
+        build location, else ``Convert`` on ``PATH``; see :data:`DEFAULT_CONVERT`).
+
+    Returns
+    -------
+    tskit.TreeSequence
+        The converted tree sequence (node ids stable across trees via ``--compress``); see
+        :func:`relate_convert`.
     """
     warnings.warn("tspaint.io.convert_relate is deprecated; use tspaint.io.relate_convert",
                   DeprecationWarning, stacklevel=2)

@@ -19,7 +19,7 @@ __all__ = ["map_truth", "per_base_accuracy", "balanced_accuracy", "mean_confiden
            "reliability_curve", "breakpoint_flicker", "tract_boundary_error",
            "breakpoint_precision_recall", "switch_density",
            "global_proportion", "true_proportion", "accuracy_by_segment_size",
-           "DEFAULT_SIZE_BINS"]
+           "painting_summary", "PaintingSummary", "DEFAULT_SIZE_BINS"]
 
 #: Default log-spaced true-segment-length bins (bp) for :func:`accuracy_by_segment_size`.
 DEFAULT_SIZE_BINS = np.array([1e3, 3e3, 1e4, 3e4, 1e5, 3e5, 1e6, 3e6, 1e7])
@@ -130,7 +130,11 @@ def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, 
     exclude_missing : bool, optional
         If True, skip segments tagged :data:`tspaint.output.MISSING_INFO`.
     K : int, optional
-        Number of ancestry states.
+        Number of ancestry states. Auto-grown if the truth contains larger state indices (e.g. a
+        **ghost** state embedded above the sources, :attr:`tspaint.sim.Simulation.ghost_states`): the
+        ghost then forms its own class, which the panel cannot paint, so it scores 0 — i.e. this
+        measures accuracy *including* the un-paintable ghost. For paintable-only accuracy, score
+        against a source-only truth (states in ``Simulation.source_states``).
 
     Returns
     -------
@@ -148,9 +152,11 @@ def balanced_accuracy(tracks, truth_states, samples=None, exclude_missing=True, 
     >>> balanced_accuracy(tracks, truth)
     1.0
     """
+    samples = list(samples if samples is not None else tracks)
+    K = max(K, 1 + max((int(st) for s in samples for (_, _, st) in truth_states[int(s)]), default=-1))
     correct = np.zeros(K)
     total = np.zeros(K)
-    for s in (samples if samples is not None else tracks):
+    for s in samples:
         for lo, hi, seg, tstate in _walk_overlap(tracks[int(s)], truth_states[int(s)]):
             if exclude_missing and seg.status == MISSING_INFO:
                 continue
@@ -504,3 +510,301 @@ def accuracy_by_segment_size(tracks, truth_states, bins=None, samples=None, excl
     m = total > 0
     acc[m] = correct[m] / total[m]
     return {"edges": bins, "accuracy": acc, "weight": total, "n_segments": nseg}
+
+
+def _n_switches(segs):
+    """Number of ancestry-state changes in a segment / tract list (soft or hard)."""
+    return len(_switch_positions(segs,
+                                 lambda s: int(np.argmax(s.posterior)) if hasattr(s, "posterior")
+                                 else int(s[2]),
+                                 lambda s: s.left if hasattr(s, "left") else s[0]))
+
+
+def _aggregate_flicker(tracks, samples, state=0):
+    """Pool :func:`breakpoint_flicker` over ``samples`` — an exact micro-average over boundaries.
+
+    ``mean_abs_diff`` and ``flip_rate`` are weighted by each sample's boundary count (so the pooled
+    values equal what a single genome-wide pass would give), and ``n_boundaries`` is the total.
+    """
+    tot_diff = tot_flip = 0.0
+    n = 0
+    for s in samples:
+        f = breakpoint_flicker(tracks, s, state=state)
+        nb = f["n_boundaries"]
+        tot_diff += f["mean_abs_diff"] * nb
+        tot_flip += f["flip_rate"] * nb
+        n += nb
+    return {"mean_abs_diff": tot_diff / n if n else 0.0,
+            "flip_rate": tot_flip / n if n else 0.0,
+            "n_boundaries": int(n)}
+
+
+def _aggregate_boundary_error(tracks, truth_states, samples):
+    """Pool :func:`tract_boundary_error` over ``samples`` on the raw per-true-switch errors.
+
+    Gathers every true switch's distance to the nearest inferred switch across ``samples`` and takes
+    the global median/mean (a genome-wide pool, not an average of per-sample medians).
+    """
+    errs = []
+    n_true = 0
+    for s in samples:
+        inferred = _switch_positions(tracks[int(s)],
+                                     lambda seg: int(np.argmax(seg.posterior)),
+                                     lambda seg: seg.left)
+        true_sw = _switch_positions(truth_states[int(s)], lambda t: t[2], lambda t: t[0])
+        n_true += len(true_sw)
+        errs.extend(min((abs(t - i) for i in inferred), default=float("inf")) for t in true_sw)
+    return {"n_true_switches": n_true,
+            "median_error": float(np.median(errs)) if errs else float("nan"),
+            "mean_error": float(np.mean(errs)) if errs else float("nan")}
+
+
+def _fmt(x, spec="{:.3f}"):
+    """Format a scalar for :class:`PaintingSummary.__repr__`; non-finite / non-numeric → ``–``."""
+    try:
+        xf = float(x)
+    except (TypeError, ValueError):
+        return "–"
+    return spec.format(xf) if np.isfinite(xf) else "–"
+
+
+class PaintingSummary(dict):
+    """The metrics bundle from :func:`painting_summary`, as a structured, self-describing object.
+
+    A :class:`dict` subclass, so it stays fully backward compatible — ``s["accuracy"]``,
+    ``"precision" in s``, ``s.get(...)``, ``set(s)``, ``dict(s)`` all behave as before — while adding:
+
+    * **attribute access** — ``s.accuracy`` is ``s["accuracy"]`` (raising :class:`AttributeError`
+      for absent metrics, e.g. the truth-only ones when no ``truth`` was supplied);
+    * a **formatted** :meth:`__repr__` that prints the whole bundle as an aligned block instead of a
+      raw dict; and
+    * :meth:`plot_size_stratified` — the accuracy-vs-true-tract-length curve
+      (:func:`accuracy_by_segment_size`).
+
+    Returned by :meth:`tspaint.Painting.summary` (and any :meth:`tspaint.SoftTrack.summary`). The
+    keys are exactly those documented on :func:`painting_summary`.
+    """
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    def to_dict(self):
+        """A plain :class:`dict` copy of the metrics.
+
+        Returns
+        -------
+        dict
+            A shallow copy of this bundle as an ordinary :class:`dict` (dropping the attribute
+            access, formatted :meth:`__repr__` and :meth:`plot_size_stratified` behaviour). The
+            keys are exactly those the summary carries — always ``n_samples``, ``proportion``,
+            ``switch_per_mb``, ``confidence`` and ``flicker``, plus the truth-dependent
+            ``accuracy``, ``balanced_accuracy``, ``precision``, ``recall``, ``switch_ratio``,
+            ``proportion_true``, ``boundary_error``, ``reliability`` and ``accuracy_by_size``
+            when the painting was scored against truth (see :func:`painting_summary`).
+        """
+        return dict(self)
+
+    def _rows(self):
+        """The ``(label, value)`` lines :meth:`__repr__` renders — only the metrics actually present."""
+        rows = []
+        prop = list(self.get("proportion", []))
+        names = [chr(65 + k) for k in range(len(prop))]
+
+        def pct(ps):
+            return "  ".join(f"{nm} {p * 100:.0f}%" for nm, p in zip(names, ps))
+
+        prop_str = pct(prop)
+        ptrue = self.get("proportion_true")
+        if ptrue is not None:
+            prop_str += f"   (true  {pct(list(ptrue))})"
+        rows.append(("ancestry proportion", prop_str))
+        rows.append(("confidence", _fmt(self.get("confidence"))))
+        if "accuracy" in self:
+            rows.append(("accuracy", f"{_fmt(self['accuracy'])}   "
+                                     f"balanced {_fmt(self.get('balanced_accuracy'))}"))
+        frag = f"{_fmt(self.get('switch_per_mb'), '{:.2f}')} sw/Mb"
+        if "switch_ratio" in self:
+            frag += f"   ratio {_fmt(self.get('switch_ratio'), '{:.2f}')}×"
+        rows.append(("fragmentation", frag))
+        if "precision" in self:
+            rows.append(("breakpoint", f"precision {_fmt(self['precision'], '{:.2f}')}   "
+                                       f"recall {_fmt(self.get('recall'), '{:.2f}')}"))
+        be = self.get("boundary_error")
+        if isinstance(be, dict):
+            rows.append(("boundary error",
+                         f"median {_fmt(be.get('median_error'), '{:.0f}')} bp   "
+                         f"mean {_fmt(be.get('mean_error'), '{:.0f}')} bp   "
+                         f"(n_true={be.get('n_true_switches', 0)})"))
+        fl = self.get("flicker")
+        if isinstance(fl, dict):
+            rows.append(("flicker",
+                         f"mean|Δ| {_fmt(fl.get('mean_abs_diff'))}   "
+                         f"flip {_fmt(100 * fl.get('flip_rate', float('nan')), '{:.1f}')}%   "
+                         f"(n={fl.get('n_boundaries', 0)})"))
+        if "accuracy_by_size" in self:
+            rows.append(("size-stratified", ".plot_size_stratified()"))
+        return rows
+
+    def __repr__(self):
+        rows = self._rows()
+        w = max((len(lbl) for lbl, _ in rows), default=0)
+        head = f"PaintingSummary(n_samples={self.get('n_samples', 0)})"
+        return "\n".join([head] + [f"  {lbl:<{w}}  {val}" for lbl, val in rows])
+
+    def plot_size_stratified(self, ax=None, return_plot=False, color=None):
+        """Plot per-base accuracy stratified by **true** ancestry-tract length (CLAUDE.md §9).
+
+        Draws the ``accuracy_by_size`` metric (:func:`accuracy_by_segment_size`) — accuracy in each
+        true-tract-length bin, on a log length axis, annotated with the number of true tracts per bin
+        and a chance (``1/K``) reference line. This is the headline diagnostic separating methods that
+        hold up on short (old-admixture) tracts from those that degrade.
+
+        Only available when the summary was computed with ``truth`` (``painting.summary(truth=...)``).
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes, optional
+            Axes to draw into; a new figure/axes is created when ``None``.
+        return_plot : bool, optional
+            Return ``(figure, axes)`` instead of ``None``. Default ``False``.
+        color : optional
+            Colour of the accuracy line; defaults to the painting's blue.
+
+        Returns
+        -------
+        tuple or None
+            ``(figure, axes)`` if ``return_plot`` else ``None``.
+        """
+        d = self.get("accuracy_by_size")
+        if d is None:
+            raise ValueError("no size-stratified accuracy in this summary — compute it with truth: "
+                             "painting.summary(truth=...)")
+        import matplotlib.pyplot as plt
+
+        edges = np.asarray(d["edges"], float)
+        acc = np.asarray(d["accuracy"], float)
+        nseg = np.asarray(d["n_segments"])
+        centers = np.sqrt(edges[:-1] * edges[1:])           # geometric bin centres (log axis)
+        K = len(self.get("proportion", [])) or 2
+        made = ax is None
+        fig, ax = (plt.subplots(figsize=(7, 4)) if made else (ax.figure, ax))
+        m = np.isfinite(acc)
+        ax.plot(centers[m], acc[m], "o-", color=(color or "#2a78d6"), label="accuracy", zorder=3)
+        for x, a, c in zip(centers[m], acc[m], nseg[m]):
+            ax.annotate(f"n={int(c)}", (x, a), textcoords="offset points", xytext=(0, 7),
+                        ha="center", fontsize=7, color="0.35")
+        ax.axhline(1.0 / K, ls="--", lw=0.9, color="0.6", label=f"chance (1/{K})", zorder=1)
+        ax.set_xscale("log")
+        ax.set_xlim(edges[0], edges[-1])
+        ax.set_ylim(0, 1.03)
+        ax.set_xlabel("true ancestry-tract length (bp)")
+        ax.set_ylabel("per-base accuracy")
+        ax.set_title(f"Accuracy vs. true tract length  (n={self.get('n_samples', 0)} haplotypes)")
+        ax.legend(fontsize=8, frameon=False, loc="lower right")
+        if made:
+            fig.tight_layout()
+        return (fig, ax) if return_plot else None
+
+
+def painting_summary(tracks, hard_segs, length, truth=None, samples=None, K=2):
+    """Compact per-painting summary — the model-free quality read-out for a plot title.
+
+    Bundles **every** metric in :mod:`tspaint.metrics` into one dict — the reference-free ones
+    always, the rest whenever ``truth`` is given:
+
+    * **total ancestry proportions** — the soft global fraction the painter assigns to each state
+      (:func:`global_proportion` per state), always available;
+    * **confidence** — span-weighted mean painter confidence ``|2·P(state 0) − 1|``
+      (:func:`mean_confidence`; ``confidence``), always available;
+    * **fragmentation** — inferred ancestry switches per Mb (``switch_per_mb``, :func:`switch_density`)
+      and, with ``truth``, the inferred ÷ true switch-density ratio (``switch_ratio``: 1.0 = faithful
+      tract-length distribution for admixture-pulse dating, >1 over-fragments; CLAUDE.md §9);
+    * **flicker** — posterior discontinuity across segment boundaries pooled over the samples
+      (:func:`breakpoint_flicker`; ``flicker`` = ``{mean_abs_diff, flip_rate, n_boundaries}``, CLAUDE.md
+      §7.3), always available;
+    * **accuracy** — only with ``truth``: span-weighted per-base accuracy (``accuracy``,
+      :func:`per_base_accuracy`) and its class-balanced counterpart (``balanced_accuracy``,
+      :func:`balanced_accuracy`) — the honest "does it discriminate?" number;
+    * **breakpoint precision / recall** — only with ``truth``: precision is the fraction of
+      inferred switches lying near a true one (low ⇒ spurious fragmentation), recall the fraction
+      of true switches recovered (:func:`breakpoint_precision_recall`, matched within ``0.5 %`` of
+      ``length``, pooled as the mean over the scored samples — the benchmark-scorer convention);
+    * **tract-boundary error** — only with ``truth``: distance from each true switch to the nearest
+      inferred one, pooled over the samples (:func:`tract_boundary_error`; ``boundary_error`` =
+      ``{n_true_switches, median_error, mean_error}``);
+    * **calibration & size-stratified accuracy** (curves) — only with ``truth``: the reliability
+      diagram (``reliability``, :func:`reliability_curve`) and accuracy binned by true tract length
+      (``accuracy_by_size``, :func:`accuracy_by_segment_size`), each a dict of 1-D arrays.
+
+    Parameters
+    ----------
+    tracks : dict[int, list[Segment]]
+        Soft posterior segments per sample (for the ancestry proportions), e.g.
+        :attr:`tspaint.Painting.posteriors`.
+    hard_segs : dict[int, list[tuple[float, float, int]]]
+        Hard segments per sample at the working dead-band (e.g. :meth:`tspaint.Painting.segments`);
+        drives the switch counts and the precision / recall.
+    length : float
+        Sequence length (bp) normalising the switch density; falls back to the painted extent when
+        non-positive.
+    truth : dict[int, list[tuple[float, float, int]]], optional
+        True ancestry-state tracts per sample (e.g. from :func:`map_truth`). When given, adds the
+        truth-dependent metrics (``accuracy``, ``balanced_accuracy``, ``precision``, ``recall``,
+        ``switch_ratio``, ``proportion_true``, ``boundary_error``, ``reliability``,
+        ``accuracy_by_size``), scored over the summarised samples that carry truth.
+    samples : iterable[int], optional
+        Samples to summarise; defaults to all keys of ``tracks``.
+    K : int, optional
+        Number of ancestry states.
+
+    Returns
+    -------
+    dict
+        Always: ``n_samples``; ``proportion`` (length-``K`` estimated global proportions);
+        ``switch_per_mb`` (inferred switches per Mb); ``confidence``; ``flicker``
+        (``{mean_abs_diff, flip_rate, n_boundaries}``). With ``truth`` also ``accuracy``,
+        ``balanced_accuracy``, ``precision``, ``recall``, ``switch_ratio``, ``proportion_true``
+        (length ``K``), ``boundary_error`` (``{n_true_switches, median_error, mean_error}``),
+        ``reliability`` (``{pred, emp, weight}``) and ``accuracy_by_size``
+        (``{edges, accuracy, weight, n_segments}``).
+    """
+    samples = [int(s) for s in (samples if samples is not None else tracks)]
+    if not length or length <= 0:                       # fall back to the painted extent
+        length = max((s[1] for q in samples for s in hard_segs.get(q, [])), default=0.0)
+
+    prop = [global_proportion(tracks, state=k, samples=samples) for k in range(K)]
+    inf_sw = sum(_n_switches(hard_segs.get(s, [])) for s in samples)
+    span_mb = len(samples) * length / 1e6 if length > 0 else 0.0
+    out = PaintingSummary({"n_samples": len(samples), "proportion": prop,
+                           "switch_per_mb": inf_sw / span_mb if span_mb > 0 else float("nan"),
+                           "confidence": mean_confidence(tracks, samples=samples),
+                           "flicker": _aggregate_flicker(tracks, samples)})
+    if truth is None:
+        return out
+
+    tsamples = [s for s in samples if s in truth]
+    tol = 0.005 * length
+    precs, recs, isw, tsw = [], [], 0, 0
+    for s in tsamples:
+        hard = hard_segs.get(s, [])
+        isw += _n_switches(hard)
+        tsw += _n_switches(truth[s])
+        pr = breakpoint_precision_recall(hard, truth[s], tol)
+        if not np.isnan(pr["precision"]):
+            precs.append(pr["precision"])
+        if not np.isnan(pr["recall"]):
+            recs.append(pr["recall"])
+    out.update(precision=float(np.mean(precs)) if precs else float("nan"),
+               recall=float(np.mean(recs)) if recs else float("nan"),
+               switch_ratio=isw / tsw if tsw > 0 else float("nan"),
+               proportion_true=[true_proportion(truth, state=k, samples=tsamples) for k in range(K)],
+               accuracy=per_base_accuracy(tracks, truth, samples=tsamples),
+               balanced_accuracy=balanced_accuracy(tracks, truth, samples=tsamples, K=K),
+               boundary_error=_aggregate_boundary_error(tracks, truth, samples=tsamples),
+               reliability=reliability_curve({s: tracks[int(s)] for s in tsamples},
+                                             {s: truth[s] for s in tsamples}, state=0),
+               accuracy_by_size=accuracy_by_segment_size(tracks, truth, samples=tsamples))
+    return out

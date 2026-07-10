@@ -75,6 +75,50 @@ def test_ghost_result_is_softtrack():
     # a wide dead-band suppresses the low-margin ghost flip (carries modern forward)
     assert g.segments(deadband=0.95)[5] == [(0.0, 100.0, 0)]
     assert g.tracts(5, 0.5) == [(50.0, 100.0)]
+    # opts out of SoftTrack's ancestry-summary default title (its states are modern/ghost, not A/B)
+    assert g._summary_title() is None
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    _fig, axes = g.plot(return_plot=True)
+    assert axes[0].get_title() == ""                          # title-less by default
+    plt.close("all")
+
+
+def _ghost_track():
+    return GhostResult(
+        posteriors={5: [Segment(0.0, 50.0, np.array([0.9, 0.1]), INFORMATIVE),
+                        Segment(50.0, 100.0, np.array([0.2, 0.8]), INFORMATIVE)]},
+        burden={5: 0.45}, mu=np.array([0.0, 2.0]), sd=np.array([1.0, 1.0]),
+        A=np.eye(2), pi0=np.array([0.5, 0.5]), loglik_history=[], _seqlen=100.0)
+
+
+def test_ghost_plot_is_single_colour_white_modern():
+    # The ghost plot is a binary "is it ghost?" read-out: modern = white, ghost = ONE colour, and a
+    # single P(ghost) colour bar (not the ancestry A/B/ghost legend). The soft, hard and truth bands
+    # share the one colouriser, so they use the same colour set (the reported bug: they differed).
+    g = _ghost_track()
+
+    # the colouriser is the single-colour ghost highlight
+    cz = g._make_colorizer(2, 2, cmap="coolwarm", colors=None, alpha=None)
+    assert cz.highlight and not cz.categorical
+    assert cz.hard(0) == (1.0, 1.0, 1.0, 1.0)                 # modern -> white
+    assert cz.hard(1)[:3] != (1.0, 1.0, 1.0)                 # ghost  -> a hue
+    assert np.allclose(cz.soft([0.0, 1.0])[:3], cz.hard(1)[:3])   # soft ghost == the one ghost hue
+
+    # _prepare_truth binarises every truth segment to the ghost state (1), whatever its own index —
+    # ghost_states embeds the ghost ABOVE the sources (e.g. state 2), which used to colour it as a
+    # third "ghost" category distinct from the segment band's A/B.
+    assert g._prepare_truth({5: [(50.0, 100.0, 2)]}) == {5: [(50.0, 100.0, 1)]}
+    assert g._prepare_truth(None) is None
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, _axes = g.plot(truth={5: [(50.0, 100.0, 2)]}, return_plot=True)
+    assert all(a.get_legend() is None for a in fig.axes)      # no categorical A/B/ghost legend
+    assert any(a.get_ylabel() == "P(ghost)" for a in fig.axes)   # a single P(ghost) colour bar
+    plt.close("all")
 
 
 @pytest.mark.slow

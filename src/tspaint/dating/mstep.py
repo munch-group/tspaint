@@ -32,6 +32,28 @@ def fit_poisson_spline(centers, events, exposure, lam, n_knots=25, degree=3, ord
 
     Model ``events ~ Poisson(exposure · exp(B β))`` with 2nd-difference penalty ``λ βᵀPβ``.
 
+    Parameters
+    ----------
+    centers : (n_cells,) array_like
+        Cell-centre times; the B-spline basis is built on ``log(centers)``.
+    events : (n_cells,) array_like
+        Per-cell event counts — the Poisson response (e.g. directional jumps ``J[:, m, n]``).
+    exposure : (n_cells,) array_like
+        Per-cell exposure / offset (occupation ``D[:, m]``); the Poisson mean is
+        ``exposure · exp(Bβ)``. Cells with ``exposure <= 0`` are dropped from the fit.
+    lam : float
+        Roughness-penalty weight ``λ`` (larger ⇒ smoother).
+    n_knots : int, optional
+        Number of B-spline knots on log-time. Default ``25``.
+    degree : int, optional
+        B-spline degree. Default ``3`` (cubic).
+    order : int, optional
+        Order of the difference penalty (``2`` = second-difference roughness). Default ``2``.
+    max_iter : int, optional
+        Maximum penalised-IRLS iterations. Default ``60``.
+    tol : float, optional
+        Convergence tolerance on the max coefficient change between iterations. Default ``1e-7``.
+
     Returns
     -------
     rate : (n_cells,) ndarray
@@ -39,6 +61,7 @@ def fit_poisson_spline(centers, events, exposure, lam, n_knots=25, degree=3, ord
     edf : float
         Effective degrees of freedom (trace of the smoother hat matrix) — for GCV.
     beta : (ncoef,) ndarray
+        Fitted B-spline coefficients ``β``.
     """
     centers = np.asarray(centers, float)
     events = np.asarray(events, float)
@@ -83,7 +106,24 @@ def _deviance(events, mu):
 
 
 def select_lambda_gcv(centers, events, exposure, lams=None, **kw):
-    """Fit at a grid of smoothing parameters; pick the one minimising GCV."""
+    """Fit at a grid of smoothing parameters; pick the one minimising GCV.
+
+    Parameters
+    ----------
+    centers, events, exposure
+        As for :func:`fit_poisson_spline`.
+    lams : array_like, optional
+        Grid of penalty weights ``λ`` to try. Default ``None`` — uses
+        ``np.geomspace(1e-2, 1e4, 18)``.
+    **kw
+        Forwarded to :func:`fit_poisson_spline` (``n_knots``, ``degree``, ``order``, ...).
+
+    Returns
+    -------
+    dict
+        The GCV-selected fit: ``gcv`` (minimum GCV score), ``lambda`` (chosen ``λ``), ``rate``
+        (the ``(n_cells,)`` fitted rate) and ``edf`` (effective degrees of freedom).
+    """
     if lams is None:
         lams = np.geomspace(1e-2, 1e4, 18)
     best = None
@@ -99,31 +139,55 @@ def select_lambda_gcv(centers, events, exposure, lams=None, **kw):
 
 
 def directional_rate_splines(D, J, centers, **kw):
-    """Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines.
+    """Fit every directional rate ``q_{mn}(t)`` (``m ≠ n``) by GCV-selected penalised Poisson splines.
+
+    Generalises the 2-state ``q_AB`` / ``q_BA`` to ``K`` ancestries: each ordered off-diagonal pair
+    ``(m, n)`` is a Poisson spline of ``J[:, m, n]`` with exposure ``D[:, m]``.
 
     Parameters
     ----------
-    D : (n_cells, K) array — per-cell occupation (exposure: ``D[:,0]`` for A→B, ``D[:,1]`` for B→A).
-    J : (n_cells, K, K) array — per-cell directional jumps.
-    centers : (n_cells,) cell centres.
+    D : (n_cells, K) array_like
+        Per-cell expected occupation (dwell). Column ``D[:, m]`` is the Poisson exposure for
+        every ``m → *`` rate.
+    J : (n_cells, K, K) array_like
+        Per-cell expected directional jump counts; ``J[:, m, n]`` is the response fitted for the
+        ordered pair ``(m, n)``.
+    centers : (n_cells,) array_like
+        Cell centres of the log-time grid (:func:`tspaint.dating.cell_centers`).
+    **kw
+        ``occ_frac`` (float, default ``0.02``) sets the **informative window**: for each source
+        state ``m``, cells with exposure ``D[:, m] > occ_frac * max(D[:, m])`` are fitted, and the
+        rate is flat-clamped to the window's edge values outside it. Any remaining keywords are
+        forwarded to :func:`select_lambda_gcv` (hence to :func:`fit_poisson_spline` — ``n_knots``,
+        ``degree``, ``order``, ...).
 
     Returns
     -------
-    dict with ``q_AB``, ``q_BA`` (rates at the centres) and the selected ``lambda_*``/``edf_*``.
+    dict
+        ``q`` — the ``(n_cells, K, K)`` fitted rate array (diagonal 0); ``(m, n)`` → the selected
+        ``{"lambda", "edf", "window"}`` for that pair; and, for ``K == 2``, the legacy ``q_AB`` /
+        ``q_BA`` slices.
     """
     occ_frac = kw.pop("occ_frac", 0.02)
-    out = {}
-    for name, ev, ex in (("AB", J[:, 0, 1], D[:, 0]), ("BA", J[:, 1, 0], D[:, 1])):
-        ex = np.asarray(ex, float)
-        win = ex > occ_frac * (ex.max() if ex.max() > 0 else 1.0)   # informative window
-        fit = select_lambda_gcv(centers, np.asarray(ev, float), np.where(win, ex, 0.0), **kw)
-        rate = fit["rate"].copy()
-        idx = np.where(win)[0]
-        if len(idx):                                                # flat-clamp outside window
-            rate[:idx[0]] = rate[idx[0]]
-            rate[idx[-1] + 1:] = rate[idx[-1]]
-        out[f"q_{name}"] = rate
-        out[f"lambda_{name}"] = fit["lambda"]
-        out[f"edf_{name}"] = fit["edf"]
-        out[f"window_{name}"] = win
+    D = np.asarray(D, float)
+    J = np.asarray(J, float)
+    ncell, K = D.shape
+    q = np.zeros((ncell, K, K))
+    out = {"q": q}
+    for m in range(K):
+        for n in range(K):
+            if m == n:
+                continue
+            ex = np.asarray(D[:, m], float)
+            win = ex > occ_frac * (ex.max() if ex.max() > 0 else 1.0)   # informative window
+            fit = select_lambda_gcv(centers, np.asarray(J[:, m, n], float), np.where(win, ex, 0.0), **kw)
+            rate = fit["rate"].copy()
+            idx = np.where(win)[0]
+            if len(idx):                                                # flat-clamp outside window
+                rate[:idx[0]] = rate[idx[0]]
+                rate[idx[-1] + 1:] = rate[idx[-1]]
+            q[:, m, n] = rate
+            out[(m, n)] = {"lambda": fit["lambda"], "edf": fit["edf"], "window": win}
+    if K == 2:                                                          # legacy scalar keys
+        out["q_AB"], out["q_BA"] = q[:, 0, 1], q[:, 1, 0]
     return out

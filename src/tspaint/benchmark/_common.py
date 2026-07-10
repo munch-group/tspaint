@@ -117,6 +117,22 @@ def read_sample_map(path):
 
     Order is preserved (it determines integer-state assignment for non-integer labels;
     :func:`assign_states`).
+
+    Parameters
+    ----------
+    path : str
+        Path to a whitespace-separated ``<sample>  <label>`` map (optionally ``.gz`` / ``.bgz``);
+        blank lines and lines starting with ``#`` are skipped.
+
+    Returns
+    -------
+    list[tuple[str, str]]
+        ``(sample-name, label)`` string pairs in file order.
+
+    Raises
+    ------
+    ValueError
+        If a non-comment line has fewer than two columns, or the map is empty.
     """
     pairs = []
     with _open(path) as fh:
@@ -204,10 +220,12 @@ class Panel:
 
     @property
     def n_query_haps(self):
+        """Number of query haplotypes (``2`` per diploid query sample)."""
         return 2 * len(self.query)
 
     @property
     def query_keys(self):
+        """Flat list of the query haplotype-index keys ``2*j+h`` (the painting's output keys)."""
         return [k for q in self.query for k in q[2]]
 
 
@@ -396,6 +414,18 @@ def save_tracks(path, tracks, panel, *, deadband=0.0):
 
     Reuses :func:`tspaint.serialize.save_painting` (same ``tspaint-painting`` format as the
     native painter) and stores the per-key ``<sample>.<hap>`` names for traceability.
+
+    Parameters
+    ----------
+    path : str
+        Destination ``.npz`` (``tspaint-painting`` format).
+    tracks : dict[int, list[Segment]]
+        Per query haplotype index ``2*j+h``, its painted segments.
+    panel : Panel
+        Resolved panel, supplying the sequence length and the ``<sample>.<hap>`` names
+        (:func:`query_hap_names`).
+    deadband : float, optional
+        Confidence dead-band recorded in the painting metadata. Default ``0.0``.
     """
     from ..serialize import save_painting
     save_painting(path, tracks, seqlen=panel.sequence_length, deadband=deadband,
@@ -461,6 +491,33 @@ def tool_command(tool, args, *, bin_override=None):
     ``TSPAINT_GNOMIX_CMD="python /path/gnomix.py"``), the ``TSPAINT_<TOOL>_DIR`` / binary env
     vars above to relocate the install, or pass ``bin_override`` (a binary path for the
     compiled tools) from a runner's ``*_bin`` argument.
+
+    Precedence, highest first: ``TSPAINT_<TOOL>_CMD`` (wins for every tool) → then, for the
+    compiled tools ``rfmix`` / ``recombmix``, ``bin_override`` else the module path constant
+    (:data:`RFMIX_BIN` / :data:`RECOMBMIX_BIN`, themselves ``TSPAINT_RFMIX`` / ``TSPAINT_RECOMBMIX``
+    or a default); or, for ``gnomix`` / ``salai``, the pixi launcher against :data:`GNOMIX_DIR` /
+    :data:`SALAI_DIR` (``TSPAINT_<TOOL>_DIR`` or a default), for which ``bin_override`` is ignored.
+
+    Parameters
+    ----------
+    tool : str
+        One of ``"rfmix"``, ``"gnomix"``, ``"salai"``, ``"recombmix"``.
+    args : iterable[str]
+        Tool arguments appended after the launcher prefix.
+    bin_override : str, optional
+        Explicit binary path for the compiled tools (``rfmix`` / ``recombmix``); ignored for the
+        pixi-launched tools (``gnomix`` / ``salai``), and itself overridden by
+        ``TSPAINT_<TOOL>_CMD``.
+
+    Returns
+    -------
+    list[str]
+        The full argv (launcher prefix + ``args``) to hand to :func:`subprocess.run`.
+
+    Raises
+    ------
+    ValueError
+        If ``tool`` is not one of the four known names.
     """
     override = os.environ.get(f"TSPAINT_{tool.upper()}_CMD")
     if override:
@@ -477,7 +534,25 @@ def tool_command(tool, args, *, bin_override=None):
 
 
 def tool_available(tool, *, bin_override=None):
-    """Whether ``tool``'s install location exists (binary file or pixi manifest dir)."""
+    """Whether ``tool``'s install location exists (binary file or pixi manifest dir).
+
+    A set ``TSPAINT_<TOOL>_CMD`` short-circuits to ``True`` (the custom launcher is assumed
+    runnable); otherwise the compiled tools (``rfmix`` / ``recombmix``) check that their binary
+    path exists and the pixi tools (``gnomix`` / ``salai``) that their install directory exists.
+
+    Parameters
+    ----------
+    tool : str
+        Tool name; an unrecognised name returns ``False``.
+    bin_override : str, optional
+        Binary path checked in place of the default for the compiled tools (``rfmix`` /
+        ``recombmix``); ignored for ``gnomix`` / ``salai``.
+
+    Returns
+    -------
+    bool
+        ``True`` if the tool appears installed / runnable, else ``False``.
+    """
     if os.environ.get(f"TSPAINT_{tool.upper()}_CMD"):
         return True
     return {

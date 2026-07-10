@@ -99,6 +99,75 @@ def test_fit_rate_through_time_recovers_split():
     assert deep > 3 * recent + 1e-9                                         # onset recovered
 
 
+def test_rate_through_time_K_general_and_plot_pairs_colours():
+    """RateThroughTime carries all K·(K-1) directional rates; .plot() draws each unordered pair in one
+    colour (solid m→n / dashed n→m). Constructed directly (no EM) to test shape + plot fast."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.dating import RateThroughTime
+
+    ncell, K = 8, 3
+    rng = np.random.default_rng(0)
+    q = rng.random((ncell, K, K)) * 1e-3
+    for k in range(K):
+        q[:, k, k] = 0.0
+    rtt = RateThroughTime(centers=np.geomspace(10, 1e4, ncell), q=q,
+                          D=np.ones((ncell, K)), J=np.zeros((ncell, K, K)), loglik_history=[])
+    assert rtt.K == 3
+    assert rtt.state_names == ["A", "B", "C"]                   # integer states -> default letters
+    assert rtt.pairs == [("A", "B"), ("A", "C"), ("B", "C")]    # name-keyed unordered pairs
+    assert np.array_equal(rtt.rate(2, 0), q[:, 2, 0])           # index accessor
+    assert np.array_equal(rtt.rate("C", "A"), q[:, 2, 0])       # name accessor
+    for bad in ("q_AB", "q_BA"):                                # 2-state aliases raise on K>2
+        with pytest.raises(ValueError):
+            getattr(rtt, bad)
+
+    axes = rtt.plot(facet=False)                                # explicit single-axis overlay
+    lines = axes.get_lines()
+    drawn = [ln for ln in lines if ln.get_linestyle() in ("-", "--")]
+    assert len(drawn) == K * (K - 1)                            # all 6 directional rates drawn
+    for i in range(0, len(drawn), 2):                           # (solid m→n, dashed n→m) per pair
+        assert drawn[i].get_color() == drawn[i + 1].get_color()
+        assert drawn[i].get_linestyle() == "-" and drawn[i + 1].get_linestyle() == "--"
+    assert len({drawn[i].get_color() for i in range(0, len(drawn), 2)}) == 3   # 3 distinct pair colours
+
+    faceted = rtt.plot()                                        # K>2 facets by default
+    assert isinstance(faceted, list) and len(faceted) == 3     # one subplot per unordered pair
+    plt.close("all")
+
+
+@pytest.mark.slow
+def test_fit_rate_through_time_K3_end_to_end():
+    """The EM dater runs at K=3 (three source populations) and returns the full (n_cells, 3, 3) rate
+    array — the fix for 'rate_through_time only works for K=2'. Cold start infers K from the labels."""
+    import msprime
+    from tspaint.dating import fit_rate_through_time, split_time, split_times
+    N, T = 1000, 2000.0
+    d = msprime.Demography()
+    for nm in ("A", "B", "C", "AB", "ANC"):
+        d.add_population(name=nm, initial_size=N)
+    d.add_population_split(time=T, derived=["A", "B"], ancestral="AB")     # ((A,B),C)
+    d.add_population_split(time=3 * T, derived=["AB", "C"], ancestral="ANC")
+    ts = msprime.sim_ancestry(samples={"A": 5, "B": 5, "C": 5}, demography=d, sequence_length=3e5,
+                              recombination_rate=1e-8, random_seed=1, ploidy=1)
+    name = {i: ts.population(i).metadata.get("name", str(i)) for i in range(ts.num_populations)}
+    pop = ts.tables.nodes.population
+    labels = {int(s): name[pop[s]] for s in ts.samples()}        # NAME-valued labels ("A"/"B"/"C")
+
+    rtt = fit_rate_through_time(ts, labels, n_iter=5)            # edges=None auto grid; K=3 from labels
+    assert rtt.q.shape[1:] == (3, 3) and rtt.K == 3
+    assert rtt.state_names == ["A", "B", "C"]                   # population names carried through
+    assert rtt.rate("A", "B").shape == rtt.centers.shape        # rate accessible by population name
+    with pytest.raises(ValueError):
+        split_time(rtt)                                          # scalar split_time is 2-state only
+    assert all(rtt.loglik_history[i + 1] >= rtt.loglik_history[i] - 1e-6
+               for i in range(len(rtt.loglik_history) - 1))      # EM monotone
+    st = split_times(rtt)                                        # per-pair dict, keyed by names
+    assert set(st) == {("A", "B"), ("A", "C"), ("B", "C")}      # msprime pop names A/B/C flow through
+    assert any(np.isfinite(v) for v in st.values())             # at least one split recovered
+
+
 def test_assert_calibrated_rejects_uncalibrated_times():
     from tspaint.dating.grid import assert_calibrated
     assert_calibrated(np.array([0.0, 100.0, 5000.0]))              # calibrated -> no raise
@@ -197,3 +266,189 @@ def test_fit_rate_through_time_warmstart_matches_cold():
 
     assert np.allclose(rtt_warm.q_AB, rtt_cold.q_AB, rtol=1e-6, atol=1e-12)
     assert np.allclose(rtt_warm.q_BA, rtt_cold.q_BA, rtol=1e-6, atol=1e-12)
+
+
+# --- performance: memoised + tree-parallel time-inhomogeneous E-step (fixes 1, 2, 3) ----------
+
+def _dating_sim(L=3e5, seed=1, n=6):
+    import tspaint
+    return tspaint.simulate_admixture(
+        tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+        n_query=n, n_reference=n, sequence_length=L, recombination_rate=1e-8, random_seed=seed)
+
+
+def test_cell_kernel_cache_is_transparent():
+    """A shared _CellKernels memo must not change branch_cell_stats — the interior-cell duration is
+    the same float every time, so cached and uncached results are bit-identical."""
+    from tspaint.dating.estep import _CellKernels
+    Q = make_generator_2state(0.002, 0.005)
+    Qoc = lambda k: Q                                          # noqa: E731
+    edges = log_time_grid(1.0, 2000.0, 40)
+    rng = np.random.default_rng(1)
+    shared = _CellKernels(Qoc, 2)
+    for _ in range(20):
+        t_c, t_p = sorted(rng.uniform(1.0, 1800.0, size=2))
+        if t_p - t_c < 1e-6:
+            continue
+        xi = rng.random((2, 2)); xi /= xi.sum()
+        d0, j0 = branch_cell_stats(Qoc, t_c, t_p, xi, edges)               # private per-call cache
+        d1, j1 = branch_cell_stats(Qoc, t_c, t_p, xi, edges, cache=shared)  # shared cross-branch memo
+        assert d0.keys() == d1.keys()
+        for k in d0:
+            assert np.array_equal(d0[k], d1[k]) and np.array_equal(j0[k], j1[k])
+
+
+def test_time_binned_tv_tree_range_partitions():
+    """accumulate_time_binned_tv over a partition of [0, num_trees) sums (D, J, loglik additive) to
+    the whole-genome result — the basis of the parallel dating E-step."""
+    import tspaint
+    from tspaint.dating.estep import accumulate_time_binned_tv
+    from tspaint.dating.em import make_Q_of_cell
+    from tspaint.em import build_emissions
+    sim = _dating_sim()
+    ts, labels = sim.ts, sim.labels
+    pi = np.array([0.5, 0.5])
+    edges = log_time_grid(1.0, float(ts.tables.nodes.time.max()) * 1.05, 30)
+    q = np.zeros((len(edges) - 1, 2, 2)); q[:, 0, 1] = q[:, 1, 0] = 1e-4
+    Qoc = make_Q_of_cell(q)
+    em = build_emissions(ts, labels, {}, pi)
+
+    D, J, ll = accumulate_time_binned_tv(ts, Qoc, pi, em, edges)
+    cut = ts.num_trees // 2
+    Da, Ja, la = accumulate_time_binned_tv(ts, Qoc, pi, em, edges, tree_range=(0, cut))
+    Db, Jb, lb = accumulate_time_binned_tv(ts, Qoc, pi, em, edges, tree_range=(cut, ts.num_trees))
+    assert np.allclose(Da + Db, D, rtol=1e-12, atol=0)
+    assert np.allclose(Ja + Jb, J, rtol=1e-12, atol=0)
+    assert np.isclose(la + lb, ll, rtol=1e-12)
+
+
+@pytest.mark.slow
+def test_fit_rate_through_time_parallel_matches_serial():
+    """The tree-parallel dating E-step (n_jobs>1) gives the same profile as serial (allclose — sums
+    over tree-ranges in chunk order, so ~ULP, not bit-identical)."""
+    import tspaint
+    from tspaint.dating import split_time
+    sim = _dating_sim(L=8e5, seed=2)
+    ts, labels = sim.ts, sim.labels
+    a = tspaint.fit_rate_through_time(ts, labels, n_iter=6, em_init=2, n_jobs=1)
+    b = tspaint.fit_rate_through_time(ts, labels, n_iter=6, em_init=2, n_jobs=3)
+    assert np.allclose(a.q, b.q, rtol=1e-8, atol=1e-15)
+    assert np.allclose(a.loglik_history, b.loglik_history, rtol=1e-8)
+    assert np.isclose(split_time(a), split_time(b))
+
+
+# --- API: robust (rising/falling) per-pair split times, K>2 accessors, faceting ---------------
+
+def test_split_time_detects_rising_onset_and_falling_edge():
+    """split_times auto-detects a rising onset (source–source) AND a falling edge (reference-proxy:
+    high recent rate that drops after the split)."""
+    from tspaint.dating import RateThroughTime, split_times, split_time
+    nc, K = 40, 4
+    c = np.geomspace(10, 10_000, nc)
+    q = np.zeros((nc, K, K))
+    q[:, 0, 1] = q[:, 1, 0] = 1e-3 * (c > 300)      # rising onset at ~300 (true split)
+    q[:, 2, 3] = q[:, 3, 2] = 1e-6 * (c < 4000)     # HIGH then falls after ~4000 (proxy shape)
+    rtt = RateThroughTime(c, q, np.ones((nc, K)), np.zeros((nc, K, K)), [-1.0])
+
+    st = split_times(rtt)                                           # keyed by names (letters A..D)
+    assert set(st) == {("A", "B"), ("A", "C"), ("A", "D"), ("B", "C"), ("B", "D"), ("C", "D")}
+    lo, hi = c[np.searchsorted(c, 300) - 1], c[np.searchsorted(c, 300) + 1]
+    assert lo <= st[("A", "B")] <= hi                               # rising onset near 300
+    assert 3000 < st[("C", "D")] < 5500                            # falling edge near 4000
+    assert not np.isfinite(st[("A", "C")])                         # a zero-rate pair -> no split
+    with pytest.raises(ValueError):
+        split_time(rtt)                                            # K!=2 scalar -> raise
+
+
+def test_split_time_K2_unchanged_and_scalar():
+    """K=2 split_time still returns the rising-onset scalar (backward compatible)."""
+    from tspaint.dating import RateThroughTime, split_time, split_times
+    nc = 40
+    c = np.geomspace(10, 10_000, nc)
+    q = np.zeros((nc, 2, 2)); q[:, 0, 1] = q[:, 1, 0] = 1e-3 * (c > 500)
+    rtt = RateThroughTime(c, q, np.ones((nc, 2)), np.zeros((nc, 2, 2)), [-1.0])
+    st = split_time(rtt)
+    assert np.isfinite(st) and 300 < st < 900                       # onset near the true 500
+    assert np.isclose(split_times(rtt)[("A", "B")], st)           # scalar == the single (name) pair
+
+
+def test_faceted_plot_axes_count():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.dating import RateThroughTime
+    nc, K = 8, 4
+    q = np.zeros((nc, K, K))
+    for (m, n) in [(0, 1), (2, 3)]:
+        q[:, m, n] = q[:, n, m] = 1e-3
+    rtt = RateThroughTime(np.geomspace(10, 1e4, nc), q, np.ones((nc, K)),
+                          np.zeros((nc, K, K)), [])
+    axes = rtt.plot()                                              # K=4 -> facet by default
+    assert isinstance(axes, list) and len(axes) == len(rtt.pairs) == 6
+    single = rtt.plot(facet=False)                                # forced overlay -> one Axes
+    assert not isinstance(single, list)
+    plt.close("all")
+
+
+def test_ensemble_pair_split_times_and_guards():
+    """EnsembleRateThroughTime exposes per-pair split times for any K; the scalar split_time is
+    2-state-only."""
+    from tspaint.dating import RateThroughTime, EnsembleRateThroughTime
+    nc, K = 30, 3
+    c = np.geomspace(10, 1e4, nc)
+    members = []
+    rng = np.random.default_rng(0)
+    names = ["X", "Y", "Z"]                                        # explicit population names
+    for _ in range(5):
+        q = np.zeros((nc, K, K))
+        onset = 300 + rng.normal(0, 20)
+        q[:, 0, 1] = q[:, 1, 0] = 1e-3 * (c > onset)
+        q[:, 1, 2] = q[:, 2, 1] = 5e-4 * (c > 2000)
+        members.append(RateThroughTime(c, q, np.ones((nc, K)), np.zeros((nc, K, K)), [-1.0],
+                                       states=names))
+    ens = EnsembleRateThroughTime.from_members(members)
+    assert ens.K == 3 and ens.state_names == names                # names propagate from members
+    assert ens.pairs == [("X", "Y"), ("X", "Z"), ("Y", "Z")]
+    pst = ens.pair_split_times()
+    assert set(pst) == {("X", "Y"), ("X", "Z"), ("Y", "Z")}
+    assert 150 < pst[("X", "Y")] < 600                            # X<->Y onset recovered
+    ci = ens.pair_split_time_ci(0.9)
+    lo, hi = ci[("X", "Y")]
+    assert lo <= pst[("X", "Y")] <= hi
+    with pytest.raises(ValueError):
+        ens.split_time()                                          # scalar 2-state-only
+    with pytest.raises(ValueError):
+        ens.q_AB
+
+
+def test_labels_by_population_name_flow_through():
+    """Dating accepts name-valued labels and reports rates / split times by population name."""
+    import tspaint
+    from tspaint.dating import fit_rate_through_time, split_times
+    sim = _dating_sim(L=3e5, seed=4)
+    ts, roles = sim.ts, sim.sample_sets
+    # name-valued labels taken straight from the population sample sets
+    a, b = sorted(n for n in roles if n in ("A", "B"))
+    labels = {int(s): a for s in roles[a]}
+    labels.update({int(s): b for s in roles[b]})
+
+    rtt = fit_rate_through_time(ts, labels, n_iter=3, em_init=2, n_jobs=1)
+    assert rtt.state_names == [a, b]                              # sorted population names
+    assert rtt.pairs == [(a, b)]
+    assert np.array_equal(rtt.rate(a, b), rtt.rate(0, 1))        # name == index accessor
+    st = split_times(rtt)
+    assert set(st) == {(a, b)}                                    # split time keyed by name pair
+
+
+def test_simulation_stores_demography():
+    """simulate_admixture retains the demography it simulated under."""
+    import tspaint
+    demo = tspaint.sim.admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5)
+    sim = tspaint.simulate_admixture(demo, n_query=2, n_reference=2, sequence_length=1e5,
+                                     random_seed=1)
+    assert sim.demography is demo                                 # the exact object, not a copy
+    # a wrapper builder also stores its (internally built) demography
+    sim2 = tspaint.sim.simulate_admixture_with_ghost(n_admix=2, n_ref=3, sequence_length=1e5,
+                                                     random_seed=1)
+    import msprime
+    assert isinstance(sim2.demography, msprime.Demography)

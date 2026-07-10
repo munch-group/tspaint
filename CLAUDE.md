@@ -434,8 +434,11 @@ off. Guards:
   mask its flagged spans as **unlabelled** — the tip emits the query emission there, so it anchors at
   full strength on its clean spans and contributes nothing exactly where it is foreign (the
   position-dependent generalisation of §2.2's `w_i`, in-model per §2.3). **Built:** `model.MaskedEmissions`
-  + `emissions_for`; `build_emissions(mask=)`; `paint(mask={ref:[(l,r)]})` / `fit(mask=)` threaded through
-  the serial **and** byte-exact-parallel paths; feeds directly from `ReferenceQC.mask()` /
+  + `emissions_for`; `build_emissions(mask=)`; `paint(mask={ref:[(l,r)]})` / `fit(mask=)` /
+  `fit_rate_through_time(mask=)` threaded through the serial **and** parallel paths (the *painters* are
+  byte-identical to serial for any `n_jobs`; the E-step accumulator is byte-identical to the same chunk
+  partition reduced serially and `allclose` — a few ULP — to the serial single loop, float `+` not being
+  associative); feeds directly from `ReferenceQC.mask()` /
   `foreign_tracts`; arm `experiments.impure_reference_experiment["fragment_mask"]` (two-pass:
   hard-clamp LOO → flag the impure refs' foreign tracts → mask → re-fit/paint); demography
   `sim.simulate_admixture_source_gene_flow` (the sources exchange genes via a prior A↔B pulse, so the

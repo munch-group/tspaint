@@ -28,7 +28,7 @@ import numpy as np
 import tskit
 
 from .em import fit, build_emissions
-from .model import make_generator_2state
+from .model import make_generator_symmetric
 from .output import Segment, posterior_table, INFORMATIVE, MISSING_INFO
 from .validate import balanced_accuracy, mean_confidence, per_base_accuracy
 from .io_rfmix import rfmix_paint   # genotype-native comparator, scored like the rest
@@ -57,7 +57,8 @@ def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
     max_iter : int, optional
         Maximum number of EM iterations.
     Q0 : numpy.ndarray, optional
-        Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+        Initial generator; defaults to ``make_generator_symmetric(K, 1e-3)`` (the symmetric
+        ``K``-state start — equals ``make_generator_2state(1e-3, 1e-3)`` at ``K = 2``).
     soft_refs : iterable[int], optional
         References whose credibility ``w`` is learned (the rest stay hard-clamped);
         passed through to :func:`tspaint.em.fit`.
@@ -85,7 +86,7 @@ def tspaint_paint(ts, labels, queries, K=2, max_iter=6, Q0=None, soft_refs=None,
     if ranked:
         from .ranked import ranked_tree_sequence
         ts = ranked_tree_sequence(ts)
-    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    Q0 = Q0 if Q0 is not None else make_generator_symmetric(K, 1e-3)
     res = fit(ts, labels, K=K, Q0=Q0, max_iter=max_iter, soft_refs=soft_refs,
               estimate_pi=estimate_pi, priors=priors)
     emissions = build_emissions(ts, labels, res.w, res.pi)

@@ -29,7 +29,26 @@ __all__ = ["load_truth", "score", "format_table", "score_full", "write_metrics",
 
 
 def load_truth(path):
-    """Load a ``tspaint-truth`` ``.npz`` into ``{sample: [(left, right, state)]}``."""
+    """Load a ``tspaint-truth`` ``.npz`` into ``{sample: [(left, right, state)]}``.
+
+    Parameters
+    ----------
+    path : str
+        Path to a ``tspaint-truth`` ``.npz`` (``sample`` / ``left`` / ``right`` / ``state``
+        arrays; written by :func:`tspaint.benchmark.export.export_vcf` or ``tspaint simulate
+        --truth``).
+
+    Returns
+    -------
+    dict[int, list[tuple[float, float, int]]]
+        Per sample key (the ``2*j+h`` hap index), its true ancestry segments
+        ``(left, right, state)`` sorted by position.
+
+    Raises
+    ------
+    ValueError
+        If ``path`` is not a ``tspaint-truth`` file.
+    """
     with np.load(path, allow_pickle=False) as d:
         if str(d.get("_format", "")) != "tspaint-truth":
             raise ValueError(f"{path} is not a tspaint-truth file")
@@ -102,7 +121,19 @@ def score(truth, paintings, *, deadband=DEFAULT_DEADBAND, K=2):
 
 
 def format_table(rows):
-    """Render :func:`score` rows as a fixed-width text table."""
+    """Render :func:`score` rows as a fixed-width text table.
+
+    Parameters
+    ----------
+    rows : list[dict]
+        :func:`score` result rows; each must carry ``name``, ``balanced_accuracy``, ``accuracy``,
+        ``confidence``, ``switch_density_ratio`` and ``n_samples`` (the leaderboard columns).
+
+    Returns
+    -------
+    str
+        The table as a single newline-joined string — a header row plus one row per painting.
+    """
     # (key, header, width, decimals|None) — None decimals ⇒ left-aligned string / integer.
     cols = [("name", "tool", 16, None), ("balanced_accuracy", "bal-acc", 8, 3),
             ("accuracy", "acc", 7, 3), ("confidence", "conf", 7, 3),
@@ -216,7 +247,16 @@ def score_full(truth, painting, *, name="", meta=None, bins=None, deadband=DEFAU
 
 
 def write_metrics(path, result):
-    """Write a :func:`score_full` result to ``path`` as JSON (NaN → null)."""
+    """Write a :func:`score_full` result to ``path`` as JSON (NaN → null).
+
+    Parameters
+    ----------
+    path : str
+        Output ``.json`` path.
+    result : dict
+        A :func:`score_full` result; ``float('nan')`` values (including those nested in dicts /
+        lists) are converted to JSON ``null``.
+    """
     def clean(x):
         if isinstance(x, float) and np.isnan(x):
             return None
@@ -242,7 +282,17 @@ def aggregate(json_paths, out_dir):
     true-segment-length bin, with the bin's accuracy / weight / segment count) — ready for plotting
     the three metric families across the grid.
 
-    Returns the two CSV paths.
+    Parameters
+    ----------
+    json_paths : iterable[str]
+        Paths to per-painting :func:`score_full` JSON files (as written by :func:`write_metrics`).
+    out_dir : str
+        Output directory for the two CSVs (created if absent).
+
+    Returns
+    -------
+    tuple[str, str]
+        The ``(summary_scalar.csv, summary_by_size.csv)`` paths written.
     """
     results = []
     for p in json_paths:

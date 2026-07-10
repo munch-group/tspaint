@@ -100,12 +100,14 @@ def test_adversarial_floats_exact(tmp_path):
 
 def test_rate_through_time_round_trip(tmp_path):
     p = tmp_path / "rtt.npz"
-    rtt = RateThroughTime(centers=np.array([10.0, 100.0, 1000.0]),
-                          q_AB=np.array([1e-4, 2e-4, 3e-4]), q_BA=np.array([5e-4, 4e-4, 3e-4]),
+    q = np.zeros((3, 2, 2))
+    q[:, 0, 1], q[:, 1, 0] = [1e-4, 2e-4, 3e-4], [5e-4, 4e-4, 3e-4]
+    rtt = RateThroughTime(centers=np.array([10.0, 100.0, 1000.0]), q=q,
                           D=np.ones((3, 2)), J=np.zeros((3, 2, 2)), loglik_history=[-3.0, -2.0])
     serialize.save_rate_through_time(p, rtt)
     d = serialize.load_rate_through_time(p)
     np.testing.assert_array_equal(d["centers"], rtt.centers)
+    np.testing.assert_array_equal(d["q"], rtt.q)                 # K-general rate array round-trips
     np.testing.assert_array_equal(d["q_AB"], rtt.q_AB)
     np.testing.assert_array_equal(d["q_BA"], rtt.q_BA)
     np.testing.assert_array_equal(d["J"], rtt.J)

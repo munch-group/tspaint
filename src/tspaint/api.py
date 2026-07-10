@@ -17,6 +17,12 @@ from .track import SoftTrack
 
 __all__ = ["paint", "Painting", "WindowedPainting"]
 
+#: Hatch for a reference's **masked** (unlabelled) spans in :meth:`Painting.plot` — a cross-hatch,
+#: visually distinct from the ghost overlay (:data:`_GHOST_HATCH`) so the two read apart on one plot.
+_MASK_HATCH = "xxx"
+#: Hatch for **ghost** tracts overlaid on the ancestry painting in :meth:`Painting.plot` (diagonal).
+_GHOST_HATCH = "///"
+
 
 @dataclass
 class Painting(SoftTrack):
@@ -48,11 +54,22 @@ class Painting(SoftTrack):
     labels : dict[int, int]
         The reference labels used for the fit (retained for :meth:`rate_through_time`).
     default_deadband : float
-        Default dead-band passed to :meth:`segments`. Default ``0.0``.
+        Default dead-band passed to :meth:`segments` (and the plots) — the confidence dead-band on
+        the top-two posterior margin ``max(P) − 2nd-max(P)`` (:func:`tspaint.output.hard_segments`).
+        Default :data:`~tspaint.output.DEFAULT_DEADBAND` (``0.4``).
+    n_jobs : int or None
+        Worker processes used to paint (resolved from :func:`paint`'s ``n_jobs`` via
+        :func:`tspaint.parallel.resolve_cores`), reused as the default for
+        :meth:`rate_through_time`'s per-member ensemble dating. ``None`` on a painting not produced
+        by :func:`paint` (e.g. reloaded with :meth:`load` or reassembled from windows).
     _member_posteriors : list[dict] or None
         For an **ensemble** painting, the individual per-member posterior tables (each a
         ``dict[int, list[Segment]]``) whose per-position mean is :attr:`posteriors`; ``None`` for a
         single tree sequence. Drives the per-member :meth:`rate_through_time` split-time interval.
+    mask : dict or None
+        The fragment mask applied when painting — ``{ref-node: [(left, right), ...]}`` spans
+        treated as unlabelled (CLAUDE.md §2.3), resolved to node-id keys; ``None`` when unmasked.
+        :meth:`plot` reads it to cross-hatch each reference's masked spans (``mark_masked``).
     """
     posteriors: dict
     Q: np.ndarray
@@ -81,12 +98,16 @@ class Painting(SoftTrack):
         """The painted query haplotypes — the row order used by :meth:`plot`."""
         return self.queries
 
-    def plot(self, *args, refs=True, mark_masked=True, **kwargs):
+    def plot(self, truth=None, segments=False, title=None, cmap='coolwarm', colors=None, alpha=None, figsize=None, return_plot=False,
+             deadband=None, row_labels=None, mark_spans=None, samples=None, curves=False, *, refs=True, mark_masked=True,
+             ghost=None, ghost_threshold=0.5):
         """Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`).
 
-        To see a *reference's own* painting (and its introgression), include the reference in the
-        painted focal set: ``paint(ts, labels, queries=queries + [ref], mask=mask)``. Then, for any
-        painted row that is a labelled reference (in :attr:`labels`), this:
+        **To display reference haplotypes you must paint them** — ``refs`` here does **not** add rows,
+        it only annotates references that are already in the painted focal set. Include them at paint
+        time: ``paint(ts, labels, refs=True)`` (all references, arranged around the queries) or
+        ``paint(ts, labels, queries=queries + [ref], mask=mask)`` (specific ones). Then, for any painted
+        row that is a labelled reference (in :attr:`labels`), ``refs`` (default ``True``):
 
         * labels the row with its **nominal ancestry** — e.g. ``ref 39 (A)`` instead of ``hapl. i`` —
           so a reference that paints a foreign (e.g. B) tract stands out against its own A label; and
@@ -94,22 +115,213 @@ class Painting(SoftTrack):
           (unlabelled) spans** over its soft band, showing where the reference was un-anchored and its
           posterior became tree-inferred (the mechanism that reveals its introgression).
 
-        Pass ``refs=False`` / ``mark_masked=False`` to suppress either. All other arguments
-        (``truth``, ``title``, ``cmap``, ``deadband``, ``return_plot`` …) pass through unchanged.
+        Pass ``refs=False`` / ``mark_masked=False`` to suppress either. A reference's masked spans are
+        drawn with a **cross-hatch** (:data:`_MASK_HATCH`), distinct from the ghost overlay below.
+
+        ``samples`` selects which haplotypes to plot (defaults to all queries) and accepts the same
+        forms as the former :meth:`plot_posterior`: an ``int`` / list of ``int`` (haploid sample-node
+        indices) or a ``str`` / list of ``str`` (individual / sample ids, a diploid id expanding to
+        both haplotype rows), resolved via :meth:`_resolve_plot_samples`. Rows are then labelled by the
+        resolved id / node unless overridden by ``row_labels``.
+
+        Pass ``ghost=`` a :class:`~tspaint.GhostResult` (from :func:`tspaint.detect_ghost`) to **hatch
+        each haplotype's ghost tracts over its ancestry bands** — the ghost search (where the ancestry
+        is foreign to the whole panel) drawn on top of the source painting with a **diagonal** hatch
+        (:data:`_GHOST_HATCH`, distinct from a masked span's cross-hatch). The tracts are
+        :meth:`GhostResult.tracts` at ``ghost_threshold`` (default ``P(ghost) ≥ 0.5``); only haplotypes
+        the ghost result also covers are annotated.
+
+        ``curves=True`` draws each row's posterior as **line curves** instead of the colour band — one
+        line per ancestry state in its segment hue, ``y = P(state)`` over the genome — so
+        ``painting.plot(samples=[0], curves=True)`` plots the ``K`` posterior curves for the first query.
+        ``truth`` and — with ``segments=True`` — the hard segments then show as thin state-coloured bands
+        below the curves (each ~10 % of the curve height). With ``ghost=`` in this mode the ghost
+        ``P(ghost)`` posterior is added as a separate black curve rather than a hatch.
+
+        When ``title`` is left ``None`` it defaults to a compact painting summary — total ancestry
+        proportions and fragmentation, plus breakpoint precision / recall when ``truth`` is given
+        (:meth:`summary`). Pass an explicit ``title`` (including ``""``) to override. All other
+        arguments (``cmap``, ``colors``, ``deadband``, ``return_plot`` …) behave as in
+        :meth:`SoftTrack.plot`.
+
+        Parameters
+        ----------
+        truth : dict[int, list[tuple[float, float, int]]], optional
+            Ground-truth tracts ``(left, right, state)`` per haplotype, drawn as a reference track
+            below each row. Default ``None`` (no truth track).
+        segments : bool, optional
+            Also draw the hard segments (:meth:`segments` at ``deadband``) as a band per row.
+            Default ``False``.
+        title : str, optional
+            Title for the top row. Default ``None`` → the compact performance-stats summary
+            (:meth:`summary`); pass ``""`` for no title, or any string to override.
+        cmap : optional
+            Unused (kept for backward compatibility); the confidence-as-opacity rendering takes the
+            per-state hues from ``colors``. Default ``'coolwarm'``.
+        colors : list, optional
+            Per-state hues (state ``k`` → ``colors[k]``; the two extremes are the state hues for
+            ``K = 2``). Default ``None`` → matplotlib's colour cycle (see :meth:`SoftTrack.plot`).
+        alpha : float, optional
+            Maximum opacity — fades the whole plot; the soft band is drawn at
+            ``confidence · alpha``. Default ``None`` (fully opaque, i.e. ``1``).
+        figsize : (float, float), optional
+            Figure size. Default ``None`` (auto from the number of rows).
+        return_plot : bool, optional
+            Return the matplotlib ``(figure, axes)`` instead of ``None``. Default ``False``.
+        deadband : float, optional
+            Dead-band on the top-two posterior margin ``max(P) − 2nd-max(P)`` for the hard-segment
+            overlay (:func:`tspaint.output.hard_segments`). Default ``None`` →
+            :attr:`default_deadband`.
+        row_labels : dict[int, str], optional
+            Per-sample y-axis label overrides (**highest priority**). Painted references are
+            otherwise auto-labelled ``ref <node> (<ancestry>)`` when ``refs=True``, and ids resolved
+            from ``samples`` supply their own labels. Default ``None``.
+        mark_spans : dict[int, list[tuple[float, float]]], optional
+            Extra per-sample spans to hatch over each row; the reference-mask and ghost overlays
+            below are merged into it. Default ``None``.
+        samples : int or str or iterable, optional
+            Which painted haplotypes to plot, in order: an ``int`` / list of ``int`` (haploid
+            sample-node indices) or a ``str`` / list of ``str`` (individual / sample ids, a diploid
+            id expanding to both haplotype rows), resolved via :meth:`_resolve_plot_samples`. A
+            :class:`ValueError` is raised if the selection is empty or includes an unpainted
+            haplotype. Default ``None`` (all queries).
+        curves : bool, optional
+            Draw each row's posterior as line curves (one per ancestry state) instead of the colour
+            band. Default ``False``.
+        refs : bool, optional
+            For painted rows that are labelled references (in :attr:`labels`): label the row with
+            its nominal ancestry (``ref <node> (A)``) and, when a ``mask`` was used, hatch its
+            masked spans. Keyword-only. Default ``True``.
+        mark_masked : bool, optional
+            Cross-hatch (:data:`_MASK_HATCH`) each reference's masked (unlabelled) spans when this
+            painting was produced with a fragment ``mask``. Keyword-only. Default ``True``.
+        ghost : tspaint.GhostResult, optional
+            A ghost-detector result (:func:`tspaint.detect_ghost`); its ghost tracts are hatched
+            over each haplotype's ancestry bands (diagonal, :data:`_GHOST_HATCH`) — or, with
+            ``curves=True``, added as a black ``P(ghost)`` curve. Keyword-only. Default ``None``.
+        ghost_threshold : float, optional
+            Threshold for the ``ghost`` tracts — a locus is ghost where
+            ``P(ghost) ≥ ghost_threshold`` (:meth:`GhostResult.tracts`). Keyword-only.
+            Default ``0.5``.
+
+        Returns
+        -------
+        tuple or None
+            ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
         """
+        resolved = {}
+        if samples is not None:                         # resolve ids / nodes (folds in plot_posterior)
+            nodes, resolved = self._resolve_plot_samples(samples)
+            if not nodes:
+                raise ValueError("plot: `samples` selected no haplotypes")
+            absent = [n for n in nodes if n not in self.posteriors]
+            if absent:
+                raise ValueError(
+                    f"haplotypes {absent} were not painted (not among the painted samples "
+                    f"{list(self.samples)}); include them via paint(..., queries=...) or refs=...")
+            samples = nodes
+
+        # row labels — priority: caller row_labels > reference label > resolved id / node name
+        row_labels = dict(row_labels or {})
         if refs and self.labels:
-            row_labels = dict(kwargs.pop("row_labels", None) or {})
             for q in self.samples:
                 if q in self.labels:
                     row_labels.setdefault(q, f"ref {q} ({chr(65 + int(self.labels[q]))})")
-            kwargs["row_labels"] = row_labels
-        if mark_masked and self.mask:
-            mark = dict(kwargs.pop("mark_spans", None) or {})
+        for n, lbl in resolved.items():
+            row_labels.setdefault(n, lbl)
+
+        if mark_masked and self.mask:                   # masked ref spans -> cross-hatch
+            mark_spans = dict(mark_spans or {})
             for q, spans in self.mask.items():
                 if q in self.samples:
-                    mark.setdefault(q, [(float(s[0]), float(s[1])) for s in spans])
-            kwargs["mark_spans"] = mark
-        return super().plot(*args, **kwargs)
+                    mark_spans.setdefault(q, [(float(s[0]), float(s[1]), _MASK_HATCH) for s in spans])
+        curve_overlays = None
+        if ghost is not None:
+            gpost = getattr(ghost, "posteriors", None)
+            if gpost is None or not hasattr(ghost, "tracts"):
+                raise TypeError("ghost= expects a GhostResult from tspaint.detect_ghost")
+            if curves:                                  # ghost P(ghost) -> black dashed curve
+                gstate = int(getattr(ghost, "_hi_state", 1))
+                rows = samples if samples is not None else list(self.samples)
+                curve_overlays = {q: [(gpost[q], gstate, "black", "solid", "Ghost")]
+                                  for q in rows if q in gpost}
+            else:                                       # ghost tracts -> diagonal hatch (distinct from mask)
+                mark_spans = dict(mark_spans or {})
+                for q in self.samples:
+                    if q in gpost:
+                        gt = [(float(a), float(b), _GHOST_HATCH)
+                              for (a, b) in ghost.tracts(q, threshold=ghost_threshold)]
+                        if gt:
+                            mark_spans[q] = list(mark_spans.get(q, [])) + gt
+        # title=None is defaulted to the performance-stats summary by SoftTrack.plot (shared with
+        # SegmentTrack); the reference-aware row_labels / mark_spans above are the painting-only part.
+        return super().plot(truth=truth, segments=segments, title=title, cmap=cmap, colors=colors, alpha=alpha,
+                            figsize=figsize, return_plot=return_plot, deadband=deadband, row_labels=row_labels,
+                            mark_spans=mark_spans, samples=samples, curves=curves, curve_overlays=curve_overlays)
+
+    def _resolve_plot_samples(self, individuals):
+        """Resolve ``individuals`` to ``(ordered node list, {node: row-label})``.
+
+        ``int`` (or list of ``int``) are haploid **sample-node indices**; ``str`` (or list of ``str``)
+        are **individual / sample ids** resolved against the painted tree sequence's stamped ids
+        (:func:`tspaint.ids.resolve_nodes`) — a diploid id expanding to *both* haplotype nodes. Order
+        is preserved and duplicates removed.
+        """
+        items = [individuals] if isinstance(individuals, (int, np.integer, str)) else list(individuals)
+        ref_ts = self.ts[0] if isinstance(self.ts, (list, tuple)) else self.ts
+        nodes, labels = [], {}
+        for it in items:
+            if isinstance(it, (int, np.integer)):
+                n = int(it)
+                nodes.append(n)
+                labels.setdefault(n, f"hapl. {n}")
+            else:                                            # an individual / sample id string
+                if ref_ts is None:
+                    raise ValueError(
+                        f"cannot resolve id {it!r}: this painting has no tree sequence (ts=None, e.g. "
+                        "reloaded from disk). Pass integer sample-node indices instead.")
+                from .ids import resolve_nodes
+                hap_nodes = resolve_nodes(ref_ts, it)
+                for h, n in enumerate(hap_nodes):
+                    nodes.append(n)
+                    labels[n] = it if len(hap_nodes) == 1 else f"{it} (hap {h})"
+        seen, uniq = set(), []
+        for n in nodes:                                      # de-duplicate, preserving order
+            if n not in seen:
+                seen.add(n)
+                uniq.append(n)
+        return uniq, labels
+
+    def plot_posterior(self, individuals, **kwargs):
+        """Deprecated alias for ``plot(samples=individuals, ...)``.
+
+        The sample selection / id resolution it provided now lives directly in :meth:`plot` (its
+        ``samples`` argument), so ``painting.plot(samples=[0, 3])`` or
+        ``painting.plot(samples="NA12878")`` is the preferred call. Kept for backward compatibility.
+
+        Parameters
+        ----------
+        individuals : int or str or iterable
+            The haplotype(s) to plot — forwarded to :meth:`plot` as ``samples`` (see there): an
+            ``int`` / list of ``int`` (haploid sample-node indices) or a ``str`` / list of ``str``
+            (individual / sample ids, a diploid id expanding to both haplotypes).
+        **kwargs
+            Forwarded verbatim to :meth:`plot` (``truth``, ``deadband``, ``return_plot``, …).
+
+        Returns
+        -------
+        tuple or None
+            Whatever :meth:`plot` returns — ``(figure, axes)`` when ``return_plot=True``, else
+            ``None``.
+
+        Examples
+        --------
+        >>> painting.plot(samples=0)                          # one haploid node
+        >>> painting.plot(samples=[0, 3, 5])                  # several haploid nodes
+        >>> painting.plot(samples="NA12878")                 # both haplotypes of a diploid id
+        >>> painting.plot(samples=["NA12878", "NA12889"], truth=truth)
+        """
+        return self.plot(samples=individuals, **kwargs)
 
     def save(self, path):
         """Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model).
@@ -117,6 +329,14 @@ class Painting(SoftTrack):
         Reload with :meth:`load`. The painted tree sequence itself is **not** stored (keep the
         ``.trees`` file); a reloaded painting therefore has ``ts=None`` but retains
         :attr:`length`, the posteriors, ``Q``/``π``/``w`` and the labels.
+
+        Parameters
+        ----------
+        path : str
+            Destination ``.npz`` path (written exactly as given, no extension appended). Delegates
+            to :func:`tspaint.serialize.save_painting` (format ``"tspaint-painting"``: the flat
+            per-segment table plus the fitted-model metadata
+            ``Q``/``π``/``w``/``queries``/``labels``/``seqlen``/``deadband``).
         """
         from .serialize import save_painting
         save_painting(path, self.posteriors, Q=self.Q, pi=self.pi, w=self.w,
@@ -125,7 +345,22 @@ class Painting(SoftTrack):
 
     @staticmethod
     def load(path):
-        """Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`)."""
+        """Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`).
+
+        Parameters
+        ----------
+        path : str
+            Path to a ``.npz`` written by :meth:`save` (format ``"tspaint-painting"``).
+
+        Returns
+        -------
+        Painting
+            The reloaded painting: :attr:`posteriors`, ``Q``/``π``/``w``, ``queries``, ``labels``
+            and :attr:`default_deadband` are restored from the file, while ``ts`` is ``None`` and
+            ``loglik_history`` is empty (neither is persisted). Delegates to
+            :func:`tspaint.serialize.load_painting` and
+            :func:`~tspaint.serialize.load_painting_meta`.
+        """
         from .serialize import load_painting, load_painting_meta
         tracks = load_painting(path)
         m = load_painting_meta(path)
@@ -142,25 +377,29 @@ class Painting(SoftTrack):
         Fits the time-inhomogeneous directional mugration EM
         (:func:`tspaint.fit_rate_through_time`) **warm-started from this painting's fitted
         ``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
-        deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
-        ``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
-        their direction. It returns a **new** :class:`~tspaint.dating.RateThroughTime` and does
-        **not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
-        paths stay side by side).
+        deliverable* from the painting — the cross-ancestry transition rates as functions of
+        (backward) time, locating divergence / gene-flow epochs and their direction. Works for any
+        ``K``: the result carries all ``K·(K-1)`` directional rates ``q[:, m, n]`` (``.q_AB`` /
+        ``.q_BA`` are the ``K=2`` slices), and ``.plot()`` draws each ancestry pair in one colour
+        (solid / dashed for the two directions). It returns a **new**
+        :class:`~tspaint.dating.RateThroughTime` and does **not** modify :attr:`posteriors`
+        (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the paths stay side by side).
 
         Parameters
         ----------
         edges : array_like, optional
             Log-time grid edges; an auto grid is built from the node ages when ``None``.
         n_jobs : int, optional
-            For an **ensemble** painting, worker processes dating the members **in parallel**
-            (one per member — they are independent). Defaults to the painting's own
-            :attr:`n_jobs` (so a painting fit in parallel dates in parallel); pass an explicit
-            value to override. Ignored for a single tree sequence (the dating E-step is not yet
-            tree-parallel).
+            Worker processes. For a **single** tree sequence the dating E-step is split across
+            genome tree-ranges (:func:`tspaint.parallel.dating_estep_parallel`); for an **ensemble**
+            the members are dated in parallel (one worker per member — they are independent).
+            Defaults to the painting's own :attr:`n_jobs` (so a painting fit in parallel dates in
+            parallel); pass an explicit value to override.
         **kwargs
             Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``,
-            ``n_knots``).
+            ``n_knots``). When this painting was produced with a fragment ``mask``, that mask is
+            forwarded too, so the dating E-step uses the same emissions the painting did; pass an
+            explicit ``mask=`` (or ``mask=None``) to override.
 
         Returns
         -------
@@ -178,10 +417,13 @@ class Painting(SoftTrack):
         from .em import FitResult
         from .dating import fit_rate_through_time
         warm = FitResult(self.Q, self.pi, self.w, self.loglik_history)
+        if self.mask and "mask" not in kwargs:      # date under the same emissions we painted with
+            kwargs["mask"] = self.mask
+        nj = self.n_jobs if n_jobs is None else n_jobs
         if isinstance(self.ts, (list, tuple)):
             # ensemble: date each member on the shared fit/grid (in parallel across members);
             # the per-member split-time estimates become a confidence interval on the split.
-            from .dating import log_time_grid, split_time, EnsembleRateThroughTime
+            from .dating import log_time_grid, EnsembleRateThroughTime
             from .dating.grid import assert_calibrated
             from .parallel import date_members_parallel
             members = list(self.ts)
@@ -191,10 +433,10 @@ class Painting(SoftTrack):
                 pos = nt[nt > 0]
                 n_cells = kwargs.pop("n_cells", 40)
                 edges = log_time_grid(max(1.0, float(pos.min())), float(pos.max()) * 1.05, n_cells)
-            nj = self.n_jobs if n_jobs is None else n_jobs
             rtts = date_members_parallel(members, self.labels, warm, edges, kwargs, n_jobs=nj)
-            return EnsembleRateThroughTime(rtts, np.array([split_time(r) for r in rtts], float))
-        return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, **kwargs)
+            return EnsembleRateThroughTime.from_members(rtts)
+        return fit_rate_through_time(self.ts, self.labels, edges, fit_result=warm, n_jobs=nj,
+                                     **kwargs)
 
     def introgression_map(self, sample):
         """Leave-one-out introgression map for ``sample``, reusing this painting's fit.
@@ -275,6 +517,9 @@ class WindowedPainting:
         ``(k, lo, hi)`` per window, in genome order.
     Q, pi, w, queries, labels
         The single shared fit — the same for every window.
+    default_deadband : float
+        Default dead-band carried into every per-window / reassembled :class:`Painting` (for
+        :meth:`Painting.segments`). Default :data:`~tspaint.output.DEFAULT_DEADBAND` (``0.4``).
     """
     out_dir: str
     window_size: float
@@ -297,7 +542,15 @@ class WindowedPainting:
         return len(self.bounds)
 
     def windows(self):
-        """Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory)."""
+        """Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory).
+
+        Returns
+        -------
+        Iterator[tuple[float, float, Painting]]
+            One ``(lo, hi, Painting)`` per window in genome order — the window's ``[lo, hi)`` bounds
+            and its :class:`Painting`, loaded from ``window_NNNNN.npz`` on demand (one held at a
+            time).
+        """
         for k, lo, hi in self.bounds:
             yield lo, hi, Painting.load(self._window_path(k))
 
@@ -307,6 +560,13 @@ class WindowedPainting:
         Loads every window and concatenates by genomic position — this holds the whole-genome
         posteriors in memory (the cost streaming avoided), so call it only when you can afford it,
         or after narrowing to a manageable region.
+
+        Returns
+        -------
+        Painting
+            The stitched genome-wide painting (``ts=None``; carries the shared fit
+            ``Q``/``π``/``w``, ``queries``, ``labels`` and :attr:`default_deadband`, and tiles
+            ``[0, L)`` exactly as a single-pass paint would).
         """
         tables, bnds = [], []
         for lo, hi, p in self.windows():
@@ -319,7 +579,21 @@ class WindowedPainting:
 
     @staticmethod
     def load(out_dir):
-        """Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``)."""
+        """Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``).
+
+        Parameters
+        ----------
+        out_dir : str
+            A directory written by ``paint(..., window_size=…, out_dir=out_dir)`` — it must hold a
+            ``manifest.json`` (the shared fit and window bounds) alongside the ``window_NNNNN.npz``
+            files.
+
+        Returns
+        -------
+        WindowedPainting
+            A lightweight handle over the per-window files (the window index and shared fit only;
+            the per-window posteriors stay on disk until :meth:`windows` / :meth:`painting`).
+        """
         import json
         import os
         with open(os.path.join(out_dir, "manifest.json")) as f:
@@ -472,8 +746,8 @@ def paint(ts, labels, queries=None, *, refs=False, K=2, soft_refs=None, estimate
         treat as **unlabelled** (the reference emits the query emission there), so a contaminated
         reference anchors only on its clean spans instead of being down-weighted as a whole
         individual (``soft_refs``). Keys may be node ids or sample-ID strings. Feed it directly from
-        :meth:`tspaint.ReferenceQC.mask` or from :func:`tspaint.foreign_tracts`. Applied to both the
-        fit and the painting; exactly equal for any ``n_jobs``.
+        :meth:`~tspaint.introgression.ReferenceQC.mask` or from :func:`tspaint.foreign_tracts`.
+        Applied to both the fit and the painting; exactly equal for any ``n_jobs``.
     max_iter, tol, alpha, beta, w0 : EM controls (see :func:`tspaint.fit`).
     n_jobs : int
         Worker processes for the genome E-step and painting. Default ``None`` → all CPUs / the SLURM

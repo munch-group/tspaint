@@ -247,6 +247,7 @@ quartodoc:
         - RateThroughTime
         - EnsembleRateThroughTime
         - dating.split_time
+        - dating.split_times
         - dating.paint_qt
         - dating.rate_through_time_binned
         - dating.make_Q_of_cell

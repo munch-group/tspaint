@@ -10,6 +10,8 @@ from tspaint.sim import (
     simulate_admixture_impure_refs,
     simulate_admixture_with_ghost,
     local_ancestry_truth,
+    pop_role,
+    check_admixture_contract,
     _census_mask,
     SOURCE_A,
     SOURCE_B,
@@ -168,3 +170,134 @@ def test_ghost_source_tracts_and_no_ghost_control():
     t0, pn0 = local_ancestry_truth(ts0)
     q0pops = {pn0[p] for q in q0 for (_, _, p) in t0[q]}
     assert GHOST not in q0pops and q0pops <= {SOURCE_A, SOURCE_B}
+
+
+# --- the hand-built population-role contract (pop_role / check_admixture_contract / ghost) --------
+
+def _three_source_ghost_demography(Ne=2000):
+    """Hand-built: three sampled sources A/B/C (states 0/1/2) + one unsampled ghost, nested ((A,B),C)."""
+    import msprime
+    d = msprime.Demography()
+    for i, n in enumerate((SOURCE_A, SOURCE_B, "C")):
+        d.add_population(name=n, initial_size=Ne, extra_metadata=pop_role(state=i, source=True, reference=True))
+    d.add_population(name=GHOST, initial_size=Ne, extra_metadata=pop_role(ghost=True))   # unsampled foreign
+    d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=pop_role(query=True))
+    for n in ("AB", "ANC", "ROOT"):
+        d.add_population(name=n, initial_size=Ne)                                          # untagged joins
+    d.add_admixture(time=100, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B, "C"], proportions=[.3, .3, .4])
+    d.add_mass_migration(time=90, source=ADMIXED, dest=GHOST, proportion=0.1)              # ghost pulse
+    d.add_census(time=101.0)
+    d.add_population_split(time=2000, derived=[SOURCE_A, SOURCE_B], ancestral="AB")
+    d.add_population_split(time=6000, derived=["AB", "C"], ancestral="ANC")
+    d.add_population_split(time=20000, derived=["ANC", GHOST], ancestral="ROOT")           # deep ghost outgroup
+    d.sort_events()
+    return d
+
+
+def test_hand_built_contract_three_sources_plus_ghost():
+    # a fully hand-built demography, tagged with pop_role, interpreted by simulate_admixture
+    sim = simulate_admixture(_three_source_ghost_demography(), n_query=8, n_reference=6,
+                             sequence_length=1e6, recombination_rate=1e-8, random_seed=1)
+    assert sim.source_states == (0, 1, 2)                              # three paintable sources
+    tstates = {st for q in sim.queries for (_, _, st) in sim.truth_states[q]}
+    assert tstates == {0, 1, 2, 3}                                    # ghost EMBEDDED above the sources
+    assert {st for q in sim.queries for (_, _, st) in sim.ghost_states[q]} == {3}   # ghost-only truth
+    assert any(sim.ghost_states[q] for q in sim.queries)              # a query really carries ghost
+    assert GHOST not in sim.sample_sets                               # ghost unsampled
+    assert set(sim.labels.values()) == {0, 1, 2}                      # A/B/C are the labelled panel
+
+
+def test_check_admixture_contract_guardrails():
+    import msprime
+    Ne = 1000
+    # missing census -> silent-garbage-truth footgun becomes a clear error
+    d = msprime.Demography()
+    d.add_population(name="Q", initial_size=Ne, extra_metadata=pop_role(query=True))
+    d.add_population(name="A", initial_size=Ne, extra_metadata=pop_role(state=0, source=True))
+    with pytest.raises(ValueError, match="census"):
+        check_admixture_contract(d)
+    # no query population
+    d2 = msprime.Demography()
+    d2.add_population(name="A", initial_size=Ne, extra_metadata=pop_role(state=0, source=True))
+    d2.add_census(time=10)
+    with pytest.raises(ValueError, match="query"):
+        check_admixture_contract(d2)
+    # a source without a state (its tracts would be silently dropped)
+    d3 = admixture_demography()
+    d3.add_population(name="NS", initial_size=Ne, extra_metadata=pop_role(source=True))
+    with pytest.raises(ValueError, match="state"):
+        check_admixture_contract(d3)
+    # a ghost combined with a sampling role
+    d4 = admixture_demography()
+    d4.add_population(name="BADG", initial_size=Ne, extra_metadata=pop_role(ghost=True, source=True, state=5))
+    with pytest.raises(ValueError, match="ghost"):
+        check_admixture_contract(d4)
+    # simulate_admixture runs the check by default
+    with pytest.raises(ValueError):
+        simulate_admixture(d3, sequence_length=1e5, random_seed=1)
+
+
+def test_ghost_wrapper_embeds_ghost_truth():
+    # the with_ghost preset now tags GHOST explicitly, so its tracts embed in truth_states + ghost_states
+    sim = simulate_admixture_with_ghost(n_admix=6, n_ref=4, sequence_length=5e5, recombination_rate=1e-8,
+                                        random_seed=1, ghost_fraction=0.25, T_admix=100,
+                                        T_split_AB=2000, T_split_ABC=20000, Ne=1000)
+    tstates = {st for q in sim.queries for (_, _, st) in sim.truth_states[q]}
+    assert sim.source_states == (0, 1) and 2 in tstates              # ghost embedded as state 2
+    assert any(sim.ghost_states[q] for q in sim.queries)
+    assert GHOST not in sim.sample_sets
+
+
+def test_misplaced_census_gives_placement_diagnosis():
+    # census OLDER than the A/B split -> census nodes land in the ancestral join ANC, not the sources.
+    # The guardrail must diagnose the census placement (not tell the user to "tag ANC").
+    import msprime
+    Ne = 1000
+    def build(census_time):
+        d = msprime.Demography()
+        d.add_population(name="ANC", initial_size=Ne)
+        d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=pop_role(state=0, source=True, reference=True))
+        d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=pop_role(state=1, source=True, reference=True))
+        d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=pop_role(query=True))
+        d.add_population_split(time=10000, derived=[SOURCE_A, SOURCE_B], ancestral="ANC")
+        d.add_census(time=census_time)
+        d.add_admixture(time=500, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B], proportions=[0.8, 0.2])
+        d.sort_events()
+        return d
+
+    with pytest.raises(ValueError, match="census.*older than the split"):
+        simulate_admixture(build(10001), n_query=6, n_reference=6, sequence_length=3e5, random_seed=1)
+
+    # census placed correctly (between the pulse 500 and the split 10000) -> A/B truth, no error
+    sim = simulate_admixture(build(501), n_query=6, n_reference=6, sequence_length=3e5, random_seed=1)
+    assert sim.source_states == (0, 1)
+    assert {st for q in sim.queries for (_, _, st) in sim.truth_states[q]} == {0, 1}
+
+
+def test_truth_defining_states_must_be_distinct():
+    # each source (and stated ghost) must own a distinct state; a reference/proxy MAY reuse one.
+    import msprime
+    from tspaint.sim import admixture_demography_with_ref_proxies, admixture_demography_impure_refs
+    Ne = 1000
+    def build(sa, sb):
+        d = msprime.Demography()
+        d.add_population(name="ANC", initial_size=Ne)
+        d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=pop_role(state=sa, source=True, reference=True))
+        d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=pop_role(state=sb, source=True, reference=True))
+        d.add_population(name=ADMIXED, initial_size=Ne, extra_metadata=pop_role(query=True))
+        d.add_population_split(time=10000, derived=[SOURCE_A, SOURCE_B], ancestral="ANC")
+        d.add_census(time=501)
+        d.add_admixture(time=500, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B], proportions=[.5, .5])
+        d.sort_events()
+        return d
+    with pytest.raises(ValueError, match="both declare ancestry state"):
+        check_admixture_contract(build(0, 0))                 # two sources share state 0
+    check_admixture_contract(build(0, 1))                     # distinct -> ok
+    # references/proxies legitimately reuse a source's state (the presets rely on this)
+    check_admixture_contract(admixture_demography_with_ref_proxies())   # A_prox(0) shares A(0)
+    check_admixture_contract(admixture_demography_impure_refs())        # RA(0) shares A(0)
+    # a ghost's explicit state may not collide with a source
+    dg = admixture_demography()
+    dg.add_population(name="G", initial_size=Ne, extra_metadata=pop_role(ghost=True, state=0))
+    with pytest.raises(ValueError, match="both declare ancestry state"):
+        check_admixture_contract(dg)

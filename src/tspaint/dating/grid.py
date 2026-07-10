@@ -40,14 +40,43 @@ def assert_calibrated(node_time):
 def log_time_grid(t_min, t_max, n_cells):
     """Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``.
 
-    Returns ``(n_cells + 1,)`` edges. Geometric spacing gives roughly equal expected
-    branch-occupation per cell (the "even power" placement).
+    Geometric spacing gives roughly equal expected branch-occupation per cell (the "even power"
+    placement).
+
+    Parameters
+    ----------
+    t_min : float
+        Youngest (smallest) cell edge, in generations. Must be ``> 0`` (geometric spacing).
+    t_max : float
+        Oldest (largest) cell edge, in generations.
+    n_cells : int
+        Number of cells; the grid has ``n_cells + 1`` edges.
+
+    Returns
+    -------
+    numpy.ndarray
+        ``(n_cells + 1,)`` ascending cell-boundary **times** (generations), log-spaced — the
+        boundaries are real time values evenly spaced on a log axis, not log-time.
     """
     return np.geomspace(t_min, t_max, n_cells + 1)
 
 
 def cell_centers(edges):
-    """Geometric centres of the cells defined by ``edges``."""
+    """Geometric centres of the cells defined by ``edges``.
+
+    The geometric mean ``sqrt(edges[:-1] * edges[1:])`` is the natural cell centre on the
+    log-time axis the grid lives on.
+
+    Parameters
+    ----------
+    edges : array_like
+        ``(n_cells + 1,)`` ascending cell-boundary times (:func:`log_time_grid`).
+
+    Returns
+    -------
+    numpy.ndarray
+        ``(n_cells,)`` geometric centre (generations) of each cell.
+    """
     edges = np.asarray(edges, float)
     return np.sqrt(edges[:-1] * edges[1:])
 

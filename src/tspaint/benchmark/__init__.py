@@ -59,7 +59,36 @@ def run(tool, query_vcf, ref_vcf=None, **kwargs):
     """Dispatch to a painter by name (``"tspaint"`` or an external comparator).
 
     Forwards ``query_vcf``, ``ref_vcf`` and any painter keyword arguments (e.g. ``sample_map=``,
-    ``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in :data:`PAINTERS`.
+    ``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in
+    :data:`PAINTERS`.
+
+    Parameters
+    ----------
+    tool : str
+        Painter name — a key of :data:`PAINTERS` (``"tspaint"``, ``"rfmix"``, ``"gnomix"``,
+        ``"salai"`` or ``"recombmix"``).
+    query_vcf : str
+        Path to the query (or combined) phased diploid VCF, passed as the painter's first
+        positional argument.
+    ref_vcf : str, optional
+        Path to a separate reference VCF, passed positionally; ``None`` selects the combined-VCF
+        shape. Default ``None``.
+    **kwargs
+        Keyword arguments forwarded verbatim to the selected painter — notably the required
+        ``sample_map=``, plus per-painter options such as ``out=`` (write the ``.npz``),
+        ``generations=`` (RFMix), ``model=`` (gnomix / SALAI-Net) and ``smooth=`` (tspaint). See
+        the individual runners for each painter's full set.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Whatever the selected painter returns: per query haplotype index ``2*j+h``, its Segment
+        track over ``[0, L)``.
+
+    Raises
+    ------
+    ValueError
+        If ``tool`` is not a key of :data:`PAINTERS`.
     """
     try:
         runner = PAINTERS[tool]

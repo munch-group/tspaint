@@ -47,6 +47,12 @@ def repo_root():
     directory — so ``tspaint install singer`` / ``benchmark setup``, run from the repo, still find
     ``external/`` rather than a bogus path inside the env. Searches up for the ``external/tools.ini``
     marker, falling back to the legacy ``<this>/../../..`` guess.
+
+    Returns
+    -------
+    str
+        Absolute path to the repo root — the nearest ancestor (of this file, then of the cwd)
+        containing the ``external/tools.ini`` marker, else the legacy ``<this>/../../..`` fallback.
     """
     marker = os.path.join("external", "tools.ini")
     for start in (os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
@@ -68,12 +74,27 @@ def _tools_dir():
 
 
 def singer_install_dir():
-    """Clone root that ``tspaint install singer`` builds into (``<tools-dir>/SINGER``)."""
+    """Clone root that ``tspaint install singer`` builds into (``<tools-dir>/SINGER``).
+
+    Returns
+    -------
+    str
+        The path ``<tools-dir>/SINGER``, where ``tools-dir`` is ``$TSPAINT_TOOLS_DIR`` if set,
+        else ``<repo>/external`` (:func:`repo_root`).
+    """
     return os.path.join(_tools_dir(), "SINGER")
 
 
 def singer_binary_path():
-    """Path to the ``singer`` binary built by ``tspaint install singer``."""
+    """Path to the ``singer`` binary built by ``tspaint install singer``.
+
+    Returns
+    -------
+    str
+        The binary path under :func:`singer_install_dir` (so it honours ``$TSPAINT_TOOLS_DIR``).
+        This is the build location only; the runtime default ``DEFAULT_SINGER`` additionally
+        honours ``$TSPAINT_SINGER``.
+    """
     return os.path.join(singer_install_dir(), "SINGER", "SINGER", "singer")
 
 
@@ -409,11 +430,16 @@ def singer(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     _r : float, optional
         Per-base recombination rate (``-r``). Defaults to ``_m * _ratio``.
     _ratio, _polar, _ploidy, _seed, _penalty, _hmm_epsilon, _psmc_bins, _fast, _recomb_map, _mut_map
-        The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1,
-        ``-seed`` 42, ``-fast`` off; the rest optional).
+        The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1,
+        ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is
+        not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set
+        (mirrors SINGER's own ``-ratio``).
     _n_samples, _thin : int, optional
         SINGER's raw ``-n`` / ``-thin`` — normally inferred from ``ts`` / ``mcmc_step`` / ``mcmc_burnin``;
         set directly for full control (but not alongside the plain knob they correspond to).
+    singer_args : list, optional
+        Extra raw SINGER command-line tokens appended after tspaint's own flags (so they take
+        precedence). Default ``None``.
     workdir : str, optional
         Working directory for VCF and ARG text tables (default: a fresh tempdir).
     singer_bin : str, optional
@@ -499,8 +525,13 @@ def singer_window(source, *, start, end, out_prefix, _Ne, _m=None, _r=None,
         Window bounds passed to SINGER ``-start`` / ``-end``.
     out_prefix : str
         Output prefix; SINGER writes ``{out_prefix}_nodes_<i>.txt`` etc.
-    _Ne, _m, _r, _n_samples, _thin, _ploidy, _seed, _polar, max_retries, singer_bin
+    _Ne, _m, _r, _ploidy, _seed, _polar, max_retries, singer_bin
         The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+    _n_samples, _thin : int, optional
+        SINGER's raw ``-n`` / ``-thin``, passed directly for this one window (this per-window
+        primitive has no unified ``ts`` / ``mcmc_step`` knobs). Defaults ``20`` / ``10``.
+    _ratio, _penalty, _hmm_epsilon, _psmc_bins, _recomb_map, _mut_map, _fast, singer_args
+        The remaining SINGER pass-through flags, as for :func:`singer`.
 
     Returns
     -------
@@ -591,6 +622,32 @@ def run_merge_arg(rows, out, *, script=None, python=None):
     imports ``tszip``, so that interpreter needs ``tskit + numpy + tszip``. The script is run
     through :func:`_merge_script_with_mutation_parents`, which repairs SINGER's missing
     ``compute_mutation_parents()`` call (else recurrent mutations abort the merge).
+
+    Parameters
+    ----------
+    rows : list of tuple
+        ``(nodes_file, branches_file, muts_file, block_coordinate)`` rows from
+        :func:`build_merge_table` (one per genomic window, in genome order).
+    out : str
+        Destination path for the stitched, region-length tree sequence.
+    script : str, optional
+        Path to SINGER's ``merge_ARG.py``. Default ``None`` — uses ``DEFAULT_MERGE_ARG``
+        (env ``TSPAINT_MERGE_ARG``, else the SINGER install location).
+    python : str, optional
+        Interpreter used to run the script (needs ``tskit + numpy + tszip``). Default ``None`` —
+        uses the current interpreter (``sys.executable``).
+
+    Returns
+    -------
+    str
+        ``out`` — the path of the stitched tree sequence written by ``merge_ARG.py``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``merge_ARG.py`` is not found at ``script``.
+    RuntimeError
+        If ``merge_ARG.py`` exits nonzero.
     """
     script = script or DEFAULT_MERGE_ARG
     python = python or sys.executable
@@ -657,7 +714,13 @@ def singer_windowed(source, *, window_size, ts=None, mcmc_step=None, mcmc_burnin
         ``_seed`` is offset per window (``_seed + window_index``) so windows are independent but
         reproducible.
     mcmc_burnin : int, optional
-        Leading raw MCMC samples discarded before thinning (default 0).
+        Burn-in MCMC iterations discarded before the kept samples (default 200), as for
+        :func:`singer`.
+    _n_samples, _thin, _seed, _penalty, _hmm_epsilon, _psmc_bins, _fast, _recomb_map, _mut_map
+        The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per
+        window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+    singer_args : list, optional
+        Extra raw SINGER tokens appended after tspaint's flags (as for :func:`singer`).
     n_jobs : int, optional
         Worker threads for the window and merge stages (default: the SLURM / CPU core count).
     sequence_length : float, optional
@@ -748,7 +811,22 @@ def singer_windowed(source, *, window_size, ts=None, mcmc_step=None, mcmc_burnin
 
 
 def singer_tree_sequences(ts, **kwargs):
-    """Deprecated alias for :func:`singer`."""
+    """Deprecated alias for :func:`singer` (emits a :class:`DeprecationWarning`).
+
+    Parameters
+    ----------
+    ts : tskit.TreeSequence or str
+        The genotype ``source`` forwarded to :func:`singer` as its first argument. Named ``ts``
+        for historical reasons — it is the *source*, **not** :func:`singer`'s ``ts`` sample-count
+        knob.
+    **kwargs
+        Forwarded verbatim to :func:`singer`.
+
+    Returns
+    -------
+    tskit.TreeSequence or list of tskit.TreeSequence
+        Whatever :func:`singer` returns (a single posterior tree sequence, or a list of them).
+    """
     warnings.warn("tspaint.io.singer_tree_sequences is deprecated; use tspaint.io.singer",
                   DeprecationWarning, stacklevel=2)
     return singer(ts, **kwargs)

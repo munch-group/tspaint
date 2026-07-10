@@ -226,14 +226,17 @@ def test_painting_ensemble_methods():
 def test_split_time_is_the_cross_rate_onset():
     """split_time finds the onset (half-max rise) of the combined cross-ancestry rate."""
     from tspaint.dating import RateThroughTime, split_time
+
+    def rtt_from(q01, q10):                                   # build the (n_cells, 2, 2) rate array
+        q = np.zeros((len(q01), 2, 2))
+        q[:, 0, 1], q[:, 1, 0] = q01, q10
+        return RateThroughTime(centers=centers, q=q, D=np.ones((60, 2)), J=np.zeros((60, 2, 2)),
+                               loglik_history=[])
+
     centers = np.geomspace(10.0, 1e4, 60)
     rise = np.where(centers >= 2000.0, 1e-3, 1e-6)            # ~0 below the split, high above
-    rtt = RateThroughTime(centers=centers, q_AB=rise, q_BA=np.zeros_like(rise),
-                          D=np.ones((60, 2)), J=np.zeros((60, 2, 2)), loglik_history=[])
-    assert 1500.0 <= split_time(rtt) <= 2700.0                # the onset, not a peak
-    flat = RateThroughTime(centers=centers, q_AB=np.zeros_like(centers), q_BA=np.zeros_like(centers),
-                           D=np.ones((60, 2)), J=np.zeros((60, 2, 2)), loglik_history=[])
-    assert np.isnan(split_time(flat))                         # no rise -> nan
+    assert 1500.0 <= split_time(rtt_from(rise, np.zeros_like(rise))) <= 2700.0   # the onset, not a peak
+    assert np.isnan(split_time(rtt_from(np.zeros_like(centers), np.zeros_like(centers))))   # no rise -> nan
 
 
 @pytest.mark.slow
@@ -322,6 +325,40 @@ def test_painting_plot_runs():
     pe.plot(truth=truth); plt.close("all")                    # ensemble mean
 
 
+@pytest.mark.slow
+def test_painting_default_title():
+    """No title kwarg -> the title defaults to the painting summary (CLAUDE.md §9 read-out)."""
+    import matplotlib.pyplot as plt
+    plt.switch_backend("Agg")
+    ts, labels, queries, truth = _admixture(L=1e5)
+    p = tspaint.paint(ts, labels, queries)
+
+    # with truth: precision / recall / fragmentation-ratio + ancestry proportions
+    _fig, axes = p.plot(truth=truth, return_plot=True)
+    title = axes[0].get_title()
+    plt.close("all")
+    for token in ("precision", "recall", "fragmentation", "ancestry", "A ", "B "):
+        assert token in title, f"{token!r} missing from default title {title!r}"
+
+    # no truth: fragmentation reported as raw switch density, no precision/recall
+    _fig, axes = p.plot(return_plot=True)
+    title_nt = axes[0].get_title()
+    plt.close("all")
+    assert "sw/Mb" in title_nt and "ancestry" in title_nt
+    assert "precision" not in title_nt
+
+    # an explicit title (including "") always wins over the default
+    _fig, axes = p.plot(truth=truth, title="mine", return_plot=True)
+    assert axes[0].get_title() == "mine"; plt.close("all")
+    _fig, axes = p.plot(title="", return_plot=True)
+    assert axes[0].get_title() == ""; plt.close("all")
+
+    # summary() exposes the same numbers as a dict
+    s = p.summary(truth=truth)
+    assert set(s) >= {"proportion", "switch_per_mb", "precision", "recall", "switch_ratio"}
+    assert len(s["proportion"]) == 2
+
+
 def _grid_posterior(painting, queries, grid):
     """Per-position P(state 0) on a genomic grid — comparable across different segmentations."""
     out = {}
@@ -389,3 +426,225 @@ def test_paint_window_size_guards(tmp_path):
     with pytest.raises(ValueError, match="single"):
         tspaint.paint([ts, ts], labels, queries, window_size=1e5,                  # ensemble
                       out_dir=str(tmp_path / "y"))
+
+
+# --- K > 2 sources: the inference must generalise past two ancestries ------------------------
+
+def _three_source_sim(L=1e6, seed=1):
+    """A 3-source (K=3) admixture: 3 labelled reference panels + 3-way census truth.
+
+    C is a deep outgroup to A/B (nested ((A,B),C)), so the three ancestries are genealogically
+    distinguishable; a recent pulse keeps the query↔reference signal strong.
+    """
+    import msprime
+    from tspaint.sim import pop_role, simulate_admixture
+    Ne = 2000
+    d = msprime.Demography()
+    d.add_population(name=SOURCE_A, initial_size=Ne, extra_metadata=pop_role(state=0, source=True, reference=True))
+    d.add_population(name=SOURCE_B, initial_size=Ne, extra_metadata=pop_role(state=1, source=True, reference=True))
+    d.add_population(name="C",      initial_size=Ne, extra_metadata=pop_role(state=2, source=True, reference=True))
+    d.add_population(name=ADMIXED,  initial_size=Ne, extra_metadata=pop_role(query=True))
+    d.add_population(name="AB", initial_size=Ne)
+    d.add_population(name="ANC", initial_size=Ne)
+    d.add_admixture(time=100, derived=ADMIXED, ancestral=[SOURCE_A, SOURCE_B, "C"],
+                    proportions=[1 / 3, 1 / 3, 1 / 3])
+    d.add_census(time=101.0)
+    d.add_population_split(time=2000, derived=[SOURCE_A, SOURCE_B], ancestral="AB")
+    d.add_population_split(time=6000, derived=["AB", "C"], ancestral="ANC")
+    return simulate_admixture(d, n_query=8, n_reference=6, sequence_length=L,
+                              recombination_rate=1e-8, random_seed=seed)
+
+
+@pytest.mark.slow
+def test_paint_three_sources():
+    # CLAUDE.md: the model is generator-agnostic, "K-way by generator swap". This exercises the
+    # whole inference at K=3 and guards the regression where fit's default Q0 was hard-wired 2-state
+    # (so paint(K=3) with no explicit Q0 crashed).
+    from tspaint.validate import balanced_accuracy
+    sim = _three_source_sim()
+    assert sorted(set(sim.labels.values())) == [0, 1, 2]              # three labelled ancestries
+    assert sorted({st for q in sim.queries for (_, _, st) in sim.truth_states[q]}) == [0, 1, 2]
+
+    p = tspaint.paint(sim.ts, sim.labels, sim.queries, K=3, n_jobs=1)  # no Q0 -> K-way default
+    assert p.Q.shape == (3, 3) and p.pi.shape == (3,)
+    post = p.posteriors[sim.queries[0]][0].posterior
+    assert len(post) == 3 and np.isclose(post.sum(), 1.0)             # a proper 3-simplex posterior
+    ba = balanced_accuracy(p.posteriors, sim.truth_states, K=3)
+    assert ba > 0.8, f"K=3 balanced accuracy too low ({ba:.3f}); the math should recover 3 ancestries"
+
+
+# --- Painting.plot(samples=...) : sample selection folded in from plot_posterior ---------------
+
+def _small_painting():
+    sim = tspaint.simulate_admixture(
+        admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+        n_query=3, n_reference=3, sequence_length=1e5, recombination_rate=1e-8, random_seed=2)
+    return tspaint.paint(sim.ts, sim.labels, queries=sim.queries)
+
+
+def test_plot_samples_by_node_index():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    p = _small_painting()
+    q = p.queries
+    _fig, axes = p.plot(samples=q[0], return_plot=True)             # a single int -> one row
+    assert len(axes) == 1 and axes[0].get_ylabel() == f"hapl. {q[0]}"
+    plt.close("all")
+    _fig, axes = p.plot(samples=[q[0], q[1], q[2]], return_plot=True)   # list of int -> rows in order
+    assert len(axes) == 3
+    plt.close("all")
+    _fig, axes = p.plot_posterior(q[0], return_plot=True)           # the alias still works
+    assert len(axes) == 1 and axes[0].get_ylabel() == f"hapl. {q[0]}"
+    plt.close("all")
+
+
+def test_plot_samples_absent_empty_and_no_ts_string():
+    p = _small_painting()
+    with pytest.raises(ValueError):
+        p.plot(samples=10_000_000)           # a node that was not painted
+    with pytest.raises(ValueError):
+        p.plot(samples=[])                   # nothing selected
+    p.ts = None                              # a reloaded painting cannot resolve string ids
+    with pytest.raises(ValueError):
+        p.plot(samples="someone")
+
+
+def test_plot_posterior_by_individual_id_expands_haplotypes():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from collections import defaultdict
+    from tspaint.ids import attach_sample_ids
+
+    sim = tspaint.simulate_admixture(
+        admixture_demography(Ne=1000, T_admix=30, T_split=5000, f_A=0.5),
+        n_query=3, n_reference=3, sequence_length=1e5, recombination_rate=1e-8, random_seed=3)
+    ts = sim.ts
+    node_ind = ts.tables.nodes.individual
+    cnt, names = defaultdict(int), []
+    for s in ts.samples():                                          # diploid ids "ind<i>_<k>" per haplotype
+        i = int(node_ind[int(s)])
+        names.append(f"ind{i}_{cnt[i]}")
+        cnt[i] += 1
+    sts = attach_sample_ids(ts, names, ploidy=2)                    # node ids unchanged; labels stay valid
+    p = tspaint.paint(sts, sim.labels, queries=sim.queries)
+
+    iid = f"ind{int(node_ind[sim.queries[0]])}"                     # id of a painted admixed individual
+    _fig, axes = p.plot(samples=iid, return_plot=True)
+    assert len(axes) == 2                                           # a diploid id -> both haplotype rows
+    assert [ax.get_ylabel() for ax in axes] == [f"{iid} (hap 0)", f"{iid} (hap 1)"]
+    plt.close("all")
+
+
+def test_summary_returns_paintingsummary():
+    from tspaint.validate import PaintingSummary
+    assert isinstance(_small_painting().summary(), PaintingSummary)
+
+
+def test_plot_ghost_overlay_hatches_tracts():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.output import Segment, INFORMATIVE
+    from tspaint.archaic import GhostResult
+
+    p = _small_painting()
+    q0 = p.queries[0]
+    L = p.length
+    gr = GhostResult(                                                   # ghost tract on the right half
+        posteriors={q0: [Segment(0.0, L / 2, np.array([0.95, 0.05]), INFORMATIVE),
+                         Segment(L / 2, L, np.array([0.1, 0.9]), INFORMATIVE)]},
+        burden={q0: 0.5}, mu=np.array([0.0, 2.0]), sd=np.array([1.0, 1.0]),
+        A=np.eye(2), pi0=np.array([0.5, 0.5]), loglik_history=[], _seqlen=L)
+
+    _fig, axes = p.plot(samples=[q0], return_plot=True)                 # no overlay -> no hatching
+    assert not any(patch.get_hatch() for ax in axes for patch in ax.patches)
+    plt.close("all")
+    _fig, axes = p.plot(samples=[q0], ghost=gr, return_plot=True)       # ghost tract hatched over bands
+    assert any(patch.get_hatch() for ax in axes for patch in ax.patches)
+    plt.close("all")
+    with pytest.raises(TypeError):                                      # not a GhostResult
+        p.plot(ghost=object())
+
+
+def test_masked_and_ghost_use_distinct_hatches():
+    # a masked reference span and a ghost tract on the same plot must be visually distinguishable
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.output import Segment, INFORMATIVE
+    from tspaint.archaic import GhostResult
+    from tspaint.api import _MASK_HATCH, _GHOST_HATCH
+
+    from tspaint.api import Painting
+    posteriors = {0: [Segment(0.0, 100.0, np.array([0.9, 0.1]), INFORMATIVE)]}   # one ref row
+    p = Painting(posteriors=posteriors, Q=np.eye(2), pi=np.array([0.5, 0.5]), w={},
+                 loglik_history=[], queries=[0], labels={0: 0}, _seqlen=100.0,
+                 mask={0: [(0.0, 40.0)]})                                        # masked span 0-40
+    gr = GhostResult(posteriors={0: [Segment(0.0, 60.0, np.array([0.9, 0.1]), INFORMATIVE),
+                                     Segment(60.0, 100.0, np.array([0.1, 0.9]), INFORMATIVE)]},
+                     burden={0: 0.4}, mu=np.array([0.0, 2.0]), sd=np.array([1.0, 1.0]),
+                     A=np.eye(2), pi0=np.array([0.5, 0.5]), loglik_history=[], _seqlen=100.0)
+    _fig, axes = p.plot(ghost=gr, return_plot=True)
+    hatches = {pt.get_hatch() for a in axes for pt in a.patches if pt.get_hatch()}
+    assert _MASK_HATCH in hatches and _GHOST_HATCH in hatches and _MASK_HATCH != _GHOST_HATCH
+    plt.close("all")
+
+
+def test_plot_curves_and_ghost_dashed_curve():
+    # curves=True draws the K posteriors as line curves; ghost= adds a black dashed P(ghost) curve
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.output import Segment, INFORMATIVE
+    from tspaint.archaic import GhostResult
+    from tspaint.api import Painting
+
+    p = Painting(posteriors={0: [Segment(0., 50., np.array([0.8, 0.2]), INFORMATIVE),
+                                 Segment(50., 100., np.array([0.3, 0.7]), INFORMATIVE)]},
+                 Q=np.eye(2), pi=np.array([0.5, 0.5]), w={}, loglik_history=[], queries=[0],
+                 labels=None, _seqlen=100.0)
+    _fig, axes = p.plot(samples=[0], curves=True, return_plot=True)
+    assert len(axes) == 1
+    lines = axes[0].get_lines()
+    assert len(lines) == 2                                       # one curve per ancestry state (K=2)
+    assert axes[0].get_ylim()[0] < 0.0 and axes[0].get_ylim()[1] > 1.0   # probability y-axis [0, 1]
+    plt.close("all")
+
+    gr = GhostResult(posteriors={0: [Segment(0., 60., np.array([0.9, 0.1]), INFORMATIVE),
+                                     Segment(60., 100., np.array([0.2, 0.8]), INFORMATIVE)]},
+                     burden={0: 0.4}, mu=np.array([0., 2.]), sd=np.array([1., 1.]),
+                     A=np.eye(2), pi0=np.array([0.5, 0.5]), loglik_history=[], _seqlen=100.0)
+    _fig, axes = p.plot(samples=[0], curves=True, ghost=gr, return_plot=True)
+    lines = axes[0].get_lines()
+    black = [ln for ln in lines if matplotlib.colors.to_hex(ln.get_color()) == "#000000"]
+    assert len(lines) == 3 and len(black) == 1                  # K state curves + the ghost P(ghost) curve
+    plt.close("all")
+
+
+def test_plot_curves_truth_and_segment_bands():
+    # curves=True + truth/segments draws thin state-coloured bands (~10% of curve height) below the curves
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from tspaint.output import Segment, INFORMATIVE
+    from tspaint.api import Painting
+    from tspaint.track import _CURVE_BAND_H
+
+    p = Painting(posteriors={0: [Segment(0., 50., np.array([0.9, 0.1]), INFORMATIVE),
+                                 Segment(50., 100., np.array([0.2, 0.8]), INFORMATIVE)]},
+                 Q=np.eye(2), pi=np.array([0.5, 0.5]), w={}, loglik_history=[], queries=[0],
+                 labels=None, _seqlen=100.0)
+    truth = {0: [(0., 50., 0), (50., 100., 1)]}
+    _fig, axes = p.plot(samples=[0], curves=True, truth=truth, segments=True, return_plot=True)
+    ax = axes[0]
+    bars = [pt for pt in ax.patches if pt.get_height() > 0]     # barh band patches (hard + truth)
+    assert bars and all(np.isclose(pt.get_height(), _CURVE_BAND_H) for pt in bars)   # each ~10% tall
+    assert ax.get_ylim()[0] < -0.1 and ax.get_ylim()[1] > 1.0   # bands stacked below the [0,1] curves
+    plt.close("all")
+
+    _fig, axes = p.plot(samples=[0], curves=True, return_plot=True)     # no truth/segments -> no bands
+    assert not [pt for pt in axes[0].patches if pt.get_height() > 0]
+    assert axes[0].get_ylim()[0] >= -0.05
+    plt.close("all")

@@ -9,11 +9,26 @@ every tip, and check EM recovers the rates and root frequencies with a
 monotonically non-decreasing log-likelihood.
 """
 import numpy as np
+import pytest
 import tskit
 from scipy.linalg import expm
 
-from tspaint.model import make_generator_2state, stationary_distribution
+from tspaint.model import (make_generator_2state, make_generator_symmetric,
+                           stationary_distribution, validate_generator)
 from tspaint.em import fit
+
+
+def test_make_generator_symmetric_valid_and_reduces_to_2state():
+    # K=2 is byte-identical to the 2-state constructor (so K=2 behaviour is unchanged)
+    assert np.array_equal(make_generator_symmetric(2, 1e-3), make_generator_2state(1e-3, 1e-3))
+    # K>2: a valid generator with equal off-diagonals and total exit rate == `rate`
+    Q = make_generator_symmetric(4, 0.02)
+    validate_generator(Q)                                   # square, rows sum to 0, off-diag >= 0
+    assert Q.shape == (4, 4)
+    assert np.allclose(Q[~np.eye(4, dtype=bool)], 0.02 / 3)  # equal off-diagonal rates
+    assert np.allclose(np.diag(Q), -0.02)                    # exit rate 0.02 per state
+    with pytest.raises(ValueError):
+        make_generator_symmetric(1, 0.01)
 
 
 def balanced_binary_ts(depth, bl=0.6):
@@ -115,3 +130,17 @@ def test_em_single_treesequence_runs():
     assert np.all(np.isfinite(Q_hat)) and np.allclose(Q_hat.sum(axis=1), 0.0)
     assert np.isclose(pi_hat.sum(), 1.0) and np.all(pi_hat >= 0)
     assert len(res.loglik_history) >= 1
+
+
+def test_fit_rejects_label_state_out_of_range():
+    # a reference label state >= K would index past the K-vector in build_emissions (a cryptic
+    # IndexError deep in the possibly-parallel E-step); fit must reject it up front with a clear error.
+    from tspaint.sim import admixture_demography, simulate_admixture
+    sim = simulate_admixture(admixture_demography(T_admix=30, T_split=2000, Ne=500),
+                             n_query=3, n_reference=3, sequence_length=1e5, random_seed=1)
+    bad = dict(sim.labels)
+    bad[next(iter(bad))] = 2                       # a label state 2, but K=2 -> states 0..1 only
+    with pytest.raises(ValueError, match=r"label states are.*K=2"):
+        fit(sim.ts, bad, K=2, max_iter=1)
+    # the valid labels still fit and run
+    fit(sim.ts, sim.labels, K=2, max_iter=1)

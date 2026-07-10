@@ -34,7 +34,26 @@ def default_tools_dir():
 
 
 def load_manifest(path=None):
-    """Read the tools manifest INI into ``{tool: {field: value}}``."""
+    """Read the tools manifest INI into ``{tool: {field: value}}``.
+
+    Parameters
+    ----------
+    path : str, optional
+        Manifest path. Default ``None`` — uses :func:`default_manifest_path`
+        (``<repo>/external/tools.ini``).
+
+    Returns
+    -------
+    dict[str, dict[str, str]]
+        One entry per INI section: ``{tool-name: {field: value}}``. Fields include ``repo``,
+        ``commit``, ``dir``, ``sparse``, ``pixi``, ``task``, ``build``, ``post`` and ``check``
+        (consumed by :func:`plan`).
+
+    Raises
+    ------
+    FileNotFoundError
+        If ``path`` does not exist.
+    """
     path = path or default_manifest_path()
     if not os.path.exists(path):
         raise FileNotFoundError(f"benchmark tools manifest not found: {path}")
@@ -178,7 +197,15 @@ def setup(tools=None, *, tools_dir=None, manifest=None, force=False, dry_run=Fal
 
 
 def tool_status():
-    """Resolved path + availability for every benchmark tool (incl. RFMix)."""
+    """Resolved path + availability for every benchmark tool (incl. RFMix).
+
+    Returns
+    -------
+    list[dict]
+        One row per tool (``rfmix``, ``gnomix``, ``salai``, ``recombmix``) with ``tool`` (name),
+        ``path`` (the resolved binary path or install directory) and ``available`` (bool from
+        :func:`tspaint.benchmark.tool_available`).
+    """
     from . import _common as C
     paths = {"rfmix": C.RFMIX_BIN, "gnomix": C.GNOMIX_DIR, "salai": C.SALAI_DIR,
              "recombmix": C.RECOMBMIX_BIN}

@@ -20,6 +20,8 @@ from .validate import (
     global_proportion,
     true_proportion,
     accuracy_by_segment_size,
+    painting_summary,
+    PaintingSummary,
     DEFAULT_SIZE_BINS,
 )
 
@@ -36,5 +38,7 @@ __all__ = [
     "global_proportion",
     "true_proportion",
     "accuracy_by_segment_size",
+    "painting_summary",
+    "PaintingSummary",
     "DEFAULT_SIZE_BINS",
 ]

@@ -16,7 +16,7 @@ from functools import reduce
 import numpy as np
 
 from .accumulate import accumulate_sufficient_statistics
-from .model import make_generator_2state, tip_emission, query_emission, MaskedEmissions
+from .model import make_generator_symmetric, tip_emission, query_emission, MaskedEmissions
 
 __all__ = ["m_step_Q", "m_step_pi", "m_step_w", "fit", "FitResult", "build_emissions"]
 
@@ -144,11 +144,22 @@ def build_emissions(ts, labels, w, pi, mask=None):
         Per-tip credibility; tips absent default to ``1.0`` (hard clamp).
     pi : (K,) array_like
         Root frequencies ``π`` used by the soft-clamp and query emissions.
+    mask : dict[int, list[tuple]], optional
+        Fragment masking (CLAUDE.md §2.3): per reference sample-node id, the half-open
+        ``[left, right)`` spans over which that reference emits the **query** (unlabelled)
+        emission instead of its label — so it anchors at full strength on its clean spans and
+        contributes no label information exactly where flagged foreign (the local,
+        position-dependent generalisation of the credibility ``w_i``). Each span is
+        ``(left, right)`` or ``(left, right, score)`` (any third element is ignored). Typically
+        produced by :meth:`~tspaint.introgression.ReferenceQC.mask` /
+        :func:`tspaint.foreign_tracts`. Default ``None`` (no masking).
 
     Returns
     -------
-    dict[int, numpy.ndarray]
-        Per sample-node id, the ``(K,)`` emission vector.
+    dict[int, numpy.ndarray] or MaskedEmissions
+        Per sample-node id, the ``(K,)`` emission vector. With ``mask`` given, a
+        :class:`~tspaint.model.MaskedEmissions` wrapping those vectors instead — resolving to a
+        per-interval dict on demand (:func:`tspaint.model.emissions_for`).
     """
     emissions = {}
     for s in ts.samples():
@@ -183,7 +194,9 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     K : int, optional
         Number of ancestry states. Default ``2``.
     Q0 : (K, K) array_like, optional
-        Initial generator; defaults to a symmetric 2-state generator.
+        Initial generator; defaults to a symmetric ``K``-state generator
+        (:func:`tspaint.make_generator_symmetric`) whose rate is scaled to the tree-sequence time
+        axis (so ``Q0 · t`` starts at O(1)). Works for any ``K``.
     pi0 : (K,) array_like, optional
         Initial / fixed root frequencies; defaults to uniform.
     max_iter : int, optional
@@ -223,6 +236,16 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     progress : bool, optional
         Show a :mod:`tqdm.auto` ``EM fit`` bar over the iterations, with the running
         log-likelihood (notebook widget in Jupyter, text in a terminal). Default ``False``.
+    mask : dict, optional
+        Fragment masking (CLAUDE.md §2.3): per reference the half-open ``[left, right)`` spans
+        over which it emits the **query** (unlabelled) emission instead of its label, so it
+        anchors only on its clean spans and contributes nothing where flagged foreign. Keys may
+        be integer sample-node indices or sample-ID strings (resolved like ``labels`` /
+        ``soft_refs`` / ``priors``); each span is ``(left, right)`` or ``(left, right, score)``.
+        Threaded through both the serial and the byte-exact parallel E-step
+        (:func:`build_emissions` → :class:`~tspaint.model.MaskedEmissions`). Typically produced
+        by :meth:`~tspaint.introgression.ReferenceQC.mask` / :func:`tspaint.foreign_tracts`.
+        Default ``None``.
 
     Returns
     -------
@@ -246,6 +269,15 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
     # or integer node indices; resolve to node ids (idempotent for already-integer keys).
     from .ids import resolve_labels, resolve_ids, resolve_nodes
     lab_list = [resolve_labels(t, l) for t, l in zip(ts_list, lab_list)]
+    # every reference label must be a valid ancestry-state index 0..K-1; otherwise build_emissions'
+    # e[label] indexes past the K-vector — a cryptic IndexError deep in the (possibly parallel) E-step.
+    # Fail here with the real cause: K too small, or labels not numbered 0..K-1.
+    states = {int(st) for l in lab_list for st in l.values()}
+    if states and (min(states) < 0 or max(states) >= K):
+        raise ValueError(
+            f"reference label states are {sorted(states)} but K={K} (valid states are 0..{K - 1}); "
+            f"pass K={max(states) + 1} if you have that many ancestries, or renumber the labels to be "
+            "0-based and contiguous (0..K-1)")
     if soft_refs is not None:
         soft_refs = resolve_ids(ts_list[0], soft_refs)
     if priors:
@@ -263,7 +295,7 @@ def fit(ts, labels, *, K=2, Q0=None, pi0=None, max_iter=200, tol=1e-7,
         ages = np.concatenate([np.asarray(t.tables.nodes.time, float) for t in ts_list])
         ages = ages[ages > 0]
         r0 = 1.0 / float(np.mean(ages)) if ages.size else 0.1
-        Q = make_generator_2state(r0, r0)
+        Q = make_generator_symmetric(K, r0)     # K-way symmetric start (== 2-state at K=2)
     pi = np.array(pi0, float) if pi0 is not None else np.full(K, 1.0 / K)
 
     soft = set(int(s) for s in soft_refs) if soft_refs else set()

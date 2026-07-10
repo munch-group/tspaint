@@ -18,7 +18,8 @@ Typical use::
 Public API:
 
 * :func:`fit_rate_through_time` — the full time-inhomogeneous EM (the headline entry point).
-* :class:`RateThroughTime` — its result (``centers``, ``q_AB``, ``q_BA``, ``.plot()``).
+* :class:`RateThroughTime` — its result (``centers``, ``q``, ``.rate(m, n)``, ``.pairs``, ``.plot()``).
+* :func:`split_time` / :func:`split_times` — the divergence time (2-state scalar / per-pair dict).
 * :func:`paint_qt` — paint focal tips under a fitted ``Q(t)`` (the side-by-side painter).
 * :func:`rate_through_time_binned` — fast Stage-1 binned profile from one homogeneous fit.
 * :func:`log_time_grid` / :func:`split_branch` — the log-time accumulation grid.
@@ -31,7 +32,7 @@ from .estep import (branch_cell_stats, accumulate_time_binned, rate_through_time
                     composite_transition, accumulate_time_binned_tv, paint_qt)
 from .mstep import fit_poisson_spline, select_lambda_gcv, directional_rate_splines
 from .em import (RateThroughTime, make_Q_of_cell, fit_rate_through_time,
-                 split_time, EnsembleRateThroughTime)
+                 split_time, split_times, EnsembleRateThroughTime)
 
 __all__ = [
     "log_time_grid", "cell_centers", "split_branch",
@@ -39,5 +40,5 @@ __all__ = [
     "composite_transition", "accumulate_time_binned_tv", "paint_qt",
     "fit_poisson_spline", "select_lambda_gcv", "directional_rate_splines",
     "RateThroughTime", "make_Q_of_cell", "fit_rate_through_time",
-    "split_time", "EnsembleRateThroughTime",
+    "split_time", "split_times", "EnsembleRateThroughTime",
 ]

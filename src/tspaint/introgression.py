@@ -27,7 +27,7 @@ import tskit
 from .pruning import prune_tree
 from .output import INFORMATIVE, MISSING_INFO, loo_posterior_table, DEFAULT_QC_DEADBAND
 from .em import fit, build_emissions
-from .model import make_generator_2state
+from .model import make_generator_symmetric
 
 __all__ = ["ForeignnessSegment", "foreignness_track", "ReferenceQC", "reference_qc",
            "foreign_tracts"]
@@ -133,6 +133,13 @@ def foreignness_track(ts, Q, pi, emissions, labels, focal=None, depth="rank", me
         raw coalescent time.
     merge_tol : float, optional
         Absolute tolerance for merging adjacent segments with equal ``loo``.
+    tree_range : tuple[int, int], optional
+        Restrict the pass to the half-open marginal-tree-index range ``(lo, hi)`` — the chunk
+        worker used by :func:`tspaint.parallel.foreignness_track_parallel` to split the genome
+        over processes. ``None`` (default) covers the whole genome. Because ``depth="rank"`` needs
+        the genome-wide depth distribution, rank-normalisation is **deferred** when ``tree_range``
+        is set: a chunk returns the raw coalescent ``depth`` and the parallel driver ranks the
+        stitched genome-wide result.
 
     Returns
     -------
@@ -248,7 +255,25 @@ class ReferenceQC:
     individual_ids: dict = None
 
     def introgression_map(self, ref):
-        """The leave-one-out introgression map (list of segments) for one reference."""
+        """The leave-one-out introgression map (list of segments) for one reference.
+
+        The reference read *ignoring its own label* (the outside message,
+        :func:`tspaint.output.loo_posterior_table`): where its own genealogy dissents from its
+        label are its foreign tracts. For an ensemble input the segments are merged
+        :class:`~tspaint.ensemble.MergedSegment`\\ s (mean map + ``posterior_std`` band).
+
+        Parameters
+        ----------
+        ref : int
+            Reference sample-node index to look up (a key of :attr:`maps` / :attr:`labels`).
+
+        Returns
+        -------
+        list[tspaint.output.Segment]
+            The leave-one-out posterior segments tiling ``[0, L)`` for ``ref``; where the
+            posterior dissents from the label mark its foreign tracts
+            (:class:`~tspaint.ensemble.MergedSegment`\\ s for an ensemble).
+        """
         return self.maps[int(ref)]
 
     def flagged_tracts(self, ref, deadband=DEFAULT_QC_DEADBAND):
@@ -256,6 +281,21 @@ class ReferenceQC:
 
         A segment is flagged where ``loo[foreign] - loo[label] >= deadband`` (``foreign`` =
         the best non-label state). Returns merged ``[(left, right, foreign_state)]``.
+
+        Parameters
+        ----------
+        ref : int
+            Reference sample-node index to inspect (a key of :attr:`maps` / :attr:`labels`).
+        deadband : float, optional
+            Minimum leave-one-out dissent margin ``loo[foreign] - loo[label]`` for a segment to be
+            flagged. Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``) — the QC
+            dissent-margin dead-band, a different quantity from the segmentation dead-band.
+
+        Returns
+        -------
+        list[tuple[float, float, int]]
+            Merged ``(left, right, foreign_state)`` tracts (adjacent same-state runs joined);
+            empty when no segment clears ``deadband``.
         """
         ref = int(ref)
         lab = self.labels[ref]
@@ -270,7 +310,22 @@ class ReferenceQC:
         return _merge_segments(out)
 
     def foreign_fraction(self, ref, deadband=DEFAULT_QC_DEADBAND):
-        """Fraction of ``ref``'s genome flagged foreign at the given ``deadband``."""
+        """Fraction of ``ref``'s genome flagged foreign at the given ``deadband``.
+
+        Parameters
+        ----------
+        ref : int
+            Reference sample-node index to inspect.
+        deadband : float, optional
+            Dissent-margin dead-band passed to :meth:`flagged_tracts`. Default
+            :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+        Returns
+        -------
+        float
+            Total flagged span divided by the sequence length, in ``[0, 1]``; ``nan`` when the
+            sequence length is unknown (``0``).
+        """
         tracts = self.flagged_tracts(ref, deadband)
         return sum(r - l for (l, r, _) in tracts) / self._length if self._length else float("nan")
 
@@ -281,6 +336,20 @@ class ReferenceQC:
         tip). ``ref`` is the sample-node index; when the tree sequence carried sample names the row
         also names the ``individual`` (base id) and ``haplotype`` (per-haplotype id) so the table is
         legible in your own ids, not just node integers.
+
+        Parameters
+        ----------
+        deadband : float, optional
+            Dissent-margin dead-band for the ``foreign_fraction`` column (see
+            :meth:`foreign_fraction`). Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+        Returns
+        -------
+        list[dict]
+            One row per reference haplotype, least-credible first. Each row carries ``ref``
+            (sample-node index), ``label``, ``credibility``, ``is_anchor`` and ``foreign_fraction``,
+            preceded by ``individual`` / ``haplotype`` id strings when the tree sequence carried
+            sample names.
         """
         rows = []
         for r in sorted(self.labels, key=lambda r: self.credibility[r]):
@@ -340,6 +409,21 @@ class ReferenceQC:
         reference, drop only its contaminated spans. Returns ``{ref: [(left, right), ...]}`` from
         :meth:`flagged_tracts` (foreign state dropped) for the references that have at least one
         flagged tract.
+
+        Parameters
+        ----------
+        deadband : float, optional
+            Dissent-margin dead-band passed to :meth:`flagged_tracts` — the minimum
+            ``loo[foreign] - loo[label]`` for a span to be masked. Default
+            :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+        Returns
+        -------
+        dict[int, list[tuple[float, float]]]
+            ``{ref-node: [(left, right), ...]}`` — per reference-node the foreign spans to drop,
+            exactly the shape :func:`tspaint.paint` / :func:`tspaint.fit` accept as ``mask=``
+            (via :func:`tspaint.em.build_emissions`). Only references with at least one flagged
+            tract are included.
         """
         out = {}
         for r in self.labels:
@@ -415,9 +499,10 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
         Beta prior for the softened references (refine pass).
     n_jobs : int, optional
         Worker processes for the EM fits and the leave-one-out paints (the slow, genome-scale part;
-        the per-pass work parallelises exactly like :func:`tspaint.paint`). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
-        (The result's :meth:`ReferenceQC.soft_refs` / :meth:`~ReferenceQC.summary` are cheap
-        table lookups — nothing to parallelise there; this is where the compute lives.)
+        the per-pass work parallelises exactly like :func:`tspaint.paint`). Default: all CPUs / the
+        SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial. (The
+        result's :meth:`ReferenceQC.soft_refs` / :meth:`~ReferenceQC.summary` are cheap table
+        lookups — nothing to parallelise there; this is where the compute lives.)
     progress : bool, optional
         Show :mod:`tqdm` bars for the EM fits and LOO paints. Default ``False``.
 
@@ -433,7 +518,7 @@ def reference_qc(ts, labels, *, anchors=None, refine=True, anchor_frac=0.5, K=2,
     ref_ts = members[0]
     labels = resolve_labels(ref_ts, labels)      # keys may be sample-ID strings or node indices
     refs = list(labels)
-    Q0 = Q0 if Q0 is not None else make_generator_2state(1e-3, 1e-3)
+    Q0 = Q0 if Q0 is not None else make_generator_symmetric(K, 1e-3)
     # One theta fit pooled across the ensemble (the M-step is scale-invariant, so summing sufficient
     # statistics over members == averaging; CLAUDE.md §7.4). A single tree sequence is the 1-member case.
     fit_ts = members if len(members) > 1 else members[0]
@@ -570,8 +655,16 @@ def foreign_tracts(ts, labels, samples, *, min_score=0.5, min_depth=None, mode="
     mode : {"auto", "label", "fit"}, optional
         ``"auto"`` (default) uses the label rule for labelled samples and the fit rule for
         queries; ``"label"`` / ``"fit"`` force one rule for all samples.
-    K, Q0, max_iter, soft_refs
-        Model / EM controls (see :func:`tspaint.fit`).
+    K : int, optional
+        Number of ancestry states (as in :func:`tspaint.fit`). Default ``2``.
+    Q0 : (K, K) array_like, optional
+        Initial generator passed to :func:`tspaint.fit`. Default ``None`` — :func:`tspaint.fit`
+        scales a symmetric generator to the tree-sequence time axis.
+    max_iter : int, optional
+        Maximum EM iterations for the panel fit. Default ``8``.
+    soft_refs : set[int], optional
+        Labelled tips whose credibility ``w_i`` is learned (the rest stay hard-clamped anchors);
+        see :func:`tspaint.fit`. Default ``None`` (every reference hard-clamped).
     n_jobs : int, optional
         Worker processes for the fit **and** the per-tree foreignness pass (split by genome chunk,
         exactly equal to serial). Default: all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial.
