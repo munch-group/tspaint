@@ -433,7 +433,7 @@ def argweaver(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     if _m is None or _r is None:
         raise ValueError("argweaver needs _m (-m) and _r (-r)")
 
-    source, src_names, in_ploidy = _source_sample_ids(source)
+    source, src_names, in_ploidy, sidx = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_argweaver_")
     os.makedirs(tmp, exist_ok=True)
     sites = os.path.join(tmp, "data.sites")
@@ -453,7 +453,7 @@ def argweaver(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     samples = []
     for i in kept:
         arg = read_argweaver_smc(_smc_path(out, i), orig_names=orig_names)
-        samples.append(attach_sample_ids(arg, src_names, in_ploidy))
+        samples.append(attach_sample_ids(arg, src_names, in_ploidy, sample_index=sidx))
     if not samples:
         raise RuntimeError(
             f"no post-burn-in ARGweaver samples (iters={iters}, sample_step={sample_step}, "

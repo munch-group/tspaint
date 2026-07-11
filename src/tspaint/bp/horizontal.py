@@ -40,10 +40,11 @@ def bp_smooth(emissions, pi, epsilon):
         Per-tree prior, divided out so ``gamma_t`` enters as a likelihood (a no-op
         constant when ``pi`` is uniform, the painter default).
     epsilon : float
-        Per-breakpoint switch probability of the near-identity transition
-        ``A = (1 - epsilon) I + epsilon / K``: ``epsilon -> 0`` is maximal smoothing
-        (one tract), ``epsilon -> (K-1)/K`` is no coupling (recovers the per-segment
-        input).
+        Switch-noise scale of the near-identity transition
+        ``A = (1 - epsilon) I + (epsilon / K) J``: ``epsilon -> 0`` is maximal smoothing
+        (one tract); ``epsilon = 1`` gives the uniform, fully-decoupled transition. The
+        actual per-breakpoint switch probability is ``epsilon * (K-1)/K`` (= ``epsilon/2``
+        for K=2), so ``epsilon`` is a switch-noise scale, not the switch probability itself.
 
     Returns
     -------

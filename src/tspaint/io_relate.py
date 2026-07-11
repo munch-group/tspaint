@@ -317,7 +317,7 @@ def relate(source, *, mutation_rate=None, recombination_rate=1e-8, Ne=None, gene
         if not os.path.exists(path):
             raise FileNotFoundError(f"{hint} not found at {path}; build it with `tspaint install relate`")
 
-    src, names, in_ploidy = _source_sample_ids(source)
+    src, names, in_ploidy, sidx = _source_sample_ids(source)
     if Ne is None:
         Ne = estimate_ne(src, mutation_rate)
 
@@ -366,7 +366,7 @@ def relate(source, *, mutation_rate=None, recombination_rate=1e-8, Ne=None, gene
     mut = _pick(os.path.join(tmp, f"{stem}.mut.gz"), os.path.join(tmp, f"{stem}.mut"))
     ts = relate_convert(anc, mut, compress=compress, convert_bin=convert_bin,
                         out_prefix=os.path.join(tmp, "converted"))
-    return attach_sample_ids(ts, names, in_ploidy)
+    return attach_sample_ids(ts, names, in_ploidy, sample_index=sidx)
 
 
 def windows(ts, window_size, *, trim=False):

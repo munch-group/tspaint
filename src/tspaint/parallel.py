@@ -353,12 +353,15 @@ def accumulate_parallel(ts, Q, pi, *, w=None, labels=None, soft_refs=None, emiss
 
 def posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merge_tol=1e-12,
                              emissions=None, n_jobs=None, executor=None, progress=False, mask=None):
-    """Parallel :func:`~tspaint.output.posterior_table` — **exactly** equal to serial for any ``n_jobs``.
+    """Parallel :func:`~tspaint.output.posterior_table` — equal to serial up to segment-merge re-anchoring.
 
     Splits by tree-range, then stitches the per-range tracks in genome order, re-merging adjacent
     equal segments at the seams (the same merge rule serial painting uses). Each segment's posterior
-    comes from its own tree's pruning, independent of the chunking, so the stitched result is
-    **byte-identical** to serial (not merely ``allclose``) for any worker count.
+    comes from its own tree's pruning, independent of the chunking, so per-position posteriors match
+    serial to a few ULP (``allclose``). The **segmentation** is byte-identical to serial only in the
+    default bit-exact merge regime (``merge_tol`` ~ 1e-12): the ``allclose`` merge rule is anchored to
+    the first segment of a run and is non-transitive, so a larger ``merge_tol`` can re-anchor runs at
+    chunk seams and make the returned segment boundaries depend on ``n_jobs``.
 
     Parameters
     ----------
@@ -427,12 +430,14 @@ def _loo_range(path, lo, hi, Q, pi, w, labels, focal, merge_tol, mask=None, emis
 
 def loo_posterior_table_parallel(ts, Q, pi, *, w=None, labels=None, focal=None, merge_tol=1e-12,
                                  emissions=None, n_jobs=None, executor=None, progress=False, mask=None):
-    """Parallel :func:`~tspaint.output.loo_posterior_table` — **exactly** equal to serial for any ``n_jobs``.
+    """Parallel :func:`~tspaint.output.loo_posterior_table` — equal to serial up to segment-merge re-anchoring.
 
     The leave-one-out analogue of :func:`posterior_table_parallel`: split by tree-range (the outside
     message for each tree is independent of which chunk it lands in), then stitch the per-range tracks
-    in genome order, re-merging adjacent equal segments at the seams. Byte-identical to serial (each
-    segment's outside message comes from its own tree's pruning, independent of the chunking).
+    in genome order, re-merging adjacent equal segments at the seams. Per-position posteriors match
+    serial to a few ULP; the segmentation matches byte-for-byte only in the default bit-exact merge
+    regime (``merge_tol`` ~ 1e-12), since the non-transitive ``allclose`` merge can re-anchor runs at
+    chunk seams for larger ``merge_tol`` (then boundaries depend on ``n_jobs``; see the module docstring).
 
     Parameters
     ----------

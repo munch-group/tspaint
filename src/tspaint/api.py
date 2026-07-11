@@ -467,10 +467,10 @@ class Painting(SoftTrack):
         if isinstance(self.ts, (list, tuple)):
             from .ensemble import merge_posterior_tables
             tables = [loo_posterior_table(g, self.Q, self.pi,
-                                          build_emissions(g, self.labels, self.w, self.pi),
+                                          build_emissions(g, self.labels, self.w, self.pi, self.mask),
                                           focal=[sample]) for g in self.ts]
             return merge_posterior_tables(tables, samples=[sample])[sample]
-        emissions = build_emissions(self.ts, self.labels, self.w, self.pi)
+        emissions = build_emissions(self.ts, self.labels, self.w, self.pi, self.mask)
         return loo_posterior_table(self.ts, self.Q, self.pi, emissions, focal=[sample])[sample]
 
     def __repr__(self):

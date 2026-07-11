@@ -89,3 +89,31 @@ def test_parse_msp_explicit_code_to_state(tmp_path):
                        code_to_state={0: 1, 1: 0})
     np.testing.assert_array_equal(tracks[0][0].posterior, [0.0, 1.0])
     np.testing.assert_array_equal(tracks[1][0].posterior, [1.0, 0.0])
+
+
+def test_parse_msp_remaps_noninvolutive_header_codes(tmp_path):
+    # The `.msp` header is `<name>=<code>`. A 2-pop swap is self-inverse and hides a
+    # backwards parse, so use K=3 with a 3-cycle: names 0,1,2 have codes 1,2,0, i.e.
+    # data code 0 -> state 2, code 1 -> state 0, code 2 -> state 1.
+    msp = tmp_path / "out.msp.tsv"
+    msp.write_text(
+        "#Subpopulation order/codes: 0=1\t1=2\t2=0\n"
+        "#chm\tspos\tepos\tsgpos\tegpos\tn snps\tq0.0\tq0.1\n"
+        "1\t0\t1000\t0\t0\t9\t0\t1\n")
+    tracks = parse_msp(str(msp), [("q0", (0, 1))], K=3, sequence_length=1000.0)
+    np.testing.assert_array_equal(tracks[0][0].posterior, [0.0, 0.0, 1.0])   # code 0 -> state 2
+    np.testing.assert_array_equal(tracks[1][0].posterior, [1.0, 0.0, 0.0])   # code 1 -> state 0
+
+
+def test_parse_fb_maps_labels_to_state_index_not_sorted_position(tmp_path):
+    # Population labels {1, 2} (not {0..K-1}); each column's state index must be
+    # int(label), not its sorted position (which would shift pop 1 -> state 0).
+    fb = tmp_path / "out.fb.tsv"
+    fb.write_text(
+        "#reference_panel_population:\t1\t2\n"
+        "chromosome\tphysical_position\tgenetic_position\tgenetic_marker_index\t"
+        "q0:::hap1:::1\tq0:::hap1:::2\tq0:::hap2:::1\tq0:::hap2:::2\n"
+        "1\t100\t0.001\t0\t0.9\t0.1\t0.2\t0.8\n")
+    tracks = parse_fb(str(fb), [("q0", (0, 1))], K=3, sequence_length=1000.0)
+    np.testing.assert_allclose(tracks[0][0].posterior, [0.0, 0.9, 0.1])   # pop1->state1, pop2->state2
+    np.testing.assert_allclose(tracks[1][0].posterior, [0.0, 0.2, 0.8])

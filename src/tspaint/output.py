@@ -298,7 +298,7 @@ def hard_segments(track, deadband=0.0):
     psum = np.zeros_like(np.asarray(segs[0].posterior, float))
     for i, seg in enumerate(segs):
         p = np.asarray(seg.posterior, float)
-        psum += p
+        psum += (seg.right - seg.left) * p               # span-weighted -> genome-majority fallback
         amax[i] = int(np.argmax(p))
         order = np.sort(p)
         conf[i] = (seg.status != MISSING_INFO) and (float(order[-1] - order[-2]) >= deadband)

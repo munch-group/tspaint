@@ -29,7 +29,7 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-from .output import Segment, INFORMATIVE, DEFAULT_DEADBAND
+from .output import Segment, INFORMATIVE, MISSING_INFO, DEFAULT_DEADBAND
 from .track import SoftTrack
 
 __all__ = ["GhostResult", "detect_ghost", "ArchaicResult", "detect_archaic"]
@@ -208,7 +208,10 @@ class GhostResult(SoftTrack):
     pi0 : numpy.ndarray
         ``(2,)`` learned initial distribution.
     loglik_history : list
-        Pooled Baum–Welch log-likelihood per iteration (non-decreasing).
+        Pooled per-iteration log-likelihood of the (unweighted) forward–backward E-step, as a
+        convergence **diagnostic**. The emission M-step is genome-span-weighted while the E-step and
+        the transition/``pi0`` M-steps are per-segment, so this hybrid objective is **not** guaranteed
+        monotonically non-decreasing (the emission fit optimises a per-base-weighted depth MLE).
     default_deadband : float
         Default dead-band passed to :meth:`~tspaint.track.SoftTrack.segments`. Defaults to
         :data:`~tspaint.output.DEFAULT_DEADBAND`.
@@ -313,7 +316,8 @@ def _baum_welch(obs_list, span_list, mu_m, sd_m, archaic_floor, *, max_iter, tol
             w = span[ok]
             x = obs[ok]
             for k in range(2):
-                g = gamma[ok, k] * w           # span-weighted emission sufficient stats
+                g = gamma[ok, k] * w           # span-weighted emission stats (deliberate per-base
+                #                                depth MLE; see loglik_history note re: the hybrid)
                 g_sum[k] += g.sum()
                 gx[k] += (g * x).sum()
                 gxx[k] += (g * x * x).sum()
@@ -480,7 +484,8 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
             obs = np.array([o for (_l, _r, o) in segs], float)
             B = _emission(obs, mu, sd)
             gamma, _xi, _ll = _forward_backward(B, A, pi0)   # gamma[:,0]=P(modern), [:,1]=P(ghost)
-            table[s] = [Segment(segs[i][0], segs[i][1], gamma[i].copy(), INFORMATIVE)
+            table[s] = [Segment(segs[i][0], segs[i][1], gamma[i].copy(),
+                                MISSING_INFO if np.isnan(obs[i]) else INFORMATIVE)
                         for i in range(len(segs))]
         per_member_tables.append(table)
 
@@ -492,7 +497,7 @@ def detect_ghost(ts, labels, samples=None, *, depth="time", max_iter=50, tol=1e-
 
     burden = {}
     for s in samples:
-        segs = posteriors[s]
+        segs = [seg for seg in posteriors[s] if seg.status != MISSING_INFO]   # skip isolated spans
         tot = sum(seg.right - seg.left for seg in segs)
         burden[s] = (float(sum(seg.posterior[1] * (seg.right - seg.left) for seg in segs) / tot)
                      if tot > 0 else float("nan"))

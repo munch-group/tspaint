@@ -181,3 +181,27 @@ def test_singer_diploid_vcf_ploidy_and_stamping(tmp_path):
     painting = tspaint.paint(ens, {"samp0": 0, "samp1": 1}, queries=["samp2"])
     assert painting.labels == {0: 0, 1: 0, 2: 1, 3: 1}
     assert painting.queries == [4, 5]
+
+
+def test_stamp_mixed_ploidy_by_sample_index():
+    """chrX-style mixed ploidy: diploid females F0,F1 + haploid male M0. ``sample_index`` must
+    group each female's two haplotypes into ONE individual — scalar ploidy=1 would wrongly split
+    every column into its own individual (CLAUDE.md §5)."""
+    import tskit
+    tb = tskit.TableCollection(sequence_length=1.0)
+    root = tb.nodes.add_row(flags=0, time=1.0)
+    for _ in range(5):
+        c = tb.nodes.add_row(flags=tskit.NODE_IS_SAMPLE, time=0.0)
+        tb.edges.add_row(left=0.0, right=1.0, parent=root, child=c)
+    tb.sort()
+    ts = tb.tree_sequence()
+    st = attach_sample_ids(ts, ["F0_0", "F0_1", "F1_0", "F1_1", "M0"], ploidy=1,
+                           sample_index=[0, 0, 1, 1, 2])
+
+    assert st.num_individuals == 3                       # F0, F1, M0 (not 5)
+    assert st.individual(0).metadata == {"id": "F0"}
+    assert list(st.individual(0).nodes) == [1, 2]        # both female haplotypes -> one individual
+    assert st.node(1).metadata == {"id": "F0_1"}         # 1-based per-haplotype within the female
+    assert st.node(2).metadata == {"id": "F0_2"}
+    assert st.individual(2).metadata == {"id": "M0"}
+    assert st.node(5).metadata == {"id": "M0"}           # haploid male: base id, no suffix

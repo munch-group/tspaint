@@ -85,19 +85,24 @@ def parse_fb(fb_path, query_inds, K, sequence_length):
         name, hap, pop = h.split(":::")
         colmap[(name, hap, pop)] = j
         pops.add(pop)
-    pops = sorted(pops, key=lambda p: int(p) if p.lstrip("-").isdigit() else p)   # state order
+    numeric = all(p.lstrip("-").isdigit() for p in pops)
+    pops = sorted(pops, key=lambda p: int(p) if p.lstrip("-").isdigit() else p)   # deterministic order
+    # State index for each pop label: its integer label when numeric (matching
+    # export/assign_states, which set state = int(label)); else its sorted rank.
+    pop_state = {p: (int(p) if numeric else i) for i, p in enumerate(pops)}
     bnd = _boundaries(phys, sequence_length)
 
     tracks = {}
     for name, (k0, k1) in query_inds:
         for hap_label, key in (("hap1", k0), ("hap2", k1)):
-            cols = [colmap.get((name, hap_label, p)) for p in pops]
-            if any(c is None for c in cols):
+            cols = {pop_state[p]: colmap.get((name, hap_label, p)) for p in pops}
+            if any(c is None for c in cols.values()):
                 tracks[key] = []
                 continue
-            post = data[:, cols].astype(float)
-            if post.shape[1] < K:                                    # pad an absent pop
-                post = np.hstack([post, np.zeros((post.shape[0], K - post.shape[1]))])
+            post = np.zeros((data.shape[0], K))                      # column p -> state int(p)
+            for st, c in cols.items():
+                if 0 <= st < K:
+                    post[:, st] = data[:, c].astype(float)
             segs = []
             for i in range(post.shape[0]):
                 p = post[i, :K]
@@ -144,7 +149,7 @@ def parse_msp(msp_path, query_inds, K, sequence_length, *, code_to_state=None):
             if ln.startswith("#Subpopulation"):
                 for tok in ln.split(":", 1)[1].split():
                     if "=" in tok:
-                        code, label = tok.split("=")
+                        label, code = tok.split("=")       # .msp writes <name/label>=<code>
                         code_to_state[int(code)] = int(label)
     hdr = next(ln for ln in lines if ln.lstrip("#").startswith("chm"))
     cols = hdr.lstrip("#").split("\t")

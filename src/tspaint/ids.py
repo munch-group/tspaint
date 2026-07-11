@@ -52,7 +52,7 @@ def _split_haplotype(name, ploidy):
     return base, f"{base}_{k + 1}"
 
 
-def attach_sample_ids(ts, names, ploidy=1):
+def attach_sample_ids(ts, names, ploidy=1, sample_index=None):
     """Stamp source sample IDs onto ``ts`` (individuals + per-haplotype nodes); return a new ts.
 
     Groups the ``ts`` sample nodes into individuals by base name (so a diploid sample's two
@@ -72,6 +72,10 @@ def attach_sample_ids(ts, names, ploidy=1):
         match the number of sample nodes, ``ts`` is returned unchanged (nothing to stamp).
     ploidy : int, optional
         Haplotypes per sample in ``names`` (used to recover base names). Default ``1``.
+    sample_index : sequence[int] or None, optional
+        Per-haplotype individual index (:attr:`~tspaint.io_genotypes.Variants.sample_index`); when
+        given it groups the haplotype columns into individuals (mixed-ploidy safe, e.g. chrX),
+        overriding the scalar ``ploidy``.
 
     Returns
     -------
@@ -85,17 +89,31 @@ def attach_sample_ids(ts, names, ploidy=1):
         return ts
     ploidy = int(ploidy) if ploidy and int(ploidy) > 0 else 1
 
-    # Group sample nodes into individuals by base id, in first-appearance order.
+    # Group sample nodes into individuals, in first-appearance order.
     groups = []                 # [(base, [nodes...]), ...]
-    where = {}                  # base -> group index
     node_id_of = {}             # sample node -> per-haplotype id
-    for col, node in enumerate(samples):
-        base, hap_id = _split_haplotype(names[col], ploidy)
-        if base not in where:
-            where[base] = len(groups)
-            groups.append((base, []))
-        groups[where[base]][1].append(node)
-        node_id_of[node] = hap_id
+    if sample_index is not None and len(sample_index) == len(samples):
+        # Mixed-ploidy: group columns by individual index (mirrors io_genotypes._group_columns),
+        # so a diploid sample's haplotypes share one individual even when ploidy varies per sample.
+        by_ind = {}
+        for col, k in enumerate(int(i) for i in sample_index):
+            by_ind.setdefault(k, []).append(col)
+        for k in sorted(by_ind):
+            cols = by_ind[k]
+            multi = len(cols) > 1
+            base = _SUFFIX.sub("", str(names[cols[0]])) if multi else str(names[cols[0]])
+            groups.append((base, [samples[col] for col in cols]))
+            for pos, col in enumerate(cols):
+                node_id_of[samples[col]] = f"{base}_{pos + 1}" if multi else base
+    else:
+        where = {}                  # base -> group index
+        for col, node in enumerate(samples):
+            base, hap_id = _split_haplotype(names[col], ploidy)
+            if base not in where:
+                where[base] = len(groups)
+                groups.append((base, []))
+            groups[where[base]][1].append(node)
+            node_id_of[node] = hap_id
 
     tables = ts.dump_tables()
     schema = tskit.MetadataSchema.permissive_json()

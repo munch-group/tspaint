@@ -127,7 +127,8 @@ def tsinfer(source, *, date=False, mutation_rate=None, tsdate_kwargs=None):
                                variant_data_from_zarr, sample_names_from_zarr)
     if isinstance(source, Variants):                                    # e.g. subset_data / pseudohaploid
         inferred = attach_sample_ids(_tsinfer.infer(to_sample_data(source)),
-                                     source.sample_names, source.ploidy)
+                                     source.sample_names, source.ploidy,
+                                     sample_index=source.sample_index)
     else:
         kind = source_kind(source)
         if kind == "ts":
@@ -138,7 +139,8 @@ def tsinfer(source, *, date=False, mutation_rate=None, tsdate_kwargs=None):
             inferred = attach_sample_ids(ts, names, ploidy)
         else:
             v = variants_from_vcf(source)                               # VCF -> in-memory SampleData
-            inferred = attach_sample_ids(_tsinfer.infer(to_sample_data(v)), v.sample_names, v.ploidy)
+            inferred = attach_sample_ids(_tsinfer.infer(to_sample_data(v)), v.sample_names, v.ploidy,
+                                         sample_index=v.sample_index)
     if date:
         inferred = _tsdate_calibrate(inferred, mutation_rate, tsdate_kwargs)
     return inferred

@@ -187,3 +187,28 @@ def test_isolated_sample_is_missing_info_and_prior():
     g_bf, _, _ = brute_force(tree, emissions, Q, pi, node_time)
     for u in (0, 1, 3):
         np.testing.assert_allclose(res.gamma[u], g_bf[u], rtol=1e-9, atol=1e-11)
+
+
+def test_wide_polytomy_no_underflow():
+    """A wide, near-balanced polytomy (~2000 children) must not underflow the child
+    product to all-zeros — which silently collapses posteriors to the uniform 1/K and
+    loglik to -inf. Incremental renormalization keeps it finite (CLAUDE.md §4.6)."""
+    from tspaint.pruning import prune_root
+    N = 2000
+    tb = tskit.TableCollection(sequence_length=1.0)
+    root = tb.nodes.add_row(flags=0, time=1.0)
+    kids = [tb.nodes.add_row(flags=tskit.NODE_IS_SAMPLE, time=0.0) for _ in range(N)]
+    for c in kids:
+        tb.edges.add_row(left=0.0, right=1.0, parent=root, child=c)
+    tb.sort()
+    ts = tb.tree_sequence()
+    tree = ts.first()
+    r = 1e-3
+    Q = np.array([[-r, r], [r, -r]])
+    node_time = ts.tables.nodes.time
+    pi = np.array([0.5, 0.5])
+    emissions = {c: np.array([0.7, 0.3]) for c in kids}   # near-balanced -> product underflows
+    res = prune_root(tree, root, emissions, Q, node_time, pi)
+    assert np.isfinite(res.loglik)
+    assert not np.allclose(res.gamma[kids[0]], [0.5, 0.5])   # not the uniform fallback
+    assert res.gamma[root][0] > 0.99                         # 2000 A-ish tips resolve to A

@@ -210,9 +210,21 @@ def write_haploid_vcf(ts, path):
                              population=tables.nodes.population)   # individual -> -1
     tables.individuals.clear()
     ts_hap = tables.tree_sequence()
+
+    def _distinct(x):
+        # strictly-increasing distinct 1-based integer positions (SINGER errors /
+        # merges on duplicate POS; matches io_genotypes.write_haploid_vcf's guard).
+        pos = np.floor(np.asarray(x)).astype(int) + 1
+        out = np.empty(len(pos), dtype=int)
+        last = 0
+        for i, p in enumerate(pos):
+            p = max(int(p), last + 1)
+            out[i] = p
+            last = p
+        return out
+
     with open(path, "w") as f:
-        ts_hap.write_vcf(f, ploidy=1,
-                         position_transform=lambda x: 1 + np.floor(x).astype(int))
+        ts_hap.write_vcf(f, ploidy=1, position_transform=_distinct)
 
 
 def _read_singer_arg(node_file, branch_file, mut_file=None):
@@ -287,17 +299,18 @@ def _write_singer_vcf(source, prefix, sequence_length=None):
 
 
 def _source_sample_ids(source):
-    """Resolve ``(source, sample_names, ploidy)`` for id-stamping the output tree sequences.
+    """Resolve ``(source, sample_names, ploidy, sample_index)`` for id-stamping the output ts.
 
     A VCF / VCF-Zarr / :class:`~tspaint.io_genotypes.Variants` source is parsed once into a
     ``Variants`` and returned (so the write step reuses it — no second parse); a ``ts`` source
-    carries no VCF sample names, so ``(source, None, 1)``.
+    carries no VCF sample names, so ``(source, None, 1, None)``. ``sample_index`` groups haplotype
+    columns into individuals for mixed ploidy (e.g. chrX); ``None`` for uniform ploidy.
     """
     from .io_genotypes import source_kind, resolve_variants
     if source_kind(source) == "ts":
-        return source, None, 1
+        return source, None, 1, None
     v = resolve_variants(source)
-    return v, v.sample_names, v.ploidy
+    return v, v.sample_names, v.ploidy, v.sample_index
 
 
 def _singer_indices(out_prefix):
@@ -482,7 +495,7 @@ def singer(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     # columns), separate from the source's own diploidy used for id stamping.
     if _Ne is None:
         raise ValueError(_NE_REQUIRED)
-    source, names, in_ploidy = _source_sample_ids(source)
+    source, names, in_ploidy, sidx = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_")
     os.makedirs(tmp, exist_ok=True)
     prefix = os.path.join(tmp, "data")
@@ -498,7 +511,7 @@ def singer(source, *, ts=None, mcmc_step=None, mcmc_burnin=None,
     for i in _select(_singer_indices(out), discard, keep):
         mf = f"{out}_muts_{i}.txt" if with_mutations else None
         arg = _read_singer_arg(f"{out}_nodes_{i}.txt", f"{out}_branches_{i}.txt", mf)
-        samples.append(attach_sample_ids(arg, names, in_ploidy))    # stamp source ids for name-keyed labels
+        samples.append(attach_sample_ids(arg, names, in_ploidy, sample_index=sidx))   # name-keyed labels
     if len(samples) == 1:
         return samples[0]
     return samples
@@ -753,7 +766,7 @@ def singer_windowed(source, *, window_size, ts=None, mcmc_step=None, mcmc_burnin
     if _Ne is None:
         raise ValueError(_NE_REQUIRED)
     # Resolve sample ids for stamping; keep separate from ``_ploidy`` (SINGER's -ploidy, see singer()).
-    source, names, in_ploidy = _source_sample_ids(source)
+    source, names, in_ploidy, sidx = _source_sample_ids(source)
     tmp = workdir or tempfile.mkdtemp(prefix="tspaint_singer_win_")
     os.makedirs(tmp, exist_ok=True)
 
@@ -806,7 +819,7 @@ def singer_windowed(source, *, window_size, ts=None, mcmc_step=None, mcmc_burnin
         return out
     with ThreadPoolExecutor(max_workers=n_jobs) as ex:
         paths = list(ex.map(_merge, members))
-    ensemble = [attach_sample_ids(tskit.load(p), names, in_ploidy) for p in paths]  # stamp source ids
+    ensemble = [attach_sample_ids(tskit.load(p), names, in_ploidy, sample_index=sidx) for p in paths]
     return ensemble[0] if len(ensemble) == 1 else ensemble
 
 

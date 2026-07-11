@@ -349,7 +349,7 @@ def _parse_msp(msp_path, query_inds, sequence_length):
         if ln.startswith("#Subpopulation"):
             for tok in ln.split(":", 1)[1].split():
                 if "=" in tok:
-                    code, name = tok.split("=")
+                    name, code = tok.split("=")           # RFMix writes <name>=<code>
                     code_to_state[int(code)] = int(name)
     hdr = next(ln for ln in lines if ln.startswith("#chm"))
     cols = hdr.lstrip("#").split("\t")

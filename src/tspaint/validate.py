@@ -197,7 +197,9 @@ def mean_confidence(tracks, samples=None, state=0, exclude_missing=True):
                 continue
             w = seg.right - seg.left
             den += w
-            num += w * abs(2.0 * float(seg.posterior[state]) - 1.0)
+            pv = np.asarray(seg.posterior, float)
+            Kloc = pv.shape[0]                                    # K-way confidence, matches track.py
+            num += w * (float(pv.max()) - 1.0 / Kloc) / (1.0 - 1.0 / Kloc)   # == |2P-1| at K=2
     return num / den if den > 0 else float("nan")
 
 

@@ -123,7 +123,8 @@ def fit(trees, labels_path, soft_refs, estimate_pi, deadband, max_iter, tol, cor
 @click.option("--soft-refs", default=None, help="refs whose credibility is learned (with --labels).")
 @click.option("--estimate-pi", is_flag=True)
 @click.option("--smooth", is_flag=True, help="horizontal BP smoother (recommended on inferred ARGs).")
-@click.option("--deadband", type=float, default=DEFAULT_DEADBAND, show_default=True)
+@click.option("--deadband", type=float, default=None,
+              help="segment deadband (default: fit-time value with --params, else %g)." % DEFAULT_DEADBAND)
 @click.option("--max-iter", type=int, default=12, show_default=True)
 @click.option("-j", "--cores", type=int, default=None, help="worker processes (default: SLURM / all CPUs).")
 @click.option("-o", "--out", required=True, type=click.Path(), help="output painting .npz.")
@@ -151,8 +152,12 @@ def paint(trees, params_path, labels_path, queries, soft_refs, estimate_pi, smoo
             table = posterior_table_parallel(ts, Q, pi, w=w, labels=labels, focal=focal, n_jobs=n_jobs)
         else:
             table = posterior_table(ts, Q, pi, build_emissions(ts, labels, w, pi), focal=focal)
+        if smooth:
+            from .bp import bp_smooth_track
+            table = {q: bp_smooth_track(t, pi, 1e-2) for q, t in table.items()}
         save_painting(out, table, Q=Q, pi=pi, w=w, queries=focal, labels=labels,
-                      seqlen=ts.sequence_length, deadband=p["deadband"])
+                      seqlen=ts.sequence_length,
+                      deadband=deadband if deadband is not None else p["deadband"])
         _echo(f"paint(--params): {len(focal)} queries, n_jobs={n_jobs} -> {out}")
         return
 
@@ -164,7 +169,8 @@ def paint(trees, params_path, labels_path, queries, soft_refs, estimate_pi, smoo
     members = [_load_ts(t) for t in trees]
     painting = _paint(members if len(members) > 1 else members[0], labels, queries=qids,
                       soft_refs=set(soft) if soft else None, estimate_pi=estimate_pi,
-                      deadband=deadband, smooth=smooth, max_iter=max_iter, n_jobs=n_jobs)
+                      deadband=(deadband if deadband is not None else DEFAULT_DEADBAND),
+                      smooth=smooth, max_iter=max_iter, n_jobs=n_jobs)
     painting.save(out)
     _echo(f"paint(--labels): {len(members)} member(s), {len(painting.queries)} queries, "
           f"n_jobs={n_jobs} -> {out}")

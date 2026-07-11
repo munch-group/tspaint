@@ -133,6 +133,10 @@ def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
         for c in tree.children(u):
             L = L * msg[c]
             cs += cumscale[c]
+            sL = L.sum()                     # renormalize per child: a wide polytomy would
+            if sL > 0:                        # otherwise underflow the product to all-zeros
+                L = L / sL
+                cs += np.log(sL)
         s = L.sum()
         if s > 0:
             L = L / s
@@ -177,10 +181,16 @@ def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
         for i in range(k):
             prefix[i] = acc
             acc = acc * msgs[i]
+            sa = acc.sum()                    # keep partial products normalized (arity-safe);
+            if sa > 0:                         # the per-i scale cancels in the normalized cavity
+                acc = acc / sa
         acc = np.ones(K)
         for i in range(k - 1, -1, -1):
             suffix[i] = acc
             acc = acc * msgs[i]
+            sa = acc.sum()
+            if sa > 0:
+                acc = acc / sa
 
         for i, c in enumerate(children):
             cavity = base * prefix[i] * suffix[i]    # above p, p's own emission, c's siblings
@@ -195,7 +205,22 @@ def prune_root(tree, root, emissions, Q, node_time, pi, Pget=None):
             sM = M.sum()
             xi[(p, c)] = M / sM if sM > 0 else np.full((K, K), 1.0 / (K * K))
 
-    return PruneResult(gamma, xi, {root: gamma[root]}, missing, dict(U), float(loglik))
+    # leave-one-out marginal per node: the outside message times the descendants'
+    # inside evidence, EXCLUDING only the node's own emission. Reduces to U[c] for a
+    # leaf; retains the subtree for an internal labelled sample (CLAUDE.md §2.3, §3.3).
+    loo = {}
+    for c in U:
+        cinside = np.ones(K)
+        for cc in tree.children(c):
+            cinside = cinside * msg[cc]
+            sc = cinside.sum()               # normalized partial product (scale cancels below)
+            if sc > 0:
+                cinside = cinside / sc
+        v = U[c] * cinside
+        s = v.sum()
+        loo[c] = v / s if s > 0 else np.full(K, 1.0 / K)
+
+    return PruneResult(gamma, xi, {root: gamma[root]}, missing, loo, float(loglik))
 
 
 def prune_tree(tree, emissions, Q, node_time, pi, Pget=None):
