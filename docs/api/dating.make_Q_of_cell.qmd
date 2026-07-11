@@ -1,7 +1,27 @@
 # dating.make_Q_of_cell { #tspaint.dating.make_Q_of_cell }
 
 ```python
-tspaint.dating.make_Q_of_cell(q_AB, q_BA)
+tspaint.dating.make_Q_of_cell(q, q_BA=None)
 ```
 
-Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates.
+Build a ``cell_index -> (K, K) generator`` callable from per-cell directional rates.
+
+``q`` is the ``(n_cells, K, K)`` off-diagonal rate array; the returned generator sets each row's
+diagonal to ``-Σ`` of its off-diagonals. The legacy 2-state call ``make_Q_of_cell(q_AB, q_BA)``
+(two ``(n_cells,)`` arrays) is still accepted.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**q**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   The ``(n_cells, K, K)`` off-diagonal rate array (its diagonal is ignored / overwritten). In the legacy 2-state call this is instead ``q_AB``, the ``(n_cells,)`` A→B rate array.
+
+<code>[**q_BA**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Legacy 2-state B→A rate array ``(n_cells,)``. Default ``None`` — ``q`` is taken as the full ``(n_cells, K, K)`` array; when given, ``q`` and ``q_BA`` are assembled into a ``(n_cells, 2, 2)`` array.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   ``Q(cell_index) -> (K, K)`` generator with each row's diagonal set to ``-Σ`` of its off-diagonals (rows sum to 0); per-cell results are cached.

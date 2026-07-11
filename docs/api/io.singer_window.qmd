@@ -66,14 +66,6 @@ typo and a dead ``-mut_map`` branch).
 
 :   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
 
-<code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
-
-:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
-
-<code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
-
-:   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
-
 <code>[**_ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
 
 :   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
@@ -93,6 +85,46 @@ typo and a dead ``-mut_map`` branch).
 <code>[**singer_bin**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
 
 :   The underscore-prefixed SINGER flags (plus the retry / binary controls), as for :func:`singer`.
+
+<code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   SINGER's raw ``-n`` / ``-thin``, passed directly for this one window (this per-window primitive has no unified ``ts`` / ``mcmc_step`` knobs). Defaults ``20`` / ``10``.
+
+<code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
+
+:   SINGER's raw ``-n`` / ``-thin``, passed directly for this one window (this per-window primitive has no unified ``ts`` / ``mcmc_step`` knobs). Defaults ``20`` / ``10``.
+
+<code>[**_ratio**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_penalty**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_hmm_epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_psmc_bins**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_recomb_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_mut_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**_fast**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
+
+<code>[**singer_args**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer`.
 
 ## Returns {.doc-section .doc-section-returns}
 

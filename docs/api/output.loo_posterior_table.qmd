@@ -49,6 +49,10 @@ reference's foreign tracts even where the down-pass posterior is pinned to the l
 
 :   As for :func:`posterior_table` (``progress`` shows a per-marginal-tree bar for the full-genome pass). For a parallel leave-one-out paint use :func:`tspaint.parallel.loo_posterior_table_parallel`.
 
+<code>[**tree_range**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`posterior_table` (``progress`` shows a per-marginal-tree bar for the full-genome pass). For a parallel leave-one-out paint use :func:`tspaint.parallel.loo_posterior_table_parallel`.
+
 <code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
 
 :   As for :func:`posterior_table` (``progress`` shows a per-marginal-tree bar for the full-genome pass). For a parallel leave-one-out paint use :func:`tspaint.parallel.loo_posterior_table_parallel`.

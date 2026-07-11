@@ -9,6 +9,28 @@ Edge-blocked, span-weighted per-cell dwell + directional jumps (Stage-1, homogen
 Mirrors :func:`tspaint.accumulate.accumulate_sufficient_statistics` (bank each entering edge
 once, weighted by its span) but bins each branch's rewards by time cell.
 
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   
+
+<code>[**Q**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation}</code>
+
+:   Homogeneous CTMC generator (the same ``Q`` is used for every time cell).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies ``π``.
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\] or [tspaint](`tspaint`).[model](`tspaint.model`).[MaskedEmissions](`tspaint.model.MaskedEmissions`)]{.parameter-annotation}</code>
+
+:   Per-tip Felsenstein emission vectors (:func:`tspaint.em.build_emissions`). A :class:`~tspaint.model.MaskedEmissions` is resolved per marginal-tree interval (:func:`tspaint.model.emissions_for`), so fragment masking (CLAUDE.md §2.3) applies here exactly as it does in :func:`tspaint.paint`.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Log-time grid cell edges (:func:`tspaint.dating.log_time_grid`).
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) ndarray]{.parameter-annotation}</code>

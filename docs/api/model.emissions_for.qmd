@@ -6,3 +6,23 @@ tspaint.model.emissions_for(emissions, left, right)
 
 The emission dict for a marginal tree interval — position-dependent for a
 :class:`MaskedEmissions`, else the plain ``emissions`` dict unchanged (backward compatible).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\] or [MaskedEmissions](`tspaint.model.MaskedEmissions`)]{.parameter-annotation}</code>
+
+:   A plain per-tip emission dict, or a :class:`MaskedEmissions`. Duck-typed: any object exposing a ``for_interval(left, right)`` method is dispatched to it, anything else is returned unchanged.
+
+<code>[**left**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+<code>[**right**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+
+:   For a :class:`MaskedEmissions`, ``emissions.for_interval(left, right)`` (the per-interval dict); for a plain dict, ``emissions`` itself unchanged.

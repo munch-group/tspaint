@@ -16,6 +16,8 @@ tspaint.fit_rate_through_time(
     tol=0.0001,
     floor=1e-09,
     fit_result=None,
+    mask=None,
+    n_jobs=None,
 )
 ```
 
@@ -27,9 +29,9 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 :   
 
-<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
 
-:   Reference sample-node id -> ancestry state (0/1).
+:   Reference sample id -> ancestry state. Each key is a sample-node index or a sample-ID string; each value is either an **integer** state (``0, 1, …``) or a **population name** (a string, e.g. ``"A"`` / ``"B"``). When names are given they are mapped to states in sorted order and carried through, so the result reports rates and split times **by name** (:attr:`RateThroughTime.state_names`); integer states default to the letters ``A, B, C, …``.
 
 <code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -47,6 +49,18 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 :   Iterations of the homogeneous :func:`tspaint.fit` used to initialise (ignored when ``fit_result`` is supplied).
 
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator for the internal homogeneous :func:`tspaint.fit`. Default ``None`` — :func:`tspaint.fit` scales a default symmetric generator to the calibrated node-age axis (so the warm-start fit does not wash out on a deep time scale). Ignored when ``fit_result`` is supplied.
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Whether the internal fit re-estimates the root frequencies ``π``. Default ``False`` — hold ``π`` fixed. ``π`` is a prior on the arbitrary GMRCA state, so holding it fixed is the robust default; estimating it from washing deep roots is what breaks (CLAUDE.md §6, π-identifiability). Ignored when ``fit_result`` is supplied.
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Labelled tips whose credibility ``w_i`` the internal fit **learns** (the rest stay hard-clamped anchors). Default ``None`` — every reference is an anchor. Ignored when ``fit_result`` is supplied.
+
 <code>[**n_knots**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [20]{.parameter-default}</code>
 
 :   Spline knots for the M-step.
@@ -55,12 +69,24 @@ Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM
 
 :   Relative log-likelihood change for convergence.
 
+<code>[**floor**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-09]{.parameter-default}</code>
+
+:   Lower clamp on every per-cell off-diagonal rate — at initialisation and after each M-step (also the fill value for any NaN rate) — keeping the generator strictly positive and well-defined for the next E-step's ``expm`` composites. Default ``1e-9``.
+
 <code>[**fit_result**]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[em](`tspaint.em`).[FitResult](`tspaint.em.FitResult`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   A precomputed homogeneous fit to **warm-start** from (its ``Q`` seeds the rate splines and its ``w``/``pi`` build the tip emissions). When given, the internal homogeneous :func:`tspaint.fit` is skipped — used by :meth:`tspaint.Painting.rate_through_time` to reuse the painting's fit rather than refitting.
+
+<code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   **Fragment masking** (CLAUDE.md §2.3): ``{ref: [(left, right), ...]}`` per-reference spans over which that reference emits the query (unlabelled) emission, as for :func:`tspaint.paint` / :func:`tspaint.fit`. Keys may be node ids or sample-ID strings. Applied to both the internal warm-start fit and the time-inhomogeneous E-step, so a painting made with a mask dates under the same emissions. :meth:`tspaint.Painting.rate_through_time` forwards its painting's mask automatically. Default ``None`` (no masking).
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Worker processes for the time-inhomogeneous E-step, split across genome tree-ranges (:func:`tspaint.parallel.dating_estep_parallel`). Default ``None`` = all CPUs / the SLURM allocation (:func:`tspaint.parallel.resolve_cores`); pass ``1`` for serial. A pool is built once and reused across all EM iterations. The parallel E-step is ``allclose`` (not bit-identical) to serial — the per-cell statistics sum over tree-ranges in chunk order, and float ``+`` is not associative.
 
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tspaint.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
 
-:   
+:   The fitted directional rate profile: the log-time grid (``centers``), the per-cell generator array ``q`` (with the :attr:`~RateThroughTime.q_AB` / :attr:`~RateThroughTime.q_BA` views), the accumulated dwell / jump statistics ``D`` and ``J``, and the EM ``loglik_history``. Call :meth:`RateThroughTime.plot` to draw the profile, or :func:`tspaint.dating.split_time` to read off the divergence epoch.

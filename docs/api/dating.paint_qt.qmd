@@ -4,7 +4,39 @@
 tspaint.dating.paint_qt(ts, emissions, Q_of_cell, pi, edges, focal)
 ```
 
-Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same
-deliverable as :func:`tspaint.output.posterior_table` but using the per-cell rates from the
-admixture-rate-through-time fit (so recent branches with a low rate wash less). Returns
-``{sample: [Segment]}``; isolated spans are tagged ``MISSING_INFO``.
+Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell``.
+
+The same deliverable as :func:`tspaint.output.posterior_table` but using the per-cell rates
+from the admixture-rate-through-time fit (so recent branches with a low rate wash less).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\] or [tspaint](`tspaint`).[model](`tspaint.model`).[MaskedEmissions](`tspaint.model.MaskedEmissions`)]{.parameter-annotation}</code>
+
+:   Per-tip Felsenstein emission vectors (:func:`tspaint.em.build_emissions`). A :class:`~tspaint.model.MaskedEmissions` is resolved per marginal-tree interval (:func:`tspaint.model.emissions_for`), so fragment masking (CLAUDE.md §2.3) applies here exactly as it does in :func:`tspaint.paint`.
+
+<code>[**Q_of_cell**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   ``Q_of_cell(cell_index) -> (K, K)`` per-cell generator (:func:`make_Q_of_cell`).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies ``π``.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Log-time grid cell edges (:func:`tspaint.dating.log_time_grid`).
+
+<code>[**focal**]{.parameter-name} [:]{.parameter-annotation-sep} [iterable of int]{.parameter-annotation}</code>
+
+:   Sample-node ids to paint.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tspaint](`tspaint`).[output](`tspaint.output`).[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Per focal sample, the merged per-position posterior track; isolated spans are tagged ``MISSING_INFO``, informative spans ``INFORMATIVE``.

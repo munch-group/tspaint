@@ -41,6 +41,10 @@ loaded at a time), or reassemble the whole genome with :meth:`painting` (holds i
 
 :   The single shared fit — the same for every window.
 
+<code>[**default_deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Default dead-band carried into every per-window / reassembled :class:`Painting` (for :meth:`Painting.segments`). Default :data:`~tspaint.output.DEFAULT_DEADBAND` (``0.4``).
+
 ## Methods
 
 | Name | Description |
@@ -57,6 +61,18 @@ tspaint.WindowedPainting.load(out_dir)
 
 Reopen a directory previously written by windowed :func:`paint` (reads ``manifest.json``).
 
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**out_dir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   A directory written by ``paint(..., window_size=…, out_dir=out_dir)`` — it must hold a ``manifest.json`` (the shared fit and window bounds) alongside the ``window_NNNNN.npz`` files.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[WindowedPainting](`tspaint.api.WindowedPainting`)]{.parameter-annotation}</code>
+
+:   A lightweight handle over the per-window files (the window index and shared fit only; the per-window posteriors stay on disk until :meth:`windows` / :meth:`painting`).
+
 ### painting { #tspaint.WindowedPainting.painting }
 
 ```python
@@ -69,6 +85,12 @@ Loads every window and concatenates by genomic position — this holds the whole
 posteriors in memory (the cost streaming avoided), so call it only when you can afford it,
 or after narrowing to a manageable region.
 
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Painting](`tspaint.api.Painting`)]{.parameter-annotation}</code>
+
+:   The stitched genome-wide painting (``ts=None``; carries the shared fit ``Q``/``π``/``w``, ``queries``, ``labels`` and :attr:`default_deadband`, and tiles ``[0, L)`` exactly as a single-pass paint would).
+
 ### windows { #tspaint.WindowedPainting.windows }
 
 ```python
@@ -76,3 +98,9 @@ tspaint.WindowedPainting.windows()
 ```
 
 Yield ``(lo, hi, Painting)`` per window, loading one file at a time (bounded memory).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Iterator](`Iterator`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [Painting](`tspaint.api.Painting`)\]\]]{.parameter-annotation}</code>
+
+:   One ``(lo, hi, Painting)`` per window in genome order — the window's ``[lo, hi)`` bounds and its :class:`Painting`, loaded from ``window_NNNNN.npz`` on demand (one held at a time).

@@ -46,6 +46,10 @@ sampled as references, so the ghost tracts are foreign-to-the-panel ground truth
 
 :   Seed for :func:`msprime.sim_ancestry`.
 
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   If given, overlay mutations on the ARG at this per-base rate so the returned ``.ts`` carries sites (:func:`tspaint.io.add_mutations`); ``None`` (default) leaves the bare ancestry. As for :func:`simulate_admixture`.
+
 <code>[**ghost_fraction**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
 
 :   Fraction of the admixed population contributed by the unsampled ghost source.
@@ -56,9 +60,9 @@ sampled as references, so the ghost tracts are foreign-to-the-panel ground truth
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
 
-:   Tree sequence whose samples are admixed queries and A/B references; identify them by node population. Census truth (:func:`local_ancestry_truth`) labels tracts A / B / GHOST.
+:   A :class:`Simulation` (use ``.ts`` for the tree sequence); samples are admixed queries and A/B references. The ``GHOST`` source is ghost-tagged, so its tracts are embedded in ``.truth_states`` (and surfaced in ``.ghost_states``); ``local_ancestry_truth`` still labels tracts A / B / GHOST by population.
 
 ## See Also {.doc-section .doc-section-see-also}
 

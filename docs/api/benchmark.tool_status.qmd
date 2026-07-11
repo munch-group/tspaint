@@ -5,3 +5,9 @@ tspaint.benchmark.tool_status()
 ```
 
 Resolved path + availability for every benchmark tool (incl. RFMix).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\]]{.parameter-annotation}</code>
+
+:   One row per tool (``rfmix``, ``gnomix``, ``salai``, ``recombmix``) with ``tool`` (name), ``path`` (the resolved binary path or install directory) and ``available`` (bool from :func:`tspaint.benchmark.tool_available`).

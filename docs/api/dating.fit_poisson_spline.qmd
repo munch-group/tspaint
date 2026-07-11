@@ -18,6 +18,44 @@ Penalised Poisson log-spline via penalised IRLS.
 
 Model ``events ~ Poisson(exposure · exp(B β))`` with 2nd-difference penalty ``λ βᵀPβ``.
 
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) array_like]{.parameter-annotation}</code>
+
+:   Cell-centre times; the B-spline basis is built on ``log(centers)``.
+
+<code>[**events**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) array_like]{.parameter-annotation}</code>
+
+:   Per-cell event counts — the Poisson response (e.g. directional jumps ``J[:, m, n]``).
+
+<code>[**exposure**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) array_like]{.parameter-annotation}</code>
+
+:   Per-cell exposure / offset (occupation ``D[:, m]``); the Poisson mean is ``exposure · exp(Bβ)``. Cells with ``exposure <= 0`` are dropped from the fit.
+
+<code>[**lam**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Roughness-penalty weight ``λ`` (larger ⇒ smoother).
+
+<code>[**n_knots**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [25]{.parameter-default}</code>
+
+:   Number of B-spline knots on log-time. Default ``25``.
+
+<code>[**degree**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [3]{.parameter-default}</code>
+
+:   B-spline degree. Default ``3`` (cubic).
+
+<code>[**order**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+
+:   Order of the difference penalty (``2`` = second-difference roughness). Default ``2``.
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [60]{.parameter-default}</code>
+
+:   Maximum penalised-IRLS iterations. Default ``60``.
+
+<code>[**tol**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-07]{.parameter-default}</code>
+
+:   Convergence tolerance on the max coefficient change between iterations. Default ``1e-7``.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[**rate**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) ndarray]{.parameter-annotation}</code>
@@ -30,4 +68,4 @@ Model ``events ~ Poisson(exposure · exp(B β))`` with 2nd-difference penalty ``
 
 <code>[**beta**]{.parameter-name} [:]{.parameter-annotation-sep} [(ncoef,) ndarray]{.parameter-annotation}</code>
 
-:   
+:   Fitted B-spline coefficients ``β``.

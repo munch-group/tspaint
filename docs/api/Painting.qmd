@@ -56,11 +56,19 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 
 <code>[**default_deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
 
-:   Default dead-band passed to :meth:`segments`. Default ``0.0``.
+:   Default dead-band passed to :meth:`segments` (and the plots) — the confidence dead-band on the top-two posterior margin ``max(P) − 2nd-max(P)`` (:func:`tspaint.output.hard_segments`). Default :data:`~tspaint.output.DEFAULT_DEADBAND` (``0.4``).
+
+<code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`) or None]{.parameter-annotation}</code>
+
+:   Worker processes used to paint (resolved from :func:`paint`'s ``n_jobs`` via :func:`tspaint.parallel.resolve_cores`), reused as the default for :meth:`rate_through_time`'s per-member ensemble dating. ``None`` on a painting not produced by :func:`paint` (e.g. reloaded with :meth:`load` or reassembled from windows).
 
 <code>[**_member_posteriors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\] or None]{.parameter-annotation}</code>
 
 :   For an **ensemble** painting, the individual per-member posterior tables (each a ``dict[int, list[Segment]]``) whose per-position mean is :attr:`posteriors`; ``None`` for a single tree sequence. Drives the per-member :meth:`rate_through_time` split-time interval.
+
+<code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`) or None]{.parameter-annotation}</code>
+
+:   The fragment mask applied when painting — ``{ref-node: [(left, right), ...]}`` spans treated as unlabelled (CLAUDE.md §2.3), resolved to node-id keys; ``None`` when unmasked. :meth:`plot` reads it to cross-hatch each reference's masked spans (``mark_masked``).
 
 ## Methods
 
@@ -69,6 +77,7 @@ Result of :func:`paint`: the soft local-ancestry posteriors plus the fitted mode
 | [introgression_map](#tspaint.Painting.introgression_map) | Leave-one-out introgression map for ``sample``, reusing this painting's fit. |
 | [load](#tspaint.Painting.load) | Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`). |
 | [plot](#tspaint.Painting.plot) | Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`). |
+| [plot_posterior](#tspaint.Painting.plot_posterior) | Deprecated alias for ``plot(samples=individuals, ...)``. |
 | [rate_through_time](#tspaint.Painting.rate_through_time) | Estimate the admixture (cross-ancestry) rate through time, reusing this fit. |
 | [save](#tspaint.Painting.save) | Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted model). |
 
@@ -106,17 +115,50 @@ tspaint.Painting.load(path)
 
 Reload a painting written by :meth:`save` (``ts`` is ``None``; see :meth:`save`).
 
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to a ``.npz`` written by :meth:`save` (format ``"tspaint-painting"``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Painting](`tspaint.api.Painting`)]{.parameter-annotation}</code>
+
+:   The reloaded painting: :attr:`posteriors`, ``Q``/``π``/``w``, ``queries``, ``labels`` and :attr:`default_deadband` are restored from the file, while ``ts`` is ``None`` and ``loglik_history`` is empty (neither is persisted). Delegates to :func:`tspaint.serialize.load_painting` and :func:`~tspaint.serialize.load_painting_meta`.
+
 ### plot { #tspaint.Painting.plot }
 
 ```python
-tspaint.Painting.plot(*args, refs=True, mark_masked=True, **kwargs)
+tspaint.Painting.plot(
+    truth=None,
+    segments=False,
+    title=None,
+    cmap='coolwarm',
+    colors=None,
+    alpha=None,
+    figsize=None,
+    return_plot=False,
+    deadband=None,
+    row_labels=None,
+    mark_spans=None,
+    samples=None,
+    curves=False,
+    *,
+    refs=True,
+    mark_masked=True,
+    ghost=None,
+    ghost_threshold=0.5,
+)
 ```
 
 Strip plot of the painting — **reference-aware** (extends :meth:`SoftTrack.plot`).
 
-To see a *reference's own* painting (and its introgression), include the reference in the
-painted focal set: ``paint(ts, labels, queries=queries + [ref], mask=mask)``. Then, for any
-painted row that is a labelled reference (in :attr:`labels`), this:
+**To display reference haplotypes you must paint them** — ``refs`` here does **not** add rows,
+it only annotates references that are already in the painted focal set. Include them at paint
+time: ``paint(ts, labels, refs=True)`` (all references, arranged around the queries) or
+``paint(ts, labels, queries=queries + [ref], mask=mask)`` (specific ones). Then, for any painted
+row that is a labelled reference (in :attr:`labels`), ``refs`` (default ``True``):
 
 * labels the row with its **nominal ancestry** — e.g. ``ref 39 (A)`` instead of ``hapl. i`` —
   so a reference that paints a foreign (e.g. B) tract stands out against its own A label; and
@@ -124,8 +166,147 @@ painted row that is a labelled reference (in :attr:`labels`), this:
   (unlabelled) spans** over its soft band, showing where the reference was un-anchored and its
   posterior became tree-inferred (the mechanism that reveals its introgression).
 
-Pass ``refs=False`` / ``mark_masked=False`` to suppress either. All other arguments
-(``truth``, ``title``, ``cmap``, ``deadband``, ``return_plot`` …) pass through unchanged.
+Pass ``refs=False`` / ``mark_masked=False`` to suppress either. A reference's masked spans are
+drawn with a **cross-hatch** (:data:`_MASK_HATCH`), distinct from the ghost overlay below.
+
+``samples`` selects which haplotypes to plot (defaults to all queries) and accepts the same
+forms as the former :meth:`plot_posterior`: an ``int`` / list of ``int`` (haploid sample-node
+indices) or a ``str`` / list of ``str`` (individual / sample ids, a diploid id expanding to
+both haplotype rows), resolved via :meth:`_resolve_plot_samples`. Rows are then labelled by the
+resolved id / node unless overridden by ``row_labels``.
+
+Pass ``ghost=`` a :class:`~tspaint.GhostResult` (from :func:`tspaint.detect_ghost`) to **hatch
+each haplotype's ghost tracts over its ancestry bands** — the ghost search (where the ancestry
+is foreign to the whole panel) drawn on top of the source painting with a **diagonal** hatch
+(:data:`_GHOST_HATCH`, distinct from a masked span's cross-hatch). The tracts are
+:meth:`GhostResult.tracts` at ``ghost_threshold`` (default ``P(ghost) ≥ 0.5``); only haplotypes
+the ghost result also covers are annotated.
+
+``curves=True`` draws each row's posterior as **line curves** instead of the colour band — one
+line per ancestry state in its segment hue, ``y = P(state)`` over the genome — so
+``painting.plot(samples=[0], curves=True)`` plots the ``K`` posterior curves for the first query.
+``truth`` and — with ``segments=True`` — the hard segments then show as thin state-coloured bands
+below the curves (each ~10 % of the curve height). With ``ghost=`` in this mode the ghost
+``P(ghost)`` posterior is added as a separate black curve rather than a hatch.
+
+When ``title`` is left ``None`` it defaults to a compact painting summary — total ancestry
+proportions and fragmentation, plus breakpoint precision / recall when ``truth`` is given
+(:meth:`summary`). Pass an explicit ``title`` (including ``""``) to override. All other
+arguments (``cmap``, ``colors``, ``deadband``, ``return_plot`` …) behave as in
+:meth:`SoftTrack.plot`.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Ground-truth tracts ``(left, right, state)`` per haplotype, drawn as a reference track below each row. Default ``None`` (no truth track).
+
+<code>[**segments**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Also draw the hard segments (:meth:`segments` at ``deadband``) as a band per row. Default ``False``.
+
+<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Title for the top row. Default ``None`` → the compact performance-stats summary (:meth:`summary`); pass ``""`` for no title, or any string to override.
+
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+
+:   Unused (kept for backward compatibility); the confidence-as-opacity rendering takes the per-state hues from ``colors``. Default ``'coolwarm'``.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-state hues (state ``k`` → ``colors[k]``; the two extremes are the state hues for ``K = 2``). Default ``None`` → matplotlib's colour cycle (see :meth:`SoftTrack.plot`).
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Maximum opacity — fades the whole plot; the soft band is drawn at ``confidence · alpha``. Default ``None`` (fully opaque, i.e. ``1``).
+
+<code>[**figsize**]{.parameter-name} [:]{.parameter-annotation-sep} [([float](`float`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Figure size. Default ``None`` (auto from the number of rows).
+
+<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Return the matplotlib ``(figure, axes)`` instead of ``None``. Default ``False``.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Dead-band on the top-two posterior margin ``max(P) − 2nd-max(P)`` for the hard-segment overlay (:func:`tspaint.output.hard_segments`). Default ``None`` → :attr:`default_deadband`.
+
+<code>[**row_labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [str](`str`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-sample y-axis label overrides (**highest priority**). Painted references are otherwise auto-labelled ``ref <node> (<ancestry>)`` when ``refs=True``, and ids resolved from ``samples`` supply their own labels. Default ``None``.
+
+<code>[**mark_spans**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra per-sample spans to hatch over each row; the reference-mask and ghost overlays below are merged into it. Default ``None``.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`) or [str](`str`) or [iterable](`iterable`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Which painted haplotypes to plot, in order: an ``int`` / list of ``int`` (haploid sample-node indices) or a ``str`` / list of ``str`` (individual / sample ids, a diploid id expanding to both haplotype rows), resolved via :meth:`_resolve_plot_samples`. A :class:`ValueError` is raised if the selection is empty or includes an unpainted haplotype. Default ``None`` (all queries).
+
+<code>[**curves**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Draw each row's posterior as line curves (one per ancestry state) instead of the colour band. Default ``False``.
+
+<code>[**refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   For painted rows that are labelled references (in :attr:`labels`): label the row with its nominal ancestry (``ref <node> (A)``) and, when a ``mask`` was used, hatch its masked spans. Keyword-only. Default ``True``.
+
+<code>[**mark_masked**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Cross-hatch (:data:`_MASK_HATCH`) each reference's masked (unlabelled) spans when this painting was produced with a fragment ``mask``. Keyword-only. Default ``True``.
+
+<code>[**ghost**]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[GhostResult](`tspaint.GhostResult`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   A ghost-detector result (:func:`tspaint.detect_ghost`); its ghost tracts are hatched over each haplotype's ancestry bands (diagonal, :data:`_GHOST_HATCH`) — or, with ``curves=True``, added as a black ``P(ghost)`` curve. Keyword-only. Default ``None``.
+
+<code>[**ghost_threshold**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Threshold for the ``ghost`` tracts — a locus is ghost where ``P(ghost) ≥ ghost_threshold`` (:meth:`GhostResult.tracts`). Keyword-only. Default ``0.5``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   ``(figure, list_of_axes)`` if ``return_plot`` is ``True``, else ``None``.
+
+### plot_posterior { #tspaint.Painting.plot_posterior }
+
+```python
+tspaint.Painting.plot_posterior(individuals, **kwargs)
+```
+
+Deprecated alias for ``plot(samples=individuals, ...)``.
+
+The sample selection / id resolution it provided now lives directly in :meth:`plot` (its
+``samples`` argument), so ``painting.plot(samples=[0, 3])`` or
+``painting.plot(samples="NA12878")`` is the preferred call. Kept for backward compatibility.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**individuals**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`) or [str](`str`) or [iterable](`iterable`)]{.parameter-annotation}</code>
+
+:   The haplotype(s) to plot — forwarded to :meth:`plot` as ``samples`` (see there): an ``int`` / list of ``int`` (haploid sample-node indices) or a ``str`` / list of ``str`` (individual / sample ids, a diploid id expanding to both haplotypes).
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded verbatim to :meth:`plot` (``truth``, ``deadband``, ``return_plot``, …).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`) or None]{.parameter-annotation}</code>
+
+:   Whatever :meth:`plot` returns — ``(figure, axes)`` when ``return_plot=True``, else ``None``.
+
+#### Examples {.doc-section .doc-section-examples}
+
+```python
+>>> painting.plot(samples=0)                          # one haploid node
+>>> painting.plot(samples=[0, 3, 5])                  # several haploid nodes
+>>> painting.plot(samples="NA12878")                 # both haplotypes of a diploid id
+>>> painting.plot(samples=["NA12878", "NA12889"], truth=truth)
+```
 
 ### rate_through_time { #tspaint.Painting.rate_through_time }
 
@@ -138,11 +319,13 @@ Estimate the admixture (cross-ancestry) rate through time, reusing this fit.
 Fits the time-inhomogeneous directional mugration EM
 (:func:`tspaint.fit_rate_through_time`) **warm-started from this painting's fitted
 ``(Q, π, w)``**, so the homogeneous fit is not repeated. This is a *different
-deliverable* from the painting — the cross-ancestry transition rates ``q_AB(t)``,
-``q_BA(t)`` as functions of (backward) time, locating divergence / gene-flow epochs and
-their direction. It returns a **new** :class:`~tspaint.dating.RateThroughTime` and does
-**not** modify :attr:`posteriors` (CLAUDE.md: Q(t) gives no painting-accuracy gain, so the
-paths stay side by side).
+deliverable* from the painting — the cross-ancestry transition rates as functions of
+(backward) time, locating divergence / gene-flow epochs and their direction. Works for any
+``K``: the result carries all ``K·(K-1)`` directional rates ``q[:, m, n]`` (``.q_AB`` /
+``.q_BA`` are the ``K=2`` slices), and ``.plot()`` draws each ancestry pair in one colour
+(solid / dashed for the two directions). It returns a **new**
+:class:`~tspaint.dating.RateThroughTime` and does **not** modify :attr:`posteriors`
+(CLAUDE.md: Q(t) gives no painting-accuracy gain, so the paths stay side by side).
 
 #### Parameters {.doc-section .doc-section-parameters}
 
@@ -152,11 +335,11 @@ paths stay side by side).
 
 <code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   For an **ensemble** painting, worker processes dating the members **in parallel** (one per member — they are independent). Defaults to the painting's own :attr:`n_jobs` (so a painting fit in parallel dates in parallel); pass an explicit value to override. Ignored for a single tree sequence (the dating E-step is not yet tree-parallel).
+:   Worker processes. For a **single** tree sequence the dating E-step is split across genome tree-ranges (:func:`tspaint.parallel.dating_estep_parallel`); for an **ensemble** the members are dated in parallel (one worker per member — they are independent). Defaults to the painting's own :attr:`n_jobs` (so a painting fit in parallel dates in parallel); pass an explicit value to override.
 
 <code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
 
-:   Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``).
+:   Forwarded to :func:`tspaint.fit_rate_through_time` (e.g. ``n_cells``, ``n_iter``, ``n_knots``). When this painting was produced with a fragment ``mask``, that mask is forwarded too, so the dating E-step uses the same emissions the painting did; pass an explicit ``mask=`` (or ``mask=None``) to override.
 
 #### Returns {.doc-section .doc-section-returns}
 
@@ -175,3 +358,9 @@ Write this painting to ``path`` as ``.npz`` (the segment table plus the fitted m
 Reload with :meth:`load`. The painted tree sequence itself is **not** stored (keep the
 ``.trees`` file); a reloaded painting therefore has ``ts=None`` but retains
 :attr:`length`, the posteriors, ``Q``/``π``/``w`` and the labels.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Destination ``.npz`` path (written exactly as given, no extension appended). Delegates to :func:`tspaint.serialize.save_painting` (format ``"tspaint-painting"``: the flat per-segment table plus the fitted-model metadata ``Q``/``π``/``w``/``queries``/``labels``/``seqlen``/``deadband``).

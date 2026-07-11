@@ -4,24 +4,31 @@
 tspaint.dating.directional_rate_splines(D, J, centers, **kw)
 ```
 
-Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines.
+Fit every directional rate ``q_{mn}(t)`` (``m ≠ n``) by GCV-selected penalised Poisson splines.
+
+Generalises the 2-state ``q_AB`` / ``q_BA`` to ``K`` ancestries: each ordered off-diagonal pair
+``(m, n)`` is a Poisson spline of ``J[:, m, n]`` with exposure ``D[:, m]``.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
-<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) array — per-cell occupation (exposure: ``D\[:,0\]`` for A→B, ``D\[:,1\]`` for B→A).]{.parameter-annotation}</code>
+<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) array_like]{.parameter-annotation}</code>
 
-:   
+:   Per-cell expected occupation (dwell). Column ``D[:, m]`` is the Poisson exposure for every ``m → *`` rate.
 
-<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) array — per-cell directional jumps.]{.parameter-annotation}</code>
+<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) array_like]{.parameter-annotation}</code>
 
-:   
+:   Per-cell expected directional jump counts; ``J[:, m, n]`` is the response fitted for the ordered pair ``(m, n)``.
 
-<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) cell centres.]{.parameter-annotation}</code>
+<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) array_like]{.parameter-annotation}</code>
 
-:   
+:   Cell centres of the log-time grid (:func:`tspaint.dating.cell_centers`).
+
+<code>[****kw**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   ``occ_frac`` (float, default ``0.02``) sets the **informative window**: for each source state ``m``, cells with exposure ``D[:, m] > occ_frac * max(D[:, m])`` are fitted, and the rate is flat-clamped to the window's edge values outside it. Any remaining keywords are forwarded to :func:`select_lambda_gcv` (hence to :func:`fit_poisson_spline` — ``n_knots``, ``degree``, ``order``, ...).
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [dict with ``q_AB``, ``q_BA`` (rates at the centres) and the selected ``lambda_*``/``edf_*``.]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
 
-:   
+:   ``q`` — the ``(n_cells, K, K)`` fitted rate array (diagonal 0); ``(m, n)`` → the selected ``{"lambda", "edf", "window"}`` for that pair; and, for ``K == 2``, the legacy ``q_AB`` / ``q_BA`` slices.

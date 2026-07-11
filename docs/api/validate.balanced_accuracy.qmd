@@ -36,7 +36,7 @@ it discriminate?" metric.
 
 <code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
 
-:   Number of ancestry states.
+:   Number of ancestry states. Auto-grown if the truth contains larger state indices (e.g. a **ghost** state embedded above the sources, :attr:`tspaint.sim.Simulation.ghost_states`): the ghost then forms its own class, which the panel cannot paint, so it scores 0 — i.e. this measures accuracy *including* the un-paintable ghost. For paintable-only accuracy, score against a source-only truth (states in ``Simulation.source_states``).
 
 ## Returns {.doc-section .doc-section-returns}
 

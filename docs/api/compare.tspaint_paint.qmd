@@ -44,7 +44,7 @@ with the down-pass posterior.
 
 <code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Initial generator; defaults to ``make_generator_2state(1e-3, 1e-3)``.
+:   Initial generator; defaults to ``make_generator_symmetric(K, 1e-3)`` (the symmetric ``K``-state start — equals ``make_generator_2state(1e-3, 1e-3)`` at ``K = 2``).
 
 <code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 

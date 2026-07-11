@@ -44,6 +44,10 @@ and info-status; adjacent identical segments are merged.
 
 :   Absolute tolerance for merging adjacent segments with equal posterior. Default ``1e-12``.
 
+<code>[**tree_range**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Half-open ``(lo, hi)`` range of marginal-tree indices to paint; trees outside it are skipped. Default ``None`` → the whole genome (``(0, ts.num_trees)``). Enables the chunked / parallel pass: since each segment's posterior comes from its own tree's pruning (independent of which trees a chunk covers), concatenating the per-range tracks in genome order and re-merging at the seams reproduces the full-genome result exactly (:func:`tspaint.parallel.posterior_table_parallel`).
+
 <code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
 :   Show a per-marginal-tree :mod:`tqdm` progress bar (full-genome pass only). Default ``False``.

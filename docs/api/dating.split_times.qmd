@@ -1,0 +1,31 @@
+# dating.split_times { #tspaint.dating.split_times }
+
+```python
+tspaint.dating.split_times(rtt, exposure_frac=0.01)
+```
+
+Per-**pair** split / divergence times from a directional rate profile.
+
+Generalises :func:`split_time` to any ``K``: for each unordered ancestry pair the split is
+estimated from that pair's own combined rate ``q[:, m, n] + q[:, n, m]`` and its own occupation
+``D[:, m] + D[:, n]``, so pairs on very different rate scales each get their own
+(exposure-guarded) transition — and a deep, faint pair is not swamped by a recent, strong one.
+Each pair auto-detects a **rising onset** (source–source) or a **falling edge**
+(reference-proxy) — see :func:`_pair_split_time`. The dict is keyed by **population-name** pairs
+(``rtt.state_names``; letters ``A, B, …`` when the fit had integer-state labels).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**rtt**]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tspaint.dating.em.RateThroughTime`) or [EnsembleRateThroughTime](`tspaint.dating.em.EnsembleRateThroughTime`)]{.parameter-annotation}</code>
+
+:   A fitted profile (uses ``.centers``, ``.q``, ``.state_names`` and, when present, ``.D``).
+
+<code>[**exposure_frac**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.01]{.parameter-default}</code>
+
+:   Ignore cells whose pair occupation is below this fraction of its max. Default ``0.01``.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[tuple](`tuple`)\[[str](`str`), [str](`str`)\], [float](`float`)\]]{.parameter-annotation}</code>
+
+:   ``{(name_m, name_n): split_time}`` (generations ago) for every unordered pair ``m < n``; a pair with no clear transition maps to ``nan``.

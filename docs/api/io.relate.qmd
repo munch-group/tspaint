@@ -49,11 +49,19 @@ out_dir=…``).
 
 <code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Per-base, per-generation mutation rate (Relate ``-m``; alias ``m``). **Required.**
+:   Per-base, per-generation mutation rate (Relate ``-m``). **Required** (via either name). ``m`` is a short alias; if both are given ``m`` takes precedence.
+
+<code>[**m**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-base, per-generation mutation rate (Relate ``-m``). **Required** (via either name). ``m`` is a short alias; if both are given ``m`` takes precedence.
 
 <code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
 
-:   Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``; alias ``r``). Ignored when ``genetic_map`` is given.
+:   Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``). Ignored when ``genetic_map`` is given. ``r`` is a short alias; if both are given ``r`` takes precedence.
+
+<code>[**r**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1e-08]{.parameter-default}</code>
+
+:   Per-base recombination rate for a synthesised constant-rate genetic map (default ``1e-8``). Ignored when ``genetic_map`` is given. ``r`` is a short alias; if both are given ``r`` takes precedence.
 
 <code>[**Ne**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -118,6 +126,10 @@ out_dir=…``).
 :   The Relate tree sequence (node ids stable across trees via ``--compress``; branch lengths in generations). Sample nodes are in input order; for a **VCF** / **VCF-Zarr** / ``Variants`` source the source's sample ids are stamped on them (:func:`tspaint.ids.attach_sample_ids`), so :func:`tspaint.paint` accepts ``labels`` keyed by sample-ID string as well as by node index.
 
 ## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If no mutation rate is given (neither ``mutation_rate`` nor ``m``).
 
 <code>[:]{.parameter-annotation-sep} [[FileNotFoundError](`FileNotFoundError`)]{.parameter-annotation}</code>
 

@@ -32,32 +32,44 @@ label it ``"P(ancestry A)"`` (so :class:`tspaint.Painting` needs no override).
 | --- | --- |
 | [plot](#tspaint.SoftTrack.plot) | Stacked strip plot of the soft posterior — one row per haplotype. |
 | [posterior_at](#tspaint.SoftTrack.posterior_at) | Posterior vector for ``sample`` at a genomic ``position``. |
+| [posteriors_as_frame](#tspaint.SoftTrack.posteriors_as_frame) | The soft per-position posterior as a pandas ``DataFrame`` — one row per segment. |
 | [segments](#tspaint.SoftTrack.segments) | Hard ancestry segments for downstream tract-length / dating analysis. |
+| [segments_as_frame](#tspaint.SoftTrack.segments_as_frame) | The hard ancestry tracts as a pandas ``DataFrame`` — one row per tract. |
+| [summary](#tspaint.SoftTrack.summary) | Quality summary of this track — every :mod:`tspaint.metrics` metric in one object. |
 
 ### plot { #tspaint.SoftTrack.plot }
 
 ```python
 tspaint.SoftTrack.plot(
     truth=None,
+    segments=False,
     title=None,
     cmap='coolwarm',
     colors=None,
+    figsize=None,
     return_plot=False,
+    alpha=None,
     deadband=None,
     row_labels=None,
     mark_spans=None,
+    samples=None,
+    curves=False,
+    curve_overlays=None,
 )
 ```
 
 Stacked strip plot of the soft posterior — one row per haplotype.
 
-Each haplotype row shows, top to bottom: the **soft** per-position posterior for the
-highlighted state (``self._hi_label``, e.g. ``P(ancestry A)`` for a painting or ``P(ghost)``
-for the ghost detector) as a colour gradient, the **hard** segments (:meth:`segments` at the
-``deadband`` below), and — when ``truth`` is given — the true tracts as a reference track
-beneath. A shared colour bar maps the highlighted state's probability (highlighted state at
-the top of ``cmap``, the other at the bottom). For an ensemble result the rows show the
-ensemble-mean posterior. Requires matplotlib.
+Each haplotype row shows, top to bottom: the **soft** per-position posterior as a colour, the
+**hard** segments (:meth:`segments` at the ``deadband`` below), and — when ``truth`` is given
+— the true tracts as a reference track beneath. Soft, hard and truth marks share **one**
+state→colour rule (:class:`_Colorizer`): the colour is the **argmax** state's hue and its
+**opacity is the confidence** — faint where uncertain, solid where confident — so a confident
+soft locus matches its hard call and the truth bar (both solid). Works for any ``K``; only the
+key differs — a **diverging colour bar** (two state hues fading through a transparent centre)
+for ``K ≤ 2``, a per-state **legend** (``A``, ``B``, ``C``, … ``ghost``) for ``K > 2``.
+
+For an ensemble result the rows show the ensemble-mean posterior. Requires matplotlib.
 
 #### Parameters {.doc-section .doc-section-parameters}
 
@@ -65,17 +77,29 @@ ensemble-mean posterior. Requires matplotlib.
 
 :   Ground-truth tracts ``(left, right, state)`` per haplotype, drawn as a reference track below each row. No truth track is drawn when ``None`` (default).
 
+<code>[**segments**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Whether to plot hard segments using deadband. Default False.
+
 <code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Title placed on the top haplotype axes.
+:   Title for the top haplotype axes. When ``None`` (default) it becomes a compact performance-stats summary — total ancestry proportions and fragmentation, plus breakpoint precision / recall when ``truth`` is given (:meth:`summary`). Pass ``""`` for no title.
 
-<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`) or [matplotlib](`matplotlib`).[colors](`matplotlib.colors`).[Colormap](`matplotlib.colors.Colormap`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
 
-:   Diverging colormap mapping the highlighted state's probability ``∈ [0, 1]`` (highlighted state → ``1.0``, the other → ``0.0``). Default ``'coolwarm'``. Ignored when ``colors`` is given.
+:   Unused (kept for backward compatibility). The confidence-as-opacity rendering does not use a colormap; pass per-state hues via ``colors``.
 
 <code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Colours to build a custom diverging colormap from, overriding ``cmap`` — e.g. ``["#2c7bb6", "#ffffbf", "#d7191c"]``.
+:   Per-state hues (state ``k`` → ``colors[k]``); defaults to matplotlib's colour cycle. For ``K > 2`` must supply at least ``K`` colours. For ``K = 2`` the two **extremes** ``colors[0]`` / ``colors[-1]`` are taken as the two state hues (so a legacy 3-stop diverging list like ``["#2c7bb6", "#ffffbf", "#d7191c"]`` still works — its middle stop is replaced by the transparent centre).
+
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Maximum opacity — **fades the whole plot** (default ``1``). The hard-segment and truth bars are drawn at opacity ``alpha``; the soft band at ``opacity = confidence · alpha`` (spanning ``[0, alpha]``; ``confidence`` is the winning probability normalised out of ``[1/K, 1]``). E.g. ``alpha=0.5`` ⇒ nothing more than 50 % opaque.
+
+<code>[**figsize**]{.parameter-name} [:]{.parameter-annotation-sep} [([float](`float`), [float](`float`))]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Figure size. Default None.
 
 <code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
@@ -92,6 +116,18 @@ ensemble-mean posterior. Requires matplotlib.
 <code>[**mark_spans**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   Per-sample ``[(left, right), ...]`` spans to **hatch** over the soft band — e.g. a reference's masked / unlabelled spans, so the plot shows *where* a reference was un-anchored.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Restrict the plot to these haplotypes, in the given order (one row each); defaults to all of :attr:`samples`. :meth:`tspaint.Painting.plot_posterior` uses this to plot a chosen subset by node index or individual id.
+
+<code>[**curves**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Draw each row's soft posterior as **line curves** (``plt.plot``) instead of the colour band: one line per ancestry state in that state's segment hue, ``y = P(state)`` over the genome (e.g. ``plot(samples=[0], curves=True)`` shows the ``K`` posterior curves for one query). ``truth`` and — with ``segments=True`` — the hard segments are then drawn as thin solid state-coloured **bands** below the curves (each ~10 % of the curve height), mirroring the colour-band layout; the mask hatch overlay is not drawn in this mode. Default ``False``.
+
+<code>[**curve_overlays**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra curves per sample for ``curves=True`` — each ``(segments, state, colour, linestyle, label)`` (e.g. :meth:`tspaint.Painting.plot` passes the ghost ``P(ghost)`` posterior as a black dashed line via ``ghost=``).
 
 #### Returns {.doc-section .doc-section-returns}
 
@@ -123,6 +159,36 @@ Posterior vector for ``sample`` at a genomic ``position``.
 
 :   The ``(K,)`` posterior covering ``position``, or ``None`` if uncovered.
 
+### posteriors_as_frame { #tspaint.SoftTrack.posteriors_as_frame }
+
+```python
+tspaint.SoftTrack.posteriors_as_frame(samples=None)
+```
+
+The soft per-position posterior as a pandas ``DataFrame`` — one row per segment.
+
+**Wide** layout: the interval columns ``haplotype``, ``left``, ``right`` followed by one
+probability column per ancestry state — ``A``, ``B``, … (state ``k`` → ``chr(65 + k)``,
+matching the plot legend and :meth:`segments_as_frame`) — plus a trailing ``status`` column
+(:data:`~tspaint.output.INFORMATIVE` or :data:`~tspaint.output.MISSING_INFO`, so a
+prior-fallback span is not mistaken for a genuine 50-50 call, CLAUDE.md §4.2). For an
+**ensemble** painting each state additionally gets a ``<letter>_std`` column carrying the
+per-position ARG-uncertainty band (:attr:`~tspaint.ensemble.MergedSegment.posterior_std`).
+
+pandas is imported lazily, so it is only needed when this method is called.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Haplotypes to include, in the given order; defaults to all of :attr:`samples`.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[pandas](`pandas`).[DataFrame](`pandas.DataFrame`)]{.parameter-annotation}</code>
+
+:   One row per ``(haplotype, segment)``; columns ``haplotype, left, right, <states…>[, <states…>_std], status``.
+
 ### segments { #tspaint.SoftTrack.segments }
 
 ```python
@@ -142,3 +208,71 @@ Hard ancestry segments for downstream tract-length / dating analysis.
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
 
 :   Per haplotype, hard ``(left, right, state)`` segments.
+
+### segments_as_frame { #tspaint.SoftTrack.segments_as_frame }
+
+```python
+tspaint.SoftTrack.segments_as_frame(deadband=None, samples=None)
+```
+
+The hard ancestry tracts as a pandas ``DataFrame`` — one row per tract.
+
+Columns ``haplotype``, ``start``, ``end``, ``ancestry`` — the calibrated-dead-band hard
+segmentation (:meth:`segments`) with the called state rendered as a letter ``A``, ``B``, …
+(state ``k`` → ``chr(65 + k)``, matching the plot legend and :meth:`posteriors_as_frame`).
+This is the tract-length / admixture-dating object as a table (CLAUDE.md §9).
+
+pandas is imported lazily, so it is only needed when this method is called.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Confidence dead-band for the hard segmentation (see :meth:`segments`); defaults to :attr:`default_deadband`.
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Haplotypes to include, in the given order; defaults to all of :attr:`samples`.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[pandas](`pandas`).[DataFrame](`pandas.DataFrame`)]{.parameter-annotation}</code>
+
+:   One row per ``(haplotype, tract)``; columns ``haplotype, start, end, ancestry``.
+
+### summary { #tspaint.SoftTrack.summary }
+
+```python
+tspaint.SoftTrack.summary(truth=None, deadband=None, samples=None)
+```
+
+Quality summary of this track — every :mod:`tspaint.metrics` metric in one object.
+
+Bundles the model-free read-out any soft ancestry track exposes — the **total ancestry
+proportions**, **confidence**, **fragmentation** (switches/Mb) and boundary **flicker**,
+none needing a reference — plus, against ``truth``, **accuracy** / **balanced accuracy**,
+**breakpoint precision / recall**, the inferred ÷ true switch-density **ratio**,
+**tract-boundary error**, and the **calibration** / **size-stratified accuracy** curves
+(CLAUDE.md §9). Computed at the same dead-band :meth:`segments` / :meth:`plot` use, so the
+numbers describe the plotted hard tracts. Shared by :class:`~tspaint.Painting` and any
+:class:`SegmentTrack`, so a wrapped RFMix / gnomix / tspaint painting summarises the same way.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**truth**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   True ancestry-state tracts per sample (e.g. from :func:`tspaint.validate.map_truth`). When given, adds the truth-dependent metrics (accuracy, precision / recall, boundary error, reliability, size-stratified accuracy, …).
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Dead-band for the hard segmentation the fragmentation / precision / recall read. Defaults to :attr:`default_deadband` (matching :meth:`segments` and :meth:`plot`).
+
+<code>[**samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Haplotypes to summarise; defaults to all of :attr:`samples`.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tspaint](`tspaint`).[validate](`tspaint.validate`).[PaintingSummary](`tspaint.validate.PaintingSummary`)]{.parameter-annotation}</code>
+
+:   A dict-compatible object of the metrics with a formatted ``repr`` and a :meth:`~tspaint.validate.PaintingSummary.plot_size_stratified` method (see :func:`tspaint.validate.painting_summary` for the keys).

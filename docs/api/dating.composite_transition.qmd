@@ -1,8 +1,40 @@
 # dating.composite_transition { #tspaint.dating.composite_transition }
 
 ```python
-tspaint.dating.composite_transition(Q_of_cell, t_c, t_p, edges)
+tspaint.dating.composite_transition(Q_of_cell, t_c, t_p, edges, cache=None)
 ```
 
 Composite parent→child transition ``∏ expm(Q_k·d_k)`` for a branch under a
 time-inhomogeneous generator (indexed ``[s_p, s_c]``, the pruning convention).
+
+The branch is split at the grid edges (:func:`tspaint.dating.split_branch`) and the per-cell
+transitions are multiplied in parent→child (old→young) order, so the result maps a parent
+state to a child state.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**Q_of_cell**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   ``Q_of_cell(cell_index) -> (K, K)`` generator for that time cell (:func:`make_Q_of_cell`).
+
+<code>[**t_c**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child (younger) and parent (older) node ages (``t_p > t_c``).
+
+<code>[**t_p**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Child (younger) and parent (older) node ages (``t_p > t_c``).
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Log-time grid cell edges (:func:`tspaint.dating.log_time_grid`).
+
+<code>[**cache**]{.parameter-name} [:]{.parameter-annotation-sep} [[_CellKernels](`tspaint.dating.estep._CellKernels`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   A shared per-cell kernel memo (:class:`_CellKernels`) so ``expm(Q_k·d)`` is computed once per distinct ``(cell, duration)`` across the whole E-step rather than once per branch. Default ``None`` — the transitions are computed directly (no cross-branch reuse).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(K, K)`` composite branch transition matrix ``P[s_p, s_c]`` (parent state → child state).

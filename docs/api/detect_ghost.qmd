@@ -53,7 +53,7 @@ panel, the **ghost** emission learned and constrained deeper. Returns a **calibr
 
 <code>[**delta**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Minimum gap ``μ_ghost - μ_modern`` enforced above the panel's deepest coalescence (in the ``depth`` units). Defaults to ``σ_modern``.
+:   Margin placing the ghost emission floor above ``q_ref``, the panel's deepest-coalescence quantile (in the ``depth`` units), so the ghost state stays identifiable (CLAUDE.md §6). Its default and bounds depend on ``depth``:  * ``depth="time"`` — the floor is ``q_ref + delta``, unbounded; defaults to ``σ_modern``. * ``depth="rank"`` — rank space is bounded in ``[0, 1]``, so the log-time rule would   overshoot the ceiling and park the ghost above every observation. The floor is instead   ``q_ref + min(delta, room / 2)`` with ``room = max(1 - q_ref, 1e-3)``; a supplied   ``delta`` is therefore **capped at half the remaining room**, and the default (``None``)   is ``room / 2``. ``σ_modern`` is not used in this mode.
 
 <code>[**init_archaic_burden**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
 

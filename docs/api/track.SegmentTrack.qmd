@@ -16,11 +16,12 @@ Wrap any per-sample segments in a plottable track — hard tuples *or* soft post
 
 Gives ``painting.segments()`` (hard ``(left, right, state)`` tuples), the comparator painters
 (``rfmix_paint`` / ``gnomix`` / ``tspaint_paint`` — soft :class:`~tspaint.output.Segment`\ s), or any
-``{sample: segments}`` dict the same read-out as a :class:`~tspaint.Painting`: :meth:`plot`,
-:meth:`segments`, :meth:`posterior_at`. Hard tuples become one-hot segments and render as solid
-per-state bars; soft segments render as the posterior gradient — so different tools plot in one
-consistent style (compare several at once with :func:`compare_tracks`). Purely a view: it does not
-alter the segments it wraps.
+``{sample: segments}`` dict the same read-out as a :class:`~tspaint.Painting`: :meth:`plot`
+(including its performance-stats default title via :meth:`~SoftTrack.summary` — proportions,
+fragmentation, and precision / recall against ``truth``), :meth:`segments`, :meth:`posterior_at`.
+Hard tuples become one-hot segments and render as solid per-state bars; soft segments render as
+the posterior gradient — so different tools plot in one consistent style (compare several at once
+with :func:`compare_tracks`). Purely a view: it does not alter the segments it wraps.
 
 ## Parameters {.doc-section .doc-section-parameters}
 

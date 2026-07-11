@@ -19,3 +19,43 @@ introgressed tracts from a prior A↔B pulse (:func:`admixture_demography_source
 The ``SOURCE_A`` references are the contaminated panel (nominally A, ``~prev_migration`` B);
 the ``SOURCE_B`` references are pure. Returns a :class:`Simulation` (``.ts`` / ``.queries`` /
 ``.labels`` / ``.truth_states`` / ``.sample_sets``); the query truth is the proximate A / B source.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**n_admix**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of admixed (query) individuals.
+
+<code>[**n_ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
+
+:   Number of individuals sampled from **each** of the two sources (A and B).
+
+<code>[**sequence_length**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**recombination_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
+<code>[****demography_kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Passed to :func:`admixture_demography_source_gene_flow` (e.g. ``T_admix``, ``T_split``, ``T_prev_admix``, ``prev_migration``, ``f_A``, ``Ne``).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
+
+:   A :class:`~tspaint.sim.Simulation`; its default ``.labels`` panel pairs the contaminated ``SOURCE_A`` references (nominally A, carrying ~``prev_migration`` genuine B tracts) with the pure ``SOURCE_B`` references, and each query's ``.truth_states`` is its proximate A / B source.

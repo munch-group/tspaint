@@ -9,6 +9,7 @@ tspaint.track.compare_tracks(
     length=None,
     cmap='coolwarm',
     colors=None,
+    alpha=None,
     title=None,
     return_plot=False,
     deadband=None,
@@ -35,21 +36,29 @@ Stack several tools' calls for **one haplotype**, one row per tool, for visual c
 
 :   x-axis length; defaults to the largest ``right`` across the tools.
 
-<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+<code>[**cmap**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
 
-:   As for :meth:`SoftTrack.plot`.
+:   Unused (kept for backward compatibility). Default ``'coolwarm'``. See :meth:`SoftTrack.plot`.
 
-<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   As for :meth:`SoftTrack.plot`.
+:   Per-state hues shared by every tool row and the truth row (the two extremes are the state hues for ``K = 2``). Default ``None`` → matplotlib's colour cycle.
 
-<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+<code>[**alpha**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   As for :meth:`SoftTrack.plot`.
+:   Maximum opacity (the soft band is drawn at ``confidence · alpha``). Default ``None`` (fully opaque, i.e. ``1``).
 
-<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [\'coolwarm\']{.parameter-default}</code>
+<code>[**title**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   As for :meth:`SoftTrack.plot`.
+:   Title for the top row. Default ``None`` — no title (unlike :meth:`SoftTrack.plot`, no summary is synthesised here).
+
+<code>[**return_plot**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Return the matplotlib ``(figure, axes)`` instead of ``None``. Default ``False``.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Dead-band on the top-two posterior margin ``max(P) − 2nd-max(P)`` for each tool's hard segments (:meth:`SoftTrack.segments` → :func:`tspaint.output.hard_segments`). Default ``None`` — each wrapped track's :attr:`~SoftTrack.default_deadband` (``0.4`` for a :class:`SegmentTrack`).
 
 ## Returns {.doc-section .doc-section-returns}
 

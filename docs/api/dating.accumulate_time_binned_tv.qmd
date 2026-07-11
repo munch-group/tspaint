@@ -1,8 +1,64 @@
 # dating.accumulate_time_binned_tv { #tspaint.dating.accumulate_time_binned_tv }
 
 ```python
-tspaint.dating.accumulate_time_binned_tv(ts, Q_of_cell, pi, emissions, edges)
+tspaint.dating.accumulate_time_binned_tv(
+    ts,
+    Q_of_cell,
+    pi,
+    emissions,
+    edges,
+    tree_range=None,
+)
 ```
 
 Time-**inhomogeneous** E-step: per-cell dwell + directional jumps under ``Q_of_cell``,
-edge-blocked and span-weighted. Returns ``(D, J, loglik)`` (the full rung-4 E-step).
+edge-blocked and span-weighted (the full rung-4 E-step).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   
+
+<code>[**Q_of_cell**]{.parameter-name} [:]{.parameter-annotation-sep} [[callable](`callable`)]{.parameter-annotation}</code>
+
+:   ``Q_of_cell(cell_index) -> (K, K)`` per-cell generator (:func:`make_Q_of_cell`).
+
+<code>[**pi**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation}</code>
+
+:   Root frequencies ``π`` (prior on the GMRCA state).
+
+<code>[**emissions**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\] or [tspaint](`tspaint`).[model](`tspaint.model`).[MaskedEmissions](`tspaint.model.MaskedEmissions`)]{.parameter-annotation}</code>
+
+:   Per-tip Felsenstein emission vectors (:func:`tspaint.em.build_emissions`). A :class:`~tspaint.model.MaskedEmissions` is resolved per marginal-tree interval (:func:`tspaint.model.emissions_for`), so fragment masking (CLAUDE.md §2.3) applies here exactly as it does in :func:`tspaint.paint`.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Log-time grid cell edges (:func:`tspaint.dating.log_time_grid`).
+
+<code>[**tree_range**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   ``(lo, hi)`` half-open marginal-tree-index range to process; other trees are advanced past but skipped. Default (``None``) processes every tree. Each entering edge is banked once, in the tree it enters, weighted by its own span — so a partition of ``[0, num_trees)`` into contiguous ranges sums (``D``, ``J`` and ``loglik`` are additive) to the whole-genome result. This is the basis of the parallel dating E-step (:func:`tspaint.parallel.dating_estep_parallel`).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) numpy.ndarray]{.parameter-annotation}</code>
+
+:   Span-weighted expected dwell per cell per state.
+
+<code>[**J**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) numpy.ndarray]{.parameter-annotation}</code>
+
+:   Span-weighted expected directional ``m -> n`` jumps per cell.
+
+<code>[**loglik**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Span-integrated log-likelihood under the current ``Q(t)``.
+
+## Notes {.doc-section .doc-section-notes}
+
+``_tv`` = time-varying: unlike the homogeneous :func:`accumulate_time_binned`, this runs the
+full time-inhomogeneous up/down pass (each branch uses the composite transition
+``∏ expm(Q_k·d_k)`` of :func:`composite_transition`) rather than reusing a single homogeneous
+``Q``'s pruning result and only binning the rewards by time. A shared :class:`_CellKernels`
+memo makes the per-cell ``expm`` / Van Loan work O(distinct cell-durations) instead of
+O(branches).

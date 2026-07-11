@@ -39,7 +39,21 @@ Writes ``summary_scalar.csv`` (one row per painting: scenario ``meta`` columns +
 true-segment-length bin, with the bin's accuracy / weight / segment count) — ready for plotting
 the three metric families across the grid.
 
-Returns the two CSV paths.
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**json_paths**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[str](`str`)\]]{.parameter-annotation}</code>
+
+:   Paths to per-painting :func:`score_full` JSON files (as written by :func:`write_metrics`).
+
+<code>[**out_dir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Output directory for the two CSVs (created if absent).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[str](`str`), [str](`str`)\]]{.parameter-annotation}</code>
+
+:   The ``(summary_scalar.csv, summary_by_size.csv)`` paths written.
 
 ### format_table { #tspaint.benchmark.score.format_table }
 
@@ -49,6 +63,18 @@ tspaint.benchmark.score.format_table(rows)
 
 Render :func:`score` rows as a fixed-width text table.
 
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**rows**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\]]{.parameter-annotation}</code>
+
+:   :func:`score` result rows; each must carry ``name``, ``balanced_accuracy``, ``accuracy``, ``confidence``, ``switch_density_ratio`` and ``n_samples`` (the leaderboard columns).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   The table as a single newline-joined string — a header row plus one row per painting.
+
 ### load_truth { #tspaint.benchmark.score.load_truth }
 
 ```python
@@ -56,6 +82,24 @@ tspaint.benchmark.score.load_truth(path)
 ```
 
 Load a ``tspaint-truth`` ``.npz`` into ``{sample: [(left, right, state)]}``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to a ``tspaint-truth`` ``.npz`` (``sample`` / ``left`` / ``right`` / ``state`` arrays; written by :func:`tspaint.benchmark.export.export_vcf` or ``tspaint simulate --truth``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per sample key (the ``2*j+h`` hap index), its true ancestry segments ``(left, right, state)`` sorted by position.
+
+#### Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``path`` is not a ``tspaint-truth`` file.
 
 ### score { #tspaint.benchmark.score.score }
 
@@ -160,3 +204,13 @@ tspaint.benchmark.score.write_metrics(path, result)
 ```
 
 Write a :func:`score_full` result to ``path`` as JSON (NaN → null).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**path**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Output ``.json`` path.
+
+<code>[**result**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   A :func:`score_full` result; ``float('nan')`` values (including those nested in dicts / lists) are converted to JSON ``null``.

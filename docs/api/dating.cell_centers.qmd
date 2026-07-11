@@ -5,3 +5,18 @@ tspaint.dating.cell_centers(edges)
 ```
 
 Geometric centres of the cells defined by ``edges``.
+
+The geometric mean ``sqrt(edges[:-1] * edges[1:])`` is the natural cell centre on the
+log-time axis the grid lives on.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   ``(n_cells + 1,)`` ascending cell-boundary times (:func:`log_time_grid`).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(n_cells,)`` geometric centre (generations) of each cell.

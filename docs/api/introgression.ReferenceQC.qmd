@@ -81,6 +81,22 @@ Foreign tracts of ``ref``: where the genealogy confidently prefers a non-label s
 A segment is flagged where ``loo[foreign] - loo[label] >= deadband`` (``foreign`` =
 the best non-label state). Returns merged ``[(left, right, foreign_state)]``.
 
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Reference sample-node index to inspect (a key of :attr:`maps` / :attr:`labels`).
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_QC_DEADBAND]{.parameter-default}</code>
+
+:   Minimum leave-one-out dissent margin ``loo[foreign] - loo[label]`` for a segment to be flagged. Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``) — the QC dissent-margin dead-band, a different quantity from the segmentation dead-band.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]]{.parameter-annotation}</code>
+
+:   Merged ``(left, right, foreign_state)`` tracts (adjacent same-state runs joined); empty when no segment clears ``deadband``.
+
 ### foreign_fraction { #tspaint.introgression.ReferenceQC.foreign_fraction }
 
 ```python
@@ -92,6 +108,22 @@ tspaint.introgression.ReferenceQC.foreign_fraction(
 
 Fraction of ``ref``'s genome flagged foreign at the given ``deadband``.
 
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Reference sample-node index to inspect.
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_QC_DEADBAND]{.parameter-default}</code>
+
+:   Dissent-margin dead-band passed to :meth:`flagged_tracts`. Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Total flagged span divided by the sequence length, in ``[0, 1]``; ``nan`` when the sequence length is unknown (``0``).
+
 ### introgression_map { #tspaint.introgression.ReferenceQC.introgression_map }
 
 ```python
@@ -99,6 +131,23 @@ tspaint.introgression.ReferenceQC.introgression_map(ref)
 ```
 
 The leave-one-out introgression map (list of segments) for one reference.
+
+The reference read *ignoring its own label* (the outside message,
+:func:`tspaint.output.loo_posterior_table`): where its own genealogy dissents from its
+label are its foreign tracts. For an ensemble input the segments are merged
+:class:`~tspaint.ensemble.MergedSegment`\ s (mean map + ``posterior_std`` band).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ref**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Reference sample-node index to look up (a key of :attr:`maps` / :attr:`labels`).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tspaint](`tspaint`).[output](`tspaint.output`).[Segment](`tspaint.output.Segment`)\]]{.parameter-annotation}</code>
+
+:   The leave-one-out posterior segments tiling ``[0, L)`` for ``ref``; where the posterior dissents from the label mark its foreign tracts (:class:`~tspaint.ensemble.MergedSegment`\ s for an ensemble).
 
 ### mask { #tspaint.introgression.ReferenceQC.mask }
 
@@ -112,6 +161,18 @@ The alternative Task-1 action to :meth:`soft_refs`: rather than down-weight a wh
 reference, drop only its contaminated spans. Returns ``{ref: [(left, right), ...]}`` from
 :meth:`flagged_tracts` (foreign state dropped) for the references that have at least one
 flagged tract.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_QC_DEADBAND]{.parameter-default}</code>
+
+:   Dissent-margin dead-band passed to :meth:`flagged_tracts` — the minimum ``loo[foreign] - loo[label]`` for a span to be masked. Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]\]]{.parameter-annotation}</code>
+
+:   ``{ref-node: [(left, right), ...]}`` — per reference-node the foreign spans to drop, exactly the shape :func:`tspaint.paint` / :func:`tspaint.fit` accept as ``mask=`` (via :func:`tspaint.em.build_emissions`). Only references with at least one flagged tract are included.
 
 ### soft_refs { #tspaint.introgression.ReferenceQC.soft_refs }
 
@@ -155,3 +216,15 @@ One row per reference haplotype (two per diploid individual — credibility is l
 tip). ``ref`` is the sample-node index; when the tree sequence carried sample names the row
 also names the ``individual`` (base id) and ``haplotype`` (per-haplotype id) so the table is
 legible in your own ids, not just node integers.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**deadband**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [DEFAULT_QC_DEADBAND]{.parameter-default}</code>
+
+:   Dissent-margin dead-band for the ``foreign_fraction`` column (see :meth:`foreign_fraction`). Default :data:`tspaint.output.DEFAULT_QC_DEADBAND` (``0.3``).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[dict](`dict`)\]]{.parameter-annotation}</code>
+
+:   One row per reference haplotype, least-credible first. Each row carries ``ref`` (sample-node index), ``label``, ``credibility``, ``is_anchor`` and ``foreign_fraction``, preceded by ``individual`` / ``haplotype`` id strings when the tree sequence carried sample names.

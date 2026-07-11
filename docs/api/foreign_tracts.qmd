@@ -60,21 +60,21 @@ accurate generative ghost detector is now :func:`tspaint.detect_ghost`, the dept
 
 :   ``"auto"`` (default) uses the label rule for labelled samples and the fit rule for queries; ``"label"`` / ``"fit"`` force one rule for all samples.
 
-<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**K**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Number of ancestry states (as in :func:`tspaint.fit`). Default ``2``.
 
-<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Initial generator passed to :func:`tspaint.fit`. Default ``None`` — :func:`tspaint.fit` scales a symmetric generator to the tree-sequence time axis.
 
-<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Maximum EM iterations for the panel fit. Default ``8``.
 
-<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [2]{.parameter-default}</code>
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Model / EM controls (see :func:`tspaint.fit`).
+:   Labelled tips whose credibility ``w_i`` is learned (the rest stay hard-clamped anchors); see :func:`tspaint.fit`. Default ``None`` (every reference hard-clamped).
 
 <code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 

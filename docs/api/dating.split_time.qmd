@@ -4,27 +4,33 @@
 tspaint.dating.split_time(rtt, exposure_frac=0.01)
 ```
 
-Estimate the split / divergence time from a :class:`RateThroughTime` profile.
+Estimate the split / divergence time from a **2-state** :class:`RateThroughTime` profile.
 
-The combined cross-ancestry rate ``q_AB(t) + q_BA(t)`` is ~0 below the split (the two
-ancestries are still separate looking backward) and **rises** once ``t`` exceeds it (they
-coalesce) — the split shows up as the *onset*, not a peak. Returns the smallest cell centre
-(generations ago) at which the combined cross-rate first reaches **half** its
-exposure-guarded maximum (cells with negligible occupation ``D`` are ignored, so a deep
-no-data cell cannot masquerade as the onset).
+The combined cross-ancestry rate ``q_AB(t) + q_BA(t)`` **steps** at the split (not a peak). For
+two genuine source ancestries it is ~0 below the split (they are still separate looking
+backward) and rises once ``t`` exceeds it — a *rising onset*. For a reference-*proxy* pair it is
+instead high at recent times and **falls after the split** — a *falling edge*. This returns the
+half-amplitude crossing in whichever direction the rate transitions with age (cells with
+negligible occupation ``D`` are ignored, so a deep no-data cell cannot masquerade as it).
 
 ## Parameters {.doc-section .doc-section-parameters}
 
 <code>[**rtt**]{.parameter-name} [:]{.parameter-annotation-sep} [[RateThroughTime](`tspaint.dating.em.RateThroughTime`)]{.parameter-annotation}</code>
 
-:   A fitted directional rate profile.
+:   A fitted 2-state directional rate profile.
 
 <code>[**exposure_frac**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.01]{.parameter-default}</code>
 
-:   Ignore cells whose total occupation ``D`` is below this fraction of the max. Default 0.01.
+:   Ignore cells whose occupation ``D`` is below this fraction of the max. Default ``0.01``.
 
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
 
-:   The split-time estimate (generations ago), or ``nan`` if the cross-rate never rises.
+:   The split-time estimate (generations ago), or ``nan`` if the cross-rate has no clear transition.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If the profile has ``K != 2``. Use :func:`split_times` for a per-pair dict.

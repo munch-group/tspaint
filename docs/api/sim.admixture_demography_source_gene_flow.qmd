@@ -54,6 +54,12 @@ in :func:`local_ancestry_truth`; the query A/B truth is the evaluation target.)
 
 :   Fraction of ``SOURCE_A`` replaced (backward) by ``SOURCE_B`` at ``T_prev_admix`` — the ``SOURCE_A`` panel's foreign (B) fraction.
 
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   Demography with populations A, B, ADMIX and ANCESTRAL plus the admixture and census events, the prior ``SOURCE_A -> SOURCE_B`` mass-migration pulse at ``T_prev_admix``, and the A/B split at ``T_split``.
+
 ## Raises {.doc-section .doc-section-raises}
 
 <code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>

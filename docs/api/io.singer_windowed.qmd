@@ -103,7 +103,47 @@ of them), so downstream code — :func:`tspaint.paint`, the ensemble merge — i
 
 <code>[**mcmc_burnin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Leading raw MCMC samples discarded before thinning (default 0).
+:   Burn-in MCMC iterations discarded before the kept samples (default 200), as for :func:`singer`.
+
+<code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_seed**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_penalty**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_hmm_epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_psmc_bins**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_fast**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_recomb_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**_mut_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   The remaining SINGER pass-through flags, as for :func:`singer` (``_seed`` is offset per window, as above; ``_n_samples`` / ``_thin`` inferred from ``ts`` / ``mcmc_step`` knobs).
+
+<code>[**singer_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra raw SINGER tokens appended after tspaint's flags (as for :func:`singer`).
 
 <code>[**n_jobs**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 

@@ -5,3 +5,23 @@ tspaint.io.check_persistence(ts)
 ```
 
 Run the §5.1 persistence go/no-go on an already-loaded tree sequence.
+
+Thin wrapper over :func:`tspaint.diagnostics.persistence_summary`: it summarises how many
+distinct marginal trees each internal node survives in — the go/no-go on the method's central
+premise (CLAUDE.md §5.1). A persistent clade must keep **one** node id across adjacent trees
+(delivered by Relate ``--compress``, or natively by tsinfer/msprime). The key field is
+``frac_singletons``: near 1 means persistence is spiked at a single tree, so ``--compress`` did
+not take (or the input is otherwise wrong) and the autocorrelation benefit is lost; mass in
+``median`` / ``max`` above 1 means horizontal coupling has signal — proceed.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   The already-loaded tree sequence to diagnose, e.g. from :func:`relate_convert`.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   Internal-node persistence summary: ``median`` (float), ``max`` (int), ``frac_singletons`` (float — fraction of internal nodes appearing in exactly one tree) and ``n_internal`` (int). On a tree sequence with no internal nodes, ``median`` / ``max`` / ``n_internal`` are 0 and ``frac_singletons`` is NaN.

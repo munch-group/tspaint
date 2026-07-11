@@ -7,4 +7,35 @@ tspaint.benchmark.run(tool, query_vcf, ref_vcf=None, **kwargs)
 Dispatch to a painter by name (``"tspaint"`` or an external comparator).
 
 Forwards ``query_vcf``, ``ref_vcf`` and any painter keyword arguments (e.g. ``sample_map=``,
-``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in :data:`PAINTERS`.
+``out=``, ``generations=``, ``model=``, ``smooth=``) to the selected painter in
+:data:`PAINTERS`.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**tool**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Painter name — a key of :data:`PAINTERS` (``"tspaint"``, ``"rfmix"``, ``"gnomix"``, ``"salai"`` or ``"recombmix"``).
+
+<code>[**query_vcf**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation}</code>
+
+:   Path to the query (or combined) phased diploid VCF, passed as the painter's first positional argument.
+
+<code>[**ref_vcf**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Path to a separate reference VCF, passed positionally; ``None`` selects the combined-VCF shape. Default ``None``.
+
+<code>[****kwargs**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Keyword arguments forwarded verbatim to the selected painter — notably the required ``sample_map=``, plus per-painter options such as ``out=`` (write the ``.npz``), ``generations=`` (RFMix), ``model=`` (gnomix / SALAI-Net) and ``smooth=`` (tspaint). See the individual runners for each painter's full set.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[Segment](`tspaint.output.Segment`)\]\]]{.parameter-annotation}</code>
+
+:   Whatever the selected painter returns: per query haplotype index ``2*j+h``, its Segment track over ``[0, L)``.
+
+## Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``tool`` is not a key of :data:`PAINTERS`.

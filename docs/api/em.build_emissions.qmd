@@ -28,8 +28,12 @@ emission.
 
 :   Root frequencies ``π`` used by the soft-clamp and query emissions.
 
+<code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\]\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Fragment masking (CLAUDE.md §2.3): per reference sample-node id, the half-open ``[left, right)`` spans over which that reference emits the **query** (unlabelled) emission instead of its label — so it anchors at full strength on its clean spans and contributes no label information exactly where flagged foreign (the local, position-dependent generalisation of the credibility ``w_i``). Each span is ``(left, right)`` or ``(left, right, score)`` (any third element is ignored). Typically produced by :meth:`~tspaint.introgression.ReferenceQC.mask` / :func:`tspaint.foreign_tracts`. Default ``None`` (no masking).
+
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\] or [MaskedEmissions](`tspaint.model.MaskedEmissions`)]{.parameter-annotation}</code>
 
-:   Per sample-node id, the ``(K,)`` emission vector.
+:   Per sample-node id, the ``(K,)`` emission vector. With ``mask`` given, a :class:`~tspaint.model.MaskedEmissions` wrapping those vectors instead — resolving to a per-interval dict on demand (:func:`tspaint.model.emissions_for`).

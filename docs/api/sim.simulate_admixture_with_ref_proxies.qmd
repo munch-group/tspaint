@@ -44,6 +44,10 @@ population.
 
 :   As for :func:`simulate_admixture`.
 
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
+
+:   As for :func:`simulate_admixture`.
+
 <code>[**random_seed**]{.parameter-name} [:]{.parameter-annotation-sep} [[optional](`optional`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [2000000.0]{.parameter-default}</code>
 
 :   As for :func:`simulate_admixture`.

@@ -83,6 +83,7 @@ website:
       - api/RateThroughTime.qmd
       - api/EnsembleRateThroughTime.qmd
       - api/dating.split_time.qmd
+      - api/dating.split_times.qmd
       - api/dating.paint_qt.qmd
       - api/dating.rate_through_time_binned.qmd
       - api/dating.make_Q_of_cell.qmd

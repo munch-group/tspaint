@@ -46,3 +46,27 @@ tspaint.model.MaskedEmissions.for_interval(left, right)
 ```
 
 The emission dict for the marginal tree covering ``[left, right)``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**left**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+<code>[**right**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Half-open genomic interval ``[left, right)`` of the marginal tree.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [numpy](`numpy`).[ndarray](`numpy.ndarray`)\]]{.parameter-annotation}</code>
+
+:   The per-tip emission dict for this interval: ``base`` with every reference masked here switched to the query (unlabelled) emission. Returns the ``base`` dict itself unchanged (an identity fast path) when the mask is empty or nothing is masked over this interval.
+
+#### Notes {.doc-section .doc-section-notes}
+
+A reference is masked here iff the interval **midpoint** ``0.5 * (left + right)`` falls
+in one of its masked spans (the ≤1-interval boundary rounding is negligible against
+tract lengths). The returned dict is shared — the ``base`` dict on the fast path, else
+a cached overlay reused across identical intervals — so the caller must **not** mutate
+it.

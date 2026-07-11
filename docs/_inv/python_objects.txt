@@ -16053,8 +16053,9 @@ asyncio-event-loops std:label -1 library/asyncio-eventloop.html#$ Event loop imp
 asyncio-exceptions std:label -1 library/asyncio-exceptions.html#$ Exceptions
 asyncio-future-obj std:label -1 library/asyncio-future.html#$ Future Object
 asyncio-futures std:label -1 library/asyncio-future.html#$ Futures
-asyncio-graph std:label -1 library/asyncio-graph.html#$ Call Graph Introspection
+asyncio-graph std:label -1 library/asyncio-graph.html#$ Call graph introspection
 asyncio-handle-blocking std:label -1 library/asyncio-dev.html#$ Running Blocking Code
+asyncio-introspection-tools std:label -1 library/asyncio-tools.html#$ Command-line introspection tools
 asyncio-logger std:label -1 library/asyncio-dev.html#$ Logging
 asyncio-multithreading std:label -1 library/asyncio-dev.html#$ Concurrency and Multithreading
 asyncio-pass-keywords std:label -1 library/asyncio-eventloop.html#$ -
@@ -17188,7 +17189,7 @@ library/asyncio-eventloop std:doc -1 library/asyncio-eventloop.html Event loop
 library/asyncio-exceptions std:doc -1 library/asyncio-exceptions.html Exceptions
 library/asyncio-extending std:doc -1 library/asyncio-extending.html Extending
 library/asyncio-future std:doc -1 library/asyncio-future.html Futures
-library/asyncio-graph std:doc -1 library/asyncio-graph.html Call Graph Introspection
+library/asyncio-graph std:doc -1 library/asyncio-graph.html Call graph introspection
 library/asyncio-llapi-index std:doc -1 library/asyncio-llapi-index.html Low-level API Index
 library/asyncio-platforms std:doc -1 library/asyncio-platforms.html Platform Support
 library/asyncio-policy std:doc -1 library/asyncio-policy.html Policies
@@ -17200,6 +17201,7 @@ library/asyncio-subprocess std:doc -1 library/asyncio-subprocess.html Subprocess
 library/asyncio-sync std:doc -1 library/asyncio-sync.html Synchronization Primitives
 library/asyncio-task std:doc -1 library/asyncio-task.html Coroutines and tasks
 library/asyncio-threading std:doc -1 library/asyncio-threading.html asyncio and free-threaded Python
+library/asyncio-tools std:doc -1 library/asyncio-tools.html Command-line introspection tools
 library/asyncore std:doc -1 library/asyncore.html asyncore — Asynchronous socket handler
 library/atexit std:doc -1 library/atexit.html atexit — Exit handlers
 library/audioop std:doc -1 library/audioop.html audioop — Manipulate raw audio data
@@ -17938,7 +17940,9 @@ provisional package std:term -1 glossary.html#term-provisional-package -
 proxy-basic-auth-handler std:label -1 library/urllib.request.html#$ ProxyBasicAuthHandler Objects
 proxy-digest-auth-handler std:label -1 library/urllib.request.html#$ ProxyDigestAuthHandler Objects
 proxy-handler std:label -1 library/urllib.request.html#$ ProxyHandler Objects
+ps std:cmdoption 1 library/asyncio-tools.html#cmdoption-arg-$ -
 psf-license std:label -1 license.html#$ PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+pstree std:cmdoption 1 library/asyncio-tools.html#cmdoption-arg-$ -
 pure-embedding std:label -1 extending/embedding.html#$ Pure Embedding
 pure-paths std:label -1 library/pathlib.html#$ Pure paths
 py-modindex std:label -1 py-modindex.html Python Module Index

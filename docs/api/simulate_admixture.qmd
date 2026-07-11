@@ -12,22 +12,24 @@ tspaint.simulate_admixture(
     ploidy=2,
     mutation_rate=None,
     random_seed=42,
+    validate=True,
 )
 ```
 
 Simulate an admixture from a **role-tagged demography**, returning a :class:`Simulation`.
 
-Pass a demography from :func:`admixture_demography` (or any ``admixture_demography_*`` variant):
-its populations carry role metadata (query / source / reference + ancestry state), so this
-samples the query and reference panels, runs the coalescent, optionally lays down mutations, and
-packages the queries, reference ``labels`` and the census ``truth`` — the caller never touches a
+Pass any :class:`msprime.Demography` whose populations you have tagged with :func:`pop_role`
+(query / source / reference / ghost + ancestry state) — either hand-built for full control, or
+one of the :func:`admixture_demography` presets. This samples the query and reference panels,
+runs the coalescent, optionally lays down mutations, and packages the queries, reference
+``labels`` and the census ``truth`` (ghost tracts embedded); the caller never touches a
 population-name constant.
 
 ## Parameters {.doc-section .doc-section-parameters}
 
 <code>[**demography**]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
 
-:   A role-tagged demography (see :func:`admixture_demography`).
+:   A role-tagged demography — hand-built with :func:`pop_role` (must include an ``add_census`` just older than the admixture pulse), or from an :func:`admixture_demography` preset.
 
 <code>[**n_query**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [10]{.parameter-default}</code>
 
@@ -61,17 +63,49 @@ population-name constant.
 
 :   If given, lay down mutations at this per-base rate (:func:`tspaint.io.add_mutations`); the returned ``ts`` then carries sites. ``None`` (default) leaves the bare ancestry.
 
+<code>[**validate**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Run :func:`check_admixture_contract` first (default ``True``): raise a clear error on a missing census, no query, a state-less source, a mis-combined ghost, or an untagged census-bearing population, instead of silently producing wrong truth. Set ``False`` to skip.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
 
-:   ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states`` and ``.sample_sets``.
+:   ``.ts`` (mutated iff ``mutation_rate`` given), ``.queries``, ``.labels``, ``.truth_states`` (ghost tracts embedded with a state above the sources), ``.sample_sets``, ``.ghost_states`` (the ghost-only truth) and ``.source_states`` (the paintable state indices).
 
 ## Examples {.doc-section .doc-section-examples}
+
+Two-source preset:
 
 ```python
 >>> sim = simulate_admixture(admixture_demography(), n_query=5, n_reference=5,
 ...                          sequence_length=1e5, random_seed=1)
 >>> sim.ts.num_samples
 30
+```
+
+Hand-built: three sampled sources A/B/C + one unsampled ghost, painted at ``K=3`` while
+:func:`tspaint.detect_ghost` finds the ghost; the ghost shows in the truth band of the plot:
+
+```python
+>>> import msprime, tspaint
+>>> from tspaint.sim import pop_role, simulate_admixture
+>>> Ne = 2000
+>>> d = msprime.Demography()
+>>> for i, n in enumerate("ABC"):
+...     d.add_population(name=n, initial_size=Ne,
+...                      extra_metadata=pop_role(state=i, source=True, reference=True))
+>>> d.add_population(name="GHOST", initial_size=Ne, extra_metadata=pop_role(ghost=True))
+>>> d.add_population(name="ADMIX", initial_size=Ne, extra_metadata=pop_role(query=True))
+>>> for n in ("AB", "ANC", "ROOT"):
+...     d.add_population(name=n, initial_size=Ne)
+>>> d.add_admixture(time=100, derived="ADMIX", ancestral=["A", "B", "C"], proportions=[.3, .3, .4])
+>>> d.add_mass_migration(time=90, source="ADMIX", dest="GHOST", proportion=0.05)
+>>> d.add_census(time=101.0)
+>>> d.add_population_split(time=2000, derived=["A", "B"], ancestral="AB")
+>>> d.add_population_split(time=6000, derived=["AB", "C"], ancestral="ANC")
+>>> d.add_population_split(time=20000, derived=["ANC", "GHOST"], ancestral="ROOT")
+>>> d.sort_events()                       # events added out of time order -> sort before simulating
+>>> sim = simulate_admixture(d, n_query=8, n_reference=6, sequence_length=1e6)
+>>> painting = tspaint.paint(sim.ts, sim.labels, sim.queries, K=len(sim.source_states))
 ```

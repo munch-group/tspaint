@@ -53,6 +53,10 @@ every sample, so the impure references' own foreign tracts are known ground trut
 
 :   Seed for :func:`msprime.sim_ancestry`.
 
+<code>[**mutation_rate**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   If given, overlay mutations on the ARG at this per-base rate so the returned ``.ts`` carries sites (:func:`tspaint.io.add_mutations`); ``None`` (default) leaves the bare ancestry. As for :func:`simulate_admixture`.
+
 <code>[**ref_impurity**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.1]{.parameter-default}</code>
 
 :   Minority foreign fraction of each impure reference panel (see :func:`admixture_demography_impure_refs`).
@@ -63,9 +67,9 @@ every sample, so the impure references' own foreign tracts are known ground trut
 
 ## Returns {.doc-section .doc-section-returns}
 
-<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[Simulation](`tspaint.sim.Simulation`)]{.parameter-annotation}</code>
 
-:   Tree sequence whose sample nodes are haplotypes from the admixed, pure-source and impure-reference populations; identify them by node population (as the experiments do) rather than by index.
+:   A :class:`Simulation` (use ``.ts`` for the tree sequence); its sample nodes are haplotypes from the admixed, pure-source and impure-reference populations — identify them by node population (as the experiments do) rather than by index.
 
 ## See Also {.doc-section .doc-section-see-also}
 

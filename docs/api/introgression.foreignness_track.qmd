@@ -54,6 +54,10 @@ coalescence ``depth``. Adjacent segments with equal components are merged.
 
 :   Absolute tolerance for merging adjacent segments with equal ``loo``.
 
+<code>[**tree_range**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Restrict the pass to the half-open marginal-tree-index range ``(lo, hi)`` — the chunk worker used by :func:`tspaint.parallel.foreignness_track_parallel` to split the genome over processes. ``None`` (default) covers the whole genome. Because ``depth="rank"`` needs the genome-wide depth distribution, rank-normalisation is **deferred** when ``tree_range`` is set: a chunk returns the raw coalescent ``depth`` and the parallel driver ranks the stitched genome-wide result.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[ForeignnessSegment](`tspaint.introgression.ForeignnessSegment`)\]\]]{.parameter-annotation}</code>

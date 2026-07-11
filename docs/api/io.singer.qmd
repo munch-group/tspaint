@@ -81,43 +81,43 @@ left to inference from the three unified knobs. Passing a plain knob **and** its
 
 <code>[**_ratio**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_polar**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_ploidy**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_seed**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_penalty**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_hmm_epsilon**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_psmc_bins**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_fast**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_recomb_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_mut_map**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   The remaining SINGER terminal flags, 1:1 (``-ratio`` default 1, ``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional).
+:   The remaining SINGER terminal flags. All are forwarded 1:1 (``-polar`` 0.5, ``-ploidy`` 1, ``-seed`` 42, ``-fast`` off; the rest optional) **except** ``_ratio`` (default 1), which is not forwarded but sets ``_r = _m * _ratio`` when neither ``_r`` nor ``_recomb_map`` is set (mirrors SINGER's own ``-ratio``).
 
 <code>[**_n_samples**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -126,6 +126,10 @@ left to inference from the three unified knobs. Passing a plain knob **and** its
 <code>[**_thin**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   SINGER's raw ``-n`` / ``-thin`` — normally inferred from ``ts`` / ``mcmc_step`` / ``mcmc_burnin``; set directly for full control (but not alongside the plain knob they correspond to).
+
+<code>[**singer_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra raw SINGER command-line tokens appended after tspaint's own flags (so they take precedence). Default ``None``.
 
 <code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 

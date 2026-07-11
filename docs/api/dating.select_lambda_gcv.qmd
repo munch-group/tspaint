@@ -5,3 +5,31 @@ tspaint.dating.select_lambda_gcv(centers, events, exposure, lams=None, **kw)
 ```
 
 Fit at a grid of smoothing parameters; pick the one minimising GCV.
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**centers**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`fit_poisson_spline`.
+
+<code>[**events**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`fit_poisson_spline`.
+
+<code>[**exposure**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation}</code>
+
+:   As for :func:`fit_poisson_spline`.
+
+<code>[**lams**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Grid of penalty weights ``λ`` to try. Default ``None`` — uses ``np.geomspace(1e-2, 1e4, 18)``.
+
+<code>[****kw**]{.parameter-name} [:]{.parameter-annotation-sep} []{.parameter-annotation} [ = ]{.parameter-default-sep} [{}]{.parameter-default}</code>
+
+:   Forwarded to :func:`fit_poisson_spline` (``n_knots``, ``degree``, ``order``, ...).
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>
+
+:   The GCV-selected fit: ``gcv`` (minimum GCV score), ``lambda`` (chosen ``λ``), ``rate`` (the ``(n_cells,)`` fitted rate) and ``edf`` (effective degrees of freedom).

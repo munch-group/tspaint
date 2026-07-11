@@ -16,6 +16,36 @@ tspaint.dating.rate_through_time_binned(
 Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the
 per-branch sufficient statistics by time.
 
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ts**]{.parameter-name} [:]{.parameter-annotation-sep} [[tskit](`tskit`).[TreeSequence](`tskit.TreeSequence`)]{.parameter-annotation}</code>
+
+:   
+
+<code>[**labels**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [int](`int`)\]]{.parameter-annotation}</code>
+
+:   Reference sample-node id → ancestry-state index.
+
+<code>[**edges**]{.parameter-name} [:]{.parameter-annotation-sep} [[array_like](`array_like`)]{.parameter-annotation}</code>
+
+:   Log-time grid cell edges (:func:`tspaint.dating.log_time_grid`).
+
+<code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [8]{.parameter-default}</code>
+
+:   Homogeneous :func:`tspaint.fit` iterations. Default ``8``.
+
+<code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Initial generator for the homogeneous fit. Default ``None`` — uses ``make_generator_2state(1e-3, 1e-3)``.
+
+<code>[**estimate_pi**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Whether the fit re-estimates ``π``. Default ``False`` — hold it fixed. ``π`` is a prior on the arbitrary GMRCA state, so holding it fixed is the robust default (CLAUDE.md §6, π-identifiability).
+
+<code>[**soft_refs**]{.parameter-name} [:]{.parameter-annotation-sep} [[set](`set`)\[[int](`int`)\]]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Labelled tips whose credibility ``w_i`` the fit **learns** (the rest stay hard-clamped anchors). Default ``None`` — every reference is an anchor.
+
 ## Returns {.doc-section .doc-section-returns}
 
 <code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation}</code>

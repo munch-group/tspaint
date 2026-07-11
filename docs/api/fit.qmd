@@ -45,7 +45,7 @@ tolerance or ``max_iter``.
 
 <code>[**Q0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K, K) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   Initial generator; defaults to a symmetric 2-state generator.
+:   Initial generator; defaults to a symmetric ``K``-state generator (:func:`tspaint.make_generator_symmetric`) whose rate is scaled to the tree-sequence time axis (so ``Q0 · t`` starts at O(1)). Works for any ``K``.
 
 <code>[**pi0**]{.parameter-name} [:]{.parameter-annotation-sep} [(K,) array_like]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
@@ -90,6 +90,10 @@ tolerance or ``max_iter``.
 <code>[**progress**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
 
 :   Show a :mod:`tqdm.auto` ``EM fit`` bar over the iterations, with the running log-likelihood (notebook widget in Jupyter, text in a terminal). Default ``False``.
+
+<code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Fragment masking (CLAUDE.md §2.3): per reference the half-open ``[left, right)`` spans over which it emits the **query** (unlabelled) emission instead of its label, so it anchors only on its clean spans and contributes nothing where flagged foreign. Keys may be integer sample-node indices or sample-ID strings (resolved like ``labels`` / ``soft_refs`` / ``priors``); each span is ``(left, right)`` or ``(left, right, score)``. Threaded through both the serial and the byte-exact parallel E-step (:func:`build_emissions` → :class:`~tspaint.model.MaskedEmissions`). Typically produced by :meth:`~tspaint.introgression.ReferenceQC.mask` / :func:`tspaint.foreign_tracts`. Default ``None``.
 
 ## Returns {.doc-section .doc-section-returns}
 

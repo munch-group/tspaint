@@ -95,6 +95,10 @@ Passing a plain knob **and** its ``_``-counterpart raises (the plain one takes p
 
 :   ARGweaver's raw ``-n`` / ``--sample-step`` (normally inferred from the knobs; not alongside the plain knob they correspond to) and ``--randseed``.
 
+<code>[**argweaver_args**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Extra raw ``arg-sample`` command-line tokens appended after tspaint's own flags. Default ``None``.
+
 <code>[**workdir**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
 :   Working directory for the ``.sites`` and ``.smc.gz`` (default: a fresh tempdir).

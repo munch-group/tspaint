@@ -68,3 +68,19 @@ tspaint.GhostResult.tracts(sample, threshold=0.5)
 ```
 
 Merged ghost tracts ``[(left, right)]`` where ``P(ghost) >= threshold``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**sample**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Sample-node id whose ghost tracts to extract (a key of :attr:`posteriors`).
+
+<code>[**threshold**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.5]{.parameter-default}</code>
+
+:   Minimum ``P(ghost)`` — ``posterior[1]``, the ghost state (state 1) — for a locus to count as ghost. Default ``0.5``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]]{.parameter-annotation}</code>
+
+:   Merged ``(left, right)`` ghost spans (adjacent qualifying segments joined).

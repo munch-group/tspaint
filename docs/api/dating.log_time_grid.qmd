@@ -6,5 +6,25 @@ tspaint.dating.log_time_grid(t_min, t_max, n_cells)
 
 Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``.
 
-Returns ``(n_cells + 1,)`` edges. Geometric spacing gives roughly equal expected
-branch-occupation per cell (the "even power" placement).
+Geometric spacing gives roughly equal expected branch-occupation per cell (the "even power"
+placement).
+
+## Parameters {.doc-section .doc-section-parameters}
+
+<code>[**t_min**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Youngest (smallest) cell edge, in generations. Must be ``> 0`` (geometric spacing).
+
+<code>[**t_max**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   Oldest (largest) cell edge, in generations.
+
+<code>[**n_cells**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`)]{.parameter-annotation}</code>
+
+:   Number of cells; the grid has ``n_cells + 1`` edges.
+
+## Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(n_cells + 1,)`` ascending cell-boundary **times** (generations), log-spaced — the boundaries are real time values evenly spaced on a log axis, not log-time.

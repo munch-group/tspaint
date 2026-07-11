@@ -1,7 +1,16 @@
 # sim.Simulation { #tspaint.sim.Simulation }
 
 ```python
-tspaint.sim.Simulation(ts, queries, labels, truth_states, sample_sets)
+tspaint.sim.Simulation(
+    ts,
+    queries,
+    labels,
+    truth_states,
+    sample_sets,
+    ghost_states=None,
+    source_states=(),
+    demography=None,
+)
 ```
 
 A simulated admixture with known truth — the return of :func:`simulate_admixture`.
@@ -26,8 +35,20 @@ caller ever needs the population-name constants.
 
 <code>[**truth_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
 
-:   Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready to score against a painting (e.g. :func:`tspaint.balanced_accuracy`).
+:   Per query, the true local-ancestry tracts ``(left, right, state)`` from the census — ready to score against a painting (e.g. :func:`tspaint.validate.balanced_accuracy`). **Ghost tracts are embedded here** with their own state index (beyond the source states), so they appear in the truth band of :meth:`tspaint.Painting.plot`\ 's truth track alongside the source segments.
 
 <code>[**sample_sets**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[str](`str`), [list](`list`)\[[int](`int`)\]\]]{.parameter-annotation}</code>
 
 :   Population name → its sample node ids, for building custom reference panels (e.g. proxy-only vs direct-source labels).
+
+<code>[**ghost_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[int](`int`), [list](`list`)\[[tuple](`tuple`)\[[float](`float`), [float](`float`), [int](`int`)\]\]\]]{.parameter-annotation}</code>
+
+:   Per query, the ghost-only subset of :attr:`truth_states` — tracts descending from a ``ghost``-tagged (unsampled, un-paintable) source. Empty when the demography has no ghost. The ground truth to score a reference-free :func:`tspaint.detect_ghost` against.
+
+<code>[**source_states**]{.parameter-name} [:]{.parameter-annotation-sep} [[tuple](`tuple`)\[[int](`int`), ...\]]{.parameter-annotation}</code>
+
+:   The **paintable** ancestry-state indices (from ``source``/``reference`` populations), sorted — e.g. ``(0, 1, 2)`` for three sources. Pass ``K=len(source_states)`` to :func:`tspaint.paint`; any state in :attr:`truth_states` beyond these is a ghost.
+
+<code>[**demography**]{.parameter-name} [:]{.parameter-annotation-sep} [[msprime](`msprime`).[Demography](`msprime.Demography`)]{.parameter-annotation}</code>
+
+:   The role-tagged demography the tree sequence was simulated under (the ``demography`` argument to :func:`simulate_admixture`), retained so the true split / admixture times and population structure are recoverable from the result (e.g. to check a dated split against the truth).

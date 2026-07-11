@@ -9,8 +9,10 @@ Rate through time across an ARG ensemble — one :class:`RateThroughTime` per me
 
 Returned by :meth:`tspaint.Painting.rate_through_time` when the painting was built from an
 ensemble of tree sequences (e.g. SINGER posterior samples): each member is dated on the shared
-fit, and the per-member split-time estimates (:func:`split_time`) become an interval — the
-ARG-uncertainty band on *when* the ancestries diverged.
+fit, and the per-member split-time estimates become an interval — the ARG-uncertainty band on
+*when* the ancestries diverged. For ``K > 2`` use the per-pair methods (:meth:`pair_split_times`
+/ :meth:`pair_split_time_ci`); the scalar :meth:`split_time` / :meth:`split_time_ci` are
+2-state-only.
 
 ## Attributes {.doc-section .doc-section-attributes}
 
@@ -20,23 +22,133 @@ ARG-uncertainty band on *when* the ancestries diverged.
 
 <code>[**split_times**]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
 
-:   ``(M,)`` per-member split-time estimates (generations ago).
+:   ``(M,)`` per-member scalar split-time estimates (generations ago) for a 2-state fit; all ``nan`` for ``K > 2`` (use :meth:`pair_split_times`). Build with :meth:`from_members`.
 
 ## Methods
 
 | Name | Description |
 | --- | --- |
-| [plot](#tspaint.EnsembleRateThroughTime.plot) | Per-member rate curves (faint) + the ensemble mean + the split-time CI band. |
-| [split_time](#tspaint.EnsembleRateThroughTime.split_time) | Point estimate of the split time over members (``"median"`` or ``"mean"``). |
-| [split_time_ci](#tspaint.EnsembleRateThroughTime.split_time_ci) | Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread. |
+| [from_members](#tspaint.EnsembleRateThroughTime.from_members) | Build an ensemble from per-member :class:`RateThroughTime` profiles. |
+| [pair_split_time_ci](#tspaint.EnsembleRateThroughTime.pair_split_time_ci) | Per-**pair** percentile confidence interval ``(lo, hi)`` on the split time (any ``K``). |
+| [pair_split_times](#tspaint.EnsembleRateThroughTime.pair_split_times) | Per-**pair** point-estimate split time over members (works for any ``K``). |
+| [plot](#tspaint.EnsembleRateThroughTime.plot) | Per-member rate curves (faint) + the ensemble mean + the per-pair split-time CI band. |
+| [split_time](#tspaint.EnsembleRateThroughTime.split_time) | Point estimate of the split time over members (``"median"`` or ``"mean"``; 2-state only). |
+| [split_time_ci](#tspaint.EnsembleRateThroughTime.split_time_ci) | Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread |
+
+### from_members { #tspaint.EnsembleRateThroughTime.from_members }
+
+```python
+tspaint.EnsembleRateThroughTime.from_members(members)
+```
+
+Build an ensemble from per-member :class:`RateThroughTime` profiles.
+
+Populates :attr:`split_times` with each member's scalar split time for a 2-state fit
+(``nan`` per member for ``K > 2`` — use :meth:`pair_split_times` there).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**members**]{.parameter-name} [:]{.parameter-annotation-sep} [[iterable](`iterable`)\[[RateThroughTime](`tspaint.dating.em.RateThroughTime`)\]]{.parameter-annotation}</code>
+
+:   Per-member directional rate profiles, sharing one time grid.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[EnsembleRateThroughTime](`tspaint.dating.em.EnsembleRateThroughTime`)]{.parameter-annotation}</code>
+
+:   The assembled ensemble.
+
+### pair_split_time_ci { #tspaint.EnsembleRateThroughTime.pair_split_time_ci }
+
+```python
+tspaint.EnsembleRateThroughTime.pair_split_time_ci(level=0.95)
+```
+
+Per-**pair** percentile confidence interval ``(lo, hi)`` on the split time (any ``K``).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**level**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.95]{.parameter-default}</code>
+
+:   Central mass of the interval. Default ``0.95``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[tuple](`tuple`)\[[int](`int`), [int](`int`)\], [tuple](`tuple`)\[[float](`float`), [float](`float`)\]\]]{.parameter-annotation}</code>
+
+:   ``{(m, n): (lo, hi)}`` (generations ago), ``(nan, nan)`` where no member has a finite value.
+
+### pair_split_times { #tspaint.EnsembleRateThroughTime.pair_split_times }
+
+```python
+tspaint.EnsembleRateThroughTime.pair_split_times(statistic='median')
+```
+
+Per-**pair** point-estimate split time over members (works for any ``K``).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**statistic**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'median\']{.parameter-default}</code>
+
+:   ``"median"`` (default) or ``"mean"`` over the finite per-member estimates of each pair.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)\[[tuple](`tuple`)\[[int](`int`), [int](`int`)\], [float](`float`)\]]{.parameter-annotation}</code>
+
+:   ``{(m, n): split_time}`` (generations ago), ``nan`` where no member has a finite value.
 
 ### plot { #tspaint.EnsembleRateThroughTime.plot }
 
 ```python
-tspaint.EnsembleRateThroughTime.plot(ax=None, scale=1.0, level=0.95)
+tspaint.EnsembleRateThroughTime.plot(
+    ax=None,
+    scale=1.0,
+    level=0.95,
+    colors=None,
+    facet=None,
+    logy=False,
+)
 ```
 
-Per-member rate curves (faint) + the ensemble mean + the split-time CI band.
+Per-member rate curves (faint) + the ensemble mean + the per-pair split-time CI band.
+
+Every directional rate is drawn, each **unordered** ancestry pair in one colour with
+``q_{mn}`` (``m<n``) solid and ``q_{nm}`` dashed. Because the pairs can sit on very
+different scales, ``K > 2`` **facets by default** — one subplot per pair, each with its own
+y-axis and its own split-time CI band — while ``K = 2`` stays a single overlaid axis.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ax**]{.parameter-name} [:]{.parameter-annotation-sep} [matplotlib.axes.Axes or array of Axes]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Axes to draw on. Default ``None`` — a new figure (single axes, or a column of ``len(pairs)`` axes when faceting).
+
+<code>[**scale**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Multiply the plotted rates (e.g. pass ``Ne`` to show ``rate × N``). Default ``1.0``.
+
+<code>[**level**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.95]{.parameter-default}</code>
+
+:   Confidence level for the shaded split-time band (:meth:`pair_split_time_ci`). Default ``0.95``.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-pair colour override. Default ``None`` — the default Matplotlib colour cycle.
+
+<code>[**facet**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   One subplot per unordered pair vs. a single overlaid axis. Default ``None`` — facet when ``K > 2``, overlay when ``K == 2``.
+
+<code>[**logy**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Use a log y-axis. Default ``False``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[matplotlib](`matplotlib`).[axes](`matplotlib.axes`).[Axes](`matplotlib.axes.Axes`) or [list](`list`)\[[matplotlib](`matplotlib`).[axes](`matplotlib.axes`).[Axes](`matplotlib.axes.Axes`)\]]{.parameter-annotation}</code>
+
+:   The single axes (overlay) or the list of per-pair axes (faceted).
 
 ### split_time { #tspaint.EnsembleRateThroughTime.split_time }
 
@@ -44,7 +156,25 @@ Per-member rate curves (faint) + the ensemble mean + the split-time CI band.
 tspaint.EnsembleRateThroughTime.split_time(statistic='median')
 ```
 
-Point estimate of the split time over members (``"median"`` or ``"mean"``).
+Point estimate of the split time over members (``"median"`` or ``"mean"``; 2-state only).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**statistic**]{.parameter-name} [:]{.parameter-annotation-sep} [[str](`str`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [\'median\']{.parameter-default}</code>
+
+:   ``"median"`` (default) or ``"mean"`` over the finite per-member split-time estimates.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation}</code>
+
+:   The point-estimate split time (generations ago), or ``nan`` if no member has a finite estimate.
+
+#### Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``K != 2``. Use :meth:`pair_split_times` for a per-pair dict.
 
 ### split_time_ci { #tspaint.EnsembleRateThroughTime.split_time_ci }
 
@@ -52,4 +182,23 @@ Point estimate of the split time over members (``"median"`` or ``"mean"``).
 tspaint.EnsembleRateThroughTime.split_time_ci(level=0.95)
 ```
 
-Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread.
+Percentile confidence interval ``(lo, hi)`` on the split time from the ensemble spread
+(2-state only).
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**level**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [0.95]{.parameter-default}</code>
+
+:   Central mass of the interval (e.g. ``0.95`` for a 95% interval). Default ``0.95``.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [tuple of float]{.parameter-annotation}</code>
+
+:   ``(lo, hi)`` percentile interval on the split time (generations ago), or ``(nan, nan)`` if no member has a finite estimate.
+
+#### Raises {.doc-section .doc-section-raises}
+
+<code>[:]{.parameter-annotation-sep} [[ValueError](`ValueError`)]{.parameter-annotation}</code>
+
+:   If ``K != 2``. Use :meth:`pair_split_time_ci` for a per-pair dict.

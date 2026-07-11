@@ -165,11 +165,12 @@ functions of (backward) time — locating divergence / gene-flow epochs and thei
 | [fit_rate_through_time](fit_rate_through_time.qmd#tspaint.fit_rate_through_time) | Fit the time-inhomogeneous directional admixture-rate-through-time profile by EM. |
 | [RateThroughTime](RateThroughTime.qmd#tspaint.RateThroughTime) | Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile. |
 | [EnsembleRateThroughTime](EnsembleRateThroughTime.qmd#tspaint.EnsembleRateThroughTime) | Rate through time across an ARG ensemble — one :class:`RateThroughTime` per member, with a |
-| [dating.split_time](dating.split_time.qmd#tspaint.dating.split_time) | Estimate the split / divergence time from a :class:`RateThroughTime` profile. |
-| [dating.paint_qt](dating.paint_qt.qmd#tspaint.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell`` — the same |
+| [dating.split_time](dating.split_time.qmd#tspaint.dating.split_time) | Estimate the split / divergence time from a **2-state** :class:`RateThroughTime` profile. |
+| [dating.split_times](dating.split_times.qmd#tspaint.dating.split_times) | Per-**pair** split / divergence times from a directional rate profile. |
+| [dating.paint_qt](dating.paint_qt.qmd#tspaint.dating.paint_qt) | Paint focal tips under a time-**inhomogeneous** generator ``Q_of_cell``. |
 | [dating.rate_through_time_binned](dating.rate_through_time_binned.qmd#tspaint.dating.rate_through_time_binned) | Stage-1 admixture-rate-through-time profile: fit a homogeneous ``Q``, then bin the |
-| [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tspaint.dating.make_Q_of_cell) | Build a ``cell_index -> (2,2) generator`` callable from per-cell directional rates. |
-| [dating.directional_rate_splines](dating.directional_rate_splines.qmd#tspaint.dating.directional_rate_splines) | Fit ``q_AB(t)`` and ``q_BA(t)`` by GCV-selected penalised Poisson splines. |
+| [dating.make_Q_of_cell](dating.make_Q_of_cell.qmd#tspaint.dating.make_Q_of_cell) | Build a ``cell_index -> (K, K) generator`` callable from per-cell directional rates. |
+| [dating.directional_rate_splines](dating.directional_rate_splines.qmd#tspaint.dating.directional_rate_splines) | Fit every directional rate ``q_{mn}(t)`` (``m ≠ n``) by GCV-selected penalised Poisson splines. |
 | [dating.fit_poisson_spline](dating.fit_poisson_spline.qmd#tspaint.dating.fit_poisson_spline) | Penalised Poisson log-spline via penalised IRLS. |
 | [dating.select_lambda_gcv](dating.select_lambda_gcv.qmd#tspaint.dating.select_lambda_gcv) | Fit at a grid of smoothing parameters; pick the one minimising GCV. |
 | [dating.log_time_grid](dating.log_time_grid.qmd#tspaint.dating.log_time_grid) | Geometric (log-spaced) cell edges spanning ``[t_min, t_max]``. |

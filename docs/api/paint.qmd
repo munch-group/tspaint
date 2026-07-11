@@ -94,7 +94,7 @@ query haplotype as a :class:`Painting`.
 
 <code>[**mask**]{.parameter-name} [:]{.parameter-annotation-sep} [[dict](`dict`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
 
-:   **Fragment masking** (CLAUDE.md §2.3): ``{ref: [(left, right), ...]}`` per-reference spans to treat as **unlabelled** (the reference emits the query emission there), so a contaminated reference anchors only on its clean spans instead of being down-weighted as a whole individual (``soft_refs``). Keys may be node ids or sample-ID strings. Feed it directly from :meth:`tspaint.ReferenceQC.mask` or from :func:`tspaint.foreign_tracts`. Applied to both the fit and the painting; exactly equal for any ``n_jobs``.
+:   **Fragment masking** (CLAUDE.md §2.3): ``{ref: [(left, right), ...]}`` per-reference spans to treat as **unlabelled** (the reference emits the query emission there), so a contaminated reference anchors only on its clean spans instead of being down-weighted as a whole individual (``soft_refs``). Keys may be node ids or sample-ID strings. Feed it directly from :meth:`~tspaint.introgression.ReferenceQC.mask` or from :func:`tspaint.foreign_tracts`. Applied to both the fit and the painting; exactly equal for any ``n_jobs``.
 
 <code>[**max_iter**]{.parameter-name} [:]{.parameter-annotation-sep} [EM controls (see :func:`tspaint.fit`).]{.parameter-annotation} [ = ]{.parameter-default-sep} [12]{.parameter-default}</code>
 

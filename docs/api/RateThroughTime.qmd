@@ -1,7 +1,7 @@
 # RateThroughTime { #tspaint.RateThroughTime }
 
 ```python
-tspaint.RateThroughTime(centers, q_AB, q_BA, D, J, loglik_history)
+tspaint.RateThroughTime(centers, q, D, J, loglik_history, states=None)
 ```
 
 Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate profile.
@@ -12,9 +12,9 @@ Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate 
 
 :   Cell centres (generations ago).
 
-<code>[**q_AB, q_BA**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells,) ndarray]{.parameter-annotation}</code>
+<code>[**q**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K, K) ndarray]{.parameter-annotation}</code>
 
-:   Directional transition rates per cell (forward in time: parent→child = old→young; a *backward*-time admixture A→B shows up in ``q_BA``).
+:   Directional transition rate per cell for every ordered ancestry pair — ``q[:, m, n]`` is the rate ``m → n`` (forward in time: parent→child = old→young; a *backward*-time admixture A→B shows up in ``q[:, 1, 0]`` = :attr:`q_BA`). The diagonal is 0. For ``K > 2`` there are ``K·(K-1)`` directional rates: read any of them with :meth:`rate` — **by population name** (``rate("A", "B")``) or index (``rate(0, 1)``) — enumerate the unordered pairs with :attr:`pairs`, and get per-pair split times with :func:`split_times`. :attr:`q_AB` / :attr:`q_BA` are **2-state-only** convenience aliases (they raise for ``K != 2`` rather than silently returning just the ``0↔1`` slice).
 
 <code>[**D**]{.parameter-name} [:]{.parameter-annotation-sep} [(n_cells, K) ndarray]{.parameter-annotation}</code>
 
@@ -28,18 +28,91 @@ Result of :func:`fit_rate_through_time` — the directional cross-ancestry rate 
 
 :   Span-integrated log-likelihood per EM iteration (non-decreasing).
 
+<code>[**states**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)\[[str](`str`)\] or None]{.parameter-annotation}</code>
+
+:   Ancestry-state **names** in state-index order (``states[i]`` names state ``i``), from the population names in the fit's ``labels``. ``None`` when the labels were plain integer states, in which case the names default to letters ``A, B, C, …`` (:attr:`state_names`). All reporting — :attr:`pairs`, :meth:`rate`, :func:`split_times`, :meth:`plot` — is by name.
+
 ## Methods
 
 | Name | Description |
 | --- | --- |
 | [plot](#tspaint.RateThroughTime.plot) | Plot the directional rate-through-time profile (log-time x-axis). |
+| [rate](#tspaint.RateThroughTime.rate) | Directional rate ``m → n`` per cell — ``q[:, m, n]``. |
 
 ### plot { #tspaint.RateThroughTime.plot }
 
 ```python
-tspaint.RateThroughTime.plot(ax=None, scale=1.0)
+tspaint.RateThroughTime.plot(
+    ax=None,
+    scale=1.0,
+    colors=None,
+    facet=None,
+    logy=False,
+    mark_split=True,
+)
 ```
 
 Plot the directional rate-through-time profile (log-time x-axis).
 
-``scale`` multiplies the rates (e.g. pass ``Ne`` to show ``rate × N``). Returns the axes.
+Each **unordered** ancestry pair ``{m, n}`` is drawn as ``q_{mn}`` (``m<n``) **solid** and
+``q_{nm}`` **dashed** in one colour (so for ``K=2`` ``q_AB`` and ``q_BA`` are one colour,
+two styles). Because the pairs can sit on very different scales, ``K > 2`` **facets by
+default** — one subplot per pair, each with its own independent y-axis — while ``K = 2``
+stays a single overlaid axis. ``scale`` multiplies the rates (e.g. pass ``Ne`` to show
+``rate × N``); ``colors`` overrides the per-pair colour cycle.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**ax**]{.parameter-name} [:]{.parameter-annotation-sep} [matplotlib.axes.Axes or array of Axes]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Axes to draw on. Default ``None`` — a new figure is created (a single axes when not faceting, or a column of ``len(pairs)`` axes when faceting). When faceting, an array of at least ``len(pairs)`` axes may be supplied.
+
+<code>[**scale**]{.parameter-name} [:]{.parameter-annotation-sep} [[float](`float`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [1.0]{.parameter-default}</code>
+
+:   Multiply the plotted rates (e.g. pass ``Ne`` to show ``rate × N``). Default ``1.0``.
+
+<code>[**colors**]{.parameter-name} [:]{.parameter-annotation-sep} [[list](`list`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   Per-pair colour override. Default ``None`` — the default Matplotlib colour cycle.
+
+<code>[**facet**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [None]{.parameter-default}</code>
+
+:   One subplot per unordered pair (independent y-axes) vs. a single overlaid axis. Default ``None`` — facet when ``K > 2``, overlay when ``K == 2``.
+
+<code>[**logy**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [False]{.parameter-default}</code>
+
+:   Use a log y-axis. Default ``False`` (linear; each facet still autoscales independently).
+
+<code>[**mark_split**]{.parameter-name} [:]{.parameter-annotation-sep} [[bool](`bool`)]{.parameter-annotation} [ = ]{.parameter-default-sep} [True]{.parameter-default}</code>
+
+:   Draw a dotted vertical line at each pair's split time (:func:`split_times`). Default ``True`` (drawn per facet, and for the single ``K = 2`` axis).
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[matplotlib](`matplotlib`).[axes](`matplotlib.axes`).[Axes](`matplotlib.axes.Axes`) or [list](`list`)\[[matplotlib](`matplotlib`).[axes](`matplotlib.axes`).[Axes](`matplotlib.axes.Axes`)\]]{.parameter-annotation}</code>
+
+:   The single axes (overlay) or the list of per-pair axes (faceted).
+
+### rate { #tspaint.RateThroughTime.rate }
+
+```python
+tspaint.RateThroughTime.rate(m, n)
+```
+
+Directional rate ``m → n`` per cell — ``q[:, m, n]``.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+<code>[**m**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`) or [str](`str`)]{.parameter-annotation}</code>
+
+:   Source and destination ancestry states, each a population **name** (e.g. ``"A"``, resolved via :attr:`state_names`) or an integer state index.
+
+<code>[**n**]{.parameter-name} [:]{.parameter-annotation-sep} [[int](`int`) or [str](`str`)]{.parameter-annotation}</code>
+
+:   Source and destination ancestry states, each a population **name** (e.g. ``"A"``, resolved via :attr:`state_names`) or an integer state index.
+
+#### Returns {.doc-section .doc-section-returns}
+
+<code>[]{.parameter-name} [:]{.parameter-annotation-sep} [[numpy](`numpy`).[ndarray](`numpy.ndarray`)]{.parameter-annotation}</code>
+
+:   ``(n_cells,)`` directional rate ``m → n`` per cell.
