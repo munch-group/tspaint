@@ -8,11 +8,13 @@ partitions the genome without double-counting (the edge-table invariant: the set
 of intervals on which each node is a child is disjoint). Root-state mass is
 accumulated per interval (CLAUDE.md §3.3 sketch).
 
-The expensive Van Loan call (:func:`tspaint.branch_stats.branch_expected_stats`) is
-thereby made **once per edge**, not once per (tree x branch). The blocked
-approximation (CLAUDE.md §3.5): an edge's ``ξ`` is taken from the tree at entry and
-held over its whole span — exact when the topology outside the edge does not change
-across the span; the residual is the breakpoint flicker to measure in Rung 8.
+The expensive Van Loan call (:func:`tspaint.branch_stats.branch_expected_stats` — **the
+Phasic seam**, §3.2/§12) is thereby made **once per edge**, not once per (tree x branch).
+Any memoisation on ``(Q, t)`` lives *behind* that call, inside the backend, so the seam
+stays a plain ``(Q, t, xi) -> (dwell, jumps)`` function and a replacement is free to cache
+however suits it. The blocked approximation (CLAUDE.md §3.5): an edge's ``ξ`` is taken from
+the tree at entry and held over its whole span — exact when the topology outside the edge
+does not change across the span; the residual is the breakpoint flicker measured in Rung 8.
 """
 from __future__ import annotations
 
@@ -21,7 +23,7 @@ from dataclasses import dataclass
 import numpy as np
 import tskit
 
-from .branch_stats import branch_kernel, stats_from_kernel
+from .branch_stats import branch_expected_stats
 from .model import emissions_for
 from .pruning import prune_tree, _transition_cache
 
@@ -59,9 +61,11 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
     Drives the genome with ``ts.edge_diffs()`` zipped with ``ts.trees()``, prunes each
     marginal tree, and banks each edge's contribution **once on entry, weighted by its
     own span** — so a clade persisting across many trees is counted once (the
-    double-counting fix and the channel for genome-scale autocorrelation). The
-    expensive Van Loan branch kernel is computed once per distinct branch length and
-    reused across edges. Root-state mass is accumulated per interval, not per edge.
+    double-counting fix and the channel for genome-scale autocorrelation). Each edge's
+    dwell/jump statistics come from one call to the seam,
+    :func:`tspaint.branch_stats.branch_expected_stats`; any memoisation on ``(Q, t)`` is
+    the backend's business, not ours. Root-state mass is accumulated per interval, not
+    per edge.
 
     Parameters
     ----------
@@ -103,13 +107,6 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
     S_cred = {}
     loglik = 0.0
     Pget = _transition_cache(Q)   # shared across all trees: expm(Q t) once per distinct t
-    kernel_cache = {}             # Van Loan branch kernel once per distinct branch length
-
-    def kernel_for(t):
-        key = float(t)
-        if key not in kernel_cache:
-            kernel_cache[key] = branch_kernel(Q, t)
-        return kernel_cache[key]
 
     lo, hi = (0, ts.num_trees) if tree_range is None else tree_range
     for ti, ((interval, _edges_out, edges_in), tree) in enumerate(zip(ts.edge_diffs(), ts.trees())):
@@ -128,12 +125,11 @@ def accumulate_sufficient_statistics(ts, Q, pi, emissions, *, labels=None,
             if tree.parent(c) == tskit.NULL:      # defensive: child-edges are never root branches
                 continue
             t = node_time[p] - node_time[c]
-            kern = kernel_for(t)
-            if kern is None:               # root branch (t <= 0); skip (§3.4)
+            if t <= 0:                     # root branch (length 0 by convention); skip (§3.4)
                 continue
             xi = res.xi[(p, c)]
             w_edge = e.right - e.left
-            dwell, jumps = stats_from_kernel(kern, xi)
+            dwell, jumps = branch_expected_stats(Q, t, xi)   # THE SEAM (§3.2, §12)
             S_dwell += w_edge * dwell
             S_jumps += w_edge * jumps
 

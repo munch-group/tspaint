@@ -202,9 +202,92 @@ def branch_expected_stats(Q, t, xi):
 > NOTE: This is the natural home for **Phasic**. The per-branch expected
 > occupation times and jump counts of a finite-state CTMC are exactly the
 > reward-accumulated phase-type / Van Loan objects Phasic computes. Replace the
-> `expm`-block calls with Phasic's machinery once the interface is settled;
-> Phasic should also give better numerics (symbolic caching of repeated `Q`,
-> stable handling of stiff `Q*t`). Keep `branch_expected_stats` as the seam.
+> `expm`-block calls with Phasic's machinery once the interface is settled.
+> Keep `branch_expected_stats` as the seam.
+>
+> **[REFACTORED — the seam is exactly one function; caching now lives behind it].** Drop-in
+> sandbox + harness: `examples/phasic_seam.py` (+ `tests/test_phasic_dropin.py`).
+>
+> `branch_expected_stats(Q, t, xi) -> (dwell, jumps)` is the **whole** seam: `accumulate.py`
+> calls exactly this, once per edge, and a Phasic backend replaces exactly this. Everything
+> underneath — the Van Loan `expm`, the `/P` conditioning, the memo on `(Q, t)` — is a private
+> implementation detail (`_branch_kernel`, `_branch_kernel_cached`), so **a replacement is free
+> to cache however it likes**: on `Q` rather than `t`, batched across branches, or not at all.
+>
+> This *restores* the §12 invariant. An earlier version had split the caching out into public
+> `branch_kernel` + `stats_from_kernel`, which `accumulate.py` called directly — so the
+> *documented* seam was dead code in the E-step, and the API prejudged a caching strategy. Both
+> are now gone from the public surface (no external callers existed). The refactor is
+> **bit-identical** on the sufficient statistics (verified by exact equality, not `allclose`)
+> and costs **+0.8% on the seam calls** (~1.66 µs/edge for the cache key), i.e. ~0.1% of the
+> E-step.
+>
+> **The caching was never worth much anyway.** Node times are near-continuous, so branch lengths
+> are nearly all distinct: on a 4 Mb sim, **4313 edges carry 3369 distinct lengths** (~1.3
+> edges/length), so memoising on `t` saves ~22% of the `expm` calls — not a factor of anything.
+> (A 5e5 bp toy sim misleadingly suggests ~4×.)
+>
+> `vanloan_integral(Q, t, E)` stays public but is **not** part of this seam: only
+> `dating/estep.py` calls it, for the raw **un-normalised** integral per time cell under a
+> time-inhomogeneous generator. A separate consumer, a separate job.
+>
+> **[MEASURED — the motivation is throughput, NOT numerics; see §8.7].** The `expm` reference
+> is machine-exact everywhere tspaint operates; there is no precision win available here, and
+> a spectral/cancellation-based backend is *worse* precisely in tspaint's own regime.
+>
+> **The harness's `xi` battery is exhaustive by construction.** Any implementation ultimately
+> forms `E[reward | s_p, s_c]` — a `K×K` matrix per reward — and contracts it with `xi`. Setting
+> `xi` to the one-hot at `(i, j)` reads back exactly that matrix's `(i, j)` entry, so the `K²`
+> one-hot `xi`s probe every internal entry individually: **comparing `(dwell, jumps)` is as
+> sensitive as comparing internal kernels, without the seam having to expose one.** Mutation-
+> tested — it catches a spectral backend, a `/P` omission, a transposed `xi`, an
+> endpoint-marginalised (phase-type-shaped) reward, a mis-applied span weight, and a raise on
+> `t ≤ 0`.
+
+#### 3.2.1 `ξ/P` is rank-1 — and what follows [MEASURED; one consequence DEFERRED]
+
+**The structural fact.** Felsenstein builds `ξ[i,j] ∝ α_i · P[i,j] · β_j` (parent outside-message,
+transition, child inside-message), so in `W := ξ/P` **the `P` cancels exactly**:
+
+```
+W = (α ⊗ β) / (αᵀPβ)        # an outer product of the two messages; no 1/P anywhere
+```
+
+Verified to machine precision on 441 real E-step edges (σ₂/σ₁ ≤ 2.4e-16; `max|W|` = 8.97, i.e.
+bounded). **The seam's reward is never an arbitrary matrix — it is rank-1.** This is a property of
+the *inputs*, so it holds for any backend, and it is what makes both items below work.
+
+**Consequence 1 — the whole seam is ONE Van Loan integral, not K² [DEFERRED — trigger: K > 2].**
+
+```python
+G = vanloan_integral(Q.T, t, ξ/P)      # ONE block-expm, general (rank-1) reward
+dwell = diag(G);  jumps = Q * G        # diagonal / off-diagonal, scaled by the rate
+```
+
+Verified exact. Needs **no cache at all** (the reward depends on `ξ`). **Not adopted:** the *seam*
+is 2.5× faster at K=2, but **pruning is 78% of the E-step**, so end-to-end it is only **+12%** —
+not worth narrowing the contract. **The case reopens at K-way (§2.1)**, because it turns K²
+block-`expm`s into 1: measured per-edge seam speedup **2.5× (K=2), 5.1× (K=3), 11.7× (K=4), 19.8×
+(K=6)**. Contract caveat: it folds `1/P` into the reward, so it is exact only for `ξ` that pruning
+can emit (machine-precise, 2e-14); on a synthetic `ξ` placing mass where `P` is tiny, `max|W| → 1e8`
+and it degrades to ~3e-10. Harness has the reachable "message family" rows to validate it
+(`examples/phasic_seam.py::xi_variants`).
+
+**Consequence 2 — why Phasic cannot be dropped in as it stands.** `xi/P` rank-1 means the seam is a
+forward–backward convolution `G = ∫ f(τ)g(t−τ)ᵀdτ`, `f = e^{Qᵀτ}α`, `g = e^{Qs}β` — exactly a graph
+algorithm's shape, with `α` the initial vector and `β` a **terminal weighting**. But Phasic's
+`accumulated_visiting_time(t) = α ∫₀ᵗ e^{Ss} ds` is *exactly* `α @ vanloan_integral(Q,t,E) @ ones`
+(verified) — it **hardwires `β = ones`**, i.e. marginalises the child endpoint away, which is the one
+thing Felsenstein forbids. Its rewards are also diagonal `△(r)`, but jump rewards are off-diagonal
+`q_mn·e_m e_nᵀ`, and endpoint-*conditioned* jumps are **not** `q_mn ×` endpoint-conditioned dwell.
+The natural fix — hand it the two-copy graph (2K vertices; crossing `(1,m)→(2,n)` at rate `E[m,n]`,
+IPV `(α,0)`, read-out `(0,β)`) — **is provably not a CTMC**: crossing edges are rates so `E ≥ 0`, but
+Van Loan needs copy 1 to keep generator `Q` exactly, i.e. `E@1 = 0`; together these force `E = 0`.
+Building it anyway (auto-derived diagonal) gives **54.8% error**. A genuine-CTMC workaround exists
+(scale the crossing by `ε`, divide back out; error ∝ `ε·t`, corr 0.999) but it is a finite
+difference — machine precision unreachable, which `expm` gives for free. **The ask to Phasic, if
+ever revisited: return `∫₀ᵗ e^{Qᵀτ}(αβᵀ)e^{Qᵀ(t−τ)}dτ` as a K×K matrix — not pre-contracted with
+`α` on the left or `ones` on the right.**
 
 ### 3.3 The blocking: accumulate per edge, span-weighted (THE correctness core)
 A tree-sequence **edge** is `(left, right, parent, child)` over half-open
@@ -692,9 +775,38 @@ in one call and returns a `Painting` whose `posteriors` carry the mean + `poster
    and that `edges_in`/`edges_out` reference stable child/parent IDs and
    `left/right` as assumed. Cheap to assert; expensive to discover wrong three
    weeks in.
-7. **Numerics of `branch_expected_stats`.** Stress-test small `t` (≈0 after
-   compress merges near-coincident times) and large `Q*t` (stiff). This is where
-   Phasic should replace `scipy.linalg.expm`.
+7. **Numerics of `branch_expected_stats`. [RESOLVED — MEASURED; the premise was wrong.]**
+   Stress-tested against a **60-digit mpmath ground truth** over `t ∈ [1e-12, 2e4]`, `λ·t` from
+   `1e-12` to `1e5`, K=2 and K=3 non-reversible (harness `examples/phasic_seam.py`; pinned in
+   `tests/test_phasic_dropin.py::test_reference_is_machine_exact`).
+   - **The `scipy.linalg.expm` Van Loan reference is not fragile.** Over all 515 integral entries:
+     **median relative error 4.6e-16, worst 3.2e-12**. The few above 1e-13 are Padé-truncation
+     artefacts confined to the *smallest, most deeply nested* entries (those ~`(λ·t)²` below the
+     leading term) in two narrow bands — `‖Qt‖ ≈ 1e-2` and stiff `‖Qt‖ ≳ 1e3`; twelve good digits
+     on the worst entry the method has. What the EM actually **consumes** (dwell/jumps, after the
+     `/P` and the contraction with `ξ`) is accurate to **3.3e-15**, and entries that are genuinely
+     `O(t³)` come back fine (4.2e-38 at `t`=1e-12, recovered to 2.7e-16 relative). Neither the
+     small-`t` nor the stiff-`Q*t` worry survives contact with measurement. **⇒ The case for Phasic
+     at this seam is throughput and K-way scale, not numerics. Do not expect a precision win; do
+     not "fix" the reference.** Corollary: because the reference is this accurate, **comparing a
+     candidate against it IS the precision test** — which is exactly what the harness does (no
+     separate ground truth). (Ground truth validated three ways: scipy `expm` vs mpmath `expm` at
+     60 dps vs adaptive quadrature on the closed-form 2-state `P` — the latter two agree exactly.)
+   - **The counterpart risk is the replacement.** The *spectral* route (eigendecomposition — the
+     natural fast drop-in, and plausibly what a graph/phase-type backend does internally) builds
+     the integral as a difference of `O(t)` terms, so every `O(t²)` entry is cancellation noise —
+     and those are exactly the entries divided by an equally small `P` entry to form
+     `E[reward | s_p, s_c]`, so the error survives at **full relative size**. Relative error ≈
+     `ε_machine / (λ·t)`, driven by the **dimensionless `λ·t`** (rate scale × branch length),
+     **not** by `t`: flat in `t` at fixed `λ·t` (1.2e-8 → 1.4e-9 as `t` moves 1e-8 → 1), and
+     tracking `λ·t` at fixed `t` (1e-8 → 1.4e-9; 1e-4 → 1.6e-13; 1 → 4.2e-16). **tspaint lives at
+     small `λ·t`** (fitted `Q` ~5e-5, so a 1-generation branch has `λ·t` ≈ 1e-4) — i.e. it degrades
+     in exactly the direction we operate: a spectral backend that is machine-exact at `λ·t`=1 is
+     wrong in the **4th significant digit at `λ·t`=8e-5**. The harness's `branch_inputs()` therefore
+     deliberately includes the small-`λ·t` rows, and its `RTOL`=1e-10 sits ~30× above the
+     reference's own worst error — **a backend failing only those rows has a real defect; guard
+     small `λ·t`** (fall back to `expm`, or to the series `V ≈ tE + t²(QE + EQ)/2 + …`, accurate
+     precisely where the spectral form is not) **rather than loosening `RTOL`.**
 
 ---
 

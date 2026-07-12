@@ -65,7 +65,7 @@ For each query haplotype, the soft posterior over ancestry at every position (re
 A, blue = B, white where the local tree cannot tell), with the true ancestry shown beneath
 each row:
 
-{{< embed ../notebooks/painting.ipynb#fig-painting >}}
+{{< embed ./notebooks/showcase.ipynb#fig-painting >}}
 
 Collapsed to hard ancestry tracts with a confidence deadband (for tract-length / admixture
 dating).
