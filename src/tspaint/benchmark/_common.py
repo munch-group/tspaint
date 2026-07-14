@@ -367,8 +367,16 @@ def write_sample_map(path, panel, *, header=None):
 def write_genetic_map(path, panel, recomb_rate, *, fmt="plink", header=False):
     """Write a uniform (linear) genetic map at the panel's sites: ``cM = pos · r · 100``.
 
-    ``fmt="plink"`` writes 3 columns ``chrom  pos(bp)  cM`` (RFMix / gnomix); ``fmt="hapmap"``
-    writes 4 columns ``Chromosome  Position(bp)  Rate(cM/Mb)  Map(cM)`` with a header (Recomb-Mix).
+    Three formats, because the tools disagree about what "a genetic map" is:
+
+    * ``fmt="plink"`` — 3 columns ``chrom  pos(bp)  cM`` (RFMix / gnomix). Despite the name this is
+      *not* PLINK's format; it is what RFMix calls a genetic map.
+    * ``fmt="plink-map"`` — 4 columns ``chrom  marker-id  cM  pos(bp)``, i.e. a **real PLINK ``.map``**
+      (note cM *before* bp). FLARE requires exactly this and rejects the 3-column form with
+      ``IllegalArgumentException: Map file format error``.
+    * ``fmt="hapmap"`` — 4 columns ``Chromosome  Position(bp)  Rate(cM/Mb)  Map(cM)`` with a header
+      (Recomb-Mix).
+
     Pass an explicit ``--genetic-map`` to a runner to use a real map instead.
     """
     contig = panel.contig
@@ -378,6 +386,10 @@ def write_genetic_map(path, panel, recomb_rate, *, fmt="plink", header=False):
             for p in panel.positions:
                 cm = float(p) * recomb_rate * 100.0
                 f.write(f"{contig}\t{int(p)}\t{recomb_rate * 1e8:.6f}\t{cm:.10f}\n")
+        elif fmt == "plink-map":
+            for p in panel.positions:
+                f.write(f"{contig}\t{contig}:{int(p)}\t{float(p) * recomb_rate * 100.0:.10f}"
+                        f"\t{int(p)}\n")
         else:
             if header:
                 f.write("#chm\tpos\tcM\n")
@@ -478,9 +490,25 @@ RECOMBMIX_BIN = os.path.expanduser(
 RFMIX_BIN = os.environ.get(
     "TSPAINT_RFMIX", os.path.join(_REPO_ROOT, ".pixi", "envs", "compare", "bin", "rfmix"))
 
+#: FLARE ships as a Java jar built from source into its clone (no upstream release).
+FLARE_DIR = os.path.expanduser(os.environ.get("TSPAINT_FLARE_DIR", os.path.join(TOOLS_DIR, "flare")))
+FLARE_JAR = os.path.expanduser(os.environ.get("TSPAINT_FLARE", os.path.join(FLARE_DIR, "flare.jar")))
+#: Loter is a Python *library* (no CLI): the bridge runs a script inside Loter's own env.
+LOTER_DIR = os.path.expanduser(os.environ.get("TSPAINT_LOTER_DIR", os.path.join(TOOLS_DIR, "Loter")))
+#: MOSAIC is an R package installed into a clone-local ``Rlib/`` (see external/envs/MOSAIC).
+MOSAIC_DIR = os.path.expanduser(os.environ.get("TSPAINT_MOSAIC_DIR", os.path.join(TOOLS_DIR, "MOSAIC")))
+#: GhostBuster is tree-sequence-native — it has a runner, but not the VCF one (see ghostbuster.py).
+GHOSTBUSTER_DIR = os.path.expanduser(
+    os.environ.get("TSPAINT_GHOSTBUSTER_DIR", os.path.join(TOOLS_DIR, "GhostBuster")))
+
+
+def _pixi_run(manifest_dir, *cmd):
+    """Run ``cmd`` inside a tool's own pixi env (each comparator has its own, mutually hostile, deps)."""
+    return [_PIXI, "run", "--manifest-path", manifest_dir, *cmd]
+
 
 def _pixi_prefix(manifest_dir, script):
-    return [_PIXI, "run", "--manifest-path", manifest_dir, "python", script]
+    return _pixi_run(manifest_dir, "python", script)
 
 
 def tool_command(tool, args, *, bin_override=None):
@@ -530,6 +558,20 @@ def tool_command(tool, args, *, bin_override=None):
         return _pixi_prefix(SALAI_DIR, os.path.join(SALAI_DIR, "src", "SALAI.py")) + list(args)
     if tool == "recombmix":
         return [bin_override or RECOMBMIX_BIN] + list(args)
+    if tool == "flare":
+        # java comes from FLARE's own pixi env (openjdk); `args` are FLARE's key=value params.
+        return _pixi_run(FLARE_DIR, "java", "-jar", bin_override or FLARE_JAR) + list(args)
+    if tool == "loter":
+        # Loter is a library, not a CLI: `args` is [driver.py, ...] and the driver is written by
+        # the bridge into the workdir (it imports loter inside Loter's env and dumps .npy).
+        return _pixi_run(LOTER_DIR, "python") + list(args)
+    if tool == "mosaic":
+        # MOSAIC is an R package installed into <clone>/Rlib (not the env's R library), so R_LIBS
+        # must point there; `args` are Rscript's (driver.R + its arguments).
+        return _pixi_run(MOSAIC_DIR, "Rscript") + list(args)
+    if tool == "ghostbuster":
+        return _pixi_prefix(GHOSTBUSTER_DIR,
+                            os.path.join(GHOSTBUSTER_DIR, "ghost_buster.py")) + list(args)
     raise ValueError(f"unknown benchmark tool {tool!r}")
 
 
@@ -560,20 +602,40 @@ def tool_available(tool, *, bin_override=None):
         "gnomix": os.path.isdir(GNOMIX_DIR),
         "salai": os.path.isdir(SALAI_DIR),
         "recombmix": os.path.exists(bin_override or RECOMBMIX_BIN),
+        "flare": os.path.exists(bin_override or FLARE_JAR),
+        "loter": os.path.exists(os.path.join(LOTER_DIR, ".deps-ok")),
+        # the R package must be *installed*, not just cloned (the compile can fail)
+        "mosaic": os.path.exists(os.path.join(MOSAIC_DIR, "Rlib", "MOSAIC", "DESCRIPTION")),
+        "ghostbuster": os.path.exists(os.path.join(GHOSTBUSTER_DIR, "ghost_buster.py")),
     }.get(tool, False)
 
 
-def run_tool(tool, args, *, cwd=None, log=None, bin_override=None):
-    """Run ``tool`` with ``args``; raise :class:`RuntimeError` on a nonzero exit (stderr tail)."""
-    cmd = tool_command(tool, args, bin_override=bin_override)
+def run_tool_argv(cmd, tool, *, cwd=None, log=None, env=None):
+    """Run a fully-built argv; raise :class:`RuntimeError` on a nonzero exit (stdout+stderr tail).
+
+    The escape hatch from :func:`run_tool` for tools whose launcher cannot be expressed as
+    "prefix + args" — FLARE needs ``-Xmx`` *before* ``-jar``, and MOSAIC needs ``R_LIBS`` in the
+    environment (its package is installed into a clone-local ``Rlib/``, not the env's R library).
+
+    ``stdin=DEVNULL`` throughout: these are batch tools, and a child that reads an inherited open
+    stdin (a notebook kernel, a piped script, CI) blocks forever — see :mod:`tspaint.io_argweaver`.
+    """
     if log is not None:
         log(" ".join(shlex.quote(c) for c in cmd))
-    res = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
+    res = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd,
+                         stdin=subprocess.DEVNULL,
+                         env={**os.environ, **env} if env else None)
     if res.returncode != 0:
         raise RuntimeError(
             f"{tool} failed (exit {res.returncode}):\n"
             f"--- stdout ---\n{res.stdout[-1500:]}\n--- stderr ---\n{res.stderr[-1500:]}")
     return res
+
+
+def run_tool(tool, args, *, cwd=None, log=None, bin_override=None, env=None):
+    """Run ``tool`` with ``args``; raise :class:`RuntimeError` on a nonzero exit (stderr tail)."""
+    return run_tool_argv(tool_command(tool, args, bin_override=bin_override), tool,
+                         cwd=cwd, log=log, env=env)
 
 
 def require(path, hint):

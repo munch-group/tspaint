@@ -358,7 +358,7 @@ def _run_singer(prefix, out, *, start, end, Ne, mutation_rate, recombination_rat
     last = None
     for k, sd in enumerate(seeds):
         cmd = base + (["-debug"] if k > 0 else []) + ["-seed", str(sd)]
-        last = subprocess.run(cmd, capture_output=True, text=True)
+        last = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
         if last.returncode == 0:
             return _singer_indices(out)
         if last.returncode == -11:        # SIGSEGV: a hard crash inside SINGER, not a numerical
@@ -675,7 +675,7 @@ def run_merge_arg(rows, out, *, script=None, python=None):
             for (n, b, m, blk) in rows:
                 f.write(f"{n} {b} {m} {int(blk)}\n")
         r = subprocess.run([python, run_script, "--file_table", table, "--output", out],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL)
         if r.returncode != 0:
             raise RuntimeError(f"merge_ARG.py failed:\n{(r.stderr or '')[-2000:]}")
     finally:

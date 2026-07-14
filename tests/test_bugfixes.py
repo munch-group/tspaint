@@ -41,7 +41,10 @@ def test_argweaver_no_samples_raises_runtimeerror(monkeypatch, tmp_path):
 
     monkeypatch.setattr(aw, "_run_argweaver", lambda *a, **k: None)
     monkeypatch.setattr(aw, "_argweaver_indices", lambda out: [])      # -> _select(...) == []
-    monkeypatch.setattr(aw, "_source_sample_ids", lambda s: (s, ["n0", "n1"], 1))
+    # (source, sample_names, ploidy, sample_index) — the 4-tuple io_singer._source_sample_ids
+    # actually returns. This stub was stale at 3 values, so the test failed with a ValueError
+    # ("not enough values to unpack") *before* reaching the RuntimeError it is meant to assert.
+    monkeypatch.setattr(aw, "_source_sample_ids", lambda s: (s, ["n0", "n1"], 1, None))
     monkeypatch.setattr(aw, "write_sites",
                         lambda src, path, **k: open(path, "w").write("NAMES\tn0\tn1\n"))
 

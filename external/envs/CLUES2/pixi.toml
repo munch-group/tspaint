@@ -1,0 +1,29 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "CLUES2"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+# CLUES2 (Vaughn & Nielsen 2024) — NOT a local-ancestry painter, so it has no `benchmark <tool>`
+# runner. It is the **downstream consumer** required by the highest-value experiment in
+# plans/PLAN_PUBLICATION.md (§5.1 / §9.4): ARG-based inference of allele-frequency trajectories and
+# selection coefficients, which ARGMix used to make an ancestry-stratified selection claim from
+# *hard, uncalibrated* ancestry calls with no error bar. Feeding it tspaint's calibrated posterior
+# (and a SINGER ARG-uncertainty band) is how we test whether that claim survives.
+#
+# Conveniently, upstream already ships `SingerToCLUES.py` alongside `RelateToCLUES.py`, so it reads
+# the same SINGER ARGs tspaint does.
+#
+# Plain scripts, no setup.py — deps only (README: numba, scipy, numpy, matplotlib, Bio, pandas).
+[tasks]
+install-deps = "python -c 'import numba, scipy, numpy, matplotlib, Bio, pandas' && touch .deps-ok"
+
+[dependencies]
+python = "3.11.*"
+numba = "*"
+scipy = "*"
+numpy = "*"
+matplotlib = "*"
+biopython = "*"
+pandas = "*"

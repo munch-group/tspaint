@@ -66,6 +66,35 @@ def _target(spec, name, tools_dir):
     return os.path.join(tools_dir, spec.get("dir", name))
 
 
+def platform_tag():
+    """This machine as a conda/pixi platform string (``osx-arm64``, ``linux-64``, …)."""
+    import platform as _p
+
+    sysname = {"Darwin": "osx", "Linux": "linux", "Windows": "win"}.get(_p.system(), _p.system().lower())
+    machine = {"x86_64": "64", "AMD64": "64", "arm64": "arm64", "aarch64": "aarch64"}.get(
+        _p.machine(), _p.machine())
+    return f"{sysname}-{machine}"
+
+
+def unsupported(spec, tag=None):
+    """Why ``spec`` cannot be provisioned on this machine, or ``None`` if it can.
+
+    A tool may declare ``platforms = <space-separated tags>`` in the manifest; if this machine's
+    :func:`platform_tag` is not among them, the tool is **skipped, not failed** — it is a known,
+    documented limitation of the upstream tool, not a broken install. Checked *before* any cloning,
+    so we do not download a repo we cannot build.
+    """
+    plats = spec.get("platforms", "").split()
+    if not plats:
+        return None
+    tag = tag or platform_tag()
+    if tag in plats:
+        return None
+    note = spec.get("note", "").strip()
+    reason = f"only supported on {', '.join(plats)} (this machine is {tag})"
+    return f"{reason}. {note}" if note else reason
+
+
 def plan(name, spec, tools_dir, *, env_root=None, force=False):
     """Provisioning plan for one tool → ``(target_dir, check_path, steps)``.
 
@@ -127,9 +156,10 @@ def _run(step):
         shutil.copyfile(step[1], step[2])
         return
     if isinstance(step, tuple):
-        res = subprocess.run(step[1], shell=True, cwd=step[2], capture_output=True, text=True)
+        res = subprocess.run(step[1], shell=True, cwd=step[2], capture_output=True, text=True,
+                             stdin=subprocess.DEVNULL)
     else:
-        res = subprocess.run(step, capture_output=True, text=True)
+        res = subprocess.run(step, capture_output=True, text=True, stdin=subprocess.DEVNULL)
     if res.returncode != 0:
         raise RuntimeError(f"step failed: {_fmt(step)}\n{res.stderr[-1500:]}")
 
@@ -156,12 +186,17 @@ def setup(tools=None, *, tools_dir=None, manifest=None, force=False, dry_run=Fal
     -------
     list[dict]
         One row per tool: ``tool``, ``status`` (``already`` / ``planned`` / ``provisioned`` /
-        ``incomplete`` / ``failed`` / ``unknown``), ``path`` and the ``steps`` (formatted).
+        ``skipped`` / ``incomplete`` / ``failed`` / ``unknown``), ``path``, the ``steps``
+        (formatted), and — for ``skipped`` — a ``reason``.
+
+        ``skipped`` is **not** a failure: the tool declares a ``platforms`` list in the manifest that
+        this machine is not on (see :func:`unsupported`), so nothing is cloned and nothing is built.
     """
     env_root = os.path.dirname(manifest or default_manifest_path())
     man = load_manifest(manifest)
     tools_dir = tools_dir or default_tools_dir()
     names = list(man) if tools is None else list(tools)
+    tag = platform_tag()
     if not dry_run:
         os.makedirs(tools_dir, exist_ok=True)
 
@@ -170,6 +205,12 @@ def setup(tools=None, *, tools_dir=None, manifest=None, force=False, dry_run=Fal
         if name not in man:
             log(f"  {name}: not in manifest")
             rows.append(dict(tool=name, status="unknown", path="", steps=[]))
+            continue
+        # Platform check FIRST: never clone a repo we already know we cannot build here.
+        why = unsupported(man[name], tag)
+        if why:
+            log(f"  {name}: skipped — {why.split('. ')[0]}")     # terse here; full reason in the summary
+            rows.append(dict(tool=name, status="skipped", path="", steps=[], reason=why))
             continue
         target, check_path, steps = plan(name, man[name], tools_dir, env_root=env_root, force=force)
         fsteps = [_fmt(s) for s in steps]
@@ -196,17 +237,37 @@ def setup(tools=None, *, tools_dir=None, manifest=None, force=False, dry_run=Fal
     return rows
 
 
-def tool_status():
-    """Resolved path + availability for every benchmark tool (incl. RFMix).
+def tool_status(manifest=None, tools_dir=None):
+    """Resolved path + availability for every comparator — the four with bridges, plus the manifest.
+
+    The four tools with VCF bridges (``rfmix``, ``gnomix``, ``salai``, ``recombmix``) resolve
+    through :mod:`tspaint.benchmark._common`, which honours their ``$TSPAINT_*`` overrides. Every
+    *other* tool in ``external/tools.ini`` is reported straight from the manifest, by testing its
+    ``check`` path — so newly added comparators (MOSAIC, FLARE, Loter, GhostBuster) and the
+    install-only tools (CLUES2, ARGformer) show up here without needing a bridge first.
 
     Returns
     -------
     list[dict]
-        One row per tool (``rfmix``, ``gnomix``, ``salai``, ``recombmix``) with ``tool`` (name),
-        ``path`` (the resolved binary path or install directory) and ``available`` (bool from
-        :func:`tspaint.benchmark.tool_available`).
+        One row per tool: ``tool`` (name), ``path`` (resolved binary / install dir / check path),
+        ``available`` (bool), and ``note`` — empty unless the tool is unavailable *by design* on
+        this platform, in which case it says why (so a ``--`` in the table is never a mystery).
     """
     from . import _common as C
-    paths = {"rfmix": C.RFMIX_BIN, "gnomix": C.GNOMIX_DIR, "salai": C.SALAI_DIR,
-             "recombmix": C.RECOMBMIX_BIN}
-    return [dict(tool=t, path=p, available=C.tool_available(t)) for t, p in paths.items()]
+    rows = [dict(tool=t, path=p, available=C.tool_available(t), note="") for t, p in
+            (("rfmix", C.RFMIX_BIN), ("gnomix", C.GNOMIX_DIR), ("salai", C.SALAI_DIR),
+             ("recombmix", C.RECOMBMIX_BIN))]
+
+    bridged = {r["tool"] for r in rows}
+    tools_dir = tools_dir or default_tools_dir()
+    tag = platform_tag()
+    for name, spec in load_manifest(manifest).items():
+        if name in bridged:
+            continue
+        target = _target(spec, name, tools_dir)
+        check = os.path.join(target, spec["check"]) if "check" in spec else target
+        binary = os.path.join(target, spec["binary"]) if "binary" in spec else target
+        why = unsupported(spec, tag)
+        rows.append(dict(tool=name, path=binary, available=os.path.exists(check),
+                         note=why or ""))
+    return rows

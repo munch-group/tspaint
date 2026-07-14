@@ -18,7 +18,8 @@ import numpy as np
 
 from ..output import Segment, INFORMATIVE
 
-__all__ = ["parse_fb", "parse_msp", "parse_recombmix_segments"]
+__all__ = ["parse_fb", "parse_msp", "parse_recombmix_segments", "parse_flare_anc_vcf",
+           "tracks_from_marker_posteriors"]
 
 
 def _one_hot(state, K):
@@ -243,3 +244,135 @@ def parse_recombmix_segments(path, query_inds, K, sequence_length, *, code_to_st
             state = code_to_state.get(int(a), int(a))
             _append(segs, left, right, _one_hot(state, K))
     return tracks
+
+
+# --- generic: per-marker posteriors -> Segment tracks ----------------------------------------
+
+def tracks_from_marker_posteriors(positions, per_hap, sequence_length, *, atol=0.0):
+    """Per-marker posteriors → per-haplotype Segment tracks tiling ``[0, L)``.
+
+    The shared back end for every tool that reports a value *at each marker* rather than as
+    segments: FLARE (``.anc.vcf.gz`` ANP fields), Loter (an ancestry call per SNP), MOSAIC (a
+    posterior per gridpoint, after mapping the grid back onto the SNPs). Marker ``i`` owns
+    ``[b[i], b[i+1])`` with boundaries from :func:`_boundaries` (first marker extended left to 0,
+    last extended right to ``L``), and runs of equal posterior are merged.
+
+    Parameters
+    ----------
+    positions : array-like
+        ``(S,)`` marker positions, ascending.
+    per_hap : dict[int, array-like]
+        ``{hap-key: (S, K) posterior}`` — one row per marker. One-hot rows give a hard painting.
+    sequence_length : float
+        Genome length ``L``.
+    atol : float, optional
+        Absolute tolerance for merging adjacent equal posteriors (default ``0.0``, exact).
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per haplotype key, a piecewise-constant painting of ``[0, L)``.
+    """
+    pos = np.asarray(positions, float)
+    b = _boundaries(pos, sequence_length)
+    out = {}
+    for key, post in per_hap.items():
+        post = np.asarray(post, float)
+        segs = []
+        for i in range(len(pos)):
+            _append(segs, b[i], b[i + 1], post[i], atol=atol)
+        out[key] = segs
+    return out
+
+
+# --- FLARE .anc.vcf.gz -----------------------------------------------------------------------
+
+def parse_flare_anc_vcf(path, query_inds, K, sequence_length, *, probs=True):
+    """Parse FLARE's ``<out>.anc.vcf.gz`` into per-haplotype Segment tracks.
+
+    FLARE writes the phased input genotypes plus, per sample, ``AN1``/``AN2`` (the most probable
+    ancestry of each haplotype) and — with ``probs=true`` — ``ANP1``/``ANP2`` (the posterior
+    ancestry probability *vectors*). We prefer the ANP fields, so FLARE is scored soft-vs-soft
+    against tspaint rather than being flattened to hard calls.
+
+    The ancestry integers are FLARE's own indices, not our states. The mapping is in the
+    ``##ANCESTRY=<name=id,...>`` meta-line, where ``name`` is the panel label from the sample map
+    (which :func:`tspaint.benchmark.write_sample_map` writes as the integer state). We parse it
+    rather than assume identity, because FLARE is free to order its panels as it likes.
+
+    Parameters
+    ----------
+    path : str
+        Path to ``<out>.anc.vcf.gz``.
+    query_inds : list[tuple[str, tuple[int, int]]]
+        ``(sample_name, (key_hap1, key_hap2))`` per query sample.
+    K : int
+        Number of ancestry states.
+    sequence_length : float
+        Genome length ``L``.
+    probs : bool, optional
+        Read the soft ``ANP1``/``ANP2`` fields (default). ``False`` reads hard ``AN1``/``AN2``
+        and one-hot-encodes them — use only if FLARE was run without ``probs=true``.
+
+    Returns
+    -------
+    dict[int, list[Segment]]
+        Per query haplotype key, its painting.
+    """
+    import gzip
+
+    opener = gzip.open if path.endswith(".gz") else open
+    anc_map, header, rows = None, None, []
+    with opener(path, "rt") as f:
+        for ln in f:
+            if ln.startswith("##ANCESTRY="):
+                body = ln.strip().split("=", 1)[1].strip("<>")
+                # "<name=id,name=id>" -> {flare_id: our_state}; names are the sample-map labels
+                anc_map = {}
+                for item in body.split(","):
+                    name, idx = item.split("=")
+                    anc_map[int(idx)] = int(name) if name.lstrip("-").isdigit() else len(anc_map)
+            elif ln.startswith("##"):
+                continue
+            elif ln.startswith("#CHROM"):
+                header = ln.rstrip("\n").split("\t")
+            elif header is not None:
+                rows.append(ln.rstrip("\n").split("\t"))
+    if header is None:
+        raise ValueError(f"{path}: no #CHROM header — not a FLARE .anc.vcf")
+    if anc_map is None:
+        raise ValueError(f"{path}: no ##ANCESTRY meta-line — cannot map FLARE's ancestry indices "
+                         f"onto tspaint states")
+    keys = {name: k for name, k in query_inds}
+    col = {name: j for j, name in enumerate(header[9:], start=9) if name in keys}
+    missing = set(keys) - set(col)
+    if missing:
+        raise ValueError(f"{path}: query samples absent from FLARE output: {sorted(missing)}")
+    if not rows:
+        return {k: [] for _n, kk in query_inds for k in kk}
+
+    pos = np.array([int(r[1]) for r in rows], float)
+    fmt = rows[0][8].split(":")
+    f1, f2 = (("ANP1", "ANP2") if probs else ("AN1", "AN2"))
+    if f1 not in fmt:
+        raise ValueError(f"{path}: FORMAT has no {f1} field (got {fmt}) — rerun FLARE with "
+                         f"probs=true, or pass probs=False to read the hard AN1/AN2 calls")
+    i1, i2 = fmt.index(f1), fmt.index(f2)
+
+    per_hap = {}
+    for name, (k0, k1) in query_inds:
+        j = col[name]
+        a0 = np.zeros((len(rows), K))
+        a1 = np.zeros((len(rows), K))
+        for s, r in enumerate(rows):
+            g = r[j].split(":")
+            if probs:
+                for anc_i, v in enumerate(g[i1].split(",")):
+                    a0[s, anc_map[anc_i]] = float(v)
+                for anc_i, v in enumerate(g[i2].split(",")):
+                    a1[s, anc_map[anc_i]] = float(v)
+            else:
+                a0[s] = _one_hot(anc_map[int(g[i1])], K)
+                a1[s] = _one_hot(anc_map[int(g[i2])], K)
+        per_hap[k0], per_hap[k1] = a0, a1
+    return tracks_from_marker_posteriors(pos, per_hap, sequence_length)

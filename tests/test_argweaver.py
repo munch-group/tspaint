@@ -170,3 +170,48 @@ def test_argweaver_unified_sampling_count():
     assert single.num_samples == ts.num_samples
     ens = argweaver(ts, ts=3, mcmc_step=10, mcmc_burnin=0, **kw)
     assert isinstance(ens, list) and len(ens) == 3
+
+
+# --- external tools must never inherit our stdin -----------------------------------------------
+
+def test_no_external_subprocess_inherits_stdin():
+    """Every external-tool call must pass ``stdin=`` (we use DEVNULL). Offline, source-level.
+
+    ``arg-sample`` *reads stdin*. ``subprocess.run(cmd, capture_output=True)`` leaves ``stdin``
+    unset, which hands the child the parent's stdin — and whenever that is an open pipe rather than
+    a terminal (a Jupyter kernel, a piped script, CI, a workflow runner), the child blocks on a read
+    that never returns and the run hangs forever with no output. This bit us for real: a
+    5-iteration run on 8 sequences that takes <1s from a terminal never finished when driven from a
+    script whose stdin stayed open.
+
+    All of these launch *batch* tools (Relate, SINGER, ARGweaver, RFMix, the benchmark comparators,
+    and git/make/pixi in the provisioner). None should read stdin; git would additionally sit on a
+    credential prompt. So the invariant is blanket: no ``subprocess.run`` in tspaint may omit
+    ``stdin=``.
+    """
+    import pathlib
+    import re
+
+    src = pathlib.Path(tspaint.__file__).parent
+    offenders = []
+    for py in sorted(src.rglob("*.py")):
+        text = py.read_text()
+        # match a subprocess.run(...) call and its full (possibly multi-line) argument list
+        for m in re.finditer(r"subprocess\.(?:run|Popen|check_call|check_output)\s*\(", text):
+            depth, i = 0, m.end() - 1
+            while i < len(text):
+                if text[i] == "(":
+                    depth += 1
+                elif text[i] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                i += 1
+            call = text[m.start():i + 1]
+            if "stdin=" not in call:
+                line = text[:m.start()].count("\n") + 1
+                offenders.append(f"{py.relative_to(src)}:{line}")
+    assert not offenders, (
+        "external-tool subprocess call(s) without an explicit stdin= — these hang forever when "
+        "tspaint is driven with an open stdin (notebook / piped script / CI):\n  "
+        + "\n  ".join(offenders))

@@ -1,0 +1,26 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "flare"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+# FLARE (Browning, Waples & Browning 2023) — SPECIAL CASE: the only **JVM** tool in external/.
+# The maintained, modern descendant of the HAPMIX / Li-Stephens copying-model lineage, and one of
+# the three methods that beat Recomb-Mix past 200 generations — i.e. an opponent in *our* target
+# regime (see papers/recomb-mix.md, papers/hapmix.md). HAPMIX itself is 2009 C and unlikely to
+# build; FLARE is what we run in its place.
+#
+# Upstream ships **no GitHub release and no jar in the repo** — the README offers a prebuilt
+# flare.jar from faculty.washington.edu, which is unpinned and would defeat the manifest's
+# reproducibility. So we build from source at the pinned commit, exactly per the upstream README:
+#
+#     javac -cp flare/src/ flare/src/admix/AdmixMain.java
+#     jar cfe flare.jar admix/AdmixMain -C flare/src/ ./
+#
+# (run here from inside the clone, so the paths lose the `flare/` prefix). FLARE requires Java 11+.
+[tasks]
+build = "javac -cp src/ src/admix/AdmixMain.java && jar cfe flare.jar admix/AdmixMain -C src/ ./"
+
+[dependencies]
+openjdk = ">=11"

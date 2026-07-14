@@ -51,22 +51,69 @@ def _map_opts(f):
 
 @click.group()
 def benchmark():
-    """Run external LAI tools (RFMix / gnomix / SALAI-Net / Recomb-Mix) from VCF → tspaint .npz.
+    """Run external LAI tools from VCF (or a tree sequence) → tspaint .npz, and score them.
 
-    Provision the git-only tools first with `tspaint benchmark setup` (see `status` for what is
-    installed); then run a tool over VCFs, and `score` the outputs against a truth table.
+    Provision the git-only tools first with `tspaint benchmark install` (`status` shows what is
+    present); then run a tool and `score` its output against a truth table.
+
+    \b
+    Painters (have a runner):   rfmix gnomix salai recombmix flare loter mosaic ghostbuster
+    Not painters (install only): clues2 (downstream selection) argformer (embeddings/retrieval)
+
+    ARG *front ends* (Relate / SINGER / ARGweaver-D) are not comparators — see `tspaint install`.
     """
 
 
+def _setup_opts(f):
+    f = click.option("--dry-run", is_flag=True, help="print the plan and make no changes.")(f)
+    f = click.option("--force", is_flag=True, help="re-provision even if already present.")(f)
+    f = click.option("--manifest", default=None, type=click.Path(exists=True),
+                     help="manifest INI (default: external/tools.ini).")(f)
+    f = click.option("--tools-dir", default=None, type=click.Path(),
+                     help="clone root (default: external/).")(f)
+    return f
+
+
 @benchmark.command()
+@click.argument("tools", nargs=-1)
+@_setup_opts
+def install(tools, tools_dir, manifest, force, dry_run):
+    """Clone + build comparators into external/ (default: all in the manifest).
+
+    \b
+      tspaint benchmark install                 # everything installable here
+      tspaint benchmark install mosaic flare    # just these
+      tspaint benchmark install --dry-run       # show the plan
+
+    Tools declaring a `platforms` list this machine is not on are **skipped**, not failed: nothing
+    is cloned and a one-line reason is printed (ARGformer is linux-64 only).
+    """
+    from .. import benchmark as bm
+    rows = bm.setup(tools=list(tools) or None, tools_dir=tools_dir, manifest=manifest,
+                    force=force, dry_run=dry_run, log=_echo)
+    if dry_run:
+        return
+
+    ready = [r for r in rows if r["status"] in ("provisioned", "already")]
+    skipped = [r for r in rows if r["status"] == "skipped"]
+    bad = [r for r in rows if r["status"] in ("failed", "incomplete", "unknown")]
+
+    _echo("")
+    _echo(f"{len(ready)} ready, {len(skipped)} skipped, {len(bad)} failed")
+    for r in skipped:
+        _echo(f"  skipped  {r['tool']:11} {r['reason']}")
+    for r in bad:
+        _echo(f"  {r['status']:8} {r['tool']:11} (rerun `tspaint benchmark install {r['tool']}` "
+              f"to see the error)")
+    if bad:
+        raise SystemExit(1)          # a genuine failure is an error; a platform skip is not
+
+
+@benchmark.command(hidden=True)
 @click.option("--tools", default=None, help="comma-separated subset (default: all in manifest).")
-@click.option("--tools-dir", default=None, type=click.Path(), help="clone root (default: external/).")
-@click.option("--manifest", default=None, type=click.Path(exists=True),
-              help="manifest INI (default: external/tools.ini).")
-@click.option("--force", is_flag=True, help="re-provision even if already present.")
-@click.option("--dry-run", is_flag=True, help="print the plan and make no changes.")
+@_setup_opts
 def setup(tools, tools_dir, manifest, force, dry_run):
-    """Clone + build the git-only comparators (gnomix / SALAI-Net / Recomb-Mix) into external/."""
+    """Deprecated alias for `install` (kept so existing scripts keep working)."""
     from .. import benchmark as bm
     bm.setup(tools=tools.split(",") if tools else None, tools_dir=tools_dir, manifest=manifest,
              force=force, dry_run=dry_run, log=_echo)
@@ -77,7 +124,12 @@ def status():
     """Show which comparator tools are installed and where."""
     from .. import benchmark as bm
     for r in bm.tool_status():
-        click.echo(f"  {'ok ' if r['available'] else '-- '} {r['tool']:10} {r['path']}")
+        mark = "ok " if r["available"] else "-- "
+        # Never leave a bare "--": if a tool is unavailable *by design* here, say so. Keep it to the
+        # first sentence — `benchmark install` prints the full, actionable reason.
+        note = (f"  ({r['note'].split('. ')[0]})"
+                if (not r["available"] and r.get("note")) else "")
+        click.echo(f"  {mark} {r['tool']:11} {r['path']}{note}")
 
 
 @benchmark.command()
@@ -132,6 +184,96 @@ def recombmix(query_vcf, ref_vcf, sample_map, chromosome, out, genetic_map, reco
     bm.recombmix(query_vcf, ref_vcf, sample_map=sample_map, genetic_map=genetic_map,
                  chromosome=chromosome, recomb_rate=recomb_rate, weight=weight, threads=threads,
                  out=out, log=_echo)
+
+
+@benchmark.command()
+@_base_opts
+@_map_opts
+@click.option("-G", "--generations", type=float, default=10.0, show_default=True,
+              help="generations since admixture (FLARE's gen).")
+@click.option("--probs/--no-probs", default=True, show_default=True,
+              help="report posterior ancestry probabilities (soft output).")
+@click.option("--min-mac", type=int, default=0, show_default=True,
+              help="min minor-allele count in the reference VCF. NB FLARE's own default is 50, "
+                   "which discards every marker on a small simulation panel.")
+@click.option("--min-maf", type=float, default=0.0, show_default=True,
+              help="min minor-allele frequency in the reference VCF (FLARE's default: 0.005).")
+@click.option("-t", "--threads", type=int, default=None)
+def flare(query_vcf, ref_vcf, sample_map, chromosome, out, genetic_map, recomb_rate,
+          generations, probs, min_mac, min_maf, threads):
+    """FLARE (soft posteriors; the maintained HAPMIX/Li-Stephens descendant)."""
+    from .. import benchmark as bm
+    bm.flare(query_vcf, ref_vcf, sample_map=sample_map, genetic_map=genetic_map,
+             chromosome=chromosome, recomb_rate=recomb_rate, generations=generations,
+             probs=probs, min_mac=min_mac, min_maf=min_maf, threads=threads, out=out, log=_echo)
+
+
+@benchmark.command()
+@_base_opts
+@click.option("--n-bagging", type=int, default=20, show_default=True,
+              help="bootstrap replicates Loter averages over.")
+@click.option("-t", "--threads", type=int, default=1, show_default=True)
+def loter(query_vcf, ref_vcf, sample_map, chromosome, out, n_bagging, threads):
+    """Loter (hard calls -> 0/1; needs no genetic map and no parameters at all)."""
+    from .. import benchmark as bm
+    bm.loter(query_vcf, ref_vcf, sample_map=sample_map, chromosome=chromosome,
+             n_bagging=n_bagging, threads=threads, out=out, log=_echo)
+
+
+@benchmark.command()
+@_base_opts
+@click.option("--recomb-rate", type=float, default=1e-8, show_default=True,
+              help="per-base rate for the generated MOSAIC rates file.")
+@click.option("-a", "--ancestries", type=int, default=None,
+              help="number of LATENT mixing ancestries (default: the number of reference states). "
+                   "These are not the reference panels — MOSAIC decouples them.")
+@click.option("-N", "--ne", "Ne", type=float, default=9e4, show_default=True,
+              help="effective population size (MOSAIC's default is a human genome-wide value).")
+@click.option("-g", "--gridpoints-per-cm", type=int, default=60, show_default=True,
+              help="MOSAIC's grid density. RAISE THIS on dense simulated data: MOSAIC crashes "
+                   "(sapply simplification in create_umatch) when every gridpoint carries the same "
+                   "number of unique donor haplotypes, which happens with many SNPs per gridpoint.")
+@click.option("-r", "--rounds", type=int, default=5, show_default=True)
+@click.option("--phase/--no-phase", default=True, show_default=True,
+              help="let MOSAIC re-phase the targets. NB re-phasing can swap hap 0/1 within an "
+                   "individual, which per-haplotype scoring reads as error.")
+def mosaic(query_vcf, ref_vcf, sample_map, chromosome, out, recomb_rate, ancestries, Ne,
+           gridpoints_per_cm, rounds, phase):
+    """MOSAIC (soft posteriors; nested HMM, panels decoupled from ancestries)."""
+    from .. import benchmark as bm
+    bm.mosaic(query_vcf, ref_vcf, sample_map=sample_map, chromosome=chromosome,
+              recomb_rate=recomb_rate, ancestries=ancestries, Ne=Ne,
+              gridpoints_per_cm=gridpoints_per_cm, rounds=rounds, phase=phase, out=out, log=_echo)
+
+
+@benchmark.command()
+@click.option("--trees", required=True, type=click.Path(exists=True),
+              help="tree sequence (.trees) — the SAME ARG you hand to tspaint.")
+@click.option("-m", "--sample-map", required=True, type=click.Path(exists=True),
+              help="reference map, <sample-node-id>\t<state> (one row per reference haplotype).")
+@click.option("-o", "--out", required=True, type=click.Path(), help="output painting .npz.")
+@click.option("-k", "--clusters", type=int, default=None,
+              help="number of LATENT ancestry components (default: the number of reference states).")
+@click.option("--hmm/--no-hmm", default=True, show_default=True,
+              help="genome-axis HMM. GhostBuster's own advice is to turn it OFF for events older "
+                   "than ~1000 generations.")
+@click.option("-i", "--n-iters", type=int, default=200, show_default=True)
+def ghostbuster(trees, sample_map, out, clusters, hmm, n_iters):
+    """GhostBuster (soft posteriors) — TREE-SEQUENCE native, so no VCF and no front-end confound.
+
+    The one comparator that eats the same object tspaint paints: same ARG in, different model.
+    """
+    import tskit
+    from .. import benchmark as bm
+    ts = tskit.load(trees)
+    labels = {}
+    for ln in open(sample_map):
+        ln = ln.strip()
+        if not ln or ln.startswith("#"):
+            continue
+        a, b = ln.split()[:2]
+        labels[int(a)] = int(b)
+    bm.ghostbuster(ts, labels, out=out, clusters=clusters, hmm=hmm, n_iters=n_iters, log=_echo)
 
 
 @benchmark.command()

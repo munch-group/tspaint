@@ -169,7 +169,7 @@ def relate_convert(anc, mut, *, out_prefix=None, compress=True, convert_bin=None
     cmd = [convert_bin, "--mode", "ConvertToTreeSequence", "--anc", anc, "--mut", mut, "-o", out_prefix]
     if compress:
         cmd.append("--compress")
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
     if res.returncode != 0:
         raise RuntimeError(f"Relate Convert failed:\n{res.stderr[-1000:]}")
     return tskit.load(out_prefix + ".trees")
@@ -182,7 +182,8 @@ def _run_relate_step(cmd, *, cwd, what, tolerate_if=None):
     success — used for ``EstimatePopulationSize``, whose final R/ggplot2 *plot* step exits nonzero
     when ggplot2 is absent even though the re-dated genealogy was already written.
     """
-    res = subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True, text=True)
+    res = subprocess.run([str(c) for c in cmd], cwd=cwd, capture_output=True, text=True,
+                         stdin=subprocess.DEVNULL)
     if res.returncode == 0 or (tolerate_if is not None and tolerate_if()):
         return res
     tail = ((res.stderr or "") + "\n" + (res.stdout or "")).strip()[-1500:]

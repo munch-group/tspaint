@@ -1,0 +1,39 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "MOSAIC"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+# MOSAIC (Salter-Townshend & Myers 2019) — SPECIAL CASE: the only **R** package in external/.
+# The strongest genotype-based comparator in the stack (it beats RFMix/ELAI/LAMP-LD even when they
+# are handed the panel<->ancestry correspondence and it is not), best-in-class on small panels, and
+# the direct ancestor of GhostBuster. Also the origin of the `E[r²]` and `Rst` diagnostics we are
+# adopting. See papers/mosaic.md.
+#
+# Deps are MOSAIC's DESCRIPTION `Imports:` (`parallel` and `compiler` are base R) plus a C++
+# toolchain: `NeedsCompilation: yes` and `LinkingTo: Rcpp`, so src/ is compiled at install time.
+#
+# LaF IS NOT IN THE CONDA DEPS ON PURPOSE: conda-forge has no `r-laf` build for osx-arm64 (every
+# other Import does). Rather than lose Apple Silicon, the task installs LaF from CRAN into the same
+# clone-local Rlib/, guarded by requireNamespace so it is fetched once and re-runs are offline.
+#
+# We install into a clone-local `Rlib/` rather than the env's R library, so that (a) the check path
+# `Rlib/MOSAIC/DESCRIPTION` is a real artifact of a *successful* compile — `benchmark install`
+# cannot then report a half-built tool as installed — and (b) the tree is self-contained: the bridge
+# just sets R_LIBS=<clone>/Rlib.
+[tasks.install]
+env = { R_LIBS = "Rlib" }
+cmd = '''mkdir -p Rlib && R -q -e 'if (!requireNamespace("LaF", quietly = TRUE)) install.packages("LaF", lib = "Rlib", repos = "https://cloud.r-project.org")' && R CMD INSTALL --library=Rlib .'''
+
+[dependencies]
+r-base = ">=4.3"
+r-rcpp = "*"
+r-doparallel = "*"
+r-foreach = "*"
+r-ff = "*"
+r-cluster = "*"
+r-combinat = "*"
+r-maps = "*"
+r-bit = "*"
+cxx-compiler = "*"

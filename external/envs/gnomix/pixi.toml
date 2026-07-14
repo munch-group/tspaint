@@ -9,7 +9,7 @@ version = "0.1.0"
 # xgboost, sklearn-crfsuite, pandas, …); `tspaint benchmark setup` runs this task after the env
 # is created (it provides python + pip) to install them into the env.
 [tasks]
-install-deps = "pip install -r requirements.txt"
+install-deps = "pip install -r requirements.txt && python -c 'import xgboost, sklearn, allel' && touch .deps-ok"
 
 [dependencies]
 pip = ">=26.1.2,<27"

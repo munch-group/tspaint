@@ -283,13 +283,37 @@ def read_argweaver_smc(path, *, orig_names=None):
     flags = tables.nodes.flags
     times = tables.nodes.time.astype(float).copy()
     eps = 1e-3
-    changed = True
-    while changed:
+    # Bounded, not `while changed:`. The sweep converges only if the *accumulated* (parent, child)
+    # graph is acyclic, and that is a property of the input, not something we can assume: node
+    # identity here is `(argweaver name, age)`, which relies on ARGweaver keeping a node's
+    # number+age fixed across local trees until an SPR changes it. Where that invariant does not
+    # hold, the same id ends up on both sides of an edge (A->B in one local tree, B->A in another),
+    # the two nodes push each other upward forever, and the loop spins at 100% CPU with no output.
+    #
+    # This is not hypothetical: ARGweaver-D (the Siepel fork, CshlSiepelLab/argweaver) emits exactly
+    # such SMCs — on one 18-sample / 1e4 bp run, sample 10 had 4 local trees, 36 nodes and 44 pairs
+    # *with a cycle*, and this loop never terminated. The original mdrasmus/argweaver produced
+    # cycle-free output on the identical input. So: fail loudly with a diagnosis instead of hanging.
+    # A real fix means a node identity that survives an SPR (descendant-set keying, as Relate's
+    # `--compress` does) — until then ARGweaver-D output cannot be converted. See install.py.
+    max_sweeps = len(pairs) + 2                             # a DAG needs at most one sweep per edge
+    for _ in range(max_sweeps):
         changed = False
         for (p, c) in pairs:
             if times[p] <= times[c]:
                 times[p] = times[c] + eps
                 changed = True
+        if not changed:
+            break
+    else:
+        bad = [(int(p), int(c)) for (p, c) in pairs if times[p] <= times[c]][:5]
+        raise ValueError(
+            f"{path}: cannot order node times — the (parent, child) edges accumulated across this "
+            f"SMC's local trees contain a cycle, so no assignment of node times can satisfy tskit's "
+            f"time[parent] > time[child]. This means a node number+age was reused for two different "
+            f"topological positions, breaking the cross-tree node identity this reader keys on "
+            f"({len(pairs)} edges, {len(times)} nodes; e.g. {bad}). Known to happen with ARGweaver-D "
+            f"(CshlSiepelLab/argweaver) output; the original mdrasmus/argweaver is unaffected.")
     tables.nodes.set_columns(flags=flags, time=times)
     tables.sort()
     return tables.tree_sequence()
@@ -303,6 +327,16 @@ def _run_argweaver(sites, out_prefix, *, N, recombination_rate, mutation_rate, n
     Builds the command from ARGweaver's own flags, each passed **as-is**: ``-N -r -m --ntimes
     --maxtime -c -n`` (and ``--sample-step`` / ``--randseed`` when given), plus any
     ``argweaver_args`` passthrough. Writes ``{out_prefix}.<i>.smc.gz``.
+
+    ``stdin=DEVNULL`` is **load-bearing, not hygiene**: ``arg-sample`` reads stdin, and
+    ``subprocess.run`` without an explicit ``stdin`` hands the child *our* stdin. Whenever that is
+    an open pipe rather than a terminal — a Jupyter kernel, a piped script, CI, a workflow runner —
+    the child blocks on a read that never returns and the whole run hangs forever with no output.
+    Verified: with stdin held open, a 5-iteration run on 8 sequences never finishes; with
+    ``/dev/null`` it completes in under a second. Every other external-tool call in tspaint
+    (Relate, SINGER, RFMix, the benchmark comparators, git/make/pixi in the provisioner) is
+    redirected the same way — they are all batch tools, none should ever read stdin, and git in
+    particular would otherwise sit on a credential prompt.
     """
     argweaver_bin = argweaver_bin or DEFAULT_ARGWEAVER
     if not os.path.exists(argweaver_bin):
@@ -321,7 +355,7 @@ def _run_argweaver(sites, out_prefix, *, N, recombination_rate, mutation_rate, n
         cmd += [str(a) for a in argweaver_args]
     if log:
         log("arg-sample " + " ".join(cmd[1:]))
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
     if res.returncode != 0:
         tail = (res.stdout or res.stderr or "").strip()[-1500:]
         raise RuntimeError(

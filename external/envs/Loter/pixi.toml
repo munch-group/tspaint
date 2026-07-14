@@ -1,0 +1,52 @@
+[workspace]
+authors = ["Kasper Munch <kaspermunch@birc.au.dk>"]
+channels = ["conda-forge", "munch-group"]
+name = "Loter"
+platforms = ["osx-arm64", "linux-64"]
+version = "0.1.0"
+
+# Loter (Dias-Alves, Mairal & Blum 2018) — graph/dynamic-programming LAI with **no biological
+# parameters at all**: no genetic map, no admixture time, no training. It is (a) the other
+# deep-admixture opponent alongside FLARE and G-Nomix (Recomb-Mix loses to all three past 200
+# generations) and (b) the closest competitor to tspaint's own "works on non-model organisms
+# without a genetic map" pitch — which is exactly why it is worth measuring against rather than
+# conceding to. See papers/recomb-mix.md, papers/salai-net.md.
+#
+# The Python package lives in python-package/ (setup.py + a C++ extension over vendored Eigen), so
+# pip builds it from source; numpy and cython must be present at build time.
+#
+# Loter is 2018 code and needs two source fixes to build on a modern toolchain. Both are applied by
+# rewriting the single `cxx_flags` line in setup.py; we `git checkout` it first so the task is
+# idempotent (it always patches the pristine upstream line, never a already-patched one).
+#
+# 1. `-std=c++14` — REQUIRED EVERYWHERE, not just on macOS. Loter vendors an *ancient* Eigen whose
+#    Functors.h uses `std::binder1st` / `std::binder2nd`. Those were deprecated in C++11 and
+#    **removed in C++17**, and conda-forge's clang defaults to gnu++17, so the build dies with
+#    "no member named 'binder2nd' in namespace 'std'". Pinning C++14 keeps them (deprecated but
+#    present). Upstream sets no -std at all and so silently depended on the compiler default of its
+#    day.
+#
+# 2. `-msse2` made architecture-conditional — APPLE SILICON. It is an x86-only flag and clang
+#    rejects it outright on arm64 ("unsupported option '-msse2' for target 'arm64-apple-darwin'").
+#    It is a bare codegen hint, not an intrinsics dependency: the only SSE code in the tree is
+#    inside vendored Eigen, which dispatches on the compiler's target macros and picks its
+#    arch/NEON/ backend when __SSE2__ is undefined. So we keep SSE2 on x86 (where upstream wants
+#    it) and omit it on arm64, rather than dropping it for everyone.
+[tasks]
+install = '''git checkout -- python-package/setup.py && sed -i.bak "s/cxx_flags = \['-Wall', '-fPIC', '-O3', '-msse2'\]/cxx_flags = ['-Wall', '-fPIC', '-O3', '-std=c++14'] + (['-msse2'] if __import__('platform').machine() in ('x86_64', 'AMD64') else [])/" python-package/setup.py && pip install ./python-package && python -c 'import loter.locanc.local_ancestry' && touch .deps-ok'''
+
+[dependencies]
+python = "3.11.*"
+pip = "*"
+# Loter is 2018 code and uses `np.float_`, which NumPy 2.0 removed — it raises AttributeError at
+# the first call. Pin below 2 rather than patch: the pin also keeps the compiled extension's
+# ABI consistent (pip builds it against whatever numpy is installed), and this is the numpy the
+# tool was written for. It is isolated in Loter's own env, so nothing else is affected.
+numpy = "<2"
+cython = "*"
+scipy = "*"
+cxx-compiler = "*"
+llvm-openmp = "*"
+# loter/find_lib.py does `import pkg_resources` to locate its compiled .so. pkg_resources was
+# removed from setuptools in 81.0; without this pin the extension compiles and then fails to import.
+setuptools = "<81"

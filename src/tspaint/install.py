@@ -38,6 +38,29 @@ RELATE_LIB_COMMIT = os.environ.get(
 
 #: ARGweaver source (mdrasmus/argweaver). Only the C++ ``arg-sample`` binary is built (``make``);
 #: the Python-2 ``make install`` step is skipped. Override via $TSPAINT_ARGWEAVER_REPO / _COMMIT.
+#:
+#: **Why not the Siepel fork (= ARGweaver *and* ARGweaver-D)?** We tried, and it does not work yet.
+#: ``CshlSiepelLab/argweaver`` @ ``50bbd3c9`` is a superset of this repo — same ``Makefile``, same
+#: ``arg-sample``, plus a user-defined population model with migration bands (``--pop-tree-file``,
+#: ``--pop-file``, ``--start-mig``, ``--max-migs``) and phase integration (``--unphased``). That
+#: would buy two things this one cannot: ARGs sampled *under* a structured demography (no panmictic
+#: branch-length prior — the front-end answer to CLAUDE.md §6), and migration-band posteriors as a
+#: reference implementation to score :func:`tspaint.detect_ghost` against (``papers/ARGweaver-D.md``).
+#:
+#: But **its ``.smc`` output breaks** :func:`tspaint.io_argweaver.read_argweaver_smc`. That reader
+#: keys node identity on ``(argweaver name, age)``, which assumes ARGweaver keeps a node's
+#: number+age fixed across local trees until an SPR changes it. ARGweaver-D violates this: it reuses
+#: a name+age for two different topological positions, so the edges accumulated across local trees
+#: contain a **cycle** and no node-time assignment can satisfy tskit's ``time[parent] > time[child]``.
+#: Measured on one 18-sample / 1e4 bp run: the -D binary produced a cyclic sample (4 trees, 36 nodes,
+#: 44 edges) that hung the converter at 100% CPU; this binary produced cycle-free output on the
+#: identical input. ``read_argweaver_smc`` now raises instead of hanging.
+#:
+#: **To enable ARGweaver-D**, the converter needs a node identity that survives an SPR (descendant-set
+#: keying, as Relate's ``--compress`` does). Until then, opt in at your own risk with::
+#:
+#:     TSPAINT_ARGWEAVER_REPO=https://github.com/CshlSiepelLab/argweaver \
+#:     TSPAINT_ARGWEAVER_COMMIT=50bbd3c9ebd19b20500eaaee1fb5b55416e4a38c tspaint install argweaver
 ARGWEAVER_REPO = os.environ.get("TSPAINT_ARGWEAVER_REPO", "https://github.com/mdrasmus/argweaver")
 ARGWEAVER_COMMIT = os.environ.get("TSPAINT_ARGWEAVER_COMMIT", "master")
 
@@ -69,7 +92,8 @@ def _relate_env_recipe():
 
 def _run(cmd, *, cwd=None, log):
     log("  " + (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    res = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    res = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                         stdin=subprocess.DEVNULL)
     if res.returncode != 0:
         shown = cmd if isinstance(cmd, str) else " ".join(cmd)
         raise RuntimeError(f"step failed (exit {res.returncode}): {shown}\n"
@@ -140,7 +164,7 @@ def install_singer(*, commit=None, force=False, tools_dir=None, log=print):
     if not os.path.exists(binary):
         raise RuntimeError(f"compile reported success but {binary} is missing")
     os.chmod(binary, 0o755)
-    chk = subprocess.run([binary], capture_output=True, text=True)
+    chk = subprocess.run([binary], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     if "flag" not in (chk.stdout + chk.stderr).lower():
         raise RuntimeError("built binary did not behave like singer:\n"
                            f"{(chk.stderr or chk.stdout)[-500:]}")
@@ -176,7 +200,19 @@ def install_argweaver(*, commit=None, force=False, tools_dir=None, log=print):
     target = argweaver_install_dir() if tools_dir is None else os.path.join(tools_dir, "argweaver")
     binary = (argweaver_binary_path() if tools_dir is None
               else os.path.join(target, "bin", "arg-sample"))
-    if os.path.exists(binary) and not force:
+    # An existing clone may point at a *different* source than ARGWEAVER_REPO — notably a clone made
+    # before we moved to the Siepel fork (ARGweaver-D). Re-point and rebuild it rather than silently
+    # keeping a stale binary from the old remote, which would have no migration-band support.
+    stale_remote = False
+    if os.path.exists(os.path.join(target, ".git")):
+        res = subprocess.run(["git", "-C", target, "remote", "get-url", "origin"],
+                             capture_output=True, text=True, stdin=subprocess.DEVNULL)
+        current = res.stdout.strip().removesuffix(".git")
+        stale_remote = res.returncode == 0 and current != ARGWEAVER_REPO.removesuffix(".git")
+        if stale_remote:
+            log(f"argweaver remote changed ({current} -> {ARGWEAVER_REPO}); re-pointing and rebuilding")
+
+    if os.path.exists(binary) and not force and not stale_remote:
         log(f"argweaver already built: {binary} (use --force to rebuild)")
         return binary
     os.makedirs(os.path.dirname(target), exist_ok=True)
@@ -184,6 +220,9 @@ def install_argweaver(*, commit=None, force=False, tools_dir=None, log=print):
         log(f"cloning argweaver @ {commit} -> {target}")
         _run(["git", "clone", ARGWEAVER_REPO, target], log=log)
     else:
+        if stale_remote:
+            _run(["git", "-C", target, "remote", "set-url", "origin", ARGWEAVER_REPO], log=log)
+            _run(["make", "-C", target, "clean"], log=log)   # old objects link the old sources
         _run(["git", "-C", target, "fetch", "origin", commit], log=log)
     _run(["git", "-C", target, "checkout", commit], log=log)
     log("building arg-sample (make)")

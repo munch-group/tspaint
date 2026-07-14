@@ -28,6 +28,10 @@ from .rfmix import rfmix
 from .gnomix import gnomix
 from .salai import salai
 from .recombmix import recombmix
+from .flare import flare
+from .loter import loter
+from .mosaic import mosaic
+from .ghostbuster import ghostbuster
 from ._tspaint import tspaint
 from .export import export_vcf
 from .score import score, load_truth, format_table, score_full, write_metrics, aggregate
@@ -36,7 +40,8 @@ from ._common import (resolve_panel, read_sample_map, save_tracks, tool_availabl
                       Panel)
 
 __all__ = [
-    "tspaint", "rfmix", "gnomix", "salai", "recombmix", "run", "BENCHMARK_TOOLS", "PAINTERS",
+    "tspaint", "rfmix", "gnomix", "salai", "recombmix", "flare", "loter", "mosaic",
+    "ghostbuster", "run", "BENCHMARK_TOOLS", "PAINTERS",
     "export_vcf", "score", "load_truth", "format_table", "score_full", "write_metrics", "aggregate",
     "setup", "tool_status", "load_manifest",
     "resolve_panel", "read_sample_map", "save_tracks", "tool_available", "tool_command", "Panel",
@@ -49,6 +54,9 @@ BENCHMARK_TOOLS = {
     "gnomix": gnomix,
     "salai": salai,
     "recombmix": recombmix,
+    "flare": flare,
+    "loter": loter,
+    "mosaic": mosaic,
 }
 
 #: Name → painter, including tspaint itself (VCF-native, tsinfer ARG) for the head-to-head.

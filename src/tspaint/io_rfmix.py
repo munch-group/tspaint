@@ -233,7 +233,8 @@ def run_rfmix(ts, labels, queries, *, recombination_rate, generations,
            "-o", out, "--chromosome=" + CONTIG, "-G", str(int(round(generations)))]
     if extra_args:
         cmd += list(extra_args)
-    res = subprocess.run(cmd, capture_output=True, text=True, cwd=tmp)
+    res = subprocess.run(cmd, capture_output=True, text=True, cwd=tmp,
+                         stdin=subprocess.DEVNULL)
     if res.returncode != 0:
         raise RuntimeError(f"rfmix failed (exit {res.returncode}):\n{res.stderr[-1500:]}")
     return out
